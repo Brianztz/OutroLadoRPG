@@ -34,12 +34,39 @@
         .panel { background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; box-shadow: var(--shadow-card); margin-bottom: 20px; backdrop-filter: blur(8px); }
         .panel-title { font-size: 1.1em; text-transform: uppercase; color: var(--text-secondary); text-align: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 
-        .char-info-wrapper { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center; }
+        .character-panel { position: relative; overflow: hidden; padding: 0; background: linear-gradient(145deg, rgba(32,32,36,0.96), rgba(18,18,21,0.93)); }
+        .character-panel::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); box-shadow: 0 0 16px rgba(0,176,255,0.7); }
+        .character-panel-header { display: flex; align-items: center; padding: 20px 24px 17px; border-bottom: 1px solid rgba(255,255,255,0.07); background: linear-gradient(90deg, rgba(0,176,255,0.08), transparent 55%); }
+        .character-panel-heading { margin: 0; color: var(--text-primary); font-size: 1.12em; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+        .char-info-wrapper { display: grid; grid-template-columns: 175px minmax(0, 1fr); gap: 24px; align-items: stretch; padding: 24px; }
+        .char-portrait-card { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 190px; padding: 16px; border: 1px solid rgba(0,176,255,0.22); border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(0,176,255,0.13), rgba(8,8,10,0.7) 70%); }
+        .char-portrait-frame { position: relative; width: 140px; height: 140px; padding: 3px; border: 2px solid rgba(0,176,255,0.72); border-radius: 14px; background: #101014; box-shadow: 0 8px 20px rgba(0,0,0,0.34); }
+        .char-profile-image { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 10px; cursor: pointer; transition: transform 0.25s ease, filter 0.25s ease, opacity 0.3s ease-in-out; }
+        .char-profile-image:hover { transform: scale(1.025); filter: brightness(1.08); }
+        .char-portrait-hint { margin-top: 12px; color: var(--text-secondary); font-size: 0.62em; font-weight: 800; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+        .character-fields-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 13px; align-content: center; }
+        .character-field { min-width: 0; padding: 10px 12px 12px; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; background: rgba(8,8,10,0.48); transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; }
+        .character-field:focus-within { border-color: rgba(0,176,255,0.62); background: rgba(0,176,255,0.055); box-shadow: 0 0 0 2px rgba(0,176,255,0.08); }
+        .character-field label { display: block; margin-bottom: 7px; color: var(--text-secondary); font-size: 0.65em; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; }
+        .character-field .inv-input { padding: 7px 2px 5px; border: 0; border-bottom: 1px solid rgba(255,255,255,0.16); border-radius: 0; background: transparent; font-weight: 700; outline: none; }
+        .character-field .inv-input:focus { border-bottom-color: var(--accent-blue); }
+        .character-field select.inv-input { color: #fff; color-scheme: dark; background-color: #101014; padding-left: 7px; padding-right: 7px; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; }
+        .character-field select.inv-input:focus { border-color: var(--accent-blue); }
+        .character-field select.inv-input option { color: #fff; background-color: #101014; }
+        .character-field-name { grid-column: span 3; }
+        .character-field-nex { grid-column: span 1; }
+        .character-field-credit { grid-column: span 2; }
+        .character-field-occupation { grid-column: span 4; }
+        .character-field-body { grid-column: span 2; }
 
         /* BARRAS DE STATUS */
         .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px; }
         .status-box { background: rgba(18, 18, 20, 0.8); border: 1px solid rgba(51, 51, 51, 0.5); padding: 10px; border-radius: 8px; text-align: center; }
         .status-header { margin-bottom: 5px; font-weight: 900; text-transform: uppercase; font-size: 0.9em; letter-spacing: 1px; }
+        .status-header-with-roll { display: flex; align-items: center; justify-content: center; gap: 7px; }
+        .sanity-roll-button { width: 27px; height: 27px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid rgba(0,176,255,0.7); border-radius: 7px; background: rgba(0,176,255,0.12); color: var(--accent-blue); cursor: pointer; font-size: 0.95em; line-height: 1; transition: transform 0.2s, background 0.2s, box-shadow 0.2s; }
+        .sanity-roll-button:hover { transform: translateY(-1px) scale(1.06); background: rgba(0,176,255,0.25); box-shadow: 0 0 10px rgba(0,176,255,0.35); }
+        .sanity-roll-button:active { transform: scale(0.94); }
         .status-controls { display: flex; align-items: center; gap: 8px; justify-content: center; margin-bottom: 10px; }
         .status-btn { background: rgba(30, 30, 35, 0.9); border: 2px solid var(--border-color); color: white; border-radius: 6px; width: 30px; height: 30px; font-size: 1.2em; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .status-btn:hover { background: rgba(60, 60, 65, 1); border-color: var(--accent-blue); transform: scale(1.05); }
@@ -82,6 +109,7 @@
 
         .defense-box { background: var(--bg-input); padding: 15px; border-radius: 12px; border: 2px solid var(--border-color); text-align: center; margin-top: 20px; }
         .defense-input { width: 80px; background: transparent; border: none; color: var(--accent-green); text-align: center; font-size: 2.5em; font-weight: 900; }
+        .body-damage-roll { width: 100%; padding: 10px; border-color: var(--accent-red); color: var(--accent-red); font-weight: 900; text-transform: uppercase; }
         .equipped-weapons-header { font-size: 0.85em; color: var(--text-secondary); font-weight: bold; text-transform: uppercase; margin-top: 20px; margin-bottom: 10px; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
 
         .weight-container { background: rgba(18, 18, 20, 0.8); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(51, 51, 51, 0.5); }
@@ -89,15 +117,91 @@
         .weight-bar-fill { height: 100%; width: 0%; background: var(--accent-blue); transition: 0.5s; }
         .weight-bar-fill.overweight { background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red); }
 
-        .ammo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px; }
-        .ammo-box { background: rgba(25, 25, 27, 0.7); padding: 15px; border-radius: 10px; border: 1px solid rgba(45, 45, 48, 0.8); text-align: center; display: flex; flex-direction: column; align-items: center; }
-        .ammo-box label { display: block; font-size: 0.7em; color: var(--accent-blue); font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
 
         .inv-table { width: 100%; border-collapse: collapse; }
         .inv-row-main { cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(45, 45, 48, 0.8); }
         .inv-row-main:hover { background: rgba(42, 42, 46, 0.8); }
         .inv-table th { color: var(--text-secondary); font-size: 0.8em; text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color); }
         .inv-table td { padding: 12px 10px; }
+        .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 14px; }
+        .inventory-card { position: relative; min-width: 0; overflow: hidden; cursor: pointer; background: linear-gradient(145deg, rgba(28,28,32,0.96), rgba(12,12,14,0.96)); border: 1px solid rgba(70,70,76,0.8); border-radius: 12px; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s; }
+        .inventory-card:hover { transform: translateY(-3px); border-color: var(--accent-blue); box-shadow: 0 9px 22px rgba(0,0,0,0.35); }
+        .inventory-card.is-equipped { border-color: rgba(255,207,51,0.65); }
+        .inventory-card:not(.is-equipped) { opacity: 0.7; }
+        .inventory-card-media { position: relative; width: 100%; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(circle at center, rgba(54,54,62,0.75), rgba(7,7,9,0.95)); border-bottom: 1px solid rgba(70,70,76,0.65); }
+        .inventory-card-image { width: 100%; height: 100%; object-fit: contain; padding: 10px; box-sizing: border-box; }
+        .inventory-card-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 2.8em; font-weight: 900; }
+        .inventory-card-type { position: absolute; left: 8px; top: 8px; padding: 4px 7px; border-radius: 5px; background: rgba(0,0,0,0.78); color: var(--accent-blue); font-size: 0.58em; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+        .inventory-card-delete { position: absolute; z-index: 2; right: 8px; top: 8px; width: 27px; height: 27px; padding: 0; border-radius: 50%; background: rgba(229,57,53,0.9); border: 1px solid rgba(255,255,255,0.25); color: white; cursor: pointer; font-size: 1em; font-weight: 900; line-height: 25px; }
+        .inventory-card-delete:hover { filter: brightness(1.2); }
+        .inventory-card-content { padding: 11px; }
+        .inventory-card-name { min-height: 2.5em; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.92em; font-weight: 900; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
+        .inventory-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(70,70,76,0.55); }
+        .inventory-equip-control { min-width: 0; display: flex; align-items: center; color: var(--text-secondary); cursor: pointer; font-size: 0.66em; font-weight: 800; text-transform: uppercase; }
+        .inventory-equip-control .item-equipped { flex: 0 0 auto; margin-right: 5px; }
+        .inventory-card-weight { flex: 0 0 auto; color: var(--accent-green); font-size: 0.7em; font-weight: 900; white-space: nowrap; }
+        .clues-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        .clue-card { min-width: 0; overflow: hidden; cursor: pointer; background: linear-gradient(145deg, rgba(31,29,22,0.97), rgba(12,12,14,0.97)); border: 1px solid rgba(255,207,51,0.35); border-radius: 12px; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; }
+        .clue-card:hover { transform: translateY(-3px); border-color: var(--accent-yellow); box-shadow: 0 10px 24px rgba(0,0,0,0.38); }
+        .clue-card-media { width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(circle at center, rgba(74,64,28,0.42), rgba(7,7,9,0.96)); border-bottom: 1px solid rgba(255,207,51,0.25); }
+        .clue-card-image { width: 100%; height: 100%; object-fit: cover; }
+        .clue-card-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--accent-yellow); font-size: 2.7em; }
+        .clue-card-content { padding: 13px; }
+        .clue-card-title { color: var(--accent-yellow); font-size: 0.95em; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
+        .clue-card-description { margin-top: 8px; color: var(--text-secondary); font-size: 0.78em; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
+        .clue-info-description { padding: 15px; border: 1px solid rgba(255,207,51,0.28); border-radius: 8px; background: rgba(18,18,20,0.8); color: var(--text-primary); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .clue-image-preview { display: none; width: 100%; max-height: 150px; object-fit: contain; border: 1px solid rgba(255,207,51,0.3); border-radius: 8px; background: rgba(0,0,0,0.45); }
+        .clue-3d-stage { position: relative; width: 100%; height: 330px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center, rgba(75,64,25,0.22), rgba(5,5,7,0.94)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
+        .clue-3d-stage.dragging { cursor: grabbing; }
+        .clue-3d-object { position: relative; width: 300px; height: 200px; max-width: 86%; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg) scale(1); transition: transform 0.14s ease-out, width 0.18s ease, height 0.18s ease; will-change: transform; }
+        .clue-3d-stage.dragging .clue-3d-object { transition: none; }
+        .clue-3d-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
+        .clue-3d-depth-layer { position: absolute; inset: 0; display: none; pointer-events: none; background: var(--clue-edge-color, #68686f); transform: translateZ(var(--clue-depth)); -webkit-mask-image: var(--clue-shape-image); mask-image: var(--clue-shape-image); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+        .clue-3d-object.has-image-shape .clue-3d-depth-layer { display: block; }
+        .clue-3d-face { position: absolute; inset: 0; overflow: visible; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; backface-visibility: hidden; }
+        .clue-3d-front { transform: translateZ(12px); }
+        .clue-3d-back { transform: rotateY(180deg) translateZ(12px); }
+        .clue-3d-image { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 14px 15px rgba(0,0,0,0.58)); }
+        .clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
+        .clue-3d-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+        .clue-3d-controls .btn-roll { min-width: 42px; padding: 7px 10px; font-weight: 900; }
+        .clue-3d-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; text-shadow: 1px 1px 2px #000; }
+        .clue-type-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .clue-type-button { border: 1px solid #45454d; border-radius: 7px; padding: 10px; background: #111114; color: var(--text-secondary); font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .clue-type-button.active { border-color: var(--accent-yellow); background: rgba(255,207,51,0.12); color: var(--accent-yellow); }
+        .clue-book-pages-editor { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 9px; margin-top: 10px; }
+        .clue-book-page-editor { min-width: 0; padding: 7px; border: 1px solid rgba(255,207,51,0.28); border-radius: 8px; background: #111114; }
+        .clue-book-page-editor img { width: 100%; aspect-ratio: 3 / 4; display: block; object-fit: contain; border-radius: 5px; background: #08080a; }
+        .clue-book-page-editor-number { margin: 6px 0; color: var(--text-secondary); font-size: 0.67em; font-weight: 900; text-align: center; }
+        .clue-book-page-editor-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+        .clue-book-page-editor-controls button { min-width: 0; border: 0; border-radius: 4px; padding: 5px 2px; background: #303037; color: white; cursor: pointer; font-weight: 900; }
+        .clue-book-page-editor-controls button:last-child { background: #8f2424; }
+        .clue-card-type { display: inline-flex; margin-top: 9px; padding: 3px 7px; border: 1px solid rgba(255,207,51,0.32); border-radius: 999px; color: var(--accent-yellow); font-size: 0.62em; font-weight: 900; text-transform: uppercase; }
+        #popup-clue-info .popup-box { width: min(850px, 95vw); box-sizing: border-box; }
+        .clue-book-viewer { display: none; margin-bottom: 13px; }
+        .clue-book-stage { position: relative; height: 430px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center, rgba(91,69,29,0.28), rgba(5,5,7,0.96)); perspective: 1500px; }
+        .clue-book { position: relative; width: min(720px, 90%); aspect-ratio: 3 / 2; display: flex; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: rotateX(3deg); transform-style: preserve-3d; }
+        .clue-book::before { content: ''; position: absolute; left: 50%; top: -2%; bottom: -2%; width: 12px; z-index: 8; transform: translateX(-50%); border-radius: 50%; background: linear-gradient(90deg, rgba(60,39,20,0.8), rgba(20,12,8,0.9), rgba(93,62,31,0.74)); box-shadow: 0 0 12px rgba(0,0,0,0.8); pointer-events: none; }
+        .clue-book-page { position: relative; width: 50%; height: 100%; overflow: hidden; box-sizing: border-box; background: linear-gradient(135deg, #eadfca, #cabb9e); color: #282016; }
+        .clue-book-page.left { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.22), inset 0 0 0 1px rgba(76,51,26,0.25); }
+        .clue-book-page.right { border-radius: 2px 10px 10px 2px; box-shadow: inset 18px 0 24px rgba(49,31,12,0.22), inset 0 0 0 1px rgba(76,51,26,0.25); }
+        .clue-book-page img, .clue-book-flip-face img { width: 100%; height: 100%; display: block; object-fit: contain; background: #e4d6bb; }
+        .clue-book-page-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; color: rgba(49,35,20,0.48); font-family: Georgia, serif; font-size: 1.1em; font-style: italic; text-align: center; }
+        .clue-book-page-number { position: absolute; left: 10px; right: 10px; bottom: 7px; color: rgba(44,31,18,0.7); font-family: Georgia, serif; font-size: 0.7em; font-weight: bold; text-align: center; text-shadow: 0 1px rgba(255,255,255,0.45); pointer-events: none; }
+        .clue-book-flip { position: absolute; top: 0; width: 50%; height: 100%; display: none; z-index: 7; transform-style: preserve-3d; }
+        .clue-book-flip-face { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(135deg, #eadfca, #cabb9e); backface-visibility: hidden; box-shadow: inset 0 0 0 1px rgba(76,51,26,0.25); }
+        .clue-book-flip-face.back { transform: rotateY(180deg); }
+        .clue-book-flip.next { left: 50%; display: block; transform-origin: left center; animation: clue-book-next 0.76s cubic-bezier(0.58,0.02,0.28,1) forwards; }
+        .clue-book-flip.previous { left: 0; display: block; transform-origin: right center; animation: clue-book-previous 0.76s cubic-bezier(0.58,0.02,0.28,1) forwards; }
+        .clue-book-flip.next .clue-book-flip-face.front { border-radius: 2px 10px 10px 2px; box-shadow: inset 18px 0 24px rgba(49,31,12,0.25); }
+        .clue-book-flip.next .clue-book-flip-face.back { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.25); }
+        .clue-book-flip.previous .clue-book-flip-face.front { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.25); }
+        .clue-book-flip.previous .clue-book-flip-face.back { border-radius: 2px 10px 10px 2px; box-shadow: inset 18px 0 24px rgba(49,31,12,0.25); }
+        .clue-book-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+        .clue-book-controls .btn-roll { min-width: 110px; }
+        .clue-book-indicator { min-width: 110px; color: var(--text-secondary); font-size: 0.73em; font-weight: 900; text-align: center; }
+        @keyframes clue-book-next { 0% { transform: rotateY(0deg); } 45% { box-shadow: 12px 8px 18px rgba(0,0,0,0.42); } 100% { transform: rotateY(-180deg); } }
+        @keyframes clue-book-previous { 0% { transform: rotateY(0deg); } 45% { box-shadow: -12px 8px 18px rgba(0,0,0,0.42); } 100% { transform: rotateY(180deg); } }
         
         .inv-input { background: var(--bg-input); border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; width: 100%; box-sizing: border-box; }
         .btn-add { background: var(--accent-green); color: #000; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 20px; transition: 0.2s; }
@@ -115,9 +219,16 @@
         .popup-box { background: var(--bg-card); border: 2px solid var(--border-color); padding: 25px; border-radius: 15px; width: 450px; box-shadow: var(--shadow-card); backdrop-filter: blur(15px); max-height: 90vh; overflow-y: auto; }
         .popup-box-dice { position: relative; width: 600px; height: 400px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: #000; border: 4px solid var(--accent-yellow); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
         .popup-box-dice::after { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.3); z-index: 1; }
-        .popup-content { position: relative; z-index: 10; display: none; animation: fadeInResult 0.5s forwards; text-align: center; }
-        .popup-number { font-size: 10em; font-weight: 900; color: white; text-shadow: 4px 4px 0 #000; }
+        .popup-content { position: relative; z-index: 10; display: none; width: 90%; animation: fadeInResult 0.5s forwards; text-align: center; }
+        .popup-roll-name { margin-bottom: 4px; color: white; font-size: clamp(1.1em, 4vw, 1.7em); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 2px 2px 4px #000; overflow-wrap: anywhere; }
+        .popup-number { font-size: 10em; line-height: 0.95; font-weight: 900; color: white; text-shadow: 4px 4px 0 #000; }
         .popup-res { font-size: 2.5em; font-weight: 900; margin-top: 10px; text-transform: uppercase; text-shadow: 2px 2px 4px #000; }
+        .custom-dice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .custom-dice-field label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 0.72em; font-weight: bold; text-transform: uppercase; }
+        .custom-dice-result { display: none; margin-top: 18px; padding: 16px; border: 2px solid var(--accent-blue); border-radius: 10px; background: rgba(0,0,0,0.65); text-align: center; box-shadow: 0 0 14px rgba(0,176,255,0.25); }
+        .custom-dice-result-name { color: var(--accent-blue); font-size: 0.85em; font-weight: 900; text-transform: uppercase; }
+        .custom-dice-result-total { display: block; margin: 7px 0; color: white; font-size: 3.2em; font-weight: 900; line-height: 1; text-shadow: 0 0 8px rgba(0,176,255,0.7); }
+        .custom-dice-result-rolls { color: var(--text-secondary); font-size: 0.82em; line-height: 1.5; overflow-wrap: anywhere; }
         
         @keyframes fadeInResult { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
@@ -127,14 +238,27 @@
             .tab-btn { flex: 1 1 30%; font-size: 0.85em; padding: 10px 5px; text-align: center; }
             .columns-wrapper { flex-direction: column; }
             .panel { width: 100%; flex: 1 1 100% !important; box-sizing: border-box; padding: 15px; }
-            .char-info-wrapper { flex-direction: column; }
+            .character-panel-header { padding: 18px; }
+            .char-info-wrapper { grid-template-columns: 1fr; padding: 18px; }
+            .char-portrait-card { min-height: 0; }
+            .character-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .character-field-name, .character-field-occupation { grid-column: span 2; }
+            .character-field-nex, .character-field-credit, .character-field-body { grid-column: span 1; }
             .status-grid { grid-template-columns: 1fr; gap: 10px; }
-            .ammo-grid { grid-template-columns: repeat(2, 1fr); }
             .skill-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
             .popup-box { width: 95%; padding: 15px; box-sizing: border-box; }
             .popup-box-dice { width: 95%; height: 300px; }
             .popup-grid { grid-template-columns: 1fr; }
+            .custom-dice-grid { grid-template-columns: 1fr; }
             .inv-table th, .inv-table td { padding: 8px 5px; font-size: 0.85em; }
+            .inventory-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
+            .clues-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+            .clue-3d-stage { height: 260px; }
+            .clue-book-stage { height: 285px; }
+            .clue-book { width: 96%; }
+            .clue-book-controls { gap: 6px; }
+            .clue-book-controls .btn-roll { min-width: 0; flex: 1; padding: 8px 5px; }
+            .clue-book-indicator { min-width: 80px; font-size: 0.66em; }
             .inv-input { font-size: 16px; } 
         }
     </style>
@@ -145,6 +269,7 @@
     <div class="tabs-nav">
         <button class="tab-btn active" onclick="openTab('tab-personagem', this)">Personagem</button>
         <button class="tab-btn" onclick="openTab('tab-inventario', this)">Inventário</button>
+        <button class="tab-btn" onclick="openTab('tab-pistas', this)">Pistas</button>
     </div>
     <div class="top-buttons" id="main-top-buttons">
         <div style="background: rgba(18, 18, 20, 0.8); border: 2px solid var(--accent-yellow); padding: 8px 15px; border-radius: 6px; font-weight: bold; color: var(--accent-yellow); margin-right: 10px;">
@@ -305,7 +430,7 @@
         
         <div style="background: rgba(255, 207, 51, 0.1); border: 1px solid var(--accent-yellow); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
             <input type="checkbox" id="popup-skill-trained" style="width: 20px; height: 20px; accent-color: var(--accent-yellow); cursor: pointer;" onchange="updateSkillPopupCalc()">
-            <label for="popup-skill-trained" style="font-weight: bold; color: var(--accent-yellow); cursor: pointer; text-transform: uppercase; font-size: 0.9em;">Treinada (+10)</label>
+            <label for="popup-skill-trained" style="font-weight: bold; color: var(--accent-yellow); cursor: pointer; text-transform: uppercase; font-size: 0.9em;">Treinada (+5)</label>
         </div>
 
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 12px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-color);">
@@ -335,15 +460,110 @@
 </div>
 
 <div id="popup-input-dice" class="popup-overlay" onclick="this.style.display='none'">
-    <div class="popup-box" style="width:350px; text-align:center;" onclick="event.stopPropagation()">
-        <h3 style="color: var(--accent-blue);">Rolar Dados</h3>
-        <input type="text" id="custom_dice_formula" class="inv-input" style="font-size: 1.2em; text-align:center; margin-bottom:20px;" placeholder="Ex: 2d10 + 5">
-        <button onclick="rolarDadoPersonalizado()" style="background:var(--accent-blue); border:none; color:black; width:100%; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">ROLAR</button>
+    <div class="popup-box" style="width:460px; text-align:center;" onclick="event.stopPropagation()">
+        <h3 style="color:var(--accent-blue); margin-top:0;">🎲 DADOS PERSONALIZADOS</h3>
+        <p style="color:var(--text-secondary); font-size:0.82em; margin:-5px 0 18px;">Escolha a quantidade, as faces e o bônus da rolagem.</p>
+
+        <div class="custom-dice-field" style="margin-bottom:15px; text-align:left;">
+            <label for="custom_dice_name">Nome da rolagem (opcional)</label>
+            <input type="text" id="custom_dice_name" class="inv-input" maxlength="60" placeholder="Ex: Cura, dano de fogo, sorte...">
+        </div>
+
+        <div class="custom-dice-grid">
+            <div class="custom-dice-field">
+                <label for="custom_dice_qty">Quantidade</label>
+                <input type="number" id="custom_dice_qty" class="inv-input" min="1" max="100" value="1" style="text-align:center;">
+            </div>
+            <div class="custom-dice-field">
+                <label for="custom_dice_faces">Faces</label>
+                <input type="number" id="custom_dice_faces" class="inv-input" min="2" max="1000" value="20" style="text-align:center;">
+            </div>
+            <div class="custom-dice-field">
+                <label for="custom_dice_bonus">Bônus</label>
+                <input type="number" id="custom_dice_bonus" class="inv-input" min="-9999" max="9999" value="0" style="text-align:center;">
+            </div>
+        </div>
+
+        <button id="btn_custom_dice" onclick="rolarDadoPersonalizado()" style="background:var(--accent-blue); border:none; color:black; width:100%; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">🎲 ROLAR</button>
+        <div id="custom_dice_result" class="custom-dice-result" aria-live="polite"></div>
+    </div>
+</div>
+
+<div id="popup-clue-form" class="popup-overlay" onclick="closeClueForm()">
+    <div class="popup-box" onclick="event.stopPropagation()">
+        <h3 id="clue-form-title" style="color:var(--accent-yellow); margin-top:0; text-align:center;">Nova Pista</h3>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <div>
+                <label style="font-size:0.8em; color:var(--text-secondary)">TIPO DA PISTA</label>
+                <div class="clue-type-switch" style="margin-top:7px;">
+                    <button id="clue-type-object-button" type="button" class="clue-type-button active" onclick="setClueFormType('object')">🔎 OBJETO 3D</button>
+                    <button id="clue-type-book-button" type="button" class="clue-type-button" onclick="setClueFormType('book')">📖 LIVRO</button>
+                </div>
+                <input type="hidden" id="clue-type" value="object">
+            </div>
+            <div><label style="font-size:0.8em; color:var(--text-secondary)">NOME DA PISTA</label><input type="text" id="clue-title" class="inv-input" placeholder="Ex: Bilhete rasgado"></div>
+            <div><label style="font-size:0.8em; color:var(--text-secondary)">DESCRIÇÃO</label><textarea id="clue-description" class="inv-input" style="height:150px; resize:vertical;" placeholder="Anote tudo que foi descoberto..."></textarea></div>
+            <div id="clue-object-fields"><label style="font-size:0.8em; color:var(--text-secondary)">IMAGEM DA PISTA</label><input type="text" id="clue-image" class="inv-input" placeholder="Cole o link da imagem..." oninput="pendingClueImageData=''; updateClueImagePreview()"><input type="file" id="clue-image-file" class="inv-input" accept="image/*" style="margin-top:8px;" onchange="loadClueImageFile(event)"><img id="clue-image-preview" class="clue-image-preview" alt="Prévia da pista" style="margin-top:8px;"><button type="button" class="btn-roll" style="width:100%; margin-top:8px;" onclick="removeClueImage()">REMOVER FOTO</button></div>
+            <div id="clue-book-fields" style="display:none;">
+                <label style="font-size:0.8em; color:var(--text-secondary)">PÁGINAS DO LIVRO</label>
+                <input type="file" id="clue-book-pages-files" class="inv-input" accept="image/*" multiple style="margin-top:7px;" onchange="loadClueBookPages(event)">
+                <div style="display:flex; gap:7px; margin-top:8px;"><input type="text" id="clue-book-page-url" class="inv-input" placeholder="Ou cole o link de uma página..."><button type="button" class="btn-roll" style="flex:0 0 auto;" onclick="addClueBookPageUrl()">+ PÁGINA</button></div>
+                <div style="margin-top:7px; color:var(--text-secondary); font-size:0.7em; line-height:1.4;">Selecione várias imagens de uma vez. Use as setas para reorganizar a ordem.</div>
+                <div id="clue-book-pages-empty" style="margin-top:10px; padding:16px 10px; border:1px dashed rgba(255,207,51,0.28); border-radius:8px; color:var(--text-secondary); text-align:center; font-size:0.75em;">Nenhuma página adicionada.</div>
+                <div id="clue-book-pages-editor" class="clue-book-pages-editor"></div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:5px;"><button id="clue-save-button" class="btn-add" style="flex:1; margin:0; background:var(--accent-yellow);" onclick="saveClueForm()">ADICIONAR</button><button class="btn-del" style="flex:1;" onclick="closeClueForm()">CANCELAR</button></div>
+        </div>
+    </div>
+</div>
+
+<div id="popup-clue-info" class="popup-overlay" onclick="closeClueInfo()">
+    <div class="popup-box" onclick="event.stopPropagation()">
+        <h3 id="clue-info-title" style="color:var(--accent-yellow); margin-top:0; text-align:center; text-transform:uppercase;">Pista</h3>
+        <div id="clue-book-viewer" class="clue-book-viewer">
+            <div class="clue-book-stage">
+                <div class="clue-book">
+                    <div id="clue-book-left-page" class="clue-book-page left"></div>
+                    <div id="clue-book-right-page" class="clue-book-page right"></div>
+                    <div id="clue-book-flip" class="clue-book-flip">
+                        <div id="clue-book-flip-front" class="clue-book-flip-face front"></div>
+                        <div id="clue-book-flip-back" class="clue-book-flip-face back"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="clue-book-controls">
+                <button id="clue-book-previous" type="button" class="btn-roll" onclick="turnClueBookPage(-1)">← ANTERIOR</button>
+                <span id="clue-book-indicator" class="clue-book-indicator">PÁGINAS</span>
+                <button id="clue-book-next" type="button" class="btn-roll" onclick="turnClueBookPage(1)">PRÓXIMA →</button>
+            </div>
+        </div>
+        <div id="clue-3d-stage" class="clue-3d-stage" aria-label="Pista 3D. Arraste para girar e use a roda do mouse para aproximar.">
+            <div id="clue-3d-object" class="clue-3d-object">
+                <div id="clue-3d-depth" class="clue-3d-depth" aria-hidden="true"></div>
+                <div class="clue-3d-face clue-3d-front"><img id="clue-3d-image" class="clue-3d-image" src="" alt=""><div id="clue-3d-fallback" class="clue-3d-fallback">🔎</div></div>
+                <div class="clue-3d-face clue-3d-back"><img id="clue-3d-back-image" class="clue-3d-image" src="" alt=""><div id="clue-3d-back-fallback" class="clue-3d-fallback">🔎</div></div>
+            </div>
+            <div class="clue-3d-hint">Arraste para girar · Roda do mouse para aproximar</div>
+        </div>
+        <div class="clue-3d-controls">
+            <button type="button" class="btn-roll" onclick="rotateClue3D(-45)">↶</button>
+            <button type="button" class="btn-roll" onclick="zoomClue3D(-0.1)">−</button>
+            <button type="button" class="btn-roll" onclick="resetClue3D()">CENTRALIZAR</button>
+            <button type="button" class="btn-roll" onclick="zoomClue3D(0.1)">+</button>
+            <button type="button" class="btn-roll" onclick="rotateClue3D(45)">↷</button>
+        </div>
+        <div id="clue-info-description" class="clue-info-description"></div>
+        <div style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
+            <button class="btn-add" style="flex:1; min-width:100px; margin:0; background:var(--accent-blue);" onclick="editCurrentClue()">EDITAR</button>
+            <button class="btn-del" style="flex:1; min-width:100px; padding:10px;" onclick="removeCurrentClue()">REMOVER</button>
+            <button class="btn-roll" style="flex:1; min-width:100px; padding:10px;" onclick="closeClueInfo()">FECHAR</button>
+        </div>
     </div>
 </div>
 <div id="popup-dice" class="popup-overlay" onclick="closeDice()">
     <div class="popup-box-dice">
         <div id="popup-content" class="popup-content">
+            <div id="popup-roll-name" class="popup-roll-name">ROLAGEM</div>
             <div id="popup-num" class="popup-number">00</div>
             <div id="popup-res" class="popup-res">RESULTADO</div>
         </div>
@@ -352,30 +572,42 @@
 
 <div id="tab-personagem" class="main-container active">
     
-    <div class="panel" style="margin-bottom: 20px;">
-        <div class="panel-title">Informações do Personagem</div>
-        
+    <div class="panel character-panel" style="margin-bottom:20px;">
+        <div class="character-panel-header">
+            <h2 class="character-panel-heading">Informações do Personagem</h2>
+        </div>
+
         <div class="char-info-wrapper">
-            <div style="flex: 0 0 140px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                <img id="char_img_display" src="https://via.placeholder.com/150x150/202024/a8a8b3?text=FOTO" style="width: 140px; height: 140px; object-fit: cover; border-radius: 50%; border: 3px solid var(--accent-blue); box-shadow: 0 0 15px rgba(0, 176, 255, 0.2); cursor: pointer; transition: transform 0.3s, opacity 0.3s ease-in-out; opacity: 1;" onclick="openCharImgPopup()" title="Clique para gerenciar fotos de status" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <div class="char-portrait-card">
+                <div class="char-portrait-frame">
+                    <img id="char_img_display" class="char-profile-image" src="https://via.placeholder.com/150x150/202024/a8a8b3?text=FOTO" onclick="openCharImgPopup()" title="Clique para gerenciar fotos de status">
+                </div>
+                <div class="char-portrait-hint">Clique para alterar o retrato</div>
             </div>
 
-            <div style="flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-                <div><label style="font-size:0.7em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase;">Nome</label><input type="text" id="char_nome" class="inv-input" oninput="save()"></div>
-                <div>
-                    <label style="font-size:0.7em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase;">NEX (%)</label>
-                    <select id="char_nex" class="inv-input" style="padding: 7px; color: #fff;" onchange="save()"><script>for(let i=0; i<=95; i+=5) document.write(`<option value="${i}">${i}</option>`); document.write(`<option value="99">99</option>`);</script></select>
+            <div class="character-fields-grid">
+                <div class="character-field character-field-name">
+                    <label for="char_nome">Nome</label>
+                    <input type="text" id="char_nome" class="inv-input" placeholder="Nome do personagem" oninput="save()">
                 </div>
-                <div>
-                    <label style="font-size:0.7em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase;">Ocupação</label>
-                    <select id="char_ocupacao" class="inv-input" style="padding: 7px; color: #fff;" onchange="applyOccupation(this.value); save()">
+                <div class="character-field character-field-nex">
+                    <label for="char_nex">NEX (%)</label>
+                    <select id="char_nex" class="inv-input" onchange="save()"><script>for(let i=0; i<=95; i+=5) document.write(`<option value="${i}">${i}</option>`); document.write(`<option value="99">99</option>`);</script></select>
+                </div>
+                <div class="character-field character-field-credit">
+                    <label for="char_credito">Nível de Crédito</label>
+                    <select id="char_credito" class="inv-input" onchange="save()"><option value="Baixo">Baixo</option><option value="Intermediário">Intermediário</option><option value="Alto">Alto</option><option value="Elite">Elite</option></select>
+                </div>
+                <div class="character-field character-field-occupation">
+                    <label for="char_ocupacao">Ocupação</label>
+                    <select id="char_ocupacao" class="inv-input" onchange="applyOccupation(this.value); save()">
                         <option value="Nenhuma">Sem Ocupação</option><option value="Academico">Acadêmico</option><option value="AgenteSaude">Agente de Saúde</option><option value="Artista">Artista</option><option value="Atleta">Atleta</option><option value="Chef">Chef</option><option value="Criminoso">Criminoso</option><option value="EntendedorOculto">Entendedor do Oculto</option><option value="Engenheiro">Engenheiro</option><option value="Desgarrado">Desgarrado</option><option value="Investigador">Investigador</option><option value="Lutador">Lutador</option><option value="Policial">Policial</option><option value="Religioso">Religioso</option><option value="TI">T.I</option><option value="Universitario">Universitário</option><option value="Jornalista">Jornalista</option><option value="Revoltado">Revoltado</option>
                     </select>
                 </div>
-                <div><label style="font-size:0.7em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase;">Origem / Classe</label><select id="char_origem" class="inv-input" style="padding: 7px; color: #fff;" onchange="save()"><option value="Nenhuma">Nenhuma</option><option value="Combatente">Combatente</option><option value="Ocultista">Ocultista</option><option value="Especialista">Especialista</option></select></div>
-                <div><label style="font-size:0.7em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase;">Nível</label><select id="char_nivel" class="inv-input" style="padding: 7px; color: #fff;" onchange="save()"><option value="Recruta">Recruta</option><option value="Veterano">Veterano</option><option value="Expert">Expert</option><option value="Elite">Elite</option></select></div>
-                <div><label style="font-size:0.7em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase;">Nível de Crédito</label><select id="char_credito" class="inv-input" style="padding: 7px; color: #fff;" onchange="save()"><option value="Baixo">Baixo</option><option value="Intermediário">Intermediário</option><option value="Alto">Alto</option><option value="Elite">Elite</option></select></div>
-                <div><label style="font-size:0.7em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase;">Tipo de Corpo</label><select id="char_tipo_corpo" class="inv-input" style="padding: 7px; color: #fff;" onchange="updateWeight(); save()"><option value="Pequeno">Pequeno</option><option value="Médio" selected>Médio</option><option value="Grande">Grande</option></select></div>
+                <div class="character-field character-field-body">
+                    <label for="char_tipo_corpo">Tipo de Corpo</label>
+                    <select id="char_tipo_corpo" class="inv-input" onchange="aplicarTipoCorpo(this.value)"><option value="Pequeno">Pequeno</option><option value="Médio" selected>Médio</option><option value="Grande">Grande</option></select>
+                </div>
             </div>
         </div>
     </div>
@@ -398,7 +630,7 @@
             </div>
         </div>
         <div class="status-box">
-            <div class="status-header"><span style="color:var(--accent-blue);">SANIDADE</span></div>
+            <div class="status-header status-header-with-roll"><span style="color:var(--accent-blue);">SANIDADE</span><button class="sanity-roll-button" type="button" title="Rolar teste de Sanidade (1d100)" aria-label="Rolar teste de Sanidade em 1d100" onclick="rolarSanidade()">🎲</button></div>
             <div class="status-controls">
                 <button class="status-btn" onclick="changeStatus('sani', -1)">-</button>
                 <div class="status-bar-container">
@@ -415,30 +647,29 @@
 
     <div class="columns-wrapper">
         <div class="panel" style="flex:0 0 240px;"><div class="panel-title">Atributos</div><div id="atributos-container"></div></div>
-        <div class="panel" style="flex:1;"><div class="panel-title">Perícias (Clique para Editar)</div><div class="skill-grid" id="pericias-container"></div></div>
+        <div class="panel" style="flex:1;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+                <div class="panel-title" style="flex:1; margin:0; padding:0; border:0; text-align:left;">Perícias (Clique para Editar)</div>
+                <button type="button" class="btn-roll" onclick="abrirDadoPersonalizado()" title="Rolar dado personalizado" aria-label="Rolar dado personalizado" style="width:40px; min-width:40px; height:34px; padding:5px; margin:0; display:flex; align-items:center; justify-content:center; border-color:var(--accent-blue); background:rgba(0,176,255,0.1);">
+                    <img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" alt="" style="width:20px; height:20px; filter:invert(1);">
+                </button>
+            </div>
+            <div class="skill-grid" id="pericias-container"></div>
+        </div>
         <div class="panel" style="flex:0 0 250px;">
             <div class="panel-title">Ações</div>
-            <button onclick="document.getElementById('popup-input-dice').style.display='flex'" style="background:rgba(0, 176, 255, 0.1); border:1px solid var(--accent-blue); color:var(--accent-blue); width:100%; height:60px; border-radius:8px; cursor:pointer; font-weight:bold; margin-bottom:20px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" style="width:24px; height:24px; filter: invert(1);">
-                PERSONALIZAR DADO
-            </button>
+            <button type="button" class="btn-roll body-damage-roll" onclick="rolarDanoCorporal()">Dano Corporal</button>
             <div class="defense-box">
                 <label style="display:block; font-size:0.75em; color:var(--text-secondary); font-weight:bold; text-transform:uppercase; margin-bottom:5px;">Defesa</label>
                 <input type="number" id="defense_val" class="defense-input" value="0" oninput="save()">
             </div>
             
             <div class="equipped-weapons-header">Arma Ativa</div>
-            <select id="active-weapon-select" class="inv-input" style="margin-bottom: 10px; display: none; text-align: center; color: var(--accent-yellow); font-weight: bold;" onchange="renderActiveWeapon()"></select>
+            <select id="active-weapon-select" class="inv-input" style="margin-bottom: 10px; display: none; text-align: center; color: var(--accent-yellow); font-weight: bold;" onchange="selecionarArmaAtiva()"></select>
             <div id="equipped-weapons-list" style="display:flex; flex-direction:column; gap:10px;"></div>
 
-            <div class="equipped-weapons-header" style="margin-top: 30px;">Habilidades</div>
-            <button class="btn-roll" style="width:100%; border-color: var(--accent-green); color: var(--accent-green); font-weight: bold; margin-bottom: 10px;" onclick="openAbilityPopup()">+ Nova Habilidade</button>
-            <div id="abilities-list" style="display:flex; flex-direction:column; gap:10px;"></div>
-            
-            <div class="equipped-weapons-header" style="margin-top: 30px;">Rituais Prontos</div>
-            <div id="learned-rituals-list" style="display:flex; flex-wrap:wrap; gap:5px;">
-                <div style="text-align:center; color:var(--text-secondary); font-size:0.8em; font-style:italic; width: 100%;">Nenhum ritual aprendido.</div>
-            </div>
+            <div id="abilities-list" style="display:none;"></div>
+            <div id="learned-rituals-list" style="display:none;"></div>
             
         </div>
     </div>
@@ -454,41 +685,19 @@
             <div class="weight-bar-bg"><div id="weight-bar-fill" class="weight-bar-fill"></div></div>
         </div>
         <button class="btn-add" onclick="openItemPopup()">+ Novo Item / Arma</button>
-        <table class="inv-table">
-            <thead>
-                <tr>
-                    <th style="width:65%;">Inventário (Clique para Detalhes)</th>
-                    <th style="width:15%; text-align:center;">Espaços</th>
-                    <th style="width:20%; text-align:center;">Ação</th>
-                </tr>
-            </thead>
-            <tbody id="inventory-body"></tbody>
-        </table>
+        <div id="inventory-body" class="inventory-grid"></div>
     </div>
+</div>
+
+<div id="tab-pistas" class="main-container">
     <div class="panel">
-        <div class="panel-title">Munições</div>
-        <div class="ammo-grid">
-            <div class="ammo-box">
-                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCdDvSthuqAJb6xAZmZUUh9zgqdm7LTKzGqHpagubFAEk9PJwRd-rUCG43i2pJs2uRfxaaW8DjTlg9xlXYGq6ZwGsh6Zf4vWKMeyGYAYQAZ-UTwrZTNU1YN0DLyug-lTyPynXQVwEBjcHcXu0BC_m2JbQFEt9Sxx9yaqMasE2UumF25DFmacBQZRGBPVk4/s320/Muni%C3%A7%C3%A3o%20Leve.png" style="width:100%; height:50px; object-fit:contain; margin-bottom:5px;">
-                <label>Leve / Curta</label>
-                <input type="number" id="ammo_curta" class="inv-input" style="text-align:center;" value="0" min="0" oninput="updateWeight(); save()">
-            </div>
-            <div class="ammo-box">
-                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh2EpfpR7APs0uOJgPwpdV34e2czmK6ksJRfFihwxSNbKW4h6L9PTqObOtF_Hk2WjD4QgER_fH6xMnPB2F6ttcIcDNoC4WHFMKznpXPEL5Kckz8DPtWOz4chfECe0l80fqsghJ2zBT4cXIooPgxQzgLRUQXoFqgSxu8VN8mqU31y9L_kFW16Y0sm1Fd1k1m/s320/Muni%C3%A7%C3%A3o%20Longa.png" style="width:100%; height:50px; object-fit:contain; margin-bottom:5px;">
-                <label>Longa</label>
-                <input type="number" id="ammo_longa" class="inv-input" style="text-align:center;" value="0" min="0" oninput="updateWeight(); save()">
-            </div>
-            <div class="ammo-box">
-                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNDorID1yepLoHFBZDr-5TFA3odzWbyU3hlfpH8VCqkBUS3jOW7S8v4RS0c5ACFePQ7l3bB0Dzfwkewf7MgBL0-xe3wqDHQoGFvNGnGvs17Q0cPiPAVPH6q1oS7B8oSLpxoCYpwI1f2kU3zc2LoGrVbepPhlS_1SLHNE2X4aGJp-0A1d-R4K5QNoNeMUsC/s1600/Muni%C3%A7%C3%A3o%20Pesada.png" style="width:100%; height:50px; object-fit:contain; margin-bottom:5px;">
-                <label>Pesada</label>
-                <input type="number" id="ammo_pesada" class="inv-input" style="text-align:center;" value="0" min="0" oninput="updateWeight(); save()">
-            </div>
-            <div class="ammo-box">
-                <div style="width:100%; height:50px; display:flex; align-items:center; justify-content:center; color:var(--accent-yellow); font-size:2em; margin-bottom:5px;">★</div>
-                <label>Especial</label>
-                <input type="number" id="ammo_especial" class="inv-input" style="text-align:center;" value="0" min="0" oninput="updateWeight(); save()">
-            </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+            <div class="panel-title" style="margin:0; padding:0; border:0; text-align:left;">Pistas e Investigação</div>
+            <span id="clues-count" style="color:var(--accent-yellow); font-size:0.75em; font-weight:900; white-space:nowrap;">0 PISTAS</span>
         </div>
+        <button class="btn-add" style="background:var(--accent-yellow);" onclick="openClueForm()">+ Nova Pista</button>
+        <div id="clues-empty" style="padding:30px 15px; border:1px dashed rgba(255,207,51,0.3); border-radius:10px; color:var(--text-secondary); text-align:center; font-style:italic;">Nenhuma pista registrada.</div>
+        <div id="clues-grid" class="clues-grid"></div>
     </div>
 </div>
 
@@ -531,17 +740,113 @@
     let isLoadingData = false;
     let currentViewedItemId = null; 
     let editingItemId = null; 
+    let cluesData = [];
+    let editingClueId = null;
+    let currentClueId = null;
+    let pendingClueImageData = '';
+    let pendingClueBookPages = [];
+    let currentBookSpread = 0;
+    let bookFlipAnimating = false;
+    let clueRotationX = -8;
+    let clueRotationY = 0;
+    let clueZoom = 1;
+    let clue3DDragging = false;
+    let clue3DLastX = 0;
+    let clue3DLastY = 0;
+    let clue3DControlsInitialized = false;
+    let clue3DImageRequestToken = 0;
+    const clue3DCutoutCache = new Map();
 
     const tabelaD20 = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
 
+    const MODIFICADORES_TIPO_CORPO = {
+        'Pequeno': { agi: 2, for: -2, vig: 0 },
+        'Médio': { agi: 1, for: 1, vig: 1 },
+        'Grande': { agi: -2, for: 2, vig: 2 }
+    };
+    const DANO_CORPORAL_TIPO = { 'Pequeno': 2, 'Médio': 4, 'Grande': 6 };
+
     function limitarValorAtributo(valor) {
         const numero = parseInt(valor, 10);
-        return Number.isFinite(numero) ? Math.max(0, Math.min(10, numero)) : 0;
+        return Number.isFinite(numero) ? Math.min(10, numero) : 0;
     }
 
     function limitarAtributo(input) {
         if (!input || input.value === '') return;
         input.value = limitarValorAtributo(input.value);
+    }
+
+    function obterTipoCorpoAtual() {
+        const campo = document.getElementById('char_tipo_corpo');
+        return campo ? campo.value : 'Médio';
+    }
+
+    function obterBonusTipoCorpo(codigoAtributo) {
+        const modificadores = MODIFICADORES_TIPO_CORPO[obterTipoCorpoAtual()] || MODIFICADORES_TIPO_CORPO['Médio'];
+        return modificadores[String(codigoAtributo || '').toLowerCase()] || 0;
+    }
+
+    function obterValorAtributoEfetivo(codigoAtributo) {
+        const codigo = String(codigoAtributo || '').toLowerCase();
+        const campo = document.getElementById('attr_' + codigo);
+        return campo ? limitarValorAtributo(campo.value) : 0;
+    }
+
+    function calcularNaturalPericia(valorAtributo, modificador) {
+        const atributo = Math.max(0, Number(valorAtributo) || 0);
+        const multiplicador = Math.max(0, Number(modificador) || 0);
+        if (atributo === 0 || multiplicador === 0) return 0;
+        return Math.max(1, Math.floor(atributo * multiplicador));
+    }
+
+    function capturarAtributosBaseCorpo() {
+        atributosBaseCorpo = {};
+        ["for","agi","vig","int","pre"].forEach(codigo => {
+            const campo = document.getElementById('attr_' + codigo);
+            atributosBaseCorpo[codigo] = campo ? limitarValorAtributo(campo.value) : 0;
+        });
+    }
+
+    function registrarEdicaoAtributo(input) {
+        if (!input) return;
+        if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
+        const codigo = input.id.replace('attr_', '');
+        atributosBaseCorpo[codigo] = limitarValorAtributo(input.value) - obterBonusTipoCorpo(codigo);
+    }
+
+    function aplicarTipoCorpo(tipo, deveSalvar = true) {
+        const tipoValido = MODIFICADORES_TIPO_CORPO[tipo] ? tipo : 'Médio';
+        if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
+        tipoCorpoAplicado = tipoValido;
+
+        ["for","agi","vig","int","pre"].forEach(codigo => {
+            const campo = document.getElementById('attr_' + codigo);
+            if (!campo) return;
+            const base = Number.isFinite(atributosBaseCorpo[codigo]) ? atributosBaseCorpo[codigo] : 0;
+            const bonus = (MODIFICADORES_TIPO_CORPO[tipoValido] || {})[codigo] || 0;
+            campo.value = limitarValorAtributo(base + bonus);
+        });
+
+        updateAllPericias();
+        updateWeight();
+        if (deveSalvar) save();
+    }
+
+    function rolarDanoCorporal() {
+        const tipo = obterTipoCorpoAtual();
+        const faces = DANO_CORPORAL_TIPO[tipo] || 4;
+        const resultado = Math.floor(Math.random() * faces) + 1;
+        showPopup(resultado, 'DANO CORPORAL', 'DANO', 'color: var(--accent-red)');
+    }
+
+    function rolarSanidade() {
+        const campoSanidade = document.getElementById('sani_atual');
+        const sanidade = Math.max(0, Math.min(100, parseInt(campoSanidade ? campoSanidade.value : 0, 10) || 0));
+        const resultado = Math.floor(Math.random() * 100) + 1;
+        const sucesso = resultado <= sanidade;
+        const tipoResultado = sucesso ? 'SUCESSO' : 'FRACASSO';
+        const cor = sucesso ? 'var(--accent-green)' : 'var(--accent-red)';
+        showPopup(resultado, 'SANIDADE', tipoResultado, `color:${cor}`);
     }
 
     function obterFaixasAtributo(valorRelevante) {
@@ -554,10 +859,13 @@
         const indice = Math.max(1, Math.min(20, Math.floor(Number(valorRelevante) || 0)));
         return tabelaD20[indice];
     }
-    const periciasBase = [{nome:"Acrobacia",attr:"AGI",mod:0.20},{nome:"Adestramento",attr:"PRE",mod:0.20},{nome:"Artes",attr:"PRE",mod:0.30},{nome:"Atletismo",attr:"FOR",mod:0.35},{nome:"Atualidades",attr:"INT",mod:0.35},{nome:"Ciências",attr:"INT",mod:0.25},{nome:"Crime",attr:"AGI",mod:0.35},{nome:"Diplomacia",attr:"PRE",mod:0.30},{nome:"Enganação",attr:"PRE",mod:0.25},{nome:"Fortitude",attr:"VIG",mod:0.40},{nome:"Furtividade",attr:"AGI",mod:0.39},{nome:"Iniciativa",attr:"AGI",mod:0.50},{nome:"Intimidação",attr:"PRE",mod:0.30},{nome:"Intuição",attr:"PRE",mod:0.35},{nome:"Investigação",attr:"INT",mod:0.50},{nome:"Luta",attr:"FOR",mod:0.25},{nome:"Medicina",attr:"INT",mod:0.15},{nome:"Ocultismo",attr:"INT",mod:0.08},{nome:"Percepção",attr:"PRE",mod:0.50},{nome:"Pilotagem",attr:"AGI",mod:0.15},{nome:"Pontaria",attr:"AGI",mod:0.45},{nome:"Profissão",attr:"INT",mod:0.50},{nome:"Reflexos",attr:"AGI",mod:0.35},{nome:"Religião",attr:"PRE",mod:0.50},{nome:"Sobrevivência",attr:"INT",mod:0.35},{nome:"Tática",attr:"INT",mod:0.45},{nome:"Tecnologia",attr:"INT",mod:0.25},{nome:"Vontade",attr:"PRE",mod:0.50}];
+    const periciasBase = [{nome:"Acrobacia",attr:"AGI",mod:0.20},{nome:"Adestramento",attr:"PRE",mod:0.20},{nome:"Artes",attr:"PRE",mod:0.30},{nome:"Atletismo",attr:"FOR",mod:0.35},{nome:"Atualidades",attr:"INT",mod:0.35},{nome:"Ciências",attr:"INT",mod:0.25},{nome:"Crime",attr:"AGI",mod:0.35},{nome:"Diplomacia",attr:"PRE",mod:0.30},{nome:"Enganação",attr:"PRE",mod:0.25},{nome:"Fortitude",attr:"VIG",mod:0.40},{nome:"Furtividade",attr:"AGI",mod:0.39},{nome:"Iniciativa",attr:"AGI",mod:0.50},{nome:"Intimidação",attr:"PRE",mod:0.30},{nome:"Intuição",attr:"PRE",mod:0.35},{nome:"Investigação",attr:"INT",mod:0.50},{nome:"Luta",attr:"FOR",mod:0.25},{nome:"Medicina",attr:"INT",mod:0.15},{nome:"Ocultismo",attr:"INT",mod:0.08},{nome:"Percepção",attr:"PRE",mod:0.50},{nome:"Pilotagem",attr:"AGI",mod:0.15},{nome:"Pontaria",attr:"AGI",mod:0.45},{nome:"Profissão",attr:"INT",mod:0.50},{nome:"Reflexos",attr:"AGI",mod:0.35},{nome:"Religião",attr:"PRE",mod:0.50},{nome:"Sobrevivência",attr:"INT",mod:0.35},{nome:"Tática",attr:"INT",mod:0.45},{nome:"Tecnologia",attr:"INT",mod:0.25}];
     let equippedWeaponsData = [];
+    let activeWeaponId = "";
     let currentOccupation = "Nenhuma";
     let lastAttackWasCrit = false;
+    let atributosBaseCorpo = null;
+    let tipoCorpoAplicado = null;
 
     let charImages = { normal: '', lesionado: '', inconsciente: '', morrendo: '', enlouquecendo: '', les_enlouq: '' };
     let charStatus = { lesionado: false, inconsciente: false, morrendo: false, enlouquecendo: false };
@@ -582,7 +890,11 @@
         { name: "Mochila", weight: 0, desc: "Uma mochila leve e de alta qualidade. Ela não usa nenhum espaço e aumenta sua capacidade de carga em 2 espaços.", img: imgDict['mochila'] },
         { name: "Lanterna", weight: 1, desc: "Ilumina lugares escuros. Além disso, você pode gastar uma ação de movimento para mirar a luz nos olhos de um ser em alcance curto. Ele fica ofuscado por 1 rodada, mas imune à lanterna pelo resto da cena.", img: imgDict['lanterna'] },
         { name: "Proteção Leve", weight: 2, desc: "Jaqueta de couro pesada ou um colete de kevlar. Essa proteção é tipicamente usada por seguranças e policiais. +5 de Defesa.", img: imgDict['proteção leve'] },
-        { name: "Proteção Pesada", weight: 5, desc: "Equipamento usado por forças especiais da polícia e pelo exército. Fornece resistência a balístico, corte, impacto e perfuração. No entanto, por ser desconfortável e volumosa, impõe –5 em testes de perícias que sofrem penalidade de carga. +10 de Defesa", img: imgDict['proteção pesada'] }
+        { name: "Proteção Pesada", weight: 5, desc: "Equipamento usado por forças especiais da polícia e pelo exército. Fornece resistência a balístico, corte, impacto e perfuração. No entanto, por ser desconfortável e volumosa, impõe –5 em testes de perícias que sofrem penalidade de carga. +10 de Defesa", img: imgDict['proteção pesada'] },
+        { name: "Munição Curta", weight: 1, desc: "Um pacote de munição curta. É consumido ao recarregar uma arma compatível.", type: "municao", ammo: "Curta", img: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCdDvSthuqAJb6xAZmZUUh9zgqdm7LTKzGqHpagubFAEk9PJwRd-rUCG43i2pJs2uRfxaaW8DjTlg9xlXYGq6ZwGsh6Zf4vWKMeyGYAYQAZ-UTwrZTNU1YN0DLyug-lTyPynXQVwEBjcHcXu0BC_m2JbQFEt9Sxx9yaqMasE2UumF25DFmacBQZRGBPVk4/s320/Muni%C3%A7%C3%A3o%20Leve.png" },
+        { name: "Munição Longa", weight: 1, desc: "Um pacote de munição longa. É consumido ao recarregar uma arma compatível.", type: "municao", ammo: "Longa", img: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh2EpfpR7APs0uOJgPwpdV34e2czmK6ksJRfFihwxSNbKW4h6L9PTqObOtF_Hk2WjD4QgER_fH6xMnPB2F6ttcIcDNoC4WHFMKznpXPEL5Kckz8DPtWOz4chfECe0l80fqsghJ2zBT4cXIooPgxQzgLRUQXoFqgSxu8VN8mqU31y9L_kFW16Y0sm1Fd1k1m/s320/Muni%C3%A7%C3%A3o%20Longa.png" },
+        { name: "Munição Pesada", weight: 1, desc: "Um pacote de munição pesada. É consumido ao recarregar uma arma compatível.", type: "municao", ammo: "Pesada", img: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNDorID1yepLoHFBZDr-5TFA3odzWbyU3hlfpH8VCqkBUS3jOW7S8v4RS0c5ACFePQ7l3bB0Dzfwkewf7MgBL0-xe3wqDHQoGFvNGnGvs17Q0cPiPAVPH6q1oS7B8oSLpxoCYpwI1f2kU3zc2LoGrVbepPhlS_1SLHNE2X4aGJp-0A1d-R4K5QNoNeMUsC/s1600/Muni%C3%A7%C3%A3o%20Pesada.png" },
+        { name: "Munição Especial", weight: 1, desc: "Um pacote de munição especial. É consumido ao recarregar uma arma compatível.", type: "municao", ammo: "Especial", img: "" }
     ];
 
     const premadeMeleeWeapons = [
@@ -689,8 +1001,8 @@
             "Academico": ["ciencias", "investigacao"], "AgenteSaude": ["intuicao", "medicina"], "Artista": ["artes", "enganacao"], "Atleta": ["acrobacia", "atletismo"],
             "Chef": ["fortitude", "profissao"], "Criminoso": ["crime", "furtividade"], "EntendedorOculto": ["ocultismo", "religiao"], "Engenheiro": ["profissao", "tecnologia"],
             "Desgarrado": ["fortitude", "sobrevivencia"], "Investigador": ["investigacao", "percepcao"], "Lutador": ["luta", "reflexos"], "Policial": ["pontaria", "percepcao"],
-            "Religioso": ["religiao", "vontade"], "TI": ["investigacao", "tecnologia"], "Universitario": ["atualidades", "investigacao"], "Jornalista": ["atualidades", "investigacao"],
-            "Revoltado": ["furtividade", "vontade"]
+            "Religioso": ["religiao"], "TI": ["investigacao", "tecnologia"], "Universitario": ["atualidades", "investigacao"], "Jornalista": ["atualidades", "investigacao"],
+            "Revoltado": ["furtividade"]
         };
         if(currentOccupation !== "Nenhuma" && skillsMap[currentOccupation]) { skillsMap[currentOccupation].forEach(s => { const chk = document.getElementById('chk_' + s); if(chk) { chk.checked = false; toggleTrained(s); } }); }
         if(newOcc !== "Nenhuma" && skillsMap[newOcc]) { skillsMap[newOcc].forEach(s => { const chk = document.getElementById('chk_' + s); if(chk) { chk.checked = true; toggleTrained(s); } }); }
@@ -711,8 +1023,8 @@
     function openSkillPopup(sn, nome, attr, mod) {
         document.getElementById('popup-skill-name').innerText = nome;
         document.getElementById('popup-skill-attr-name').innerText = attr + " (x" + mod + ")";
-        let atEl = document.getElementById("attr_"+attr.toLowerCase()); let at = atEl ? parseInt(atEl.value)||0 : 0;
-        document.getElementById('popup-skill-natural').innerText = Math.floor(at * mod);
+        let at = obterValorAtributoEfetivo(attr);
+        document.getElementById('popup-skill-natural').innerText = calcularNaturalPericia(at, mod);
         document.getElementById('popup-skill-trained').checked = document.getElementById('chk_'+sn).checked;
         document.getElementById('popup-skill-bonus').value = document.getElementById('skill_'+sn).value;
         document.getElementById('popup-skill-sn').value = sn; document.getElementById('popup-skill-attr').value = attr; document.getElementById('popup-skill-mod').value = mod;
@@ -723,9 +1035,9 @@
     function updateSkillPopupCalc() {
         let mod = parseFloat(document.getElementById('popup-skill-mod').value), attr = document.getElementById('popup-skill-attr').value;
         let sn = document.getElementById('popup-skill-sn').value;
-        let atEl = document.getElementById("attr_"+attr.toLowerCase()); let at = atEl ? parseInt(atEl.value)||0 : 0;
-        let natural = Math.floor(at * mod), bonus = parseInt(document.getElementById('popup-skill-bonus').value) || 0;
-        let trained = document.getElementById('popup-skill-trained').checked ? 10 : 0;
+        let at = obterValorAtributoEfetivo(attr);
+        let natural = calcularNaturalPericia(at, mod), bonus = parseInt(document.getElementById('popup-skill-bonus').value) || 0;
+        let trained = document.getElementById('popup-skill-trained').checked ? 5 : 0;
         
         let penalty = 0;
         if (hasHeavyArmorEquipped() && ["luta", "acrobacia", "atletismo", "iniciativa", "reflexos"].includes(sn)) {
@@ -845,10 +1157,10 @@
             premadeItems.forEach((it, index) => {
                 containerItem.innerHTML += `
                     <div class="skill-card" style="cursor: pointer; padding: 10px; border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; text-align: center; background: rgba(18,18,20,0.8); transition: 0.2s;" onclick="addPremadeItem(${index})" onmouseover="this.style.borderColor='var(--accent-green)'" onmouseout="this.style.borderColor='rgba(0, 230, 118, 0.3)'">
-                        <img src="${it.img}" style="width: 100%; height: 60px; object-fit: contain; margin-bottom: 5px;">
+                        ${it.img ? `<img src="${it.img}" style="width:100%; height:60px; object-fit:contain; margin-bottom:5px;">` : `<div style="height:60px; display:flex; align-items:center; justify-content:center; color:var(--accent-yellow); font-size:2em; margin-bottom:5px;">★</div>`}
                         <div style="font-weight: bold; color: var(--accent-green); font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase;">${it.name}</div>
                         <div style="font-size: 0.7em; color: var(--text-secondary); line-height: 1.4;">
-                            Espaços: <span style="color:white; font-weight:bold;">${it.weight}</span>
+                            Espaços: <span style="color:white; font-weight:bold;">${it.weight}</span>${it.ammo ? `<br>Tipo: <span style="color:var(--accent-blue); font-weight:bold;">${it.ammo}</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -916,7 +1228,7 @@
             if(oldRow) oldRow.remove();
         }
 
-        addItemObj({ id: idToUse, n: it.name, w: it.weight, d: it.desc, eq: eqStatus, type: 'comum', img: it.img });
+        addItemObj({ id: idToUse, n: it.name, w: it.weight, d: it.desc, eq: eqStatus, type: it.type || 'comum', ammo: it.ammo || 'Nenhuma', img: it.img });
         closeItemPopup();
     }
 
@@ -1050,14 +1362,33 @@
     }
 
     function addItemObj(o) {
-        const body = document.getElementById('inventory-body'); const r1 = document.createElement('tr'); r1.className = 'inv-row-main'; r1.id = 'inv-row-' + o.id; 
+        const body = document.getElementById('inventory-body');
+        const r1 = document.createElement('div');
+        r1.className = `inventory-card${o.eq ? ' is-equipped' : ''}`;
+        r1.id = 'inv-row-' + o.id; 
         r1.onclick = () => openItemInfo(o.id);
         const safeD = (o.d||"").replace(/"/g, "&quot;");
+        const itemTypeLabel = o.type === 'arma' ? 'Arma' : (o.type === 'municao' ? 'Munição' : 'Item');
+        const itemImageHTML = o.img
+            ? `<img class="inventory-card-image" src="${o.img}" alt="${o.n}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="inventory-card-fallback" style="display:none;">★</div>`
+            : `<div class="inventory-card-fallback">★</div>`;
         r1.innerHTML = `
-            <td><div style="display:flex; align-items:center;"><input type="checkbox" class="item-equipped" ${o.eq?'checked':''} onclick="event.stopPropagation()" onchange="syncItemEquip('${o.id}', this.checked); updateWeight(); updateWeaponsDisplay(); updateAllPericias(); save()"> <b style="margin-left:8px;">${o.n}</b></div></td>
-            <td style="text-align:center;">${o.w}</td>
-            <td style="text-align:center;"><button class="btn-del" onclick="removeItem('${o.id}'); event.stopPropagation()">X</button>
-            <input type="hidden" class="hidden-data-item" id="item-data-${o.id}" data-id="${o.id}" data-n="${o.n}" data-w="${o.w}" data-d="${safeD}" data-eq="${o.eq}" data-type="${o.type}" data-dmg="${o.dmg||'0'}" data-extra="${o.extra||'0'}" data-crit="${o.crit||'20/x2'}" data-skill="${o.skill||'Luta'}" data-img="${o.img||''}" data-atktype="${o.atkType||'Corpo a corpo'}" data-atk="${o.atk||'1'}" data-range="${o.range||'Curto'}" data-ammo="${o.ammo||'Nenhuma'}" data-capacity="${o.capacity||'0'}" data-currentshots="${o.currentShots!==undefined?o.currentShots:o.capacity}"></td>
+            <button class="inventory-card-delete" title="Remover item" onclick="removeItem('${o.id}'); event.stopPropagation()">×</button>
+            <div class="inventory-card-media">
+                ${itemImageHTML}
+                <span class="inventory-card-type">${itemTypeLabel}</span>
+            </div>
+            <div class="inventory-card-content">
+                <div class="inventory-card-name">${o.n}</div>
+                <div class="inventory-card-footer">
+                    <label class="inventory-equip-control" onclick="event.stopPropagation()">
+                        <input type="checkbox" class="item-equipped" ${o.eq?'checked':''} onchange="syncItemEquip('${o.id}', this.checked); updateWeight(); updateWeaponsDisplay(); updateAllPericias(); save()">
+                        <span>Equipado</span>
+                    </label>
+                    <span class="inventory-card-weight">${o.w} esp.</span>
+                </div>
+            </div>
+            <input type="hidden" class="hidden-data-item" id="item-data-${o.id}" data-id="${o.id}" data-n="${o.n}" data-w="${o.w}" data-d="${safeD}" data-eq="${o.eq}" data-type="${o.type}" data-dmg="${o.dmg||'0'}" data-extra="${o.extra||'0'}" data-crit="${o.crit||'20/x2'}" data-skill="${o.skill||'Luta'}" data-img="${o.img||''}" data-atktype="${o.atkType||'Corpo a corpo'}" data-atk="${o.atk||'1'}" data-range="${o.range||'Curto'}" data-ammo="${o.ammo||'Nenhuma'}" data-capacity="${o.capacity||'0'}" data-currentshots="${o.currentShots!==undefined?o.currentShots:o.capacity}">
         `;
         body.appendChild(r1); 
         if(!isLoadingData) { updateWeight(); updateWeaponsDisplay(); updateAllPericias(); save(); }
@@ -1068,6 +1399,8 @@
     function syncItemEquip(id, isChecked) { 
         const h = document.getElementById('item-data-' + id); 
         if(h) h.setAttribute('data-eq', isChecked); 
+        const card = document.getElementById('inv-row-' + id);
+        if(card) card.classList.toggle('is-equipped', isChecked);
     }
 
     function openItemInfo(id) {
@@ -1109,7 +1442,7 @@
 
     // LÓGICA DE CÁLCULO DE PESO / ESPAÇOS COM BÓNUS DA MOCHILA E TIPO DE CORPO
     function updateWeight() {
-        const f = parseInt(document.getElementById('attr_for').value)||0; 
+        const f = obterValorAtributoEfetivo('for'); 
         
         let lim = f * 5;
         if (lim < 2) lim = 2; // Regra Padrão do Ordem: Força x 5 (Mínimo de 2)
@@ -1141,8 +1474,6 @@
         
         lim += bm; 
         
-        ["ammo_curta", "ammo_longa", "ammo_pesada", "ammo_especial"].forEach(id => t += parseInt(document.getElementById(id).value)||0);
-        
         const fill = document.getElementById('weight-bar-fill'); 
         fill.style.width = lim>0 ? Math.min((t/lim)*100, 100)+"%" : "0%";
         document.getElementById('weight-text').innerText = `${t} / ${lim}`;
@@ -1153,16 +1484,24 @@
         equippedWeaponsData = [];
         document.querySelectorAll('.hidden-data-item').forEach(h => {
             if(h.getAttribute('data-eq') === 'true' && h.getAttribute('data-type') === 'arma') {
-                equippedWeaponsData.push({ id: h.getAttribute('data-id'), name: h.getAttribute('data-n'), desc: h.getAttribute('data-d'), dmg: h.getAttribute('data-dmg'), extra: h.getAttribute('data-extra'), crit: h.getAttribute('data-crit'), skill: h.getAttribute('data-skill'), atk: h.getAttribute('data-atk'), ammo: h.getAttribute('data-ammo'), capacity: h.getAttribute('data-capacity'), currentShots: h.getAttribute('data-currentshots') });
+                equippedWeaponsData.push({ id: h.getAttribute('data-id'), name: h.getAttribute('data-n'), desc: h.getAttribute('data-d'), dmg: h.getAttribute('data-dmg'), extra: h.getAttribute('data-extra'), crit: h.getAttribute('data-crit'), skill: h.getAttribute('data-skill'), atkType: h.getAttribute('data-atktype'), atk: h.getAttribute('data-atk'), ammo: h.getAttribute('data-ammo'), capacity: h.getAttribute('data-capacity'), currentShots: h.getAttribute('data-currentshots') });
             }
         });
         const sel = document.getElementById('active-weapon-select'), cont = document.getElementById('equipped-weapons-list');
-        if(equippedWeaponsData.length === 0) { sel.style.display = 'none'; cont.innerHTML = `<div style="text-align:center; color:var(--text-secondary); font-size:0.8em; font-style:italic;">Nenhuma arma equipada.</div>`; return; }
-        const cur = sel.value; sel.innerHTML = ''; 
+        if(equippedWeaponsData.length === 0) { activeWeaponId = ""; sel.style.display = 'none'; cont.innerHTML = `<div style="text-align:center; color:var(--text-secondary); font-size:0.8em; font-style:italic;">Nenhuma arma equipada.</div>`; return; }
+        const cur = sel.value || activeWeaponId; sel.innerHTML = ''; 
         equippedWeaponsData.forEach(wp => { const o = document.createElement('option'); o.value = wp.id; o.textContent = wp.name; sel.appendChild(o); });
         sel.style.display = equippedWeaponsData.length > 1 ? 'block' : 'none';
         sel.value = equippedWeaponsData.some(wp => wp.id === cur) ? cur : equippedWeaponsData[0].id;
+        activeWeaponId = sel.value;
         renderActiveWeapon();
+    }
+
+    function selecionarArmaAtiva() {
+        const sel = document.getElementById('active-weapon-select');
+        activeWeaponId = sel ? sel.value : "";
+        renderActiveWeapon();
+        save();
     }
 
     function renderActiveWeapon() {
@@ -1214,12 +1553,15 @@
         const ammoType = h.getAttribute('data-ammo');
         if(ammoType === 'Nenhuma') return;
 
-        const ammoInputId = 'ammo_' + ammoType.toLowerCase();
-        const ammoInput = document.getElementById(ammoInputId);
+        const pacoteMunicao = Array.from(document.querySelectorAll('.hidden-data-item')).find(item =>
+            item.getAttribute('data-type') === 'municao' &&
+            item.getAttribute('data-ammo') === ammoType &&
+            item.getAttribute('data-eq') === 'true'
+        );
 
-        let currentPackets = parseInt(ammoInput.value) || 0;
-        if(currentPackets > 0) {
-            ammoInput.value = currentPackets - 1;
+        if(pacoteMunicao) {
+            const linhaPacote = pacoteMunicao.closest('.inventory-card');
+            if (linhaPacote) linhaPacote.remove();
             const cap = parseInt(h.getAttribute('data-capacity')) || 0;
             h.setAttribute('data-currentshots', cap);
             updateWeight();
@@ -1229,6 +1571,652 @@
         } else {
             alert("Você não tem pacotes de munição do tipo " + ammoType.toUpperCase() + " no seu inventário!");
         }
+    }
+
+    // --- PISTAS ---
+    function escapeClueHtml(value) {
+        return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function normalizeClueId(value, index = 0) {
+        const normalized = String(value || `clue_${Date.now()}_${index}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+        return normalized || `clue_${Date.now()}_${index}`;
+    }
+
+    function normalizeClueBookPages(pages) {
+        if (!Array.isArray(pages)) return [];
+        return pages.map(page => ({ img: String(typeof page === 'string' ? page : (page && (page.img || page.src)) || '') }))
+            .filter(page => page.img);
+    }
+
+    function setClueFormType(type) {
+        const normalizedType = type === 'book' ? 'book' : 'object';
+        document.getElementById('clue-type').value = normalizedType;
+        document.getElementById('clue-object-fields').style.display = normalizedType === 'object' ? 'block' : 'none';
+        document.getElementById('clue-book-fields').style.display = normalizedType === 'book' ? 'block' : 'none';
+        document.getElementById('clue-type-object-button').classList.toggle('active', normalizedType === 'object');
+        document.getElementById('clue-type-book-button').classList.toggle('active', normalizedType === 'book');
+    }
+
+    function optimizeClueImageFile(file, maxSide = 1200, quality = 0.8) {
+        return new Promise((resolve, reject) => {
+            if (!file || !file.type.startsWith('image/')) return reject(new Error('Arquivo inválido'));
+            const reader = new FileReader();
+            reader.onload = loadEvent => {
+                const image = new Image();
+                image.onload = () => {
+                    const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(image.width * scale));
+                    canvas.height = Math.max(1, Math.round(image.height * scale));
+                    const context = canvas.getContext('2d');
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/webp', quality));
+                };
+                image.onerror = () => reject(new Error('Não foi possível carregar essa imagem.'));
+                image.src = loadEvent.target.result;
+            };
+            reader.onerror = () => reject(new Error('Não foi possível ler essa imagem.'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function updateClueImagePreview() {
+        const preview = document.getElementById('clue-image-preview');
+        const urlInput = document.getElementById('clue-image');
+        if (!preview || !urlInput) return;
+        const source = pendingClueImageData || urlInput.value.trim();
+        if (source) {
+            preview.src = source;
+            preview.style.display = 'block';
+            preview.onerror = () => { preview.style.display = 'none'; };
+        } else {
+            preview.removeAttribute('src');
+            preview.style.display = 'none';
+        }
+    }
+
+    async function loadClueImageFile(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) return alert('Escolha um arquivo de imagem!');
+        try {
+            pendingClueImageData = await optimizeClueImageFile(file, 1400, 0.88);
+            document.getElementById('clue-image').value = '';
+            updateClueImagePreview();
+        } catch (error) {
+            alert(error.message || 'Não foi possível carregar essa imagem.');
+        }
+    }
+
+    function removeClueImage() {
+        pendingClueImageData = '';
+        document.getElementById('clue-image').value = '';
+        document.getElementById('clue-image-file').value = '';
+        updateClueImagePreview();
+    }
+
+    function renderClueBookPageEditor() {
+        const editor = document.getElementById('clue-book-pages-editor');
+        const empty = document.getElementById('clue-book-pages-empty');
+        if (!editor || !empty) return;
+        editor.innerHTML = '';
+        empty.style.display = pendingClueBookPages.length ? 'none' : 'block';
+
+        pendingClueBookPages.forEach((page, index) => {
+            const card = document.createElement('div');
+            card.className = 'clue-book-page-editor';
+            const image = document.createElement('img');
+            image.src = page.img;
+            image.alt = `Página ${index + 1}`;
+            const number = document.createElement('div');
+            number.className = 'clue-book-page-editor-number';
+            number.textContent = `PÁGINA ${index + 1}`;
+            const controls = document.createElement('div');
+            controls.className = 'clue-book-page-editor-controls';
+            const previous = document.createElement('button');
+            previous.type = 'button';
+            previous.textContent = '←';
+            previous.disabled = index === 0;
+            previous.onclick = () => moveClueBookPage(index, -1);
+            const next = document.createElement('button');
+            next.type = 'button';
+            next.textContent = '→';
+            next.disabled = index === pendingClueBookPages.length - 1;
+            next.onclick = () => moveClueBookPage(index, 1);
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.textContent = '×';
+            remove.onclick = () => removeClueBookPage(index);
+            controls.append(previous, next, remove);
+            card.append(image, number, controls);
+            editor.appendChild(card);
+        });
+    }
+
+    async function loadClueBookPages(event) {
+        const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
+        if (!files.length) return;
+        try {
+            for (const file of files) {
+                const img = await optimizeClueImageFile(file, 1200, 0.8);
+                pendingClueBookPages.push({ img });
+                renderClueBookPageEditor();
+            }
+        } catch (error) {
+            alert(error.message || 'Não foi possível carregar uma das páginas.');
+        }
+        event.target.value = '';
+    }
+
+    function addClueBookPageUrl() {
+        const input = document.getElementById('clue-book-page-url');
+        const img = input.value.trim();
+        if (!img) return alert('Cole o link da imagem da página.');
+        pendingClueBookPages.push({ img });
+        input.value = '';
+        renderClueBookPageEditor();
+    }
+
+    function moveClueBookPage(index, direction) {
+        const target = index + direction;
+        if (target < 0 || target >= pendingClueBookPages.length) return;
+        [pendingClueBookPages[index], pendingClueBookPages[target]] = [pendingClueBookPages[target], pendingClueBookPages[index]];
+        renderClueBookPageEditor();
+    }
+
+    function removeClueBookPage(index) {
+        pendingClueBookPages.splice(index, 1);
+        renderClueBookPageEditor();
+    }
+
+    function updateClue3DTransform() {
+        const object = document.getElementById('clue-3d-object');
+        if (object) object.style.transform = `rotateX(${clueRotationX}deg) rotateY(${clueRotationY}deg) scale(${clueZoom})`;
+    }
+
+    function setClue3DShapeSource(source = '', edgeColor = '') {
+        const object = document.getElementById('clue-3d-object');
+        if (!object) return;
+        if (!source) {
+            object.classList.remove('has-image-shape');
+            object.style.removeProperty('--clue-shape-image');
+            object.style.removeProperty('--clue-edge-color');
+            return;
+        }
+        object.style.setProperty('--clue-shape-image', `url(${JSON.stringify(source)})`);
+        object.style.setProperty('--clue-edge-color', edgeColor || '#68686f');
+        object.classList.add('has-image-shape');
+    }
+
+    function prepareClue3DCutout(source) {
+        if (clue3DCutoutCache.has(source)) return clue3DCutoutCache.get(source);
+
+        const task = new Promise(resolve => {
+            const probe = new Image();
+            const originalResult = () => ({ src: source, width: probe.naturalWidth || 3, height: probe.naturalHeight || 2, edgeColor: '#68686f' });
+            if (/^https?:/i.test(source)) probe.crossOrigin = 'anonymous';
+
+            probe.onload = () => {
+                const fallback = originalResult();
+                try {
+                    const maxSide = 1200;
+                    const scale = Math.min(1, maxSide / Math.max(probe.naturalWidth, probe.naturalHeight));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(probe.naturalWidth * scale));
+                    canvas.height = Math.max(1, Math.round(probe.naturalHeight * scale));
+                    const context = canvas.getContext('2d', { willReadFrequently: true });
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    context.drawImage(probe, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const pixels = imageData.data;
+                    const cornerSize = Math.max(1, Math.min(5, Math.floor(Math.min(canvas.width, canvas.height) / 10)));
+                    const cornerSamples = [];
+                    const cornerStarts = [[0, 0], [canvas.width - cornerSize, 0], [0, canvas.height - cornerSize], [canvas.width - cornerSize, canvas.height - cornerSize]];
+
+                    cornerStarts.forEach(([startX, startY]) => {
+                        for (let y = startY; y < startY + cornerSize; y++) {
+                            for (let x = startX; x < startX + cornerSize; x++) {
+                                const index = (y * canvas.width + x) * 4;
+                                cornerSamples.push([pixels[index], pixels[index + 1], pixels[index + 2], pixels[index + 3]]);
+                            }
+                        }
+                    });
+
+                    const opaqueCorners = cornerSamples.every(sample => sample[3] > 245);
+                    const background = [0, 1, 2].map(channel => cornerSamples.reduce((sum, sample) => sum + sample[channel], 0) / cornerSamples.length);
+                    const cornerSpread = cornerSamples.reduce((largest, sample) => {
+                        const distance = Math.hypot(sample[0] - background[0], sample[1] - background[1], sample[2] - background[2]);
+                        return Math.max(largest, distance);
+                    }, 0);
+                    const removeUniformBackground = opaqueCorners && cornerSpread < 48;
+
+                    let minX = canvas.width;
+                    let minY = canvas.height;
+                    let maxX = -1;
+                    let maxY = -1;
+                    let colorRed = 0;
+                    let colorGreen = 0;
+                    let colorBlue = 0;
+                    let colorWeight = 0;
+
+                    for (let y = 0; y < canvas.height; y++) {
+                        for (let x = 0; x < canvas.width; x++) {
+                            const index = (y * canvas.width + x) * 4;
+                            let alpha = pixels[index + 3];
+                            if (removeUniformBackground && alpha > 0) {
+                                const distance = Math.hypot(pixels[index] - background[0], pixels[index + 1] - background[1], pixels[index + 2] - background[2]);
+                                if (distance <= 34) alpha = 0;
+                                else if (distance < 72) alpha = Math.round(alpha * ((distance - 34) / 38));
+                                pixels[index + 3] = alpha;
+                            }
+                            if (alpha > 12) {
+                                minX = Math.min(minX, x);
+                                minY = Math.min(minY, y);
+                                maxX = Math.max(maxX, x);
+                                maxY = Math.max(maxY, y);
+                                const weight = alpha / 255;
+                                colorRed += pixels[index] * weight;
+                                colorGreen += pixels[index + 1] * weight;
+                                colorBlue += pixels[index + 2] * weight;
+                                colorWeight += weight;
+                            }
+                        }
+                    }
+
+                    if (maxX < minX || maxY < minY) return resolve(fallback);
+                    const edgeColor = colorWeight > 0
+                        ? `rgb(${Math.round(colorRed / colorWeight)}, ${Math.round(colorGreen / colorWeight)}, ${Math.round(colorBlue / colorWeight)})`
+                        : '#68686f';
+                    context.putImageData(imageData, 0, 0);
+                    const padding = Math.max(1, Math.round(Math.max(canvas.width, canvas.height) * 0.008));
+                    minX = Math.max(0, minX - padding);
+                    minY = Math.max(0, minY - padding);
+                    maxX = Math.min(canvas.width - 1, maxX + padding);
+                    maxY = Math.min(canvas.height - 1, maxY + padding);
+                    const cropWidth = maxX - minX + 1;
+                    const cropHeight = maxY - minY + 1;
+                    const needsCutout = removeUniformBackground || cropWidth < canvas.width || cropHeight < canvas.height;
+                    if (!needsCutout) return resolve({ ...fallback, edgeColor });
+
+                    const output = document.createElement('canvas');
+                    output.width = cropWidth;
+                    output.height = cropHeight;
+                    output.getContext('2d').drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+                    resolve({ src: output.toDataURL('image/png'), width: cropWidth, height: cropHeight, edgeColor });
+                } catch (error) {
+                    resolve(fallback);
+                }
+            };
+            probe.onerror = () => resolve(originalResult());
+            probe.src = source;
+        });
+
+        clue3DCutoutCache.set(source, task);
+        return task;
+    }
+
+    function fitClue3DObjectToImage(naturalWidth = 3, naturalHeight = 2) {
+        const stage = document.getElementById('clue-3d-stage');
+        const object = document.getElementById('clue-3d-object');
+        if (!stage || !object) return;
+
+        const aspect = naturalWidth > 0 && naturalHeight > 0 ? naturalWidth / naturalHeight : 1.5;
+        const maxWidth = Math.max(120, stage.clientWidth * 0.82);
+        const maxHeight = Math.max(120, stage.clientHeight * 0.72);
+        let width = maxWidth;
+        let height = width / aspect;
+
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * aspect;
+        }
+
+        object.style.width = `${width}px`;
+        object.style.height = `${height}px`;
+    }
+
+    function resetClue3D() {
+        clueRotationX = -8;
+        clueRotationY = 0;
+        clueZoom = 1;
+        updateClue3DTransform();
+    }
+
+    function rotateClue3D(amount) {
+        clueRotationY += Number(amount) || 0;
+        updateClue3DTransform();
+    }
+
+    function zoomClue3D(amount) {
+        clueZoom = Math.max(0.65, Math.min(1.65, clueZoom + (Number(amount) || 0)));
+        updateClue3DTransform();
+    }
+
+    function initializeClue3DDepth() {
+        const depthContainer = document.getElementById('clue-3d-depth');
+        if (!depthContainer || depthContainer.childElementCount) return;
+        const fragment = document.createDocumentFragment();
+        for (let depth = -10; depth <= 10; depth++) {
+            const layer = document.createElement('span');
+            layer.className = 'clue-3d-depth-layer';
+            layer.style.setProperty('--clue-depth', `${depth}px`);
+            layer.style.filter = `brightness(${0.62 + (1 - Math.abs(depth) / 10) * 0.46})`;
+            fragment.appendChild(layer);
+        }
+        depthContainer.appendChild(fragment);
+    }
+
+    function initializeClue3DControls() {
+        initializeClue3DDepth();
+        if (clue3DControlsInitialized) return;
+        const stage = document.getElementById('clue-3d-stage');
+        if (!stage) return;
+        clue3DControlsInitialized = true;
+
+        stage.addEventListener('pointerdown', event => {
+            clue3DDragging = true;
+            clue3DLastX = event.clientX;
+            clue3DLastY = event.clientY;
+            stage.classList.add('dragging');
+            stage.setPointerCapture(event.pointerId);
+        });
+        stage.addEventListener('pointermove', event => {
+            if (!clue3DDragging) return;
+            const deltaX = event.clientX - clue3DLastX;
+            const deltaY = event.clientY - clue3DLastY;
+            clueRotationY += deltaX * 0.65;
+            clueRotationX = Math.max(-75, Math.min(75, clueRotationX - deltaY * 0.5));
+            clue3DLastX = event.clientX;
+            clue3DLastY = event.clientY;
+            updateClue3DTransform();
+        });
+        const finishDrag = event => {
+            clue3DDragging = false;
+            stage.classList.remove('dragging');
+            if (event.pointerId !== undefined && stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+        };
+        stage.addEventListener('pointerup', finishDrag);
+        stage.addEventListener('pointercancel', finishDrag);
+        stage.addEventListener('wheel', event => {
+            event.preventDefault();
+            zoomClue3D(event.deltaY < 0 ? 0.08 : -0.08);
+        }, { passive: false });
+        window.addEventListener('resize', () => {
+            const image = document.getElementById('clue-3d-image');
+            if (image && image.naturalWidth && image.naturalHeight) {
+                fitClue3DObjectToImage(image.naturalWidth, image.naturalHeight);
+            } else {
+                fitClue3DObjectToImage();
+            }
+        });
+    }
+
+    function setClueBookPageContent(element, page, pageIndex, totalPages, emptyLabel = '') {
+        if (!element) return;
+        element.innerHTML = '';
+        if (page && page.img) {
+            const image = document.createElement('img');
+            image.src = page.img;
+            image.alt = `Página ${pageIndex + 1}`;
+            image.onerror = () => {
+                image.remove();
+                const error = document.createElement('div');
+                error.className = 'clue-book-page-empty';
+                error.textContent = 'Não foi possível carregar esta página.';
+                element.prepend(error);
+            };
+            element.appendChild(image);
+            const number = document.createElement('div');
+            number.className = 'clue-book-page-number';
+            number.textContent = `${pageIndex + 1} / ${totalPages}`;
+            element.appendChild(number);
+        } else {
+            const empty = document.createElement('div');
+            empty.className = 'clue-book-page-empty';
+            empty.textContent = emptyLabel || 'Página em branco';
+            element.appendChild(empty);
+        }
+    }
+
+    function getOpenedBookPages() {
+        const clue = cluesData.find(item => item.id === currentClueId);
+        return clue && clue.type === 'book' ? normalizeClueBookPages(clue.pages) : [];
+    }
+
+    function updateClueBookControls(pages, disabled = false) {
+        const previous = document.getElementById('clue-book-previous');
+        const next = document.getElementById('clue-book-next');
+        const indicator = document.getElementById('clue-book-indicator');
+        const firstVisible = pages.length ? currentBookSpread + 1 : 0;
+        const lastVisible = Math.min(currentBookSpread + 2, pages.length);
+        previous.disabled = disabled || currentBookSpread <= 0;
+        next.disabled = disabled || currentBookSpread + 2 >= pages.length;
+        indicator.textContent = pages.length ? `${firstVisible}–${lastVisible} DE ${pages.length}` : 'SEM PÁGINAS';
+    }
+
+    function renderClueBookSpread() {
+        const pages = getOpenedBookPages();
+        const maximumSpread = Math.max(0, Math.floor((Math.max(1, pages.length) - 1) / 2) * 2);
+        currentBookSpread = Math.max(0, Math.min(maximumSpread, currentBookSpread - (currentBookSpread % 2)));
+        setClueBookPageContent(document.getElementById('clue-book-left-page'), pages[currentBookSpread], currentBookSpread, pages.length, 'Livro vazio');
+        setClueBookPageContent(document.getElementById('clue-book-right-page'), pages[currentBookSpread + 1], currentBookSpread + 1, pages.length, 'Fim do livro');
+        const flip = document.getElementById('clue-book-flip');
+        flip.className = 'clue-book-flip';
+        bookFlipAnimating = false;
+        updateClueBookControls(pages);
+    }
+
+    function turnClueBookPage(direction) {
+        if (bookFlipAnimating) return;
+        const pages = getOpenedBookPages();
+        const step = direction > 0 ? 2 : -2;
+        const targetSpread = currentBookSpread + step;
+        if (targetSpread < 0 || targetSpread >= pages.length) return;
+
+        const leftPage = document.getElementById('clue-book-left-page');
+        const rightPage = document.getElementById('clue-book-right-page');
+        const flip = document.getElementById('clue-book-flip');
+        const flipFront = document.getElementById('clue-book-flip-front');
+        const flipBack = document.getElementById('clue-book-flip-back');
+        const turningClueId = currentClueId;
+        bookFlipAnimating = true;
+        updateClueBookControls(pages, true);
+
+        if (direction > 0) {
+            setClueBookPageContent(rightPage, pages[targetSpread + 1], targetSpread + 1, pages.length, 'Fim do livro');
+            setClueBookPageContent(flipFront, pages[currentBookSpread + 1], currentBookSpread + 1, pages.length, 'Página em branco');
+            setClueBookPageContent(flipBack, pages[targetSpread], targetSpread, pages.length, 'Página em branco');
+            flip.className = 'clue-book-flip next';
+        } else {
+            setClueBookPageContent(leftPage, pages[targetSpread], targetSpread, pages.length, 'Página em branco');
+            setClueBookPageContent(flipFront, pages[currentBookSpread], currentBookSpread, pages.length, 'Página em branco');
+            setClueBookPageContent(flipBack, pages[targetSpread + 1], targetSpread + 1, pages.length, 'Página em branco');
+            flip.className = 'clue-book-flip previous';
+        }
+
+        setTimeout(() => {
+            if (currentClueId !== turningClueId) return;
+            currentBookSpread = targetSpread;
+            renderClueBookSpread();
+        }, 780);
+    }
+
+    function renderClues() {
+        const grid = document.getElementById('clues-grid');
+        const empty = document.getElementById('clues-empty');
+        const count = document.getElementById('clues-count');
+        if (!grid || !empty || !count) return;
+
+        count.textContent = `${cluesData.length} ${cluesData.length === 1 ? 'PISTA' : 'PISTAS'}`;
+        empty.style.display = cluesData.length ? 'none' : 'block';
+        grid.innerHTML = cluesData.map(clue => {
+            const safeId = escapeClueHtml(clue.id);
+            const safeTitle = escapeClueHtml(clue.title || 'Pista');
+            const safeDescription = escapeClueHtml(clue.desc || 'Sem descrição.');
+            const bookPages = normalizeClueBookPages(clue.pages);
+            const isBook = clue.type === 'book';
+            const safeImage = escapeClueHtml(isBook ? ((bookPages[0] && bookPages[0].img) || '') : (clue.img || ''));
+            const image = safeImage
+                ? `<img class="clue-card-image" src="${safeImage}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="clue-card-fallback" style="display:none;">${isBook ? '📖' : '🔎'}</div>`
+                : `<div class="clue-card-fallback">${isBook ? '📖' : '🔎'}</div>`;
+            const typeBadge = isBook ? `<div class="clue-card-type">📖 LIVRO · ${bookPages.length} ${bookPages.length === 1 ? 'PÁGINA' : 'PÁGINAS'}</div>` : '';
+            return `<article class="clue-card" data-clue-id="${safeId}" tabindex="0" role="button" aria-label="Abrir pista ${safeTitle}"><div class="clue-card-media">${image}</div><div class="clue-card-content"><div class="clue-card-title">${safeTitle}</div><div class="clue-card-description">${safeDescription}</div>${typeBadge}</div></article>`;
+        }).join('');
+
+        grid.querySelectorAll('.clue-card').forEach(card => {
+            const open = () => openClueInfo(card.getAttribute('data-clue-id'));
+            card.addEventListener('click', open);
+            card.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); } });
+        });
+    }
+
+    function openClueForm(id = null) {
+        editingClueId = id;
+        const clue = id ? cluesData.find(item => item.id === id) : null;
+        const clueType = clue && clue.type === 'book' ? 'book' : 'object';
+        pendingClueImageData = clueType === 'object' && clue ? (clue.img || '') : '';
+        pendingClueBookPages = clueType === 'book' && clue ? normalizeClueBookPages(clue.pages) : [];
+        document.getElementById('clue-form-title').textContent = clue ? 'Editar Pista' : 'Nova Pista';
+        document.getElementById('clue-save-button').textContent = clue ? 'SALVAR' : 'ADICIONAR';
+        document.getElementById('clue-title').value = clue ? clue.title : '';
+        document.getElementById('clue-description').value = clue ? clue.desc : '';
+        document.getElementById('clue-image').value = clueType === 'object' && clue && clue.img && !clue.img.startsWith('data:') ? clue.img : '';
+        document.getElementById('clue-image-file').value = '';
+        document.getElementById('clue-book-pages-files').value = '';
+        document.getElementById('clue-book-page-url').value = '';
+        setClueFormType(clueType);
+        updateClueImagePreview();
+        renderClueBookPageEditor();
+        document.getElementById('popup-clue-form').style.display = 'flex';
+        setTimeout(() => document.getElementById('clue-title').focus(), 0);
+    }
+
+    function closeClueForm() {
+        document.getElementById('popup-clue-form').style.display = 'none';
+        editingClueId = null;
+        pendingClueImageData = '';
+        pendingClueBookPages = [];
+    }
+
+    function saveClueForm() {
+        const title = document.getElementById('clue-title').value.trim();
+        if (!title) return alert('Dê um nome para a pista!');
+        const desc = document.getElementById('clue-description').value.trim() || 'Sem descrição.';
+        const type = document.getElementById('clue-type').value === 'book' ? 'book' : 'object';
+        const pages = type === 'book' ? normalizeClueBookPages(pendingClueBookPages) : [];
+        if (type === 'book' && !pages.length) return alert('Adicione pelo menos uma página ao livro.');
+        const img = type === 'book' ? pages[0].img : (pendingClueImageData || document.getElementById('clue-image').value.trim());
+        const clueData = { title, desc, img, type, pages };
+
+        if (editingClueId) {
+            const clue = cluesData.find(item => item.id === editingClueId);
+            if (clue) Object.assign(clue, clueData);
+        } else {
+            cluesData.push({ id: normalizeClueId(`clue_${Date.now()}`), ...clueData });
+        }
+
+        closeClueForm();
+        renderClues();
+        save();
+    }
+
+    function openClueInfo(id) {
+        const clue = cluesData.find(item => item.id === id);
+        if (!clue) return;
+        currentClueId = id;
+        document.getElementById('clue-info-title').textContent = clue.title;
+        document.getElementById('clue-info-description').textContent = clue.desc || 'Sem descrição.';
+        const stage = document.getElementById('clue-3d-stage');
+        const threeDControls = document.querySelector('#popup-clue-info .clue-3d-controls');
+        const bookViewer = document.getElementById('clue-book-viewer');
+        const image = document.getElementById('clue-3d-image');
+        const backImage = document.getElementById('clue-3d-back-image');
+        const fallback = document.getElementById('clue-3d-fallback');
+        const backFallback = document.getElementById('clue-3d-back-fallback');
+        const popup = document.getElementById('popup-clue-info');
+
+        popup.style.display = 'flex';
+        if (clue.type === 'book') {
+            clue3DImageRequestToken++;
+            stage.style.display = 'none';
+            threeDControls.style.display = 'none';
+            bookViewer.style.display = 'block';
+            currentBookSpread = 0;
+            bookFlipAnimating = false;
+            renderClueBookSpread();
+            return;
+        }
+
+        stage.style.display = 'flex';
+        threeDControls.style.display = 'flex';
+        bookViewer.style.display = 'none';
+        initializeClue3DControls();
+        resetClue3D();
+        const imageRequestToken = ++clue3DImageRequestToken;
+
+        const showFallback = () => {
+            if (imageRequestToken !== clue3DImageRequestToken || currentClueId !== id) return;
+            image.style.display = 'none';
+            backImage.style.display = 'none';
+            fallback.style.display = 'flex';
+            backFallback.style.display = 'flex';
+            setClue3DShapeSource('');
+            fitClue3DObjectToImage();
+        };
+
+        const showImage = result => {
+            if (imageRequestToken !== clue3DImageRequestToken || currentClueId !== id) return;
+            image.onload = () => fitClue3DObjectToImage(result.width || image.naturalWidth, result.height || image.naturalHeight);
+            image.onerror = showFallback;
+            backImage.onerror = showFallback;
+            image.src = result.src;
+            backImage.src = result.src;
+            image.style.display = 'block';
+            backImage.style.display = 'block';
+            fallback.style.display = 'none';
+            backFallback.style.display = 'none';
+            setClue3DShapeSource(result.src, result.edgeColor);
+            fitClue3DObjectToImage(result.width, result.height);
+        };
+
+        if (clue.img) {
+            showFallback();
+            prepareClue3DCutout(clue.img).then(showImage);
+        } else {
+            image.removeAttribute('src');
+            backImage.removeAttribute('src');
+            showFallback();
+        }
+    }
+
+    function closeClueInfo() {
+        document.getElementById('popup-clue-info').style.display = 'none';
+        clue3DImageRequestToken++;
+        bookFlipAnimating = false;
+        const bookFlip = document.getElementById('clue-book-flip');
+        if (bookFlip) bookFlip.className = 'clue-book-flip';
+        clue3DDragging = false;
+        const stage = document.getElementById('clue-3d-stage');
+        if (stage) stage.classList.remove('dragging');
+        currentClueId = null;
+    }
+
+    function editCurrentClue() {
+        const id = currentClueId;
+        if (!id) return;
+        closeClueInfo();
+        openClueForm(id);
+    }
+
+    function removeCurrentClue() {
+        if (!currentClueId) return;
+        cluesData = cluesData.filter(item => item.id !== currentClueId);
+        closeClueInfo();
+        renderClues();
+        save();
     }
 
     // --- RITUAIS ---
@@ -1318,11 +2306,12 @@
 
     // --- DADOS E COMBATE ---
     function closeDice() { document.getElementById('popup-dice').style.display='none'; }
-    function showPopup(n, r="TOTAL", st="color:white") {
+    function showPopup(n, nome="ROLAGEM", tipo="TOTAL", st="color:white") {
         const box = document.querySelector('.popup-box-dice'); box.style.backgroundImage = `url('https://blogger.googleusercontent.com/img/a/AVvXsEjMOEuhQsyp9K02VzG4U6kXeEMQYu6efHg98n3yde59MTJ8bNLTvSq5WfWAyGfur8ACjUsjNWQfOp8k0-odkhXt1UpVqf4OqJQ_azqElAh044YPkLWQ0LekZZSwp4u8RNa9Aht1bKFLKkUxFfIz9NyAdJnf2Mo9dHgZ-pRlIf6iMbaPmh5o4hLd3eyYEDc9?t=${new Date().getTime()}')`;
+        document.getElementById('popup-roll-name').textContent = nome;
         let numEl = document.getElementById('popup-num'); numEl.innerHTML = n; 
         if(n.toString().includes('x') || n.toString().includes('<div')) numEl.style.fontSize = 'clamp(2em, 8vw, 4em)'; else numEl.style.fontSize = 'clamp(4em, 20vw, 10em)';
-        let resEl = document.getElementById('popup-res'); resEl.innerHTML = r; resEl.style = st;
+        let resEl = document.getElementById('popup-res'); resEl.innerHTML = tipo; resEl.setAttribute('style', st);
         document.getElementById('popup-content').style.display = 'none'; document.getElementById('popup-dice').style.display = 'flex';
         setTimeout(() => document.getElementById('popup-content').style.display = 'block', 1500);
 
@@ -1331,7 +2320,7 @@
             socket.emit('rolagem_feita', {
                 codigo: playerCode,
                 jogador: jogadorNome,
-                acao: r,
+                acao: `${nome} — ${resEl.innerText}`,
                 resultado: n,
                 cor: st
             });
@@ -1342,7 +2331,7 @@
         lastAttackWasCrit = false;
         let sn = id.replace("skill_","");
         let skEl = document.getElementById(id); let sk = skEl ? parseInt(skEl.value)||0 : 0;
-        let atEl = document.getElementById("attr_"+ak.toLowerCase()); let at = atEl ? parseInt(atEl.value)||0 : 0;
+        let at = obterValorAtributoEfetivo(ak);
         let chkEl = document.getElementById("chk_"+sn); let tr = chkEl ? chkEl.checked : false;
         
         let penalty = 0;
@@ -1350,7 +2339,7 @@
             penalty = -5;
         }
 
-        let f = Math.floor(sk+(at*modPerc)+(tr?10:0) + penalty);
+        let f = Math.floor(sk + calcularNaturalPericia(at, modPerc) + (tr?5:0) + penalty);
         let d = Math.floor(Math.random()*20)+1;
         let m = obterFaixasPericia(f);
         let isCrit = false;
@@ -1399,12 +2388,12 @@
             }
             lastAttackWasCrit = anyCrit;
             let finalHtml = `<div style="font-size:0.6em; line-height:1.4; display:flex; flex-direction:column; gap:5px; text-shadow: 1px 1px 0 #000;">` + results.map((r, idx) => `<div><b>Atq ${idx+1}:</b> ${r}</div>`).join('') + `</div>`;
-            showPopup(numAttacks + "x", finalHtml, "color:white; margin-top:0;");
+            showPopup(numAttacks + "x", n, finalHtml, "color:white; margin-top:0;");
         } else {
             let res;
             if (isCrit || d === 20) { res = ["CRÍTICO", "var(--accent-red)"]; } 
             else { res = d >= m.e && m.e != 99 ? ["EXTREMO","var(--accent-yellow)"] : d >= m.b && m.b != 99 ? ["BOM","var(--accent-blue)"] : d >= m.n ? ["NORMAL","var(--accent-green)"] : ["FALHA","var(--accent-red)"]; }
-            showPopup(d, n + " (" + res[0] + ")", "color:" + res[1]);
+            showPopup(d, n, res[0], "color:" + res[1]);
         }
     }
 
@@ -1432,26 +2421,95 @@
             dmgBase = dmgBase.replace(/(\d+)d(\d+)/ig, (match, p1, p2) => { return (parseInt(p1) * critMult) + "d" + p2; });
             dmgBase = dmgBase.replace(/(^|[^\d])d(\d+)/ig, (match, p1, p2) => { return p1 + critMult + "d" + p2; });
         }
-        let formula = dmgBase + "+" + (wp.extra || "0"); formula = formula.toLowerCase().replace(/\s/g, '');
+        const armaDeDisparo = String(wp.atkType || '').toLowerCase().includes('disparo');
+        const codigoAtributoDano = armaDeDisparo ? 'agi' : 'for';
+        const bonusAtributoDano = obterValorAtributoEfetivo(codigoAtributoDano);
+        let formula = dmgBase + "+" + (wp.extra || "0") + "+" + bonusAtributoDano; formula = formula.toLowerCase().replace(/\s/g, '');
         try {
             const matches = formula.match(/([+-]?\d+d\d+|[+-]?\d+)/g); let t = 0;
             if(matches) { matches.forEach(m => { let sign = m.startsWith('-') ? -1 : 1, cur = m.replace(/[+-]/,''); if(cur.includes('d')) { const parts = cur.split('d'); for(let i=0; i<(parseInt(parts[0])||1); i++) t += (Math.floor(Math.random()*parseInt(parts[1]))+1)*sign; } else t += parseInt(cur)*sign; }); }
-            let title = isCrit ? "DANO CRÍTICO (" + wp.name + ")" : "DANO (" + wp.name + ")"; 
+            let tipoDano = isCrit ? "DANO CRÍTICO" : "DANO"; 
             let color = isCrit ? "color: var(--accent-yellow)" : "color: var(--accent-red)";
-            showPopup(t, title, color);
+            showPopup(t, wp.name, tipoDano, color);
         } catch(e) { alert("A arma não possui uma fórmula de dano válida!"); }
         lastAttackWasCrit = false; 
     }
 
+    function abrirDadoPersonalizado() {
+        const resultado = document.getElementById('custom_dice_result');
+        const botao = document.getElementById('btn_custom_dice');
+        resultado.style.display = 'none';
+        resultado.innerHTML = '';
+        botao.disabled = false;
+        botao.textContent = '🎲 ROLAR';
+        document.getElementById('popup-input-dice').style.display = 'flex';
+    }
+
+    function limitarInteiroDadoPersonalizado(valor, minimo, maximo, padrao) {
+        const numero = parseInt(valor, 10);
+        if (!Number.isFinite(numero)) return padrao;
+        return Math.max(minimo, Math.min(maximo, numero));
+    }
+
     function rolarDadoPersonalizado() {
-        document.getElementById('popup-input-dice').style.display = 'none'; showPopup(Math.floor(Math.random()*20)+1, "Personalizado", "color:white");
+        const botao = document.getElementById('btn_custom_dice');
+        if (botao.disabled) return;
+
+        const qtdInput = document.getElementById('custom_dice_qty');
+        const facesInput = document.getElementById('custom_dice_faces');
+        const bonusInput = document.getElementById('custom_dice_bonus');
+        const quantidade = limitarInteiroDadoPersonalizado(qtdInput.value, 1, 100, 1);
+        const faces = limitarInteiroDadoPersonalizado(facesInput.value, 2, 1000, 20);
+        const bonus = limitarInteiroDadoPersonalizado(bonusInput.value, -9999, 9999, 0);
+        const nome = document.getElementById('custom_dice_name').value.trim() || 'Rolagem personalizada';
+        const resultadoBox = document.getElementById('custom_dice_result');
+
+        qtdInput.value = quantidade;
+        facesInput.value = faces;
+        bonusInput.value = bonus;
+        botao.disabled = true;
+        botao.textContent = '🎲 ROLANDO...';
+        resultadoBox.style.display = 'block';
+        resultadoBox.innerHTML = '<div class="custom-dice-result-name">Rolando...</div>';
+
+        setTimeout(() => {
+            const resultados = [];
+            for (let i = 0; i < quantidade; i++) resultados.push(Math.floor(Math.random() * faces) + 1);
+
+            const somaDados = resultados.reduce((total, valor) => total + valor, 0);
+            const totalFinal = somaDados + bonus;
+            const sinalBonus = bonus > 0 ? `+${bonus}` : (bonus < 0 ? `${bonus}` : '');
+            const formula = `${quantidade}d${faces}${sinalBonus}`;
+
+            resultadoBox.innerHTML = `
+                <div id="custom_dice_result_name" class="custom-dice-result-name"></div>
+                <span id="custom_dice_result_total" class="custom-dice-result-total"></span>
+                <div id="custom_dice_result_rolls" class="custom-dice-result-rolls"></div>`;
+            document.getElementById('custom_dice_result_name').textContent = nome;
+            document.getElementById('custom_dice_result_total').textContent = totalFinal;
+            document.getElementById('custom_dice_result_rolls').textContent = `${formula} → [ ${resultados.join(', ')} ]${bonus !== 0 ? ` | Soma dos dados: ${somaDados}` : ''}`;
+
+            if (socket) {
+                const jogadorNome = document.getElementById('char_nome') ? document.getElementById('char_nome').value : 'Desconhecido';
+                socket.emit('rolagem_feita', {
+                    codigo: playerCode,
+                    jogador: jogadorNome,
+                    acao: `${nome} (${formula})`,
+                    resultado: totalFinal,
+                    cor: 'color: var(--accent-blue)'
+                });
+            }
+
+            botao.disabled = false;
+            botao.textContent = '🎲 ROLAR NOVAMENTE';
+        }, 450);
     }
 
     function toggleTrained(sn) { document.getElementById(`card_${sn}`).classList.toggle('trained', document.getElementById(`chk_${sn}`).checked); updateAllPericias(); }
     
     function updateTargetsPericia(id, ak, modPerc) { 
         let skEl = document.getElementById(id); let sk = skEl ? parseInt(skEl.value)||0 : 0; 
-        let atEl = document.getElementById("attr_"+ak.toLowerCase()); let at = atEl ? parseInt(atEl.value)||0 : 0; 
+        let at = obterValorAtributoEfetivo(ak); 
         let sn = id.replace("skill_","");
         let chkEl = document.getElementById("chk_"+sn); let tr = chkEl ? chkEl.checked : false; 
         
@@ -1460,15 +2518,16 @@
             penalty = -5;
         }
 
-        let f = Math.floor(sk+(at*modPerc)+(tr?10:0) + penalty); 
+        let f = Math.floor(sk + calcularNaturalPericia(at, modPerc) + (tr?5:0) + penalty); 
         let m = obterFaixasPericia(f); 
         let d = document.getElementById(id+"_targets"); 
         if(d) d.innerHTML = `<span class="target-n">N:${m.n}</span> <span class="target-b">B:${m.b==99?'X':m.b}</span> <span class="target-e">E:${m.e==99?'X':m.e}</span>`; 
     }
     
     function updateAllPericias() { 
-        ["agi","for","int","pre","vig"].forEach(a => { 
-            let v = limitarValorAtributo(document.getElementById("attr_"+a).value), m = obterFaixasAtributo(v); 
+        ["for","agi","vig","int","pre"].forEach(a => { 
+            const v = obterValorAtributoEfetivo(a);
+            const m = obterFaixasAtributo(v);
             if(document.getElementById("attr_"+a+"_targets")) document.getElementById("attr_"+a+"_targets").innerHTML = `<span class="target-n">N:${m.n}</span> <span class="target-b">B:${m.b==99?'X':m.b}</span> <span class="target-e">E:${m.e==99?'X':m.e}</span>`; 
         }); 
         periciasBase.forEach(p => updateTargetsPericia("skill_"+p.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_"), p.attr, p.mod)); 
@@ -1478,8 +2537,9 @@
     function save() {
         if(isLoadingData || viewCode) return; 
 
-        const d = { attrs:{}, skills:{}, inv:[], ammo:{}, abilities:[], rituals:[], defense: document.getElementById('defense_val').value, info:{}, charImages: charImages, charStatus: charStatus };
-        ["char_nome", "char_nex", "char_ocupacao", "char_origem", "char_nivel", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
+        if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
+        const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, charImages: charImages, charStatus: charStatus, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
+        ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
         d.info['char_img'] = document.getElementById('char_img_display').src;
         document.querySelectorAll('.attr-input').forEach(i => d.attrs[i.id] = i.value);
         document.querySelectorAll('[id^="skill_"]').forEach(i => d.skills[i.id] = i.value);
@@ -1487,7 +2547,6 @@
         document.querySelectorAll('.hidden-data-item').forEach(h => { 
             d.inv.push({ id: h.getAttribute('data-id'), n: h.getAttribute('data-n'), w: h.getAttribute('data-w'), d: h.getAttribute('data-d'), eq: h.getAttribute('data-eq') === 'true', type: h.getAttribute('data-type'), dmg: h.getAttribute('data-dmg'), extra: h.getAttribute('data-extra'), crit: h.getAttribute('data-crit'), skill: h.getAttribute('data-skill'), img: h.getAttribute('data-img'), atkType: h.getAttribute('data-atktype'), atk: h.getAttribute('data-atk'), range: h.getAttribute('data-range'), ammo: h.getAttribute('data-ammo'), capacity: h.getAttribute('data-capacity'), currentShots: h.getAttribute('data-currentshots') }); 
         });
-        ["ammo_curta", "ammo_longa", "ammo_pesada", "ammo_especial"].forEach(id => d.ammo[id] = document.getElementById(id).value);
         document.querySelectorAll('.ability-item').forEach(ab => { d.abilities.push({ n: ab.getAttribute('data-n'), d: ab.getAttribute('data-d') }); });
         
         document.querySelectorAll('.hidden-ritual').forEach(hr => { 
@@ -1576,9 +2635,9 @@
     }
 
     function init() {
-        ["Agilidade", "Força", "Intelecto", "Presença", "Vigor"].forEach(a => {
+        ["Força", "Agilidade", "Vigor", "Intelecto", "Presença"].forEach(a => {
             let id = "attr_" + a.toLowerCase().substring(0,3);
-            document.getElementById('atributos-container').innerHTML += `<div class="attr-box"><label>${a}</label><input type="number" id="${id}" class="attr-input" value="1" min="0" max="10" step="1" oninput="limitarAtributo(this); updateAllPericias(); updateWeight(); save()"><div class="attr-targets" id="${id}_targets"></div></div>`;
+            document.getElementById('atributos-container').innerHTML += `<div class="attr-box"><label>${a}</label><input type="number" id="${id}" class="attr-input" value="1" max="10" step="1" oninput="limitarAtributo(this); registrarEdicaoAtributo(this); updateAllPericias(); updateWeight(); save()"><div class="attr-targets" id="${id}_targets"></div></div>`;
         });
         periciasBase.forEach(p => {
             let sn = p.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_");
@@ -1620,24 +2679,76 @@
     function load() {
         isLoadingData = true; 
         let s = localStorage.getItem('ordem_save_local'); 
-        if(!s) { isLoadingData = false; return updateAllPericias(); }
+        if(!s) {
+            capturarAtributosBaseCorpo();
+            aplicarTipoCorpo(obterTipoCorpoAtual(), false);
+            isLoadingData = false;
+            return;
+        }
         populateData(JSON.parse(s));
     }
 
+    function migrarMunicoesSeparadas(dadosAmmo) {
+        if (!dadosAmmo || typeof dadosAmmo !== 'object') return false;
+        const tipos = { ammo_curta: 'Curta', ammo_longa: 'Longa', ammo_pesada: 'Pesada', ammo_especial: 'Especial' };
+        let sequencia = 0;
+        let migrou = false;
+
+        Object.entries(tipos).forEach(([campoAntigo, tipo]) => {
+            const quantidade = Math.max(0, Math.min(500, parseInt(dadosAmmo[campoAntigo], 10) || 0));
+            const itemCatalogo = premadeItems.find(item => item.type === 'municao' && item.ammo === tipo);
+            if (!itemCatalogo) return;
+
+            for (let i = 0; i < quantidade; i++) {
+                addItemObj({
+                    id: `municao_migrada_${Date.now()}_${sequencia++}`,
+                    n: itemCatalogo.name,
+                    w: itemCatalogo.weight,
+                    d: itemCatalogo.desc,
+                    eq: true,
+                    type: 'municao',
+                    ammo: tipo,
+                    img: itemCatalogo.img
+                });
+                migrou = true;
+            }
+        });
+        return migrou;
+    }
+
     function populateData(d) {
+        activeWeaponId = d.activeWeaponId || "";
+        cluesData = Array.isArray(d.clues) ? d.clues.map((clue, index) => ({
+            id: normalizeClueId(clue.id, index),
+            title: String(clue.title || clue.n || 'Pista'),
+            desc: String(clue.desc || clue.d || 'Sem descrição.'),
+            img: String(clue.img || ''),
+            type: clue.type === 'book' ? 'book' : 'object',
+            pages: clue.type === 'book' ? normalizeClueBookPages(clue.pages) : []
+        })) : [];
+        renderClues();
         if(d.charImages) charImages = { ...charImages, ...d.charImages };
         else if (d.info && d.info.char_img) charImages.normal = d.info.char_img;
         if(d.charStatus) charStatus = d.charStatus;
-        if(d.info) { ["char_nome", "char_nex", "char_ocupacao", "char_origem", "char_nivel", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id) && d.info[id] !== undefined) document.getElementById(id).value = d.info[id]; }); }
+        if(d.info) { ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id) && d.info[id] !== undefined) document.getElementById(id).value = d.info[id]; }); }
         updateProfilePicture();
         currentOccupation = document.getElementById('char_ocupacao') ? document.getElementById('char_ocupacao').value : "Nenhuma";
         for(let id in d.attrs) if(document.getElementById(id)) document.getElementById(id).value = limitarValorAtributo(d.attrs[id]);
+        if (d.attrBasesCorpo && typeof d.attrBasesCorpo === 'object') {
+            atributosBaseCorpo = {};
+            ["for","agi","vig","int","pre"].forEach(codigo => {
+                atributosBaseCorpo[codigo] = limitarValorAtributo(d.attrBasesCorpo[codigo]);
+            });
+        } else {
+            capturarAtributosBaseCorpo();
+        }
+        aplicarTipoCorpo(obterTipoCorpoAtual(), false);
         for(let id in d.skills) { const el = document.getElementById(id); if(el) { if(el.type==='checkbox') el.checked = d.skills[id]; else el.value = d.skills[id]; } }
-        if(d.ammo) for(let id in d.ammo) if(document.getElementById(id)) document.getElementById(id).value = d.ammo[id];
         if(d.defense !== undefined && d.defense !== null) document.getElementById('defense_val').value = d.defense;
         
         document.getElementById('inventory-body').innerHTML = ''; 
         if(d.inv) d.inv.forEach(i => { addItemObj({ id: i.id||Date.now(), n: i.n, w: i.w, d: i.d, eq: i.eq, type: i.type, dmg: i.dmg, extra: i.extra, crit: i.crit, skill: i.skill, img: i.img, atkType: i.atkType, atk: i.atk, range: i.range, ammo: i.ammo, capacity: i.capacity, currentShots: i.currentShots }); });
+        const migrouMunicoesAntigas = viewCode ? false : migrarMunicoesSeparadas(d.ammo);
         
         document.getElementById('abilities-list').innerHTML = '';
         if(d.abilities) d.abilities.forEach(a => addAbility(a.n, a.d));
@@ -1655,6 +2766,7 @@
         updateStatusBars(); updateAllPericias(); updateWeight(); updateWeaponsDisplay(); updateRitualsCount(); updateLearnedRitualsDisplay();
         document.querySelectorAll('[id^="chk_"]').forEach(c => { if(c.checked) toggleTrained(c.id.replace('chk_','')); });
         isLoadingData = false; 
+        if (migrouMunicoesAntigas && !viewCode) save();
     }
 
     init();
