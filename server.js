@@ -46,7 +46,11 @@ io.on('connection', socket => {
     socket.on('rolagem_feita', rawData => {
         if (!rawData || typeof rawData !== 'object') return;
         const code = normalizePlayerCode(rawData.codigo || socket.data.playerCode);
-        io.emit('novo_log', { ...rawData, codigo: code });
+        const rollData = { ...rawData, codigo: code };
+        io.emit('novo_log', rollData);
+        if (code && /^iniciativa\b/i.test(String(rawData.acao || '').trim())) {
+            io.emit('initiative_rolled', rollData);
+        }
     });
 
     // Continua sendo usado internamente ao abrir a ficha completa no Escudo.
