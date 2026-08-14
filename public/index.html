@@ -730,8 +730,9 @@
         playerCode = Math.random().toString(36).substring(2, 6).toUpperCase();
         localStorage.setItem('player_sync_code', playerCode);
     }
+    if (viewCode) playerCode = viewCode;
     
-    document.getElementById('display-player-code').innerText = viewCode ? "VISÃO: " + viewCode : playerCode;
+    document.getElementById('display-player-code').innerText = viewCode ? "EDITANDO: " + viewCode : playerCode;
 
     let playerDataReady = false;
     if (socket && !viewCode) {
@@ -2538,7 +2539,7 @@
 
     // --- FUNÇÕES DE SALVAR, EXPORTAR E CARREGAR ---
     function save() {
-        if(isLoadingData || viewCode) return; 
+        if(isLoadingData) return; 
 
         if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
         const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, charImages: charImages, charStatus: charStatus, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
@@ -2557,13 +2558,14 @@
             d.rituals.push({ n: hr.getAttribute('data-n'), el: hr.getAttribute('data-el'), circ: hr.getAttribute('data-circ'), ex: hr.getAttribute('data-ex'), alc: hr.getAttribute('data-alc'), alv: hr.getAttribute('data-alv'), dur: hr.getAttribute('data-dur'), res: hr.getAttribute('data-res'), descGeral: hr.getAttribute('data-desc-geral'), descDisc: hr.getAttribute('data-desc-disc'), descVerd: hr.getAttribute('data-desc-verd'), eq: eq, img: hr.getAttribute('data-img') }); 
         });
         
-        localStorage.setItem('ordem_save_local', JSON.stringify(d));
+        if (!viewCode) localStorage.setItem('ordem_save_local', JSON.stringify(d));
 
         if (socket) {
             const jogadorNome = document.getElementById('char_nome') ? document.getElementById('char_nome').value : 'Desconhecido';
-            socket.emit('status_change', {
-                codigo: playerCode,
-                id: playerCode,
+            const syncCode = viewCode || playerCode;
+            socket.emit(viewCode ? 'master_update_player' : 'status_change', {
+                codigo: syncCode,
+                id: syncCode,
                 nome: jogadorNome,
                 foto: document.getElementById('char_img_display') ? document.getElementById('char_img_display').src : '',
                 nex: document.getElementById('char_nex') ? document.getElementById('char_nex').value : 0,
@@ -2667,12 +2669,23 @@
             if (socket) {
                 socket.on('update_mestre', (dados) => {
                     if (dados.codigo === viewCode && dados.fullData) {
+                        isLoadingData = true;
                         populateData(dados.fullData);
                     }
                 });
-                socket.emit('request_player', viewCode); 
+                socket.on('connect', () => socket.emit('request_player', viewCode));
+                if (socket.connected) socket.emit('request_player', viewCode); 
             }
         } else {
+            if (socket) {
+                socket.on('player_data_updated', (dados) => {
+                    if (dados && dados.codigo === playerCode && dados.fullData) {
+                        localStorage.setItem('ordem_save_local', JSON.stringify(dados.fullData));
+                        isLoadingData = true;
+                        populateData(dados.fullData);
+                    }
+                });
+            }
             load(); 
             playerDataReady = true;
             if (socket && socket.connected) save();
