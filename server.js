@@ -4,43 +4,73 @@ const { Server } = require('socket.io');
 const path = require('path');
 
 const app = express();
-const server = http.createServer(app); 
+const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Memória do servidor: guarda o último status de cada jogador por código
-const playersData = {}; 
+// Mantém a ficha mais recente e todas as conexões ativas de cada jogador.
+const playersData = new Map();
+const playerSockets = new Map();
 
-io.on('connection', (socket) => {
-    console.log('🟢 Um utilizador ligou-se:', socket.id);
+function normalizePlayerCode(value) {
+    return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
+}
 
-    // Recebe atualizações da ficha e guarda na memória do servidor
-    socket.on('status_change', (dados) => {
-        if(dados.codigo) {
-            playersData[dados.codigo] = dados;
-            io.emit('update_mestre', dados); // Partilha com todos (o mestre filtra no frontend)
-        }
+function registerPlayerSocket(code, socket) {
+    if (!playerSockets.has(code)) playerSockets.set(code, new Set());
+    playerSockets.get(code).add(socket.id);
+    socket.data.playerCode = code;
+}
+
+io.on('connection', socket => {
+    console.log('🟢 Conexão aberta:', socket.id);
+
+    // O Escudo do Mestre solicita automaticamente todos os jogadores já conectados.
+    socket.on('master_ready', () => {
+        socket.data.isMaster = true;
+        socket.emit('players_snapshot', Array.from(playersData.values()));
     });
 
-    // Recebe rolagens
-    socket.on('rolagem_feita', (dados) => {
-        io.emit('novo_log', dados);
+    // A própria ficha anuncia o jogador sempre que salva ou reconecta.
+    socket.on('status_change', rawData => {
+        const code = normalizePlayerCode(rawData && (rawData.codigo || rawData.id));
+        if (!code || !rawData || typeof rawData !== 'object') return;
+
+        registerPlayerSocket(code, socket);
+        const data = { ...rawData, codigo: code, id: code, online: true };
+        playersData.set(code, data);
+        io.emit('update_mestre', data);
     });
 
-    // Quando o Mestre adiciona um código, o servidor envia logo a ficha se já existir na memória
-    socket.on('request_player', (codigo) => {
-        if(playersData[codigo]) {
-            socket.emit('update_mestre', playersData[codigo]);
-        }
+    socket.on('rolagem_feita', rawData => {
+        if (!rawData || typeof rawData !== 'object') return;
+        const code = normalizePlayerCode(rawData.codigo || socket.data.playerCode);
+        io.emit('novo_log', { ...rawData, codigo: code });
+    });
+
+    // Continua sendo usado internamente ao abrir a ficha completa no Escudo.
+    socket.on('request_player', rawCode => {
+        const code = normalizePlayerCode(rawCode);
+        if (playersData.has(code)) socket.emit('update_mestre', playersData.get(code));
     });
 
     socket.on('disconnect', () => {
-        console.log('🔴 Um utilizador desligou-se:', socket.id);
+        const code = socket.data.playerCode;
+        if (code && playerSockets.has(code)) {
+            const sockets = playerSockets.get(code);
+            sockets.delete(socket.id);
+            if (!sockets.size) {
+                playerSockets.delete(code);
+                playersData.delete(code);
+                io.emit('player_disconnected', { codigo: code });
+            }
+        }
+        console.log('🔴 Conexão encerrada:', socket.id);
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 Servidor a correr na porta ${PORT}!`);
+    console.log(`🚀 Servidor iniciado na porta ${PORT}`);
 });
