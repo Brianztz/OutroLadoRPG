@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Outro Lado RPG - Ficha de Jogador</title>
+    <title>Sistema de Atributos e Inventário - V72.1 (Local / Offline)</title>
     <style>
         :root {
             --bg-body: #121214; --bg-card: rgba(32, 32, 36, 0.85); --bg-input: rgba(18, 18, 20, 0.8);
@@ -733,8 +733,11 @@
     
     document.getElementById('display-player-code').innerText = viewCode ? "VISÃO: " + viewCode : playerCode;
 
+    let playerDataReady = false;
     if (socket && !viewCode) {
-        socket.on('connect', () => save()); 
+        socket.on('connect', () => {
+            if (playerDataReady) save();
+        }); 
     }
 
     let isLoadingData = false;
@@ -2671,6 +2674,8 @@
             }
         } else {
             load(); 
+            playerDataReady = true;
+            if (socket && socket.connected) save();
         }
 
         renderPremadeCatalogs(); 
