@@ -43,6 +43,20 @@ io.on('connection', socket => {
         io.emit('update_mestre', data);
     });
 
+    // Alterações feitas pelo mestre na ficha aberta são enviadas ao jogador real.
+    socket.on('master_update_player', rawData => {
+        const code = normalizePlayerCode(rawData && (rawData.codigo || rawData.id));
+        if (!code || !rawData || typeof rawData !== 'object' || !rawData.fullData) return;
+
+        const previousData = playersData.get(code) || {};
+        const data = { ...previousData, ...rawData, codigo: code, id: code, online: true };
+        playersData.set(code, data);
+
+        const sockets = playerSockets.get(code);
+        if (sockets) sockets.forEach(socketId => io.to(socketId).emit('player_data_updated', data));
+        io.emit('update_mestre', data);
+    });
+
     socket.on('rolagem_feita', rawData => {
         if (!rawData || typeof rawData !== 'object') return;
         const code = normalizePlayerCode(rawData.codigo || socket.data.playerCode);
