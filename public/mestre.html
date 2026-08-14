@@ -51,22 +51,42 @@
         .tag-lesionado { border: 1px solid var(--accent-red); background: rgba(229,57,53,0.4); }
         .tag-morrendo { background: var(--accent-red); animation: pulse-red 1.5s infinite; }
         .tag-enlouquecendo { border: 1px solid var(--accent-blue); background: rgba(0,176,255,0.4); }
-        .btn-ver-ficha { width: 100%; margin-top: 3px; padding: 10px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .player-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+        .btn-ver-ficha, .btn-add-initiative { width: 100%; margin-top: 3px; padding: 10px 6px; border-radius: 6px; font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .btn-ver-ficha { border: 1px solid var(--accent-blue); background: rgba(0,176,255,0.1); color: var(--accent-blue); }
         .btn-ver-ficha:hover { background: var(--accent-blue); color: #000; }
-        .log-container { min-width: 300px; flex: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); backdrop-filter: blur(8px); }
-        .log-title { padding: 15px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.5); color: var(--accent-green); font-weight: 900; text-align: center; }
-        .log-messages { min-height: 0; padding: 15px; display: flex; flex: 1; flex-direction: column; gap: 10px; overflow-y: auto; }
-        .log-item { padding: 10px; border: 1px solid #333; border-radius: 8px; background: rgba(18,18,20,0.92); font-size: 0.88em; }
-        .log-player { margin-bottom: 5px; color: var(--accent-blue); font-weight: 900; }
-        .log-action { color: var(--text-secondary); font-size: 0.82em; text-align: center; }
-        .roll-result { margin: 6px 0; color: var(--accent-yellow); font-size: 1.45em; font-weight: 900; text-align: center; }
+        .btn-add-initiative { border: 1px solid var(--accent-yellow); background: rgba(255,207,51,0.1); color: var(--accent-yellow); }
+        .btn-add-initiative:hover { background: var(--accent-yellow); color: #000; }
+        .initiative-container { min-width: 340px; flex: 1.15; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); backdrop-filter: blur(8px); }
+        .initiative-title { padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.52); color: var(--accent-yellow); font-weight: 900; }
+        .initiative-round { padding: 4px 8px; border: 1px solid rgba(255,207,51,0.35); border-radius: 999px; font-size: 0.65em; white-space: nowrap; }
+        .initiative-add { padding: 12px; border-bottom: 1px solid var(--border-color); }
+        .initiative-add-row { display: grid; grid-template-columns: minmax(0,1fr) 70px 42px; gap: 6px; }
+        .initiative-input { min-width: 0; width: 100%; padding: 9px; border: 1px solid #414148; border-radius: 5px; background: #111114; color: white; }
+        .initiative-add-button { border: 0; border-radius: 5px; background: var(--accent-green); color: #000; font-size: 1.05em; font-weight: 900; cursor: pointer; }
+        .initiative-all-button { width: 100%; margin-top: 7px; padding: 8px; border: 1px solid var(--accent-blue); border-radius: 5px; background: rgba(0,176,255,0.09); color: var(--accent-blue); font-size: 0.68em; font-weight: 900; cursor: pointer; }
+        .initiative-list { min-height: 130px; padding: 10px; display: flex; flex: 1; flex-direction: column; gap: 7px; overflow-y: auto; }
+        .initiative-empty { padding: 30px 12px; color: var(--text-secondary); font-size: 0.78em; line-height: 1.5; text-align: center; }
+        .initiative-entry { padding: 8px; display: grid; grid-template-columns: 30px minmax(0,1fr) 58px 30px; gap: 7px; align-items: center; border: 1px solid #3b3b42; border-radius: 8px; background: rgba(18,18,20,0.94); transition: 0.2s; }
+        .initiative-entry.active { border-color: var(--accent-yellow); background: rgba(255,207,51,0.12); box-shadow: 0 0 14px rgba(255,207,51,0.17); }
+        .initiative-rank { width: 27px; height: 27px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #29292f; color: var(--text-secondary); font-size: 0.72em; font-weight: 900; }
+        .initiative-entry.active .initiative-rank { background: var(--accent-yellow); color: #000; }
+        .initiative-name { min-width: 0; overflow: hidden; color: var(--text-primary); font-size: 0.8em; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+        .initiative-kind { margin-top: 2px; color: var(--text-secondary); font-size: 0.58em; text-transform: uppercase; }
+        .initiative-value { width: 100%; padding: 7px 3px; border: 1px solid #494950; border-radius: 5px; background: #09090b; color: var(--accent-yellow); font-weight: 900; text-align: center; }
+        .initiative-remove { width: 29px; height: 29px; border: 0; border-radius: 5px; background: rgba(229,57,53,0.25); color: #ff7772; font-weight: 900; cursor: pointer; }
+        .initiative-controls { padding: 10px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 7px; border-top: 1px solid var(--border-color); }
+        .initiative-controls button { padding: 9px 5px; border: 0; border-radius: 5px; font-size: 0.68em; font-weight: 900; cursor: pointer; }
+        .initiative-previous { background: #3b3b43; color: white; }
+        .initiative-next { background: var(--accent-yellow); color: #000; }
+        .initiative-clear { grid-column: 1 / -1; border: 1px solid rgba(229,57,53,0.5) !important; background: rgba(229,57,53,0.12); color: #ff7772; }
         #modal-ficha { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,0.92); }
         .modal-toolbar { width: 95%; max-width: 1400px; display: flex; justify-content: flex-end; }
         .btn-close-modal { margin-bottom: 10px; padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent-red); color: white; font-size: 1em; font-weight: 900; cursor: pointer; }
         #iframe-ficha { width: 95%; max-width: 1400px; height: 85vh; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-body); }
         @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
-        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container { overflow: visible; } .log-container { min-width: 0; min-height: 380px; } }
+        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } }
     </style>
 </head>
 <body>
@@ -85,9 +105,22 @@
                 <div id="players-empty" class="players-empty"><strong>Aguardando jogadores</strong>Assim que uma ficha for aberta, ela aparecerá aqui automaticamente.</div>
             </div>
         </section>
-        <aside class="log-container">
-            <div class="log-title">🎲 LOG DE DADOS E AÇÕES</div>
-            <div id="log-box" class="log-messages"><div id="aguardar-msg" style="margin-top:20px; color:var(--text-secondary); font-size:0.8em; text-align:center;">Aguardando rolagens...</div></div>
+        <aside class="initiative-container">
+            <div class="initiative-title"><span>⚔️ CONTROLE DE INICIATIVA</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
+            <div class="initiative-add">
+                <div class="initiative-add-row">
+                    <input id="initiative-name-input" class="initiative-input" type="text" placeholder="Nome do inimigo ou NPC">
+                    <input id="initiative-value-input" class="initiative-input" type="number" value="0" aria-label="Iniciativa">
+                    <button class="initiative-add-button" type="button" onclick="addManualInitiative()">+</button>
+                </div>
+                <button class="initiative-all-button" type="button" onclick="addAllConnectedPlayers()">+ ADICIONAR TODOS OS JOGADORES CONECTADOS</button>
+            </div>
+            <div id="initiative-list" class="initiative-list"></div>
+            <div class="initiative-controls">
+                <button id="initiative-previous" class="initiative-previous" type="button" onclick="previousInitiativeTurn()">← VOLTAR</button>
+                <button id="initiative-next" class="initiative-next" type="button" onclick="nextInitiativeTurn()">INICIAR COMBATE</button>
+                <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
+            </div>
         </aside>
     </main>
 
@@ -100,7 +133,8 @@
     <script>
         const socket = io();
         const playersBoard = document.getElementById('players-board');
-        const logBox = document.getElementById('log-box');
+        const connectedPlayers = new Map();
+        let initiativeState = loadInitiativeState();
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -109,6 +143,151 @@
         function safeNumber(value, fallback = 0) {
             const number = Number(value);
             return Number.isFinite(number) ? number : fallback;
+        }
+
+        function loadInitiativeState() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('mestre_initiative_state'));
+                const entries = Array.isArray(saved && saved.entries) ? saved.entries.map((entry, index) => ({
+                    id: String(entry.id || `initiative_saved_${index}`),
+                    name: String(entry.name || 'Participante'),
+                    value: safeNumber(entry.value),
+                    kind: entry.kind === 'player' ? 'player' : 'npc',
+                    code: entry.code ? String(entry.code) : ''
+                })) : [];
+                return { entries, activeId: saved && saved.activeId ? String(saved.activeId) : null, round: Math.max(0, Math.floor(safeNumber(saved && saved.round))), started: Boolean(saved && saved.started) };
+            } catch (error) {
+                return { entries: [], activeId: null, round: 0, started: false };
+            }
+        }
+
+        function saveInitiativeState() {
+            localStorage.setItem('mestre_initiative_state', JSON.stringify(initiativeState));
+        }
+
+        function sortInitiativeEntries() {
+            initiativeState.entries.sort((first, second) => second.value - first.value || first.name.localeCompare(second.name, 'pt-BR'));
+        }
+
+        function renderInitiative() {
+            sortInitiativeEntries();
+            if (initiativeState.activeId && !initiativeState.entries.some(entry => entry.id === initiativeState.activeId)) {
+                initiativeState.activeId = null;
+                initiativeState.started = false;
+                initiativeState.round = 0;
+            }
+
+            const list = document.getElementById('initiative-list');
+            list.innerHTML = '';
+            if (!initiativeState.entries.length) {
+                const empty = document.createElement('div');
+                empty.className = 'initiative-empty';
+                empty.textContent = 'Adicione os jogadores conectados, inimigos ou NPCs para começar o combate.';
+                list.appendChild(empty);
+            }
+
+            initiativeState.entries.forEach((entry, index) => {
+                const row = document.createElement('div');
+                row.className = `initiative-entry${entry.id === initiativeState.activeId ? ' active' : ''}`;
+                row.innerHTML = `<div class="initiative-rank">${index + 1}</div><div><div class="initiative-name">${escapeHtml(entry.name)}</div><div class="initiative-kind">${entry.kind === 'player' ? 'Jogador' : 'Inimigo / NPC'}</div></div><input class="initiative-value" type="number" value="${entry.value}" aria-label="Iniciativa de ${escapeHtml(entry.name)}"><button class="initiative-remove" type="button" title="Remover">×</button>`;
+                row.querySelector('.initiative-value').onchange = event => updateInitiativeValue(entry.id, event.target.value);
+                row.querySelector('.initiative-remove').onclick = () => removeInitiativeEntry(entry.id);
+                list.appendChild(row);
+            });
+
+            document.getElementById('initiative-round').textContent = initiativeState.started ? `RODADA ${initiativeState.round}` : 'AGUARDANDO';
+            document.getElementById('initiative-next').textContent = initiativeState.started ? 'PRÓXIMO TURNO →' : 'INICIAR COMBATE';
+            document.getElementById('initiative-previous').disabled = !initiativeState.started || !initiativeState.entries.length;
+        }
+
+        function addInitiativeEntry(entry) {
+            const existing = initiativeState.entries.find(item => item.id === entry.id);
+            if (existing) {
+                existing.name = entry.name;
+                existing.kind = entry.kind;
+                existing.code = entry.code || existing.code;
+            } else {
+                initiativeState.entries.push(entry);
+            }
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        function addManualInitiative() {
+            const nameInput = document.getElementById('initiative-name-input');
+            const valueInput = document.getElementById('initiative-value-input');
+            const name = nameInput.value.trim();
+            if (!name) return nameInput.focus();
+            addInitiativeEntry({ id: `npc_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, name, value: safeNumber(valueInput.value), kind: 'npc', code: '' });
+            nameInput.value = '';
+            valueInput.value = '0';
+            nameInput.focus();
+        }
+
+        function addConnectedPlayerToInitiative(code) {
+            const player = connectedPlayers.get(String(code));
+            if (!player) return;
+            addInitiativeEntry({ id: `player_${code}`, name: String(player.nome || 'Personagem sem nome'), value: 0, kind: 'player', code: String(code) });
+        }
+
+        function addAllConnectedPlayers() {
+            connectedPlayers.forEach((player, code) => {
+                const id = `player_${code}`;
+                const existing = initiativeState.entries.find(entry => entry.id === id);
+                if (existing) existing.name = String(player.nome || 'Personagem sem nome');
+                else initiativeState.entries.push({ id, name: String(player.nome || 'Personagem sem nome'), value: 0, kind: 'player', code: String(code) });
+            });
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        function updateInitiativeValue(id, value) {
+            const entry = initiativeState.entries.find(item => item.id === id);
+            if (!entry) return;
+            entry.value = safeNumber(value);
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        function removeInitiativeEntry(id) {
+            initiativeState.entries = initiativeState.entries.filter(entry => entry.id !== id);
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        function nextInitiativeTurn() {
+            sortInitiativeEntries();
+            if (!initiativeState.entries.length) return;
+            if (!initiativeState.started || !initiativeState.activeId) {
+                initiativeState.started = true;
+                initiativeState.round = 1;
+                initiativeState.activeId = initiativeState.entries[0].id;
+            } else {
+                const currentIndex = initiativeState.entries.findIndex(entry => entry.id === initiativeState.activeId);
+                const nextIndex = (currentIndex + 1) % initiativeState.entries.length;
+                if (nextIndex === 0) initiativeState.round++;
+                initiativeState.activeId = initiativeState.entries[nextIndex].id;
+            }
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        function previousInitiativeTurn() {
+            sortInitiativeEntries();
+            if (!initiativeState.started || !initiativeState.entries.length) return;
+            const currentIndex = initiativeState.entries.findIndex(entry => entry.id === initiativeState.activeId);
+            const previousIndex = currentIndex <= 0 ? initiativeState.entries.length - 1 : currentIndex - 1;
+            if (currentIndex === 0 && initiativeState.round > 1) initiativeState.round--;
+            initiativeState.activeId = initiativeState.entries[previousIndex].id;
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        function clearInitiative() {
+            if (initiativeState.entries.length && !confirm('Limpar toda a iniciativa e encerrar o combate?')) return;
+            initiativeState = { entries: [], activeId: null, round: 0, started: false };
+            saveInitiativeState();
+            renderInitiative();
         }
 
         function updateConnection(online) {
@@ -135,7 +314,14 @@
             if (!rawData || !rawData.codigo) return;
             const data = rawData;
             const code = String(data.codigo);
-            let card = document.getElementById(`player-${CSS.escape(code)}`);
+            connectedPlayers.set(code, data);
+            const initiativePlayer = initiativeState.entries.find(entry => entry.id === `player_${code}`);
+            if (initiativePlayer && initiativePlayer.name !== String(data.nome || 'Personagem sem nome')) {
+                initiativePlayer.name = String(data.nome || 'Personagem sem nome');
+                saveInitiativeState();
+                renderInitiative();
+            }
+            let card = document.getElementById(`player-${code}`);
             if (!card) {
                 card = document.createElement('article');
                 card.className = 'player-card';
@@ -165,13 +351,16 @@
                 <div><div class="bar-label vida">VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
                 <div><div class="bar-label sanidade">SANIDADE</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
                 <div class="status-tags">${tags}</div>
-                <button class="btn-ver-ficha" type="button">🔍 VER FICHA COMPLETA</button>`;
+                <div class="player-actions"><button class="btn-ver-ficha" type="button">🔍 VER FICHA</button><button class="btn-add-initiative" type="button">⚔️ INICIATIVA</button></div>`;
             card.querySelector('.btn-ver-ficha').onclick = () => abrirFicha(code);
+            card.querySelector('.btn-add-initiative').onclick = () => addConnectedPlayerToInitiative(code);
             updatePlayersCount();
         }
 
         function removePlayer(code) {
-            const card = document.getElementById(`player-${CSS.escape(String(code || ''))}`);
+            code = String(code || '');
+            connectedPlayers.delete(code);
+            const card = document.getElementById(`player-${code}`);
             if (card) card.remove();
             updatePlayersCount();
         }
@@ -193,22 +382,17 @@
         socket.on('disconnect', () => updateConnection(false));
         socket.on('players_snapshot', players => {
             playersBoard.querySelectorAll('.player-card').forEach(card => card.remove());
+            connectedPlayers.clear();
             (Array.isArray(players) ? players : []).forEach(renderPlayer);
             updatePlayersCount();
         });
         socket.on('update_mestre', renderPlayer);
         socket.on('player_disconnected', data => removePlayer(data && data.codigo));
 
-        socket.on('novo_log', data => {
-            const waitMessage = document.getElementById('aguardar-msg');
-            if (waitMessage) waitMessage.remove();
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.innerHTML = `<div class="log-player">${escapeHtml(data && data.jogador || 'Alguém')} rolou:</div><div class="log-action">${escapeHtml(data && data.acao || 'Ação')}</div><div class="roll-result">${escapeHtml((data && data.resultado) ?? '-')}</div>`;
-            logBox.prepend(item);
-        });
-
+        document.getElementById('initiative-name-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
+        document.getElementById('initiative-value-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
         updatePlayersCount();
+        renderInitiative();
     </script>
 </body>
 </html>
