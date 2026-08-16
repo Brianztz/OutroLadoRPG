@@ -257,18 +257,24 @@
         .master-clue-view-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
         .master-clue-view-controls button { min-width: 42px; padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
         .master-clue-book-viewer { display: none; }
-        .master-clue-book-stage { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(91,69,29,0.28),rgba(5,5,7,0.96)); perspective: 1500px; }
-        .master-clue-book { position: relative; width: min(720px,90%); aspect-ratio: 3 / 2; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: rotateX(3deg); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
+        .master-clue-book-stage { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(91,69,29,0.28),rgba(5,5,7,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
+        .master-clue-book-stage.dragging { cursor: grabbing; }
+        .master-clue-book-3d-object { position: relative; width: 640px; height: 360px; max-width: 90%; transform: rotateX(-8deg) rotateY(0deg) scale(1); transform-style: preserve-3d; transition: transform 0.14s ease-out,width 0.3s ease,height 0.3s ease; will-change: transform,width,height; }
+        .master-clue-book-stage.dragging .master-clue-book-3d-object { transition: width 0.3s ease,height 0.3s ease; }
+        .master-clue-book { position: absolute; inset: 0; width: 100%; height: 100%; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(4px); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
         .master-clue-book.open { opacity: 1; }
         .master-clue-book::before { content: ''; position: absolute; left: 50%; top: -2%; bottom: -2%; width: 12px; z-index: 8; transform: translateX(-50%); border-radius: 50%; background: linear-gradient(90deg,rgba(60,39,20,0.8),rgba(20,12,8,0.9),rgba(93,62,31,0.74)); box-shadow: 0 0 12px rgba(0,0,0,0.8); pointer-events: none; }
-        .master-clue-book-cover { position: absolute; left: 50%; top: 9%; z-index: 12; width: min(310px,42%); height: 82%; overflow: hidden; border: 7px solid #3b2415; border-radius: 5px 13px 13px 5px; background: linear-gradient(135deg,#55351e,#21130d); box-shadow: 10px 15px 24px rgba(0,0,0,0.7),inset 0 0 0 2px rgba(255,207,51,0.2); transform: translateX(-50%) rotateY(0deg); transform-origin: left center; transition: transform 0.82s cubic-bezier(0.58,0.02,0.28,1),opacity 0.2s 0.6s; }
+        .master-clue-book-cover { position: absolute; left: 50%; top: 0; z-index: 12; width: 50%; height: 100%; transform: translateX(-50%) rotateY(0deg) translateZ(7px); transform-origin: left center; transform-style: preserve-3d; transition: transform 0.82s cubic-bezier(0.58,0.02,0.28,1),opacity 0.2s 0.6s; }
         .master-clue-book-cover.open { transform: translateX(-50%) rotateY(-175deg); opacity: 0; pointer-events: none; }
-        .master-clue-book-cover img { width: 100%; height: 100%; display: block; object-fit: contain; background: #160e09; }
-        .master-clue-book-cover-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--accent-yellow); font-size: 4em; }
-        .master-clue-book-page { position: relative; width: 50%; height: 100%; overflow: hidden; background: linear-gradient(135deg,#eadfca,#cabb9e); color: #282016; }
-        .master-clue-book-page.left { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); }
-        .master-clue-book-page.right { border-radius: 2px 10px 10px 2px; box-shadow: inset 18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); }
-        .master-clue-book-page img, .master-clue-book-flip-face img { width: 100%; height: 100%; display: block; object-fit: contain; background: #e4d6bb; }
+        .master-clue-book-cover-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
+        .master-clue-book-cover-depth-layer { position: absolute; inset: 0; background: var(--master-book-edge-color,#4a2d18); transform: translateZ(var(--master-book-depth)); -webkit-mask-image: var(--master-book-cover-shape); mask-image: var(--master-book-cover-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+        .master-clue-book-cover img { position: relative; z-index: 2; width: 100%; height: 100%; display: block; object-fit: contain; background: transparent; transform: translateZ(8px); filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.65)); }
+        .master-clue-book-cover-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: linear-gradient(135deg,#55351e,#21130d); color: var(--accent-yellow); font-size: 4em; transform: translateZ(8px); }
+        .master-clue-book-page { position: relative; width: 50%; height: 100%; overflow: hidden; background: linear-gradient(135deg,#eadfca,#cabb9e); color: #282016; transform-style: preserve-3d; }
+        .master-clue-book-page.has-image-shape, .master-clue-book-flip-face.has-image-shape { -webkit-mask-image: var(--master-page-shape); mask-image: var(--master-page-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+        .master-clue-book-page.left { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(2deg) translateZ(2px); transform-origin: right center; }
+        .master-clue-book-page.right { border-radius: 2px 10px 10px 2px; box-shadow: inset 18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(-2deg) translateZ(2px); transform-origin: left center; }
+        .master-clue-book-page img, .master-clue-book-flip-face img { width: 100%; height: 100%; display: block; object-fit: contain; background: transparent; }
         .master-clue-book-page-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; color: rgba(49,35,20,0.48); font-family: Georgia,serif; font-size: 1.1em; font-style: italic; text-align: center; }
         .master-clue-book-page-index { position: absolute; left: 10px; right: 10px; bottom: 7px; color: rgba(44,31,18,0.7); font-family: Georgia,serif; font-size: 0.7em; font-weight: bold; text-align: center; }
         .master-clue-book-flip { position: absolute; top: 0; width: 50%; height: 100%; display: none; z-index: 7; transform-style: preserve-3d; }
@@ -479,13 +485,17 @@
             <div class="clue-modal-header"><h2 id="master-clue-info-title" class="clue-modal-title">Pista</h2><button class="clue-modal-close" type="button" onclick="closeMasterClueInfo()">×</button></div>
             <div class="clue-modal-body">
                 <div id="master-clue-book-viewer" class="master-clue-book-viewer">
-                    <div class="master-clue-book-stage">
-                        <div id="master-clue-book-cover" class="master-clue-book-cover"><img id="master-clue-book-cover-image" src="" alt="Capa"><div id="master-clue-book-cover-fallback" class="master-clue-book-cover-fallback">📖</div></div>
-                        <div id="master-clue-book" class="master-clue-book">
-                            <div id="master-clue-book-left" class="master-clue-book-page left"></div><div id="master-clue-book-right" class="master-clue-book-page right"></div>
-                            <div id="master-clue-book-flip" class="master-clue-book-flip"><div id="master-clue-book-flip-front" class="master-clue-book-flip-face front"></div><div id="master-clue-book-flip-back" class="master-clue-book-flip-face back"></div></div>
+                    <div id="master-clue-book-stage" class="master-clue-book-stage">
+                        <div id="master-clue-book-3d-object" class="master-clue-book-3d-object">
+                            <div id="master-clue-book-cover" class="master-clue-book-cover"><div id="master-clue-book-cover-depth" class="master-clue-book-cover-depth"></div><img id="master-clue-book-cover-image" src="" alt="Capa"><div id="master-clue-book-cover-fallback" class="master-clue-book-cover-fallback">📖</div></div>
+                            <div id="master-clue-book" class="master-clue-book">
+                                <div id="master-clue-book-left" class="master-clue-book-page left"></div><div id="master-clue-book-right" class="master-clue-book-page right"></div>
+                                <div id="master-clue-book-flip" class="master-clue-book-flip"><div id="master-clue-book-flip-front" class="master-clue-book-flip-face front"></div><div id="master-clue-book-flip-back" class="master-clue-book-flip-face back"></div></div>
+                            </div>
                         </div>
+                        <div class="master-clue-3d-hint">Arraste para girar · Roda do mouse para aproximar</div>
                     </div>
+                    <div class="master-clue-view-controls master-clue-book-3d-controls"><button type="button" onclick="rotateMasterClueBook3D(-45)">↶</button><button type="button" onclick="zoomMasterClueBook3D(-0.1)">−</button><button type="button" onclick="resetMasterClueBook3D()">CENTRALIZAR</button><button type="button" onclick="zoomMasterClueBook3D(0.1)">+</button><button type="button" onclick="rotateMasterClueBook3D(45)">↷</button></div>
                     <div class="master-clue-book-controls"><button id="master-clue-book-toggle" type="button" onclick="toggleMasterClueBook()">ABRIR LIVRO</button><button id="master-clue-book-previous" type="button" onclick="turnMasterClueBookPage(-1)">← ANTERIOR</button><span id="master-clue-book-indicator" class="master-clue-book-indicator">CAPA</span><button id="master-clue-book-next" type="button" onclick="turnMasterClueBookPage(1)">PRÓXIMA →</button></div>
                 </div>
                 <div id="master-clue-3d-stage" class="master-clue-3d-stage">
@@ -563,6 +573,14 @@
         let masterBookSpread = 0;
         let masterBookOpen = false;
         let masterBookAnimating = false;
+        let masterBookRotationX = -8;
+        let masterBookRotationY = 0;
+        let masterBookZoom = 1;
+        let masterBookDragging = false;
+        let masterBookLastX = 0;
+        let masterBookLastY = 0;
+        let masterBook3DInitialized = false;
+        let masterBookFitToken = 0;
         const masterClueCutoutCache = new Map();
         const monsterD20Table = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
 
@@ -1136,12 +1154,49 @@
             stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClue3D(event.deltaY<0?0.08:-0.08);},{passive:false});
         }
 
+        function updateMasterClueBook3DTransform() {
+            const object=document.getElementById('master-clue-book-3d-object');
+            if(object)object.style.transform=`rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
+        }
+
+        function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;updateMasterClueBook3DTransform();}
+        function rotateMasterClueBook3D(amount){masterBookRotationY+=Number(amount)||0;updateMasterClueBook3DTransform();}
+        function zoomMasterClueBook3D(amount){masterBookZoom=Math.max(0.62,Math.min(1.6,masterBookZoom+(Number(amount)||0)));updateMasterClueBook3DTransform();}
+
+        function setMasterBookCoverShape(source='',edgeColor=''){
+            const cover=document.getElementById('master-clue-book-cover');if(!cover)return;
+            if(!source){cover.style.removeProperty('--master-book-cover-shape');cover.style.removeProperty('--master-book-edge-color');return;}
+            cover.style.setProperty('--master-book-cover-shape',`url(${JSON.stringify(source)})`);cover.style.setProperty('--master-book-edge-color',edgeColor||'#4a2d18');
+        }
+
+        function fitMasterBook3DToAspect(aspect=1.5){
+            const stage=document.getElementById('master-clue-book-stage'),object=document.getElementById('master-clue-book-3d-object');if(!stage||!object)return;
+            const safe=Math.max(0.55,Math.min(5,Number(aspect)||1.5)),maxWidth=Math.max(150,stage.clientWidth*0.87),maxHeight=Math.max(140,stage.clientHeight*0.73);let width=maxWidth,height=width/safe;if(height>maxHeight){height=maxHeight;width=height*safe;}object.style.width=`${width}px`;object.style.height=`${height}px`;
+        }
+
+        function updateMasterBook3DFit(){
+            const clue=masterCluesState.find(item=>item.id===currentMasterClueId);if(!clue||clue.type!=='book')return;const token=++masterBookFitToken;
+            if(!masterBookOpen){const source=clue.coverImg||clue.img||((normalizeMasterCluePages(clue.pages)[0]||{}).img||'');if(!source)return fitMasterBook3DToAspect(1.5);prepareMasterClueCutout(source).then(result=>{if(token!==masterBookFitToken||currentMasterClueId!==clue.id||masterBookOpen)return;fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});return;}
+            const pages=normalizeMasterCluePages(clue.pages),sources=[pages[masterBookSpread],pages[masterBookSpread+1]].filter(Boolean).map(page=>page.img);if(!sources.length)return fitMasterBook3DToAspect(1.5);
+            Promise.all(sources.map(prepareMasterClueCutout)).then(results=>{if(token!==masterBookFitToken||currentMasterClueId!==clue.id||!masterBookOpen)return;const aspects=results.map(result=>result.width/Math.max(1,result.height));fitMasterBook3DToAspect(aspects.length===1?aspects[0]*2:aspects.reduce((sum,value)=>sum+value,0));});
+        }
+
+        function initializeMasterBook3D(){
+            const depth=document.getElementById('master-clue-book-cover-depth');if(depth&&!depth.childElementCount)for(let value=-10;value<=7;value++){const layer=document.createElement('span');layer.className='master-clue-book-cover-depth-layer';layer.style.setProperty('--master-book-depth',`${value}px`);layer.style.filter=`brightness(${0.58+(1-Math.abs(value)/10)*0.4})`;depth.appendChild(layer);}
+            if(masterBook3DInitialized)return;const stage=document.getElementById('master-clue-book-stage');if(!stage)return;masterBook3DInitialized=true;
+            stage.addEventListener('pointerdown',event=>{masterBookDragging=true;masterBookLastX=event.clientX;masterBookLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId);});
+            stage.addEventListener('pointermove',event=>{if(!masterBookDragging)return;masterBookRotationY+=(event.clientX-masterBookLastX)*0.65;masterBookRotationX=Math.max(-75,Math.min(75,masterBookRotationX-(event.clientY-masterBookLastY)*0.5));masterBookLastX=event.clientX;masterBookLastY=event.clientY;updateMasterClueBook3DTransform();});
+            const finish=event=>{masterBookDragging=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);};stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClueBook3D(event.deltaY<0?0.08:-0.08);},{passive:false});window.addEventListener('resize',updateMasterBook3DFit);
+        }
+
         function setMasterBookPage(element, page, index, total, emptyText) {
             element.innerHTML = '';
+            element.classList.remove('has-image-shape');element.style.removeProperty('--master-page-shape');
             if (page && page.img) {
-                const image=document.createElement('img');image.src=page.img;image.alt=`Página ${index+1}`;element.appendChild(image);
+                const image=document.createElement('img');image.src=page.img;image.alt=`Página ${index+1}`;element.dataset.pageSource=page.img;element.appendChild(image);
                 const number=document.createElement('div');number.className='master-clue-book-page-index';number.textContent=`${index+1} / ${total}`;element.appendChild(number);
-            } else { const empty=document.createElement('div');empty.className='master-clue-book-page-empty';empty.textContent=emptyText;element.appendChild(empty); }
+                prepareMasterClueCutout(page.img).then(result=>{if(element.dataset.pageSource!==page.img)return;image.src=result.src;element.style.setProperty('--master-page-shape',`url(${JSON.stringify(result.src)})`);element.classList.add('has-image-shape');});
+            } else { delete element.dataset.pageSource;const empty=document.createElement('div');empty.className='master-clue-book-page-empty';empty.textContent=emptyText;element.appendChild(empty); }
         }
 
         function getCurrentMasterBookPages() {
@@ -1165,6 +1220,7 @@
             document.getElementById('master-clue-book-flip').className='master-clue-book-flip';
             masterBookAnimating=false;
             updateMasterBookControls(pages);
+            updateMasterBook3DFit();
         }
 
         function toggleMasterClueBook() {
@@ -1173,6 +1229,7 @@
             document.getElementById('master-clue-book-cover').classList.toggle('open',masterBookOpen);
             document.getElementById('master-clue-book').classList.toggle('open',masterBookOpen);
             updateMasterBookControls(getCurrentMasterBookPages());
+            updateMasterBook3DFit();
         }
 
         function turnMasterClueBookPage(direction) {
@@ -1195,9 +1252,10 @@
             const modal=document.getElementById('master-clue-info-modal'),stage=document.getElementById('master-clue-3d-stage'),controls=document.getElementById('master-clue-3d-controls'),bookViewer=document.getElementById('master-clue-book-viewer');
             modal.classList.add('open');
             if(clue.type==='book'){
-                masterClueImageToken++;stage.style.display='none';controls.style.display='none';bookViewer.style.display='block';masterBookSpread=0;masterBookOpen=false;masterBookAnimating=false;
+                masterClueImageToken++;stage.style.display='none';controls.style.display='none';bookViewer.style.display='block';masterBookSpread=0;masterBookOpen=false;masterBookAnimating=false;initializeMasterBook3D();resetMasterClueBook3D();
                 const cover=document.getElementById('master-clue-book-cover'),coverImage=document.getElementById('master-clue-book-cover-image'),coverFallback=document.getElementById('master-clue-book-cover-fallback'),source=clue.coverImg||clue.img;
-                cover.classList.remove('open');document.getElementById('master-clue-book').classList.remove('open');coverImage.style.display=source?'block':'none';coverFallback.style.display=source?'none':'flex';if(source){coverImage.src=source;coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};}
+                cover.classList.remove('open');document.getElementById('master-clue-book').classList.remove('open');coverImage.style.display=source?'block':'none';coverFallback.style.display=source?'none':'flex';
+                if(source){coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};prepareMasterClueCutout(source).then(result=>{if(currentMasterClueId!==id)return;coverImage.src=result.src;setMasterBookCoverShape(result.src,result.edgeColor);if(!masterBookOpen)fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});}else{setMasterBookCoverShape('');}
                 renderMasterBookSpread();return;
             }
             stage.style.display='flex';controls.style.display='flex';bookViewer.style.display='none';initializeMasterClue3D();resetMasterClue3D();
@@ -1208,7 +1266,7 @@
         }
 
         function closeMasterClueInfo() {
-            document.getElementById('master-clue-info-modal').classList.remove('open');masterClueImageToken++;masterClueDragging=false;masterBookAnimating=false;currentMasterClueId=null;
+            document.getElementById('master-clue-info-modal').classList.remove('open');masterClueImageToken++;masterBookFitToken++;masterClueDragging=false;masterBookDragging=false;masterBookAnimating=false;masterBookOpen=false;document.getElementById('master-clue-book-stage').classList.remove('dragging');currentMasterClueId=null;
         }
 
         function editCurrentMasterClue() { const id=currentMasterClueId;if(!id)return;closeMasterClueInfo();openMasterClueForm(id); }
