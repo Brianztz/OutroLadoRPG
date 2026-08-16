@@ -191,6 +191,30 @@
         .catalog-description { margin: 0; color: var(--text-secondary); font-size: 0.7em; line-height: 1.5; }
         .catalog-details { margin-top: auto; padding-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid #35353b; }
         .catalog-detail { padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-secondary); font-size: 0.6em; }
+        .catalog-recipient-modal { position: fixed; inset: 0; z-index: 10500; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.88); }
+        .catalog-recipient-modal.open { display: flex; }
+        .catalog-recipient-dialog { width: min(520px,95vw); max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; border: 1px solid rgba(0,230,118,0.48); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
+        .catalog-recipient-header { padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #35353b; }
+        .catalog-recipient-title { margin: 0; color: var(--accent-green); font-size: 0.94em; text-transform: uppercase; }
+        .catalog-recipient-item { margin-top: 5px; color: var(--text-secondary); font-size: 0.7em; }
+        .catalog-recipient-close { width: 34px; height: 34px; flex: 0 0 auto; border: 0; border-radius: 6px; background: rgba(229,57,53,0.2); color: #ff7772; font-size: 1em; font-weight: 900; cursor: pointer; }
+        .catalog-recipient-body { min-height: 120px; padding: 15px 18px; overflow-y: auto; }
+        .catalog-recipient-all { margin-bottom: 9px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,207,51,0.28); border-radius: 8px; background: rgba(255,207,51,0.06); color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; cursor: pointer; }
+        .catalog-recipient-list { display: flex; flex-direction: column; gap: 8px; }
+        .catalog-recipient-option { padding: 10px 12px; display: grid; grid-template-columns: 22px 42px minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid #3d3d44; border-radius: 8px; background: #111114; cursor: pointer; transition: 0.16s; }
+        .catalog-recipient-option:hover { border-color: var(--accent-green); background: rgba(0,230,118,0.06); }
+        .catalog-recipient-option:has(input:checked) { border-color: var(--accent-green); background: rgba(0,230,118,0.1); }
+        .catalog-recipient-option input, .catalog-recipient-all input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent-green); cursor: pointer; }
+        .catalog-recipient-avatar { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--accent-blue); border-radius: 50%; background: #08080a; color: var(--accent-blue); font-weight: 900; }
+        .catalog-recipient-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .catalog-recipient-name { color: var(--text-primary); font-size: 0.8em; font-weight: 900; overflow-wrap: anywhere; }
+        .catalog-recipient-code { margin-top: 3px; color: var(--text-secondary); font-size: 0.62em; }
+        .catalog-recipient-empty { padding: 25px 10px; color: var(--text-secondary); font-size: 0.78em; line-height: 1.5; text-align: center; }
+        .catalog-recipient-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; border-top: 1px solid #35353b; }
+        .catalog-recipient-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
+        .catalog-recipient-cancel { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
+        .catalog-recipient-send { border: 1px solid var(--accent-green); background: var(--accent-green); color: #000; }
+        .catalog-recipient-send:disabled { opacity: 0.38; cursor: not-allowed; }
         #modal-ficha { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,0.92); }
         .modal-toolbar { width: 95%; max-width: 1400px; display: flex; justify-content: flex-end; }
         .btn-close-modal { margin-bottom: 10px; padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent-red); color: white; font-size: 1em; font-weight: 900; cursor: pointer; }
@@ -325,6 +349,23 @@
         </div>
     </div>
 
+    <div id="catalog-recipient-modal" class="catalog-recipient-modal" onclick="if(event.target===this) closeCatalogRecipientPopup()">
+        <div class="catalog-recipient-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-recipient-title">
+            <div class="catalog-recipient-header">
+                <div><h2 id="catalog-recipient-title" class="catalog-recipient-title">Enviar item</h2><div id="catalog-recipient-item" class="catalog-recipient-item"></div></div>
+                <button class="catalog-recipient-close" type="button" onclick="closeCatalogRecipientPopup()" aria-label="Fechar">×</button>
+            </div>
+            <div class="catalog-recipient-body">
+                <label id="catalog-recipient-all-row" class="catalog-recipient-all"><input id="catalog-recipient-all" type="checkbox" onchange="toggleAllCatalogRecipients(this.checked)"><span>SELECIONAR TODOS</span></label>
+                <div id="catalog-recipient-list" class="catalog-recipient-list"></div>
+            </div>
+            <div class="catalog-recipient-footer">
+                <button class="catalog-recipient-cancel" type="button" onclick="closeCatalogRecipientPopup()">CANCELAR</button>
+                <button id="catalog-recipient-send" class="catalog-recipient-send" type="button" onclick="confirmCatalogSend()" disabled>ENVIAR</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-ficha" onclick="if(event.target===this) fecharFicha()">
         <div class="modal-toolbar"><button class="btn-close-modal" onclick="fecharFicha()">✕ FECHAR FICHA</button></div>
         <iframe id="iframe-ficha" src="" title="Ficha completa do jogador"></iframe>
@@ -342,6 +383,7 @@
         let editingMonsterActions = [];
         let monsterRollRevealTimer = null;
         let masterCatalogFilter = 'all';
+        let pendingCatalogItem = null;
         const monsterD20Table = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
 
         function escapeHtml(value) {
@@ -416,37 +458,115 @@
                 card.innerHTML = `<div class="catalog-image-wrap">${imageHtml}<span class="catalog-type">${escapeHtml(item.catalogType)}</span></div><div class="catalog-card-body"><h3 class="catalog-card-name">${escapeHtml(item.name)}</h3>${contentHtml}</div>`;
                 const image = card.querySelector('.catalog-image');
                 if (image) image.onerror = () => { const fallback = document.createElement('div'); fallback.className = 'catalog-image-fallback'; fallback.textContent = isWeapon ? '⚔️' : '🎒'; image.replaceWith(fallback); };
-                card.onclick = () => sendCatalogEntryToPlayers(item);
-                card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); sendCatalogEntryToPlayers(item); } };
+                card.onclick = () => openCatalogRecipientPopup(item);
+                card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openCatalogRecipientPopup(item); } };
                 grid.appendChild(card);
             });
         }
 
-        function sendCatalogEntryToPlayers(item) {
+        function openCatalogRecipientPopup(item) {
+            if (!item) return;
+            pendingCatalogItem = item;
+            document.getElementById('catalog-recipient-title').textContent = item.catalogKind === 'weapons' ? 'Enviar arma' : 'Enviar item';
+            document.getElementById('catalog-recipient-item').textContent = item.name;
+            renderCatalogRecipients();
+            document.getElementById('catalog-recipient-modal').classList.add('open');
+        }
+
+        function closeCatalogRecipientPopup() {
+            document.getElementById('catalog-recipient-modal').classList.remove('open');
+            pendingCatalogItem = null;
+        }
+
+        function renderCatalogRecipients() {
+            const list = document.getElementById('catalog-recipient-list');
+            const selectAllRow = document.getElementById('catalog-recipient-all-row');
+            const players = Array.from(connectedPlayers.entries()).filter(([, player]) => player && player.fullData);
+            list.innerHTML = '';
+            document.getElementById('catalog-recipient-all').checked = false;
+
+            if (!players.length) {
+                selectAllRow.style.display = 'none';
+                list.innerHTML = '<div class="catalog-recipient-empty"><strong>Nenhum jogador disponível.</strong><br>Abra uma ficha de jogador e aguarde ela aparecer como conectada.</div>';
+                updateCatalogRecipientButton();
+                return;
+            }
+
+            selectAllRow.style.display = 'flex';
+            players.forEach(([code, player]) => {
+                const option = document.createElement('label');
+                option.className = 'catalog-recipient-option';
+                const playerName = String(player.nome || (player.fullData.info && player.fullData.info.char_nome) || 'Personagem sem nome');
+                const avatar = player.foto ? `<img src="${escapeHtml(player.foto)}" alt="">` : escapeHtml(playerName.charAt(0).toUpperCase() || '?');
+                option.innerHTML = `<input class="catalog-recipient-checkbox" type="checkbox" value="${escapeHtml(code)}"><span class="catalog-recipient-avatar">${avatar}</span><span><span class="catalog-recipient-name">${escapeHtml(playerName)}</span><span class="catalog-recipient-code">CÓDIGO ${escapeHtml(code)}</span></span>`;
+                option.querySelector('input').addEventListener('change', updateCatalogRecipientButton);
+                list.appendChild(option);
+            });
+            updateCatalogRecipientButton();
+        }
+
+        function toggleAllCatalogRecipients(checked) {
+            document.querySelectorAll('.catalog-recipient-checkbox').forEach(input => { input.checked = checked; });
+            updateCatalogRecipientButton();
+        }
+
+        function updateCatalogRecipientButton() {
+            const checkboxes = Array.from(document.querySelectorAll('.catalog-recipient-checkbox'));
+            const selectedCount = checkboxes.filter(input => input.checked).length;
+            const selectAll = document.getElementById('catalog-recipient-all');
+            selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+            selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+            const sendButton = document.getElementById('catalog-recipient-send');
+            sendButton.disabled = selectedCount === 0;
+            sendButton.textContent = selectedCount > 0 ? `ENVIAR PARA ${selectedCount}` : 'ENVIAR';
+        }
+
+        function confirmCatalogSend() {
+            if (!pendingCatalogItem) return;
+            const selectedCodes = Array.from(document.querySelectorAll('.catalog-recipient-checkbox:checked')).map(input => input.value);
+            if (!selectedCodes.length) return;
+            sendCatalogEntryToPlayers(pendingCatalogItem, selectedCodes);
+            closeCatalogRecipientPopup();
+        }
+
+        function sendCatalogEntryToPlayers(item, playerCodes) {
             if (!socket || !socket.connected || !item) return;
+            const recipients = new Set((Array.isArray(playerCodes) ? playerCodes : []).map(String));
+            if (!recipients.size) return;
             const isWeapon = item.catalogKind === 'weapons';
             const isRanged = item.catalogType === 'Disparo';
             const description = isWeapon ? `<div style='display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.85em;'><div><b>Atq:</b> ${isRanged ? 'Disparo' : 'Corpo a corpo'} (${item.atk}x)</div><div><b>Dano:</b> ${item.dmg}</div><div><b>Crit:</b> ${item.crit}</div><div><b>Alc:</b> ${item.range}</div><div><b>Mun:</b> ${item.ammo || 'Nenhuma'}</div><div><b>Per:</b> ${item.skill}</div></div>` : item.desc;
-            socket.emit('grant_catalog_item', {
-                item: {
-                    id: `master_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-                    n: item.name,
-                    w: item.weight,
-                    d: description,
-                    eq: true,
-                    type: isWeapon ? 'arma' : (item.ammo ? 'municao' : 'comum'),
-                    dmg: isWeapon ? item.dmg : '0',
-                    extra: '0',
-                    crit: isWeapon ? item.crit : '20/x2',
-                    skill: isWeapon ? item.skill : 'Luta',
-                    img: item.img || '',
-                    atkType: isWeapon ? (isRanged ? 'Disparo' : 'Corpo a corpo') : 'Corpo a corpo',
-                    atk: isWeapon ? item.atk : 1,
-                    range: isWeapon ? item.range : 'Curto',
-                    ammo: item.ammo || 'Nenhuma',
-                    capacity: isRanged ? item.capacity : 0,
-                    currentShots: isRanged ? item.capacity : 0
-                }
+            const catalogItem = {
+                n: item.name,
+                w: item.weight,
+                d: description,
+                eq: true,
+                type: isWeapon ? 'arma' : (item.ammo ? 'municao' : 'comum'),
+                dmg: isWeapon ? item.dmg : '0',
+                extra: '0',
+                crit: isWeapon ? item.crit : '20/x2',
+                skill: isWeapon ? item.skill : 'Luta',
+                img: item.img || '',
+                atkType: isWeapon ? (isRanged ? 'Disparo' : 'Corpo a corpo') : 'Corpo a corpo',
+                atk: isWeapon ? item.atk : 1,
+                range: isWeapon ? item.range : 'Curto',
+                ammo: item.ammo || 'Nenhuma',
+                capacity: isRanged ? item.capacity : 0,
+                currentShots: isRanged ? item.capacity : 0
+            };
+
+            connectedPlayers.forEach((player, code) => {
+                if (!recipients.has(String(code)) || !player || !player.fullData) return;
+                const fullData = JSON.parse(JSON.stringify(player.fullData));
+                if (!Array.isArray(fullData.inv)) fullData.inv = [];
+                fullData.inv.push({
+                    ...catalogItem,
+                    id: `master_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
+                });
+
+                const updatedPlayer = { ...player, codigo: String(code), id: String(code), fullData };
+                connectedPlayers.set(String(code), updatedPlayer);
+                socket.emit('master_update_player', updatedPlayer);
             });
         }
 
@@ -1027,6 +1147,7 @@
         document.addEventListener('keydown', event => {
             if (event.key !== 'Escape') return;
             if (document.getElementById('master-dice-popup').classList.contains('open')) closeMasterDicePopup();
+            else if (document.getElementById('catalog-recipient-modal').classList.contains('open')) closeCatalogRecipientPopup();
             else if (document.getElementById('monster-modal').classList.contains('open')) closeMonsterPopup();
         });
         updatePlayersCount();
