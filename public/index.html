@@ -590,11 +590,10 @@
             <button type="button" class="btn-roll" onclick="rotateClue3D(45)">↷</button>
         </div>
         <div id="clue-info-description" class="clue-info-description"></div>
-        <div style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
-            <button class="btn-add" style="flex:1; min-width:100px; margin:0; background:var(--accent-blue);" onclick="editCurrentClue()">EDITAR</button>
-            <button class="btn-del" style="flex:1; min-width:100px; padding:10px;" onclick="removeCurrentClue()">REMOVER</button>
-            <button class="btn-roll" style="flex:1; min-width:100px; padding:10px;" onclick="closeClueInfo()">FECHAR</button>
-        </div>
+<div style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
+    <button class="btn-del" style="flex:1; min-width:100px; padding:10px;" onclick="removeCurrentClue()">REMOVER</button>
+    <button class="btn-roll" style="flex:1; min-width:100px; padding:10px;" onclick="closeClueInfo()">FECHAR</button>
+</div>
     </div>
 </div>
 <div id="popup-dice" class="popup-overlay" onclick="closeDice()">
@@ -2586,14 +2585,7 @@
         currentClueId = null;
     }
 
-    function editCurrentClue() {
-        const id = currentClueId;
-        if (!id) return;
-        closeClueInfo();
-        openClueForm(id);
-    }
-
-    function removeCurrentClue() {
+function removeCurrentClue() {
         if (!currentClueId) return;
         cluesData = cluesData.filter(item => item.id !== currentClueId);
         closeClueInfo();
