@@ -84,45 +84,73 @@
         .initiative-clear { grid-column: 1 / -1; border: 1px solid rgba(229,57,53,0.5) !important; background: rgba(229,57,53,0.12); color: #ff7772; }
         .master-tab-panel { display: none; }
         .master-tab-panel.active { display: flex; }
-        .monsters-workspace { min-height: 0; flex: 1; gap: 20px; }
-        .monster-creator { width: 320px; flex: 0 0 320px; padding: 18px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); box-shadow: 0 8px 32px rgba(0,0,0,0.55); backdrop-filter: blur(8px); }
-        .monster-panel-title { margin: 0 0 5px; color: var(--accent-red); font-size: 0.95em; font-weight: 900; text-transform: uppercase; }
-        .monster-panel-help { margin: 0 0 17px; color: var(--text-secondary); font-size: 0.72em; line-height: 1.45; }
-        .monster-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .monster-form-field { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-        .monster-form-field.full { grid-column: 1 / -1; }
-        .monster-form-field label { color: var(--text-secondary); font-size: 0.65em; font-weight: 900; text-transform: uppercase; }
-        .monster-input, .monster-textarea { width: 100%; min-width: 0; padding: 10px; border: 1px solid #414148; border-radius: 6px; background: #111114; color: var(--text-primary); font: inherit; }
-        .monster-textarea { min-height: 100px; resize: vertical; }
-        .monster-create-button { grid-column: 1 / -1; padding: 11px; border: 1px solid var(--accent-red); border-radius: 6px; background: rgba(229,57,53,0.18); color: #ff7772; font-size: 0.73em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .monsters-workspace { min-height: 0; flex: 1; flex-direction: column; gap: 14px; }
+        .monsters-toolbar { padding: 13px 15px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--border-color); border-radius: 11px; background: var(--bg-card); box-shadow: 0 8px 26px rgba(0,0,0,0.5); }
+        .monsters-toolbar-title { margin: 0; color: #ff7772; font-size: 0.9em; font-weight: 900; text-transform: uppercase; }
+        .monsters-toolbar-info { margin-top: 4px; color: var(--text-secondary); font-size: 0.68em; }
+        .monster-create-button { padding: 10px 16px; border: 1px solid var(--accent-red); border-radius: 7px; background: rgba(229,57,53,0.18); color: #ff7772; font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .monster-create-button:hover { background: var(--accent-red); color: white; }
-        .monster-library { min-width: 0; flex: 1; display: flex; flex-direction: column; }
         .monsters-count { color: var(--accent-red); }
-        .monsters-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 16px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
+        .monsters-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(360px,1fr)); gap: 16px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
         .monsters-empty { grid-column: 1 / -1; padding: 50px 20px; border: 1px dashed rgba(229,57,53,0.38); border-radius: 12px; background: rgba(18,18,20,0.72); color: var(--text-secondary); text-align: center; }
         .monsters-empty strong { display: block; margin-bottom: 7px; color: #ff7772; }
         .monster-card { padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(229,57,53,0.42); border-radius: 11px; background: rgba(29,25,28,0.95); box-shadow: 0 8px 25px rgba(0,0,0,0.48); animation: card-in 0.25s ease-out; }
         .monster-card-header { display: flex; align-items: center; gap: 8px; }
-        .monster-name-input { min-width: 0; flex: 1; padding: 7px 8px; border: 0; border-bottom: 1px solid rgba(229,57,53,0.35); background: transparent; color: #ffb0ad; font-weight: 900; text-transform: uppercase; }
-        .monster-remove { width: 30px; height: 30px; border: 0; border-radius: 5px; background: rgba(229,57,53,0.2); color: #ff7772; font-weight: 900; cursor: pointer; }
-        .monster-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-        .monster-stat { padding: 8px; border: 1px solid #39393f; border-radius: 6px; background: rgba(0,0,0,0.25); }
-        .monster-stat label { display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 0.61em; font-weight: 900; text-transform: uppercase; }
-        .monster-stat input { width: 100%; border: 0; background: transparent; color: var(--text-primary); font-weight: 900; text-align: center; }
+        .monster-card-name { min-width: 0; flex: 1; margin: 0; color: #ffb0ad; font-size: 1em; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
+        .monster-card-button { height: 30px; padding: 0 9px; border: 1px solid #48484f; border-radius: 5px; background: #29292f; color: var(--text-primary); font-size: 0.64em; font-weight: 900; cursor: pointer; }
+        .monster-card-button.remove { border-color: rgba(229,57,53,0.35); background: rgba(229,57,53,0.18); color: #ff7772; }
+        .monster-attributes { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; }
+        .monster-attribute { padding: 7px 2px; border: 1px solid #3b3b42; border-radius: 6px; background: rgba(0,0,0,0.28); text-align: center; }
+        .monster-attribute span { display: block; color: var(--text-secondary); font-size: 0.55em; font-weight: 900; }
+        .monster-attribute strong { display: block; margin-top: 3px; color: var(--accent-yellow); font-size: 0.88em; }
         .monster-life-controls { display: grid; grid-template-columns: 34px 1fr 34px; gap: 7px; align-items: center; }
         .monster-life-button { height: 34px; border: 1px solid #48484f; border-radius: 5px; background: #29292f; color: white; font-weight: 900; cursor: pointer; }
         .monster-life-meter { height: 34px; position: relative; overflow: hidden; border: 1px solid #3d2225; border-radius: 5px; background: #0b090a; }
         .monster-life-fill { height: 100%; background: linear-gradient(90deg,#680e14,var(--accent-red)); transition: width 0.25s; }
         .monster-life-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75em; font-weight: 900; text-shadow: 1px 1px 2px black; }
         .monster-life-text input { width: 48px; padding: 0; border: 0; background: transparent; color: white; font: inherit; font-weight: 900; text-align: right; text-shadow: inherit; }
-        .monster-card-notes { width: 100%; min-height: 80px; padding: 9px; border: 1px solid #3b3b42; border-radius: 6px; background: rgba(7,7,9,0.7); color: var(--text-secondary); font: inherit; font-size: 0.75em; line-height: 1.4; resize: vertical; }
+        .monster-info-line { padding: 8px 9px; border-left: 2px solid rgba(229,57,53,0.5); background: rgba(0,0,0,0.22); color: var(--text-secondary); font-size: 0.7em; line-height: 1.4; }
+        .monster-info-line strong { color: var(--text-primary); }
+        .monster-skills-summary { display: flex; flex-wrap: wrap; gap: 5px; }
+        .monster-skill-chip { padding: 5px 7px; border: 1px solid #3d3d44; border-radius: 999px; background: rgba(0,0,0,0.27); color: var(--text-secondary); font-size: 0.6em; }
+        .monster-skill-chip strong { color: var(--accent-blue); }
+        .monster-actions-summary { display: flex; flex-direction: column; gap: 6px; }
+        .monster-action-summary { padding: 8px; border: 1px solid #3c3c43; border-radius: 6px; background: rgba(0,0,0,0.25); font-size: 0.68em; line-height: 1.4; }
+        .monster-action-summary strong { color: #ffb0ad; }
+        .monster-modal { position: fixed; inset: 0; z-index: 10000; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
+        .monster-modal.open { display: flex; }
+        .monster-modal-dialog { width: min(900px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(229,57,53,0.55); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.85); }
+        .monster-modal-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid #35353b; background: #18181c; }
+        .monster-modal-title { margin: 0; color: #ff7772; font-size: 1em; text-transform: uppercase; }
+        .monster-modal-close { width: 34px; height: 34px; border: 0; border-radius: 6px; background: rgba(229,57,53,0.2); color: #ff7772; font-weight: 900; cursor: pointer; }
+        .monster-modal-body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+        .monster-form-section { padding: 13px; border: 1px solid #34343a; border-radius: 9px; background: rgba(0,0,0,0.18); }
+        .monster-form-section-title { margin: 0 0 11px; color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; text-transform: uppercase; }
+        .monster-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+        .monster-form-grid.five { grid-template-columns: repeat(5,minmax(0,1fr)); }
+        .monster-form-field { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+        .monster-form-field.full { grid-column: 1 / -1; }
+        .monster-form-field label { color: var(--text-secondary); font-size: 0.62em; font-weight: 900; text-transform: uppercase; }
+        .monster-input, .monster-textarea { width: 100%; min-width: 0; padding: 10px; border: 1px solid #414148; border-radius: 6px; background: #0e0e11; color: var(--text-primary); font: inherit; }
+        .monster-textarea { min-height: 76px; resize: vertical; }
+        .monster-actions-heading { margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .monster-actions-heading .monster-form-section-title { margin: 0; }
+        .monster-add-action { padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.65em; font-weight: 900; cursor: pointer; }
+        .monster-action-editors { display: flex; flex-direction: column; gap: 9px; }
+        .monster-action-editor { padding: 11px; border: 1px solid #3b3b42; border-radius: 7px; background: #111114; }
+        .monster-action-editor-head { margin-bottom: 9px; display: flex; justify-content: space-between; align-items: center; color: #ffb0ad; font-size: 0.7em; font-weight: 900; }
+        .monster-action-remove { border: 0; background: transparent; color: #ff7772; font-weight: 900; cursor: pointer; }
+        .monster-modal-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; border-top: 1px solid #35353b; background: #18181c; }
+        .monster-modal-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
+        .monster-cancel-button { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
+        .monster-save-button { border: 1px solid var(--accent-red); background: var(--accent-red); color: white; }
         #modal-ficha { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,0.92); }
         .modal-toolbar { width: 95%; max-width: 1400px; display: flex; justify-content: flex-end; }
         .btn-close-modal { margin-bottom: 10px; padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent-red); color: white; font-size: 1em; font-weight: 900; cursor: pointer; }
         #iframe-ficha { width: 95%; max-width: 1400px; height: 85vh; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-body); }
         @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
-        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper, .monsters-workspace { flex-direction: column; overflow: visible; } .players-container, .monsters-grid { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } .monster-creator { width: 100%; flex-basis: auto; } }
+        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } .monsters-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } }
     </style>
 </head>
 <body>
@@ -166,22 +194,65 @@
     </main>
 
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
-        <aside class="monster-creator">
-            <h2 class="monster-panel-title">Novo monstro</h2>
-            <p class="monster-panel-help">Cadastre as criaturas da campanha e acompanhe seus valores durante a sessão.</p>
-            <div class="monster-form">
-                <div class="monster-form-field full"><label for="monster-new-name">Nome</label><input id="monster-new-name" class="monster-input" type="text" placeholder="Nome do monstro"></div>
-                <div class="monster-form-field"><label for="monster-new-life">Vida máxima</label><input id="monster-new-life" class="monster-input" type="number" min="1" value="10"></div>
-                <div class="monster-form-field"><label for="monster-new-defense">Defesa</label><input id="monster-new-defense" class="monster-input" type="number" value="0"></div>
-                <div class="monster-form-field full"><label for="monster-new-notes">Observações</label><textarea id="monster-new-notes" class="monster-textarea" placeholder="Ataques, habilidades e anotações..."></textarea></div>
-                <button class="monster-create-button" type="button" onclick="addMonster()">+ ADICIONAR MONSTRO</button>
-            </div>
-        </aside>
-        <div class="monster-library">
-            <div class="section-heading"><span>Monstros cadastrados</span><span id="monsters-count" class="monsters-count">0 MONSTROS</span></div>
-            <div id="monsters-grid" class="monsters-grid"></div>
+        <div class="monsters-toolbar">
+            <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
+            <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
         </div>
+        <div id="monsters-grid" class="monsters-grid"></div>
     </section>
+
+    <div id="monster-modal" class="monster-modal" onclick="if(event.target===this) closeMonsterPopup()">
+        <div class="monster-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="monster-modal-title">
+            <div class="monster-modal-header"><h2 id="monster-modal-title" class="monster-modal-title">Novo monstro</h2><button class="monster-modal-close" type="button" onclick="closeMonsterPopup()">×</button></div>
+            <div class="monster-modal-body">
+                <section class="monster-form-section">
+                    <h3 class="monster-form-section-title">Informações</h3>
+                    <div class="monster-form-grid">
+                        <div class="monster-form-field full"><label for="monster-form-name">Nome</label><input id="monster-form-name" class="monster-input" type="text" placeholder="Nome do monstro"></div>
+                        <div class="monster-form-field"><label for="monster-form-life">Pontos de Vida</label><input id="monster-form-life" class="monster-input" type="number" min="1" value="10"></div>
+                        <div class="monster-form-field"><label for="monster-form-resistance">Resistência</label><input id="monster-form-resistance" class="monster-input" type="text" placeholder="Ex.: Balístico 5, Corte 10"></div>
+                        <div class="monster-form-field full"><label for="monster-form-vulnerabilities">Vulnerabilidades</label><textarea id="monster-form-vulnerabilities" class="monster-textarea" placeholder="Fraquezas e vulnerabilidades..."></textarea></div>
+                    </div>
+                </section>
+
+                <section class="monster-form-section">
+                    <h3 class="monster-form-section-title">Atributos</h3>
+                    <div class="monster-form-grid five">
+                        <div class="monster-form-field"><label for="monster-form-for">FOR</label><input id="monster-form-for" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-agi">AGI</label><input id="monster-form-agi" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-int">INT</label><input id="monster-form-int" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-pre">PRE</label><input id="monster-form-pre" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-vig">VIG</label><input id="monster-form-vig" class="monster-input" type="number" value="0"></div>
+                    </div>
+                </section>
+
+                <section class="monster-form-section">
+                    <h3 class="monster-form-section-title">Perícias</h3>
+                    <div class="monster-form-grid five">
+                        <div class="monster-form-field"><label for="monster-form-fortitude">Fortitude</label><input id="monster-form-fortitude" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-reflexos">Reflexos</label><input id="monster-form-reflexos" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-vontade">Vontade</label><input id="monster-form-vontade" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-percepcao">Percepção</label><input id="monster-form-percepcao" class="monster-input" type="number" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-iniciativa">Iniciativa</label><input id="monster-form-iniciativa" class="monster-input" type="number" value="0"></div>
+                    </div>
+                </section>
+
+                <section class="monster-form-section">
+                    <h3 class="monster-form-section-title">Presença Perturbadora</h3>
+                    <div class="monster-form-grid">
+                        <div class="monster-form-field"><label for="monster-form-presence">Presença Perturbadora</label><input id="monster-form-presence" class="monster-input" type="text" placeholder="Ex.: DT 20"></div>
+                        <div class="monster-form-field"><label for="monster-form-damage">Dano</label><input id="monster-form-damage" class="monster-input" type="text" placeholder="Ex.: 2d6 mental"></div>
+                    </div>
+                </section>
+
+                <section class="monster-form-section">
+                    <div class="monster-actions-heading"><h3 class="monster-form-section-title">Ações</h3><button class="monster-add-action" type="button" onclick="addMonsterAction()">+ CRIAR AÇÃO</button></div>
+                    <div id="monster-action-editors" class="monster-action-editors"></div>
+                </section>
+            </div>
+            <div class="monster-modal-footer"><button class="monster-cancel-button" type="button" onclick="closeMonsterPopup()">CANCELAR</button><button class="monster-save-button" type="button" onclick="saveMonsterFromPopup()">SALVAR MONSTRO</button></div>
+        </div>
+    </div>
 
     <div id="modal-ficha" onclick="if(event.target===this) fecharFicha()">
         <div class="modal-toolbar"><button class="btn-close-modal" onclick="fecharFicha()">✕ FECHAR FICHA</button></div>
@@ -195,6 +266,8 @@
         const connectedPlayers = new Map();
         let initiativeState = loadInitiativeState();
         let monstersState = loadMonstersState();
+        let editingMonsterId = null;
+        let editingMonsterActions = [];
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -218,18 +291,35 @@
                 if (!Array.isArray(saved)) return [];
                 return saved.map((monster, index) => {
                     const maxLife = Math.max(1, safeNumber(monster.maxLife, 10));
+                    const attrs = monster.attrs && typeof monster.attrs === 'object' ? monster.attrs : {};
+                    const skills = monster.skills && typeof monster.skills === 'object' ? monster.skills : {};
                     return {
                         id: String(monster.id || `monster_saved_${index}`),
                         name: String(monster.name || 'Monstro sem nome'),
                         life: Math.max(0, Math.min(maxLife, safeNumber(monster.life, maxLife))),
                         maxLife,
-                        defense: safeNumber(monster.defense),
-                        notes: String(monster.notes || '')
+                        resistance: String(monster.resistance ?? monster.defense ?? ''),
+                        vulnerabilities: String(monster.vulnerabilities ?? monster.notes ?? ''),
+                        attrs: { for: safeNumber(attrs.for), agi: safeNumber(attrs.agi), int: safeNumber(attrs.int), pre: safeNumber(attrs.pre), vig: safeNumber(attrs.vig) },
+                        skills: { fortitude: safeNumber(skills.fortitude), reflexos: safeNumber(skills.reflexos), vontade: safeNumber(skills.vontade), percepcao: safeNumber(skills.percepcao), iniciativa: safeNumber(skills.iniciativa) },
+                        presence: String(monster.presence || ''),
+                        damage: String(monster.damage || ''),
+                        actions: Array.isArray(monster.actions) ? monster.actions.map((action, actionIndex) => normalizeMonsterAction(action, actionIndex)) : []
                     };
                 });
             } catch (error) {
                 return [];
             }
+        }
+
+        function normalizeMonsterAction(action, index = 0) {
+            return {
+                id: String(action && action.id || `action_${Date.now()}_${index}_${Math.random().toString(36).slice(2,6)}`),
+                name: String(action && action.name || ''),
+                test: String(action && action.test || ''),
+                damage: String(action && action.damage || ''),
+                description: String(action && action.description || '')
+            };
         }
 
         function saveMonstersState() {
@@ -245,33 +335,33 @@
             if (!count) {
                 const empty = document.createElement('div');
                 empty.className = 'monsters-empty';
-                empty.innerHTML = '<strong>Nenhum monstro cadastrado</strong>Use o formulário ao lado para preparar sua primeira criatura.';
+                empty.innerHTML = '<strong>Nenhum monstro cadastrado</strong>Clique em Novo Monstro para criar sua primeira criatura.';
                 grid.appendChild(empty);
                 return;
             }
 
             monstersState.forEach(monster => {
                 const lifePercent = monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0;
+                const attributesHtml = [['FOR',monster.attrs.for],['AGI',monster.attrs.agi],['INT',monster.attrs.int],['PRE',monster.attrs.pre],['VIG',monster.attrs.vig]].map(([label,value]) => `<div class="monster-attribute"><span>${label}</span><strong>${value}</strong></div>`).join('');
+                const skillsHtml = [['Fortitude',monster.skills.fortitude],['Reflexos',monster.skills.reflexos],['Vontade',monster.skills.vontade],['Percepção',monster.skills.percepcao],['Iniciativa',monster.skills.iniciativa]].map(([label,value]) => `<span class="monster-skill-chip">${label} <strong>${value}</strong></span>`).join('');
+                const actionsHtml = monster.actions.length ? monster.actions.map(action => `<div class="monster-action-summary"><strong>${escapeHtml(action.name || 'Ação')}</strong>${action.test ? ` · ${escapeHtml(action.test)}` : ''}${action.damage ? `<br>Dano: ${escapeHtml(action.damage)}` : ''}${action.description ? `<br>${escapeHtml(action.description)}` : ''}</div>`).join('') : '<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
                 const card = document.createElement('article');
                 card.className = 'monster-card';
                 card.dataset.monsterId = monster.id;
                 card.innerHTML = `
-                    <div class="monster-card-header"><input class="monster-name-input" type="text" value="${escapeHtml(monster.name)}" aria-label="Nome do monstro"><button class="monster-remove" type="button" title="Remover monstro">×</button></div>
-                    <div class="monster-stats">
-                        <div class="monster-stat"><label>Vida máxima</label><input class="monster-max-life" type="number" min="1" value="${monster.maxLife}"></div>
-                        <div class="monster-stat"><label>Defesa</label><input class="monster-defense" type="number" value="${monster.defense}"></div>
-                    </div>
+                    <div class="monster-card-header"><h3 class="monster-card-name">${escapeHtml(monster.name)}</h3><button class="monster-card-button monster-edit" type="button">EDITAR</button><button class="monster-card-button remove monster-remove" type="button" title="Remover monstro">×</button></div>
+                    <div class="monster-attributes">${attributesHtml}</div>
                     <div class="monster-life-controls">
                         <button class="monster-life-button monster-life-minus" type="button">−</button>
                         <div class="monster-life-meter"><div class="monster-life-fill" style="width:${lifePercent}%"></div><div class="monster-life-text"><input class="monster-current-life" type="number" min="0" value="${monster.life}" aria-label="Vida atual"> / ${monster.maxLife}</div></div>
                         <button class="monster-life-button monster-life-plus" type="button">+</button>
                     </div>
-                    <textarea class="monster-card-notes" placeholder="Ataques, habilidades e observações...">${escapeHtml(monster.notes)}</textarea>`;
-                card.querySelector('.monster-name-input').onchange = event => updateMonsterField(monster.id, 'name', event.target.value);
-                card.querySelector('.monster-max-life').onchange = event => updateMonsterField(monster.id, 'maxLife', event.target.value);
-                card.querySelector('.monster-defense').onchange = event => updateMonsterField(monster.id, 'defense', event.target.value);
-                card.querySelector('.monster-current-life').onchange = event => updateMonsterField(monster.id, 'life', event.target.value);
-                card.querySelector('.monster-card-notes').onchange = event => updateMonsterField(monster.id, 'notes', event.target.value);
+                    <div class="monster-info-line"><strong>Resistência:</strong> ${escapeHtml(monster.resistance || '—')}<br><strong>Vulnerabilidades:</strong> ${escapeHtml(monster.vulnerabilities || '—')}</div>
+                    <div class="monster-skills-summary">${skillsHtml}</div>
+                    <div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence || '—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage || '—')}</div>
+                    <div class="monster-actions-summary">${actionsHtml}</div>`;
+                card.querySelector('.monster-edit').onclick = () => openMonsterPopup(monster.id);
+                card.querySelector('.monster-current-life').onchange = event => updateMonsterLife(monster.id, event.target.value);
                 card.querySelector('.monster-life-minus').onclick = () => changeMonsterLife(monster.id, -1);
                 card.querySelector('.monster-life-plus').onclick = () => changeMonsterLife(monster.id, 1);
                 card.querySelector('.monster-remove').onclick = () => removeMonster(monster.id);
@@ -279,35 +369,95 @@
             });
         }
 
-        function addMonster() {
-            const nameInput = document.getElementById('monster-new-name');
-            const lifeInput = document.getElementById('monster-new-life');
-            const defenseInput = document.getElementById('monster-new-defense');
-            const notesInput = document.getElementById('monster-new-notes');
-            const name = nameInput.value.trim();
-            if (!name) return nameInput.focus();
-            const maxLife = Math.max(1, safeNumber(lifeInput.value, 10));
-            monstersState.push({ id: `monster_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, name, life: maxLife, maxLife, defense: safeNumber(defenseInput.value), notes: notesInput.value.trim() });
-            saveMonstersState();
-            renderMonsters();
-            nameInput.value = '';
-            lifeInput.value = '10';
-            defenseInput.value = '0';
-            notesInput.value = '';
-            nameInput.focus();
+        function openMonsterPopup(id = null) {
+            const monster = id ? monstersState.find(item => item.id === id) : null;
+            editingMonsterId = monster ? monster.id : null;
+            editingMonsterActions = monster ? monster.actions.map(action => ({ ...action })) : [];
+            document.getElementById('monster-modal-title').textContent = monster ? `Editar ${monster.name}` : 'Novo monstro';
+            document.getElementById('monster-form-name').value = monster ? monster.name : '';
+            document.getElementById('monster-form-life').value = monster ? monster.maxLife : 10;
+            document.getElementById('monster-form-resistance').value = monster ? monster.resistance : '';
+            document.getElementById('monster-form-vulnerabilities').value = monster ? monster.vulnerabilities : '';
+            ['for','agi','int','pre','vig'].forEach(key => document.getElementById(`monster-form-${key}`).value = monster ? monster.attrs[key] : 0);
+            ['fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => document.getElementById(`monster-form-${key}`).value = monster ? monster.skills[key] : 0);
+            document.getElementById('monster-form-presence').value = monster ? monster.presence : '';
+            document.getElementById('monster-form-damage').value = monster ? monster.damage : '';
+            renderMonsterActionEditors();
+            document.getElementById('monster-modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('monster-form-name').focus(), 0);
         }
 
-        function updateMonsterField(id, field, rawValue) {
+        function closeMonsterPopup() {
+            document.getElementById('monster-modal').classList.remove('open');
+            document.body.style.overflow = '';
+            editingMonsterId = null;
+            editingMonsterActions = [];
+        }
+
+        function renderMonsterActionEditors() {
+            const container = document.getElementById('monster-action-editors');
+            container.innerHTML = '';
+            if (!editingMonsterActions.length) {
+                container.innerHTML = '<div class="monster-info-line">Nenhuma ação criada.</div>';
+                return;
+            }
+
+            editingMonsterActions.forEach((action, index) => {
+                const editor = document.createElement('div');
+                editor.className = 'monster-action-editor';
+                editor.innerHTML = `<div class="monster-action-editor-head"><span>AÇÃO ${index + 1}</span><button class="monster-action-remove" type="button">REMOVER</button></div><div class="monster-form-grid"><div class="monster-form-field"><label>Nome da ação</label><input class="monster-input action-name" type="text" value="${escapeHtml(action.name)}" placeholder="Ex.: Mordida"></div><div class="monster-form-field"><label>Teste / Ataque</label><input class="monster-input action-test" type="text" value="${escapeHtml(action.test)}" placeholder="Ex.: Luta +10"></div><div class="monster-form-field"><label>Dano</label><input class="monster-input action-damage" type="text" value="${escapeHtml(action.damage)}" placeholder="Ex.: 2d8+4"></div><div class="monster-form-field full"><label>Descrição</label><textarea class="monster-textarea action-description" placeholder="Efeitos adicionais da ação...">${escapeHtml(action.description)}</textarea></div></div>`;
+                editor.querySelector('.action-name').oninput = event => action.name = event.target.value;
+                editor.querySelector('.action-test').oninput = event => action.test = event.target.value;
+                editor.querySelector('.action-damage').oninput = event => action.damage = event.target.value;
+                editor.querySelector('.action-description').oninput = event => action.description = event.target.value;
+                editor.querySelector('.monster-action-remove').onclick = () => removeMonsterAction(action.id);
+                container.appendChild(editor);
+            });
+        }
+
+        function addMonsterAction() {
+            editingMonsterActions.push(normalizeMonsterAction({}, editingMonsterActions.length));
+            renderMonsterActionEditors();
+        }
+
+        function removeMonsterAction(id) {
+            editingMonsterActions = editingMonsterActions.filter(action => action.id !== id);
+            renderMonsterActionEditors();
+        }
+
+        function saveMonsterFromPopup() {
+            const nameInput = document.getElementById('monster-form-name');
+            const name = nameInput.value.trim();
+            if (!name) return nameInput.focus();
+            const existing = editingMonsterId ? monstersState.find(item => item.id === editingMonsterId) : null;
+            const maxLife = Math.max(1, safeNumber(document.getElementById('monster-form-life').value, 10));
+            const monster = {
+                id: existing ? existing.id : `monster_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+                name,
+                life: existing ? Math.min(existing.life, maxLife) : maxLife,
+                maxLife,
+                resistance: document.getElementById('monster-form-resistance').value.trim(),
+                vulnerabilities: document.getElementById('monster-form-vulnerabilities').value.trim(),
+                attrs: {},
+                skills: {},
+                presence: document.getElementById('monster-form-presence').value.trim(),
+                damage: document.getElementById('monster-form-damage').value.trim(),
+                actions: editingMonsterActions.map(action => ({ ...action, name: action.name.trim(), test: action.test.trim(), damage: action.damage.trim(), description: action.description.trim() }))
+            };
+            ['for','agi','int','pre','vig'].forEach(key => monster.attrs[key] = safeNumber(document.getElementById(`monster-form-${key}`).value));
+            ['fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => monster.skills[key] = safeNumber(document.getElementById(`monster-form-${key}`).value));
+            if (existing) monstersState[monstersState.findIndex(item => item.id === existing.id)] = monster;
+            else monstersState.push(monster);
+            saveMonstersState();
+            renderMonsters();
+            closeMonsterPopup();
+        }
+
+        function updateMonsterLife(id, rawValue) {
             const monster = monstersState.find(item => item.id === id);
             if (!monster) return;
-            if (field === 'name') monster.name = String(rawValue).trim() || 'Monstro sem nome';
-            if (field === 'notes') monster.notes = String(rawValue || '');
-            if (field === 'defense') monster.defense = safeNumber(rawValue);
-            if (field === 'maxLife') {
-                monster.maxLife = Math.max(1, safeNumber(rawValue, 1));
-                monster.life = Math.min(monster.life, monster.maxLife);
-            }
-            if (field === 'life') monster.life = Math.max(0, Math.min(monster.maxLife, safeNumber(rawValue)));
+            monster.life = Math.max(0, Math.min(monster.maxLife, safeNumber(rawValue)));
             saveMonstersState();
             renderMonsters();
         }
@@ -578,7 +728,7 @@
 
         document.getElementById('initiative-name-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
         document.getElementById('initiative-value-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
-        document.getElementById('monster-new-name').addEventListener('keydown', event => { if (event.key === 'Enter') addMonster(); });
+        document.addEventListener('keydown', event => { if (event.key === 'Escape' && document.getElementById('monster-modal').classList.contains('open')) closeMonsterPopup(); });
         updatePlayersCount();
         renderInitiative();
         renderMonsters();
