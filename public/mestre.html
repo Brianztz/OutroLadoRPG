@@ -162,13 +162,40 @@
         .monster-modal-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
         .monster-cancel-button { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
         .monster-save-button { border: 1px solid var(--accent-red); background: var(--accent-red); color: white; }
+        .catalog-workspace { min-height: 0; flex: 1; flex-direction: column; gap: 14px; }
+        .catalog-toolbar { padding: 13px 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--border-color); border-radius: 11px; background: var(--bg-card); box-shadow: 0 8px 26px rgba(0,0,0,0.5); }
+        .catalog-search { min-width: 220px; flex: 1; padding: 10px 12px; border: 1px solid #414148; border-radius: 7px; background: #0e0e11; color: var(--text-primary); font: inherit; }
+        .catalog-filters { display: flex; gap: 6px; }
+        .catalog-filter { padding: 9px 12px; border: 1px solid #414148; border-radius: 6px; background: #25252a; color: var(--text-secondary); font-size: 0.68em; font-weight: 900; cursor: pointer; }
+        .catalog-filter.active { border-color: var(--accent-green); background: rgba(0,230,118,0.1); color: var(--accent-green); }
+        .catalog-count { min-width: 95px; color: var(--accent-green); font-size: 0.7em; font-weight: 900; text-align: right; }
+        .catalog-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 15px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
+        .catalog-empty { grid-column: 1 / -1; padding: 48px 20px; border: 1px dashed rgba(0,230,118,0.34); border-radius: 11px; background: rgba(18,18,20,0.72); color: var(--text-secondary); text-align: center; }
+        .catalog-card { min-width: 0; overflow: hidden; display: flex; flex-direction: column; border: 1px solid #3b3b42; border-radius: 11px; background: rgba(27,27,31,0.95); box-shadow: 0 8px 24px rgba(0,0,0,0.45); animation: card-in 0.2s ease-out; }
+        .catalog-card.weapon { border-color: rgba(229,57,53,0.38); }
+        .catalog-card.item { border-color: rgba(0,230,118,0.3); }
+        .catalog-image-wrap { height: 145px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: radial-gradient(circle at center,#27272d,#0d0d10 72%); }
+        .catalog-image { width: 100%; height: 100%; padding: 12px; object-fit: contain; filter: drop-shadow(0 7px 12px rgba(0,0,0,0.75)); }
+        .catalog-image-fallback { font-size: 3.2em; opacity: 0.55; }
+        .catalog-type { position: absolute; top: 8px; left: 8px; padding: 4px 7px; border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; background: rgba(0,0,0,0.68); color: var(--text-secondary); font-size: 0.57em; font-weight: 900; text-transform: uppercase; }
+        .catalog-card-body { padding: 13px; display: flex; flex: 1; flex-direction: column; gap: 10px; }
+        .catalog-card-name { margin: 0; color: var(--text-primary); font-size: 0.92em; font-weight: 900; text-transform: uppercase; }
+        .catalog-card.weapon .catalog-card-name { color: #ff9b97; }
+        .catalog-card.item .catalog-card-name { color: #72f6ad; }
+        .catalog-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+        .catalog-stat { padding: 7px 4px; border: 1px solid #393940; border-radius: 5px; background: rgba(0,0,0,0.23); text-align: center; }
+        .catalog-stat span { display: block; color: var(--text-secondary); font-size: 0.53em; font-weight: 900; text-transform: uppercase; }
+        .catalog-stat strong { display: block; margin-top: 3px; color: var(--accent-yellow); font-size: 0.76em; overflow-wrap: anywhere; }
+        .catalog-description { margin: 0; color: var(--text-secondary); font-size: 0.7em; line-height: 1.5; }
+        .catalog-details { margin-top: auto; padding-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid #35353b; }
+        .catalog-detail { padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-secondary); font-size: 0.6em; }
         #modal-ficha { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,0.92); }
         .modal-toolbar { width: 95%; max-width: 1400px; display: flex; justify-content: flex-end; }
         .btn-close-modal { margin-bottom: 10px; padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent-red); color: white; font-size: 1em; font-weight: 900; cursor: pointer; }
         #iframe-ficha { width: 95%; max-width: 1400px; height: 85vh; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-body); }
         @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
-        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } .monsters-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } .monsters-grid, .catalog-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } }
     </style>
 </head>
 <body>
@@ -183,6 +210,7 @@
     <nav class="master-tabs" aria-label="Seções do Escudo do Mestre">
         <button class="master-tab-button active" type="button" data-master-tab="combat" onclick="switchMasterTab('combat')">⚔️ COMBATE</button>
         <button class="master-tab-button" type="button" data-master-tab="monsters" onclick="switchMasterTab('monsters')">👹 MONSTROS</button>
+        <button class="master-tab-button" type="button" data-master-tab="catalog" onclick="switchMasterTab('catalog')">🎒 CATÁLOGO</button>
     </nav>
 
     <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
@@ -217,6 +245,19 @@
             <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
         </div>
         <div id="monsters-grid" class="monsters-grid"></div>
+    </section>
+
+    <section id="master-tab-catalog" class="catalog-workspace master-tab-panel">
+        <div class="catalog-toolbar">
+            <input id="catalog-search" class="catalog-search" type="search" placeholder="Pesquisar arma ou item..." oninput="renderMasterCatalog()">
+            <div class="catalog-filters">
+                <button class="catalog-filter active" type="button" data-catalog-filter="all" onclick="setMasterCatalogFilter('all')">TODOS</button>
+                <button class="catalog-filter" type="button" data-catalog-filter="weapons" onclick="setMasterCatalogFilter('weapons')">ARMAS</button>
+                <button class="catalog-filter" type="button" data-catalog-filter="items" onclick="setMasterCatalogFilter('items')">ITENS</button>
+            </div>
+            <span id="catalog-count" class="catalog-count">0 RESULTADOS</span>
+        </div>
+        <div id="catalog-grid" class="catalog-grid"></div>
     </section>
 
     <div id="monster-modal" class="monster-modal" onclick="if(event.target===this) closeMonsterPopup()">
@@ -287,6 +328,7 @@
         <iframe id="iframe-ficha" src="" title="Ficha completa do jogador"></iframe>
     </div>
 
+    <script src="catalog-data.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -297,6 +339,7 @@
         let editingMonsterId = null;
         let editingMonsterActions = [];
         let monsterRollRevealTimer = null;
+        let masterCatalogFilter = 'all';
         const monsterD20Table = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
 
         function escapeHtml(value) {
@@ -309,10 +352,67 @@
         }
 
         function switchMasterTab(tab) {
-            const selectedTab = tab === 'monsters' ? 'monsters' : 'combat';
+            const selectedTab = ['monsters','catalog'].includes(tab) ? tab : 'combat';
             document.querySelectorAll('.master-tab-button').forEach(button => button.classList.toggle('active', button.dataset.masterTab === selectedTab));
             document.querySelectorAll('.master-tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `master-tab-${selectedTab}`));
             localStorage.setItem('mestre_active_tab', selectedTab);
+            if (selectedTab === 'catalog') renderMasterCatalog();
+        }
+
+        function normalizeCatalogText(value) {
+            return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        function setMasterCatalogFilter(filter) {
+            masterCatalogFilter = ['weapons','items'].includes(filter) ? filter : 'all';
+            document.querySelectorAll('.catalog-filter').forEach(button => button.classList.toggle('active', button.dataset.catalogFilter === masterCatalogFilter));
+            renderMasterCatalog();
+        }
+
+        function renderMasterCatalog() {
+            const grid = document.getElementById('catalog-grid');
+            if (!grid) return;
+            const data = window.RPG_CATALOG || { items: [], meleeWeapons: [], rangedWeapons: [] };
+            const entries = [
+                ...data.meleeWeapons.map(item => ({ ...item, catalogKind: 'weapons', catalogType: 'Corpo a corpo' })),
+                ...data.rangedWeapons.map(item => ({ ...item, catalogKind: 'weapons', catalogType: 'Disparo' })),
+                ...data.items.map(item => ({ ...item, catalogKind: 'items', catalogType: item.ammo ? 'Munição' : 'Item' }))
+            ];
+            const query = normalizeCatalogText(document.getElementById('catalog-search').value);
+            const filtered = entries.filter(item => {
+                if (masterCatalogFilter !== 'all' && item.catalogKind !== masterCatalogFilter) return false;
+                const searchable = normalizeCatalogText([item.name,item.desc,item.dmg,item.crit,item.range,item.skill,item.ammo,item.catalogType].join(' '));
+                return !query || searchable.includes(query);
+            });
+            document.getElementById('catalog-count').textContent = `${filtered.length} ${filtered.length === 1 ? 'RESULTADO' : 'RESULTADOS'}`;
+            grid.innerHTML = '';
+            if (!filtered.length) {
+                grid.innerHTML = '<div class="catalog-empty">Nenhuma arma ou item encontrado.</div>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isWeapon = item.catalogKind === 'weapons';
+                const imageHtml = item.img ? `<img class="catalog-image" src="${escapeHtml(item.img)}" alt="">` : `<div class="catalog-image-fallback">${isWeapon ? '⚔️' : '🎒'}</div>`;
+                const contentHtml = isWeapon ? `
+                    <div class="catalog-stats">
+                        <div class="catalog-stat"><span>Dano</span><strong>${escapeHtml(item.dmg)}</strong></div>
+                        <div class="catalog-stat"><span>Crítico</span><strong>${escapeHtml(item.crit)}</strong></div>
+                        <div class="catalog-stat"><span>Ataques</span><strong>${escapeHtml(item.atk)}</strong></div>
+                        <div class="catalog-stat"><span>Alcance</span><strong>${escapeHtml(item.range)}</strong></div>
+                        <div class="catalog-stat"><span>Perícia</span><strong>${escapeHtml(item.skill)}</strong></div>
+                        <div class="catalog-stat"><span>Peso</span><strong>${escapeHtml(item.weight)}</strong></div>
+                    </div>
+                    <div class="catalog-details">${item.ammo ? `<span class="catalog-detail">Munição: ${escapeHtml(item.ammo)}</span>` : ''}${item.capacity ? `<span class="catalog-detail">Capacidade: ${escapeHtml(item.capacity)}</span>` : ''}</div>` : `
+                    <p class="catalog-description">${escapeHtml(item.desc)}</p>
+                    <div class="catalog-details"><span class="catalog-detail">Peso: ${escapeHtml(item.weight)}</span>${item.ammo ? `<span class="catalog-detail">Tipo: ${escapeHtml(item.ammo)}</span>` : ''}</div>`;
+                const card = document.createElement('article');
+                card.className = `catalog-card ${isWeapon ? 'weapon' : 'item'}`;
+                card.innerHTML = `<div class="catalog-image-wrap">${imageHtml}<span class="catalog-type">${escapeHtml(item.catalogType)}</span></div><div class="catalog-card-body"><h3 class="catalog-card-name">${escapeHtml(item.name)}</h3>${contentHtml}</div>`;
+                const image = card.querySelector('.catalog-image');
+                if (image) image.onerror = () => { const fallback = document.createElement('div'); fallback.className = 'catalog-image-fallback'; fallback.textContent = isWeapon ? '⚔️' : '🎒'; image.replaceWith(fallback); };
+                grid.appendChild(card);
+            });
         }
 
         function loadMonstersState() {
