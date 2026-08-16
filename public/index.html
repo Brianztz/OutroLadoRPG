@@ -183,7 +183,7 @@
         .clue-book-stage.dragging { cursor: grabbing; }
         .clue-book-3d-object { position: relative; width: 640px; height: 360px; max-width: 90%; transform: translateX(-25%) rotateX(-8deg) rotateY(0deg) scale(1); transform-style: preserve-3d; transition: transform 0.3s ease-out, width 0.3s ease, height 0.3s ease; will-change: transform,width,height; }
         .clue-book-stage.dragging .clue-book-3d-object { transition: width 0.3s ease,height 0.3s ease; }
-        .clue-book { position: absolute; inset: 2.3% 1.8%; width: auto; height: auto; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(4px); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
+        .clue-book { position: absolute; inset: 2.3% 1.8%; z-index: 6; width: auto; height: auto; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(4px); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
         .clue-book.open { opacity: 1; }
         .clue-book::before { content: ''; position: absolute; left: 50%; top: -2%; bottom: -2%; width: 12px; z-index: 8; transform: translateX(-50%); border-radius: 50%; background: linear-gradient(90deg, rgba(60,39,20,0.8), rgba(20,12,8,0.9), rgba(93,62,31,0.74)); box-shadow: 0 0 12px rgba(0,0,0,0.8); pointer-events: none; }
         .clue-book-cover { position: absolute; left: 50%; top: 0; z-index: 12; width: 50%; height: 100%; transform: rotateY(0deg) translateZ(7px); transform-origin: left center; transform-style: preserve-3d; transition: transform 0.82s cubic-bezier(0.58,0.02,0.28,1), opacity 0.2s 0.6s; }
@@ -192,9 +192,16 @@
         .clue-book-cover-depth-layer { position: absolute; inset: 0; background: var(--clue-book-edge-color,#4a2d18); transform: translateZ(var(--clue-book-depth)); -webkit-mask-image: var(--clue-book-cover-shape); mask-image: var(--clue-book-cover-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
         .clue-book-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: contain; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.65)); backface-visibility: hidden; }
         .clue-book-cover-face.front { transform: translateZ(8px); }
-        .clue-book-cover-face.back { transform: rotateY(180deg) translateZ(8px); }
-        .clue-book-cover-face.back.mirrored { transform: rotateY(180deg) translateZ(8px) scaleX(-1); }
+        .clue-book-cover-face.back { transform: rotateY(180deg) translateZ(8px) scaleX(-1); }
         .clue-book-cover-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: linear-gradient(135deg,#55351e,#21130d); color: var(--accent-yellow); font-size: 4em; transform: translateZ(8px); }
+        .clue-book-back-cover { position: absolute; left: 50%; top: 0; z-index: 2; width: 50%; height: 100%; transform: translateZ(-9px); transform-style: preserve-3d; }
+        .clue-book-back-cover-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
+        .clue-book-back-cover-depth-layer { position: absolute; inset: 0; background: var(--clue-book-back-edge-color,#4a2d18); transform: translateZ(var(--clue-book-back-depth)); -webkit-mask-image: var(--clue-book-back-shape); mask-image: var(--clue-book-back-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+        .clue-book-back-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: contain; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.58)); backface-visibility: hidden; }
+        .clue-book-back-cover-face.front { transform: translateZ(8px); }
+        .clue-book-back-cover-face.back { transform: rotateY(180deg) translateZ(8px); }
+        .clue-book-back-cover-face.front.mirrored { transform: translateZ(8px) scaleX(-1); }
+        .clue-book-back-cover-face.back.mirrored { transform: rotateY(180deg) translateZ(8px) scaleX(-1); }
         .clue-book-page { position: relative; width: 50%; height: 100%; overflow: hidden; box-sizing: border-box; background: linear-gradient(135deg, #eadfca, #cabb9e); color: #282016; transform-style: preserve-3d; }
         .clue-book-page.has-image-shape, .clue-book-flip-face.has-image-shape { -webkit-mask-image: var(--clue-page-shape); mask-image: var(--clue-page-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
         .clue-book-page.left { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.22), inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(2deg) translateZ(2px); transform-origin: right center; }
@@ -526,7 +533,7 @@
                 <label style="font-size:0.8em; color:var(--text-secondary)">CAPA E VERSO</label>
                 <div class="clue-book-cover-fields" style="margin-top:7px;">
                     <div class="clue-book-cover-field"><label style="font-size:0.72em; color:var(--text-secondary)" for="clue-book-cover-url">CAPA</label><input type="text" id="clue-book-cover-url" class="inv-input" placeholder="Cole o link da capa..." oninput="onClueBookCoverUrlInput('cover')"><input type="file" id="clue-book-cover-file" class="inv-input" accept="image/*" style="margin-top:8px;" onchange="loadClueBookCoverFile(event,'cover')"><img id="clue-book-cover-preview" class="clue-image-preview" alt="Prévia da capa"><button type="button" class="btn-roll" style="width:100%; margin-top:8px;" onclick="removeClueBookCoverImage('cover')">REMOVER CAPA</button></div>
-                    <div class="clue-book-cover-field"><label style="font-size:0.72em; color:var(--text-secondary)" for="clue-book-back-url">VERSO</label><input type="text" id="clue-book-back-url" class="inv-input" placeholder="Cole o link do verso..." oninput="onClueBookCoverUrlInput('back')"><input type="file" id="clue-book-back-file" class="inv-input" accept="image/*" style="margin-top:8px;" onchange="loadClueBookCoverFile(event,'back')"><img id="clue-book-back-preview" class="clue-image-preview" alt="Prévia do verso da capa"><button type="button" class="btn-roll" style="width:100%; margin-top:8px;" onclick="removeClueBookCoverImage('back')">REMOVER VERSO</button></div>
+                    <div class="clue-book-cover-field"><label style="font-size:0.72em; color:var(--text-secondary)" for="clue-book-back-url">VERSO / CONTRACAPA</label><input type="text" id="clue-book-back-url" class="inv-input" placeholder="Cole o link da contracapa..." oninput="onClueBookCoverUrlInput('back')"><input type="file" id="clue-book-back-file" class="inv-input" accept="image/*" style="margin-top:8px;" onchange="loadClueBookCoverFile(event,'back')"><img id="clue-book-back-preview" class="clue-image-preview" alt="Prévia da contracapa"><button type="button" class="btn-roll" style="width:100%; margin-top:8px;" onclick="removeClueBookCoverImage('back')">REMOVER CONTRACAPA</button></div>
                 </div>
                 <label style="font-size:0.8em; color:var(--text-secondary)">PÁGINAS DO LIVRO</label>
                 <input type="file" id="clue-book-pages-files" class="inv-input" accept="image/*" multiple style="margin-top:7px;" onchange="loadClueBookPages(event)">
@@ -547,6 +554,7 @@
             <div id="clue-book-stage" class="clue-book-stage" aria-label="Livro 3D. Arraste para girar e use a roda do mouse para aproximar.">
                 <div id="clue-book-3d-object" class="clue-book-3d-object">
                     <div id="clue-book-cover" class="clue-book-cover"><div id="clue-book-cover-depth" class="clue-book-cover-depth"></div><img id="clue-book-cover-image" class="clue-book-cover-face front" src="" alt="Capa do livro"><img id="clue-book-cover-back-image" class="clue-book-cover-face back" src="" alt="Verso da capa do livro"><div id="clue-book-cover-fallback" class="clue-book-cover-fallback">📖</div></div>
+                    <div id="clue-book-back-cover" class="clue-book-back-cover"><div id="clue-book-back-cover-depth" class="clue-book-back-cover-depth"></div><img id="clue-book-back-cover-inside-image" class="clue-book-back-cover-face front" src="" alt="Parte interna da contracapa"><img id="clue-book-back-cover-image" class="clue-book-back-cover-face back" src="" alt="Contracapa do livro"></div>
                     <div id="clue-book" class="clue-book">
                         <div id="clue-book-left-page" class="clue-book-page left"></div>
                         <div id="clue-book-right-page" class="clue-book-page right"></div>
@@ -2058,7 +2066,8 @@
 
     function updateClueBook3DTransform() {
         const object = document.getElementById('clue-book-3d-object');
-        if (object) object.style.transform = `translateX(${clueBookOpen ? 0 : -25}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg) scale(${clueBookZoom})`;
+        const closedOffset = clueBookOpen ? 0 : -25 * Math.cos(clueBookRotationY * Math.PI / 180);
+        if (object) object.style.transform = `translateX(${closedOffset}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg) scale(${clueBookZoom})`;
     }
 
     function resetClueBook3D() {
@@ -2088,6 +2097,18 @@
         }
         cover.style.setProperty('--clue-book-cover-shape', `url(${JSON.stringify(source)})`);
         cover.style.setProperty('--clue-book-edge-color', edgeColor || '#4a2d18');
+    }
+
+    function setClueBookBackCoverShape(source = '', edgeColor = '') {
+        const cover = document.getElementById('clue-book-back-cover');
+        if (!cover) return;
+        if (!source) {
+            cover.style.removeProperty('--clue-book-back-shape');
+            cover.style.removeProperty('--clue-book-back-edge-color');
+            return;
+        }
+        cover.style.setProperty('--clue-book-back-shape', `url(${JSON.stringify(source)})`);
+        cover.style.setProperty('--clue-book-back-edge-color', edgeColor || '#4a2d18');
     }
 
     function fitClueBook3DToAspect(aspect = 1.5) {
@@ -2137,6 +2158,16 @@
                 layer.style.setProperty('--clue-book-depth', `${value}px`);
                 layer.style.filter = `brightness(${0.58 + (1 - Math.abs(value) / 10) * 0.4})`;
                 depth.appendChild(layer);
+            }
+        }
+        const backDepth = document.getElementById('clue-book-back-cover-depth');
+        if (backDepth && !backDepth.childElementCount) {
+            for (let value = -7; value <= 7; value++) {
+                const layer = document.createElement('span');
+                layer.className = 'clue-book-back-cover-depth-layer';
+                layer.style.setProperty('--clue-book-back-depth', `${value}px`);
+                layer.style.filter = `brightness(${0.58 + (1 - Math.abs(value) / 8) * 0.4})`;
+                backDepth.appendChild(layer);
             }
         }
         if (clueBook3DControlsInitialized) return;
@@ -2403,36 +2434,60 @@
             const coverImage = document.getElementById('clue-book-cover-image');
             const coverBackImage = document.getElementById('clue-book-cover-back-image');
             const coverFallback = document.getElementById('clue-book-cover-fallback');
+            const backCover = document.getElementById('clue-book-back-cover');
+            const backCoverInsideImage = document.getElementById('clue-book-back-cover-inside-image');
+            const backCoverImage = document.getElementById('clue-book-back-cover-image');
             const coverSource = clue.coverImg || clue.img || ((normalizeClueBookPages(clue.pages)[0] || {}).img || '');
             const customBackSource = clue.coverBackImg || '';
-            const coverBackSource = customBackSource || coverSource;
+            const backCoverSource = customBackSource || coverSource;
+            const mirrorBackCover = !customBackSource;
             bookCover.classList.remove('open');
             openBook.classList.remove('open');
-            coverBackImage.classList.toggle('mirrored', !customBackSource);
+            coverBackImage.classList.add('mirrored');
+            backCover.style.display = coverSource ? 'block' : 'none';
+            backCoverInsideImage.classList.toggle('mirrored', mirrorBackCover);
+            backCoverImage.classList.toggle('mirrored', mirrorBackCover);
             if (coverSource) {
                 coverImage.style.display = 'block';
                 coverBackImage.style.display = 'block';
+                backCoverInsideImage.style.display = 'block';
+                backCoverImage.style.display = 'block';
                 coverFallback.style.display = 'none';
                 coverImage.onerror = () => { coverImage.style.display = 'none'; coverFallback.style.display = 'flex'; };
-                coverBackImage.onerror = () => { coverBackImage.src = coverImage.src; coverBackImage.classList.add('mirrored'); coverBackImage.onerror = null; };
+                coverBackImage.onerror = () => { coverBackImage.src = coverImage.src; coverBackImage.onerror = null; };
+                const useFrontAsBackCover = () => {
+                    backCoverInsideImage.src = coverImage.src;
+                    backCoverImage.src = coverImage.src;
+                    backCoverInsideImage.classList.add('mirrored');
+                    backCoverImage.classList.add('mirrored');
+                    setClueBookBackCoverShape(coverImage.src);
+                };
+                backCoverInsideImage.onerror = useFrontAsBackCover;
+                backCoverImage.onerror = useFrontAsBackCover;
                 prepareClue3DCutout(coverSource).then(result => {
                     if (coverToken !== clue3DImageRequestToken || currentClueId !== id) return;
                     coverImage.src = result.src;
+                    coverBackImage.src = result.src;
                     setClueBookCoverShape(result.src, result.edgeColor);
                     if (!clueBookOpen) fitClueBook3DToAspect(2 * (result.width / Math.max(1, result.height)));
                 });
-                prepareClue3DCutout(coverBackSource).then(result => {
+                prepareClue3DCutout(backCoverSource).then(result => {
                     if (coverToken !== clue3DImageRequestToken || currentClueId !== id) return;
-                    coverBackImage.src = result.src;
+                    backCoverInsideImage.src = result.src;
+                    backCoverImage.src = result.src;
+                    setClueBookBackCoverShape(result.src, result.edgeColor);
                 });
             } else {
                 coverImage.removeAttribute('src');
                 coverBackImage.removeAttribute('src');
+                backCoverInsideImage.removeAttribute('src');
+                backCoverImage.removeAttribute('src');
                 coverImage.style.display = 'none';
                 coverBackImage.style.display = 'none';
-                coverBackImage.classList.remove('mirrored');
+                backCover.style.display = 'none';
                 coverFallback.style.display = 'flex';
                 setClueBookCoverShape('');
+                setClueBookBackCoverShape('');
             }
             renderClueBookSpread();
             return;
