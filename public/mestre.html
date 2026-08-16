@@ -261,7 +261,7 @@
         .master-clue-book-stage.dragging { cursor: grabbing; }
         .master-clue-book-3d-object { position: relative; width: 640px; height: 360px; max-width: 90%; transform: translateX(-25%) rotateX(-8deg) rotateY(0deg) scale(1); transform-style: preserve-3d; transition: transform 0.3s ease-out,width 0.3s ease,height 0.3s ease; will-change: transform,width,height; }
         .master-clue-book-stage.dragging .master-clue-book-3d-object { transition: width 0.3s ease,height 0.3s ease; }
-        .master-clue-book { position: absolute; inset: 2.3% 1.8%; width: auto; height: auto; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(4px); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
+        .master-clue-book { position: absolute; inset: 2.3% 1.8%; z-index: 6; width: auto; height: auto; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(4px); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
         .master-clue-book.open { opacity: 1; }
         .master-clue-book::before { content: ''; position: absolute; left: 50%; top: -2%; bottom: -2%; width: 12px; z-index: 8; transform: translateX(-50%); border-radius: 50%; background: linear-gradient(90deg,rgba(60,39,20,0.8),rgba(20,12,8,0.9),rgba(93,62,31,0.74)); box-shadow: 0 0 12px rgba(0,0,0,0.8); pointer-events: none; }
         .master-clue-book-cover { position: absolute; left: 50%; top: 0; z-index: 12; width: 50%; height: 100%; transform: rotateY(0deg) translateZ(7px); transform-origin: left center; transform-style: preserve-3d; transition: transform 0.82s cubic-bezier(0.58,0.02,0.28,1),opacity 0.2s 0.6s; }
@@ -270,9 +270,16 @@
         .master-clue-book-cover-depth-layer { position: absolute; inset: 0; background: var(--master-book-edge-color,#4a2d18); transform: translateZ(var(--master-book-depth)); -webkit-mask-image: var(--master-book-cover-shape); mask-image: var(--master-book-cover-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
         .master-clue-book-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: contain; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.65)); backface-visibility: hidden; }
         .master-clue-book-cover-face.front { transform: translateZ(8px); }
-        .master-clue-book-cover-face.back { transform: rotateY(180deg) translateZ(8px); }
-        .master-clue-book-cover-face.back.mirrored { transform: rotateY(180deg) translateZ(8px) scaleX(-1); }
+        .master-clue-book-cover-face.back { transform: rotateY(180deg) translateZ(8px) scaleX(-1); }
         .master-clue-book-cover-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: linear-gradient(135deg,#55351e,#21130d); color: var(--accent-yellow); font-size: 4em; transform: translateZ(8px); }
+        .master-clue-book-back-cover { position: absolute; left: 50%; top: 0; z-index: 2; width: 50%; height: 100%; transform: translateZ(-9px); transform-style: preserve-3d; }
+        .master-clue-book-back-cover-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
+        .master-clue-book-back-cover-depth-layer { position: absolute; inset: 0; background: var(--master-book-back-edge-color,#4a2d18); transform: translateZ(var(--master-book-back-depth)); -webkit-mask-image: var(--master-book-back-shape); mask-image: var(--master-book-back-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+        .master-clue-book-back-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: contain; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.58)); backface-visibility: hidden; }
+        .master-clue-book-back-cover-face.front { transform: translateZ(8px); }
+        .master-clue-book-back-cover-face.back { transform: rotateY(180deg) translateZ(8px); }
+        .master-clue-book-back-cover-face.front.mirrored { transform: translateZ(8px) scaleX(-1); }
+        .master-clue-book-back-cover-face.back.mirrored { transform: rotateY(180deg) translateZ(8px) scaleX(-1); }
         .master-clue-book-page { position: relative; width: 50%; height: 100%; overflow: hidden; background: linear-gradient(135deg,#eadfca,#cabb9e); color: #282016; transform-style: preserve-3d; }
         .master-clue-book-page.has-image-shape, .master-clue-book-flip-face.has-image-shape { -webkit-mask-image: var(--master-page-shape); mask-image: var(--master-page-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
         .master-clue-book-page.left { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(2deg) translateZ(2px); transform-origin: right center; }
@@ -472,7 +479,7 @@
                     <h3 class="monster-form-section-title">Capa do livro</h3>
                     <div class="clue-image-fields">
                         <div class="clue-image-field"><label for="master-clue-cover-url">Imagem da capa</label><input id="master-clue-cover-url" class="monster-input" type="text" placeholder="Cole o link da capa..." oninput="onMasterClueUrlInput('cover')"><input id="master-clue-cover-file" class="monster-input" type="file" accept="image/*" style="margin-top:7px" onchange="loadMasterClueImageFile(event,'cover')"><img id="master-clue-cover-preview" class="clue-image-preview" alt="Prévia da capa"><button class="clue-image-remove" type="button" onclick="removeMasterClueImage('cover')">REMOVER CAPA</button></div>
-                        <div class="clue-image-field"><label for="master-clue-cover-back-url">Imagem do verso</label><input id="master-clue-cover-back-url" class="monster-input" type="text" placeholder="Cole o link do verso..." oninput="onMasterClueUrlInput('cover-back')"><input id="master-clue-cover-back-file" class="monster-input" type="file" accept="image/*" style="margin-top:7px" onchange="loadMasterClueImageFile(event,'cover-back')"><img id="master-clue-cover-back-preview" class="clue-image-preview" alt="Prévia do verso da capa"><button class="clue-image-remove" type="button" onclick="removeMasterClueImage('cover-back')">REMOVER VERSO</button></div>
+                        <div class="clue-image-field"><label for="master-clue-cover-back-url">Imagem do verso / contracapa</label><input id="master-clue-cover-back-url" class="monster-input" type="text" placeholder="Cole o link da contracapa..." oninput="onMasterClueUrlInput('cover-back')"><input id="master-clue-cover-back-file" class="monster-input" type="file" accept="image/*" style="margin-top:7px" onchange="loadMasterClueImageFile(event,'cover-back')"><img id="master-clue-cover-back-preview" class="clue-image-preview" alt="Prévia da contracapa"><button class="clue-image-remove" type="button" onclick="removeMasterClueImage('cover-back')">REMOVER CONTRACAPA</button></div>
                     </div>
                     <h3 class="monster-form-section-title" style="margin-top:15px">Páginas do livro</h3>
                     <input id="master-clue-pages-files" class="monster-input" type="file" accept="image/*" multiple onchange="loadMasterCluePages(event)">
@@ -494,6 +501,7 @@
                     <div id="master-clue-book-stage" class="master-clue-book-stage">
                         <div id="master-clue-book-3d-object" class="master-clue-book-3d-object">
                             <div id="master-clue-book-cover" class="master-clue-book-cover"><div id="master-clue-book-cover-depth" class="master-clue-book-cover-depth"></div><img id="master-clue-book-cover-image" class="master-clue-book-cover-face front" src="" alt="Capa"><img id="master-clue-book-cover-back-image" class="master-clue-book-cover-face back" src="" alt="Verso da capa"><div id="master-clue-book-cover-fallback" class="master-clue-book-cover-fallback">📖</div></div>
+                            <div id="master-clue-book-back-cover" class="master-clue-book-back-cover"><div id="master-clue-book-back-cover-depth" class="master-clue-book-back-cover-depth"></div><img id="master-clue-book-back-cover-inside-image" class="master-clue-book-back-cover-face front" src="" alt="Parte interna da contracapa"><img id="master-clue-book-back-cover-image" class="master-clue-book-back-cover-face back" src="" alt="Contracapa"></div>
                             <div id="master-clue-book" class="master-clue-book">
                                 <div id="master-clue-book-left" class="master-clue-book-page left"></div><div id="master-clue-book-right" class="master-clue-book-page right"></div>
                                 <div id="master-clue-book-flip" class="master-clue-book-flip"><div id="master-clue-book-flip-front" class="master-clue-book-flip-face front"></div><div id="master-clue-book-flip-back" class="master-clue-book-flip-face back"></div></div>
@@ -1169,7 +1177,8 @@
 
         function updateMasterClueBook3DTransform() {
             const object=document.getElementById('master-clue-book-3d-object');
-            if(object)object.style.transform=`translateX(${masterBookOpen ? 0 : -25}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
+            const closedOffset=masterBookOpen?0:-25*Math.cos(masterBookRotationY*Math.PI/180);
+            if(object)object.style.transform=`translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
         }
 
         function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;updateMasterClueBook3DTransform();}
@@ -1180,6 +1189,12 @@
             const cover=document.getElementById('master-clue-book-cover');if(!cover)return;
             if(!source){cover.style.removeProperty('--master-book-cover-shape');cover.style.removeProperty('--master-book-edge-color');return;}
             cover.style.setProperty('--master-book-cover-shape',`url(${JSON.stringify(source)})`);cover.style.setProperty('--master-book-edge-color',edgeColor||'#4a2d18');
+        }
+
+        function setMasterBookBackCoverShape(source='',edgeColor=''){
+            const cover=document.getElementById('master-clue-book-back-cover');if(!cover)return;
+            if(!source){cover.style.removeProperty('--master-book-back-shape');cover.style.removeProperty('--master-book-back-edge-color');return;}
+            cover.style.setProperty('--master-book-back-shape',`url(${JSON.stringify(source)})`);cover.style.setProperty('--master-book-back-edge-color',edgeColor||'#4a2d18');
         }
 
         function fitMasterBook3DToAspect(aspect=1.5){
@@ -1196,6 +1211,7 @@
 
         function initializeMasterBook3D(){
             const depth=document.getElementById('master-clue-book-cover-depth');if(depth&&!depth.childElementCount)for(let value=-10;value<=7;value++){const layer=document.createElement('span');layer.className='master-clue-book-cover-depth-layer';layer.style.setProperty('--master-book-depth',`${value}px`);layer.style.filter=`brightness(${0.58+(1-Math.abs(value)/10)*0.4})`;depth.appendChild(layer);}
+            const backDepth=document.getElementById('master-clue-book-back-cover-depth');if(backDepth&&!backDepth.childElementCount)for(let value=-7;value<=7;value++){const layer=document.createElement('span');layer.className='master-clue-book-back-cover-depth-layer';layer.style.setProperty('--master-book-back-depth',`${value}px`);layer.style.filter=`brightness(${0.58+(1-Math.abs(value)/8)*0.4})`;backDepth.appendChild(layer);}
             if(masterBook3DInitialized)return;const stage=document.getElementById('master-clue-book-stage');if(!stage)return;masterBook3DInitialized=true;
             stage.addEventListener('pointerdown',event=>{masterBookDragging=true;masterBookLastX=event.clientX;masterBookLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId);});
             stage.addEventListener('pointermove',event=>{if(!masterBookDragging)return;masterBookRotationY+=(event.clientX-masterBookLastX)*0.65;masterBookRotationX=Math.max(-75,Math.min(75,masterBookRotationX-(event.clientY-masterBookLastY)*0.5));masterBookLastX=event.clientX;masterBookLastY=event.clientY;updateMasterClueBook3DTransform();});
@@ -1267,10 +1283,10 @@
             modal.classList.add('open');
             if(clue.type==='book'){
                 const token=++masterClueImageToken;stage.style.display='none';controls.style.display='none';bookViewer.style.display='block';masterBookSpread=0;masterBookOpen=false;masterBookAnimating=false;initializeMasterBook3D();resetMasterClueBook3D();
-                const cover=document.getElementById('master-clue-book-cover'),coverImage=document.getElementById('master-clue-book-cover-image'),coverBackImage=document.getElementById('master-clue-book-cover-back-image'),coverFallback=document.getElementById('master-clue-book-cover-fallback'),source=clue.coverImg||clue.img,customBackSource=clue.coverBackImg||'',backSource=customBackSource||source;
+                const cover=document.getElementById('master-clue-book-cover'),coverImage=document.getElementById('master-clue-book-cover-image'),coverBackImage=document.getElementById('master-clue-book-cover-back-image'),coverFallback=document.getElementById('master-clue-book-cover-fallback'),backCover=document.getElementById('master-clue-book-back-cover'),backCoverInsideImage=document.getElementById('master-clue-book-back-cover-inside-image'),backCoverImage=document.getElementById('master-clue-book-back-cover-image'),source=clue.coverImg||clue.img,customBackSource=clue.coverBackImg||'',backSource=customBackSource||source,mirrorBackCover=!customBackSource;
                 cover.classList.remove('open');document.getElementById('master-clue-book').classList.remove('open');coverImage.style.display=source?'block':'none';coverBackImage.style.display=source?'block':'none';coverFallback.style.display=source?'none':'flex';
-                coverBackImage.classList.toggle('mirrored',!customBackSource);
-                if(source){coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};coverBackImage.onerror=()=>{coverBackImage.src=coverImage.src;coverBackImage.classList.add('mirrored');coverBackImage.onerror=null;};prepareMasterClueCutout(source).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;coverImage.src=result.src;setMasterBookCoverShape(result.src,result.edgeColor);if(!masterBookOpen)fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});prepareMasterClueCutout(backSource).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;coverBackImage.src=result.src;});}else{coverImage.removeAttribute('src');coverBackImage.removeAttribute('src');coverBackImage.classList.remove('mirrored');setMasterBookCoverShape('');}
+                backCover.style.display=source?'block':'none';backCoverInsideImage.style.display=source?'block':'none';backCoverImage.style.display=source?'block':'none';backCoverInsideImage.classList.toggle('mirrored',mirrorBackCover);backCoverImage.classList.toggle('mirrored',mirrorBackCover);
+                if(source){const useFrontAsBackCover=()=>{backCoverInsideImage.src=coverImage.src;backCoverImage.src=coverImage.src;backCoverInsideImage.classList.add('mirrored');backCoverImage.classList.add('mirrored');setMasterBookBackCoverShape(coverImage.src);};coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};coverBackImage.onerror=()=>{coverBackImage.src=coverImage.src;coverBackImage.onerror=null;};backCoverInsideImage.onerror=useFrontAsBackCover;backCoverImage.onerror=useFrontAsBackCover;prepareMasterClueCutout(source).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;coverImage.src=result.src;coverBackImage.src=result.src;setMasterBookCoverShape(result.src,result.edgeColor);if(!masterBookOpen)fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});prepareMasterClueCutout(backSource).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backCoverInsideImage.src=result.src;backCoverImage.src=result.src;setMasterBookBackCoverShape(result.src,result.edgeColor);});}else{coverImage.removeAttribute('src');coverBackImage.removeAttribute('src');backCoverInsideImage.removeAttribute('src');backCoverImage.removeAttribute('src');backCover.style.display='none';setMasterBookCoverShape('');setMasterBookBackCoverShape('');}
                 renderMasterBookSpread();return;
             }
             stage.style.display='flex';controls.style.display='flex';bookViewer.style.display='none';initializeMasterClue3D();resetMasterClue3D();
