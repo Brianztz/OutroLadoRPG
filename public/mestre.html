@@ -94,29 +94,47 @@
         .monsters-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(360px,1fr)); gap: 16px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
         .monsters-empty { grid-column: 1 / -1; padding: 50px 20px; border: 1px dashed rgba(229,57,53,0.38); border-radius: 12px; background: rgba(18,18,20,0.72); color: var(--text-secondary); text-align: center; }
         .monsters-empty strong { display: block; margin-bottom: 7px; color: #ff7772; }
-        .monster-card { padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(229,57,53,0.42); border-radius: 11px; background: rgba(29,25,28,0.95); box-shadow: 0 8px 25px rgba(0,0,0,0.48); animation: card-in 0.25s ease-out; }
+        .monster-card { min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(229,57,53,0.42); border-radius: 11px; background: rgba(29,25,28,0.95); box-shadow: 0 8px 25px rgba(0,0,0,0.48); animation: card-in 0.25s ease-out; }
         .monster-card-header { display: flex; align-items: center; gap: 8px; }
         .monster-card-name { min-width: 0; flex: 1; margin: 0; color: #ffb0ad; font-size: 1em; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
         .monster-card-button { height: 30px; padding: 0 9px; border: 1px solid #48484f; border-radius: 5px; background: #29292f; color: var(--text-primary); font-size: 0.64em; font-weight: 900; cursor: pointer; }
         .monster-card-button.remove { border-color: rgba(229,57,53,0.35); background: rgba(229,57,53,0.18); color: #ff7772; }
         .monster-attributes { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; }
-        .monster-attribute { padding: 7px 2px; border: 1px solid #3b3b42; border-radius: 6px; background: rgba(0,0,0,0.28); text-align: center; }
+        .monster-attribute { min-width: 0; padding: 7px 2px; border: 1px solid #3b3b42; border-radius: 6px; background: rgba(0,0,0,0.28); color: inherit; text-align: center; cursor: pointer; transition: 0.2s; }
+        .monster-attribute:hover { border-color: var(--accent-yellow); background: rgba(255,207,51,0.08); }
         .monster-attribute span { display: block; color: var(--text-secondary); font-size: 0.55em; font-weight: 900; }
         .monster-attribute strong { display: block; margin-top: 3px; color: var(--accent-yellow); font-size: 0.88em; }
         .monster-life-controls { display: grid; grid-template-columns: 34px 1fr 34px; gap: 7px; align-items: center; }
         .monster-life-button { height: 34px; border: 1px solid #48484f; border-radius: 5px; background: #29292f; color: white; font-weight: 900; cursor: pointer; }
-        .monster-life-meter { height: 34px; position: relative; overflow: hidden; border: 1px solid #3d2225; border-radius: 5px; background: #0b090a; }
-        .monster-life-fill { height: 100%; background: linear-gradient(90deg,#680e14,var(--accent-red)); transition: width 0.25s; }
+        .monster-life-meter { width: 100%; min-width: 0; height: 34px; position: relative; overflow: hidden; border: 1px solid #3d2225; border-radius: 5px; background: #0b090a; }
+        .monster-life-fill { width: 0; height: 100%; background: linear-gradient(90deg,#680e14,var(--accent-red)); transition: width 0.45s ease; will-change: width; }
         .monster-life-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75em; font-weight: 900; text-shadow: 1px 1px 2px black; }
-        .monster-life-text input { width: 48px; padding: 0; border: 0; background: transparent; color: white; font: inherit; font-weight: 900; text-align: right; text-shadow: inherit; }
+        .monster-life-text input { width: 48px; min-width: 48px; padding: 0; border: 0; background: transparent; color: white; font: inherit; font-weight: 900; text-align: right; text-shadow: inherit; }
         .monster-info-line { padding: 8px 9px; border-left: 2px solid rgba(229,57,53,0.5); background: rgba(0,0,0,0.22); color: var(--text-secondary); font-size: 0.7em; line-height: 1.4; }
         .monster-info-line strong { color: var(--text-primary); }
         .monster-skills-summary { display: flex; flex-wrap: wrap; gap: 5px; }
-        .monster-skill-chip { padding: 5px 7px; border: 1px solid #3d3d44; border-radius: 999px; background: rgba(0,0,0,0.27); color: var(--text-secondary); font-size: 0.6em; }
+        .monster-skill-chip { padding: 6px 8px; border: 1px solid #3d3d44; border-radius: 999px; background: rgba(0,0,0,0.27); color: var(--text-secondary); font-size: 0.6em; cursor: pointer; transition: 0.2s; }
+        .monster-skill-chip:hover { border-color: var(--accent-blue); background: rgba(0,176,255,0.08); }
         .monster-skill-chip strong { color: var(--accent-blue); }
+        .monster-roll-targets { display: block; margin-top: 3px; color: #777783; font-family: Consolas,monospace; font-size: 0.78em; }
         .monster-actions-summary { display: flex; flex-direction: column; gap: 6px; }
-        .monster-action-summary { padding: 8px; border: 1px solid #3c3c43; border-radius: 6px; background: rgba(0,0,0,0.25); font-size: 0.68em; line-height: 1.4; }
+        .monster-action-summary { padding: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #3c3c43; border-radius: 6px; background: rgba(0,0,0,0.25); font-size: 0.68em; line-height: 1.4; }
         .monster-action-summary strong { color: #ffb0ad; }
+        .monster-action-text { min-width: 0; flex: 1; }
+        .monster-roll-buttons { display: flex; gap: 5px; flex: 0 0 auto; }
+        .monster-roll-button { padding: 6px 8px; border: 1px solid var(--accent-blue); border-radius: 5px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.85em; font-weight: 900; cursor: pointer; }
+        .monster-roll-button.damage { border-color: var(--accent-red); background: rgba(229,57,53,0.1); color: #ff7772; }
+        .monster-roll-button:disabled { opacity: 0.35; cursor: not-allowed; }
+        .monster-presence-row { display: flex; align-items: center; gap: 9px; }
+        .monster-presence-row .monster-info-line { min-width: 0; flex: 1; }
+        .master-dice-popup { position: fixed; inset: 0; z-index: 11000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.86); }
+        .master-dice-popup.open { display: flex; }
+        .master-dice-box { width: min(460px,90vw); min-height: 300px; padding: 28px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.13); border-radius: 16px; background: #111114 center / cover no-repeat; box-shadow: 0 22px 70px rgba(0,0,0,0.9); text-align: center; }
+        .master-dice-content { opacity: 0; transform: scale(0.88); transition: opacity 0.22s, transform 0.22s; }
+        .master-dice-content.revealed { opacity: 1; transform: scale(1); }
+        .master-dice-name { color: var(--text-primary); font-size: 0.85em; font-weight: 900; text-transform: uppercase; }
+        .master-dice-number { margin: 8px 0; color: white; font-size: clamp(4em,18vw,8em); font-weight: 900; line-height: 1; text-shadow: 0 5px 20px black; }
+        .master-dice-result { font-size: 1.05em; font-weight: 900; text-transform: uppercase; }
         .monster-modal { position: fixed; inset: 0; z-index: 10000; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
         .monster-modal.open { display: flex; }
         .monster-modal-dialog { width: min(900px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(229,57,53,0.55); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.85); }
@@ -254,6 +272,16 @@
         </div>
     </div>
 
+    <div id="master-dice-popup" class="master-dice-popup" onclick="if(event.target===this) closeMasterDicePopup()">
+        <div class="master-dice-box">
+            <div id="master-dice-content" class="master-dice-content">
+                <div id="master-dice-name" class="master-dice-name">ROLAGEM</div>
+                <div id="master-dice-number" class="master-dice-number">0</div>
+                <div id="master-dice-result" class="master-dice-result">RESULTADO</div>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-ficha" onclick="if(event.target===this) fecharFicha()">
         <div class="modal-toolbar"><button class="btn-close-modal" onclick="fecharFicha()">✕ FECHAR FICHA</button></div>
         <iframe id="iframe-ficha" src="" title="Ficha completa do jogador"></iframe>
@@ -268,6 +296,8 @@
         let monstersState = loadMonstersState();
         let editingMonsterId = null;
         let editingMonsterActions = [];
+        let monsterRollRevealTimer = null;
+        const monsterD20Table = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -326,6 +356,121 @@
             localStorage.setItem('mestre_monsters_state', JSON.stringify(monstersState));
         }
 
+        function getMonsterRanges(value, isAttribute) {
+            const relevantValue = isAttribute ? safeNumber(value) * 2 : safeNumber(value);
+            const index = Math.max(1, Math.min(20, Math.floor(relevantValue)));
+            return monsterD20Table[index];
+        }
+
+        function formatMonsterRanges(value, isAttribute) {
+            const ranges = getMonsterRanges(value, isAttribute);
+            return `N:${ranges.n} B:${ranges.b === 99 ? 'X' : ranges.b} E:${ranges.e === 99 ? 'X' : ranges.e}`;
+        }
+
+        function resolveMonsterD20(value, isAttribute) {
+            const roll = Math.floor(Math.random() * 20) + 1;
+            const ranges = getMonsterRanges(value, isAttribute);
+            if (roll === 20) return { roll, result: 'CRÍTICO', color: 'var(--accent-red)' };
+            if (ranges.e !== 99 && roll >= ranges.e) return { roll, result: 'EXTREMO', color: 'var(--accent-yellow)' };
+            if (ranges.b !== 99 && roll >= ranges.b) return { roll, result: 'BOM', color: 'var(--accent-blue)' };
+            if (roll >= ranges.n) return { roll, result: 'NORMAL', color: 'var(--accent-green)' };
+            return { roll, result: 'FALHA', color: 'var(--accent-red)' };
+        }
+
+        function showMasterDicePopup(number, name, result, color) {
+            const popup = document.getElementById('master-dice-popup');
+            const content = document.getElementById('master-dice-content');
+            const box = popup.querySelector('.master-dice-box');
+            box.style.backgroundImage = `linear-gradient(rgba(10,10,12,0.65),rgba(10,10,12,0.82)),url('https://blogger.googleusercontent.com/img/a/AVvXsEjMOEuhQsyp9K02VzG4U6kXeEMQYu6efHg98n3yde59MTJ8bNLTvSq5WfWAyGfur8ACjUsjNWQfOp8k0-odkhXt1UpVqf4OqJQ_azqElAh044YPkLWQ0LekZZSwp4u8RNa9Aht1bKFLKkUxFfIz9NyAdJnf2Mo9dHgZ-pRlIf6iMbaPmh5o4hLd3eyYEDc9')`;
+            document.getElementById('master-dice-name').textContent = name;
+            document.getElementById('master-dice-number').textContent = number;
+            const resultElement = document.getElementById('master-dice-result');
+            resultElement.textContent = result;
+            resultElement.style.color = color;
+            content.classList.remove('revealed');
+            popup.classList.add('open');
+            clearTimeout(monsterRollRevealTimer);
+            monsterRollRevealTimer = setTimeout(() => content.classList.add('revealed'), 850);
+        }
+
+        function closeMasterDicePopup() {
+            clearTimeout(monsterRollRevealTimer);
+            document.getElementById('master-dice-popup').classList.remove('open');
+            document.getElementById('master-dice-content').classList.remove('revealed');
+        }
+
+        function rollMonsterAttribute(monsterId, attributeKey, label) {
+            const monster = monstersState.find(item => item.id === monsterId);
+            if (!monster) return;
+            const result = resolveMonsterD20(monster.attrs[attributeKey], true);
+            showMasterDicePopup(result.roll, `${monster.name} — ${label}`, result.result, result.color);
+        }
+
+        function rollMonsterSkill(monsterId, skillKey, label) {
+            const monster = monstersState.find(item => item.id === monsterId);
+            if (!monster) return;
+            const result = resolveMonsterD20(monster.skills[skillKey], false);
+            showMasterDicePopup(result.roll, `${monster.name} — ${label}`, result.result, result.color);
+            if (skillKey === 'iniciativa') applyMonsterInitiativeRoll(monster, result.roll);
+        }
+
+        function applyMonsterInitiativeRoll(monster, roll) {
+            const id = `monster_initiative_${monster.id}`;
+            const existing = initiativeState.entries.find(entry => entry.id === id);
+            if (existing) {
+                existing.name = monster.name;
+                existing.value = roll;
+            } else {
+                initiativeState.entries.push({ id, name: monster.name, value: roll, kind: 'npc', code: '' });
+            }
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        function extractMonsterTestValue(test) {
+            const matches = String(test || '').match(/[+-]?\d+(?![^\d]*\d)/g);
+            if (!matches || !matches.length) return null;
+            return safeNumber(matches[matches.length - 1], null);
+        }
+
+        function rollMonsterActionAttack(monsterId, actionIndex) {
+            const monster = monstersState.find(item => item.id === monsterId);
+            const action = monster && monster.actions[actionIndex];
+            if (!action) return;
+            const testValue = extractMonsterTestValue(action.test);
+            if (testValue === null) return alert('Informe um valor numérico no Teste / Ataque dessa ação.');
+            const result = resolveMonsterD20(testValue, false);
+            showMasterDicePopup(result.roll, `${monster.name} — ${action.name || 'Ação'}`, result.result, result.color);
+        }
+
+        function rollMonsterActionDamage(monsterId, actionIndex) {
+            const monster = monstersState.find(item => item.id === monsterId);
+            const action = monster && monster.actions[actionIndex];
+            if (!action) return;
+            rollMonsterDamage(monsterId, action.damage, action.name || 'Ação');
+        }
+
+        function rollMonsterDamage(monsterId, formula, label) {
+            const monster = monstersState.find(item => item.id === monsterId);
+            if (!monster) return;
+            const tokens = String(formula || '').toLowerCase().replace(/\s/g, '').match(/[+-]?(?:\d*d\d+|\d+)/g);
+            if (!tokens || !tokens.length) return alert('Informe uma fórmula de dano válida, como 2d8+4.');
+            let total = 0;
+            tokens.forEach(token => {
+                const sign = token.startsWith('-') ? -1 : 1;
+                const value = token.replace(/^[+-]/, '');
+                if (value.includes('d')) {
+                    const [quantityText, facesText] = value.split('d');
+                    const quantity = Math.max(1, parseInt(quantityText, 10) || 1);
+                    const faces = Math.max(1, parseInt(facesText, 10) || 1);
+                    for (let index = 0; index < quantity; index++) total += (Math.floor(Math.random() * faces) + 1) * sign;
+                } else {
+                    total += safeNumber(value) * sign;
+                }
+            });
+            showMasterDicePopup(total, `${monster.name} — ${label}`, 'DANO', 'var(--accent-red)');
+        }
+
         function renderMonsters() {
             const grid = document.getElementById('monsters-grid');
             const count = monstersState.length;
@@ -342,9 +487,9 @@
 
             monstersState.forEach(monster => {
                 const lifePercent = monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0;
-                const attributesHtml = [['FOR',monster.attrs.for],['AGI',monster.attrs.agi],['INT',monster.attrs.int],['PRE',monster.attrs.pre],['VIG',monster.attrs.vig]].map(([label,value]) => `<div class="monster-attribute"><span>${label}</span><strong>${value}</strong></div>`).join('');
-                const skillsHtml = [['Fortitude',monster.skills.fortitude],['Reflexos',monster.skills.reflexos],['Vontade',monster.skills.vontade],['Percepção',monster.skills.percepcao],['Iniciativa',monster.skills.iniciativa]].map(([label,value]) => `<span class="monster-skill-chip">${label} <strong>${value}</strong></span>`).join('');
-                const actionsHtml = monster.actions.length ? monster.actions.map(action => `<div class="monster-action-summary"><strong>${escapeHtml(action.name || 'Ação')}</strong>${action.test ? ` · ${escapeHtml(action.test)}` : ''}${action.damage ? `<br>Dano: ${escapeHtml(action.damage)}` : ''}${action.description ? `<br>${escapeHtml(action.description)}` : ''}</div>`).join('') : '<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
+                const attributesHtml = [['for','FOR'],['agi','AGI'],['int','INT'],['pre','PRE'],['vig','VIG']].map(([key,label]) => `<button class="monster-attribute" type="button" data-attr-key="${key}" data-roll-label="${label}"><span>${label}</span><strong>${monster.attrs[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.attrs[key], true)}</small></button>`).join('');
+                const skillsHtml = [['fortitude','Fortitude'],['reflexos','Reflexos'],['vontade','Vontade'],['percepcao','Percepção'],['iniciativa','Iniciativa']].map(([key,label]) => `<button class="monster-skill-chip" type="button" data-skill-key="${key}" data-roll-label="${label}">${label} <strong>${monster.skills[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.skills[key], false)}</small></button>`).join('');
+                const actionsHtml = monster.actions.length ? monster.actions.map((action,index) => `<div class="monster-action-summary"><div class="monster-action-text"><strong>${escapeHtml(action.name || 'Ação')}</strong>${action.test ? ` · ${escapeHtml(action.test)}` : ''}${action.damage ? `<br>Dano: ${escapeHtml(action.damage)}` : ''}${action.description ? `<br>${escapeHtml(action.description)}` : ''}</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="${index}" ${action.test ? '' : 'disabled'}>ATQ</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="${index}" ${action.damage ? '' : 'disabled'}>DANO</button></div></div>`).join('') : '<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
                 const card = document.createElement('article');
                 card.className = 'monster-card';
                 card.dataset.monsterId = monster.id;
@@ -353,18 +498,23 @@
                     <div class="monster-attributes">${attributesHtml}</div>
                     <div class="monster-life-controls">
                         <button class="monster-life-button monster-life-minus" type="button">−</button>
-                        <div class="monster-life-meter"><div class="monster-life-fill" style="width:${lifePercent}%"></div><div class="monster-life-text"><input class="monster-current-life" type="number" min="0" value="${monster.life}" aria-label="Vida atual"> / ${monster.maxLife}</div></div>
+                        <div class="monster-life-meter"><div class="monster-life-fill" style="width:${lifePercent}%"></div><div class="monster-life-text"><input class="monster-current-life" type="number" min="0" value="${monster.life}" aria-label="Vida atual"> / <span class="monster-life-maximum">${monster.maxLife}</span></div></div>
                         <button class="monster-life-button monster-life-plus" type="button">+</button>
                     </div>
                     <div class="monster-info-line"><strong>Resistência:</strong> ${escapeHtml(monster.resistance || '—')}<br><strong>Vulnerabilidades:</strong> ${escapeHtml(monster.vulnerabilities || '—')}</div>
                     <div class="monster-skills-summary">${skillsHtml}</div>
-                    <div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence || '—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage || '—')}</div>
+                    <div class="monster-presence-row"><div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence || '—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage || '—')}</div><button class="monster-roll-button damage monster-main-damage" type="button" ${monster.damage ? '' : 'disabled'}>DANO</button></div>
                     <div class="monster-actions-summary">${actionsHtml}</div>`;
                 card.querySelector('.monster-edit').onclick = () => openMonsterPopup(monster.id);
                 card.querySelector('.monster-current-life').onchange = event => updateMonsterLife(monster.id, event.target.value);
                 card.querySelector('.monster-life-minus').onclick = () => changeMonsterLife(monster.id, -1);
                 card.querySelector('.monster-life-plus').onclick = () => changeMonsterLife(monster.id, 1);
                 card.querySelector('.monster-remove').onclick = () => removeMonster(monster.id);
+                card.querySelectorAll('.monster-attribute').forEach(button => button.onclick = () => rollMonsterAttribute(monster.id, button.dataset.attrKey, button.dataset.rollLabel));
+                card.querySelectorAll('.monster-skill-chip').forEach(button => button.onclick = () => rollMonsterSkill(monster.id, button.dataset.skillKey, button.dataset.rollLabel));
+                card.querySelectorAll('.action-attack-roll').forEach(button => button.onclick = () => rollMonsterActionAttack(monster.id, Number(button.dataset.actionIndex)));
+                card.querySelectorAll('.action-damage-roll').forEach(button => button.onclick = () => rollMonsterActionDamage(monster.id, Number(button.dataset.actionIndex)));
+                card.querySelector('.monster-main-damage').onclick = () => rollMonsterDamage(monster.id, monster.damage, 'Presença Perturbadora');
                 grid.appendChild(card);
             });
         }
@@ -459,7 +609,7 @@
             if (!monster) return;
             monster.life = Math.max(0, Math.min(monster.maxLife, safeNumber(rawValue)));
             saveMonstersState();
-            renderMonsters();
+            updateMonsterLifeCard(monster);
         }
 
         function changeMonsterLife(id, amount) {
@@ -467,7 +617,18 @@
             if (!monster) return;
             monster.life = Math.max(0, Math.min(monster.maxLife, monster.life + amount));
             saveMonstersState();
-            renderMonsters();
+            updateMonsterLifeCard(monster);
+        }
+
+        function updateMonsterLifeCard(monster) {
+            const card = Array.from(document.querySelectorAll('.monster-card')).find(element => element.dataset.monsterId === monster.id);
+            if (!card) return;
+            const input = card.querySelector('.monster-current-life');
+            const maximum = card.querySelector('.monster-life-maximum');
+            const fill = card.querySelector('.monster-life-fill');
+            if (input) input.value = monster.life;
+            if (maximum) maximum.textContent = monster.maxLife;
+            if (fill) fill.style.width = `${monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0}%`;
         }
 
         function removeMonster(id) {
@@ -728,7 +889,11 @@
 
         document.getElementById('initiative-name-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
         document.getElementById('initiative-value-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
-        document.addEventListener('keydown', event => { if (event.key === 'Escape' && document.getElementById('monster-modal').classList.contains('open')) closeMonsterPopup(); });
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+            if (document.getElementById('master-dice-popup').classList.contains('open')) closeMasterDicePopup();
+            else if (document.getElementById('monster-modal').classList.contains('open')) closeMonsterPopup();
+        });
         updatePlayersCount();
         renderInitiative();
         renderMonsters();
