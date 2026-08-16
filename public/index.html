@@ -2685,6 +2685,29 @@
                         populateData(dados.fullData);
                     }
                 });
+                socket.on('catalog_item_granted', (dados) => {
+                    const item = dados && dados.item;
+                    if (!item || !item.n) return;
+                    addItemObj({
+                        id: item.id || `master_${Date.now()}`,
+                        n: item.n,
+                        w: item.w,
+                        d: item.d,
+                        eq: true,
+                        type: item.type || 'comum',
+                        dmg: item.dmg,
+                        extra: item.extra,
+                        crit: item.crit,
+                        skill: item.skill,
+                        img: item.img,
+                        atkType: item.atkType,
+                        atk: item.atk,
+                        range: item.range,
+                        ammo: item.ammo,
+                        capacity: item.capacity,
+                        currentShots: item.currentShots
+                    });
+                });
             }
             load(); 
             playerDataReady = true;
