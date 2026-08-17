@@ -1578,6 +1578,28 @@
         save();
     }
 
+    function getActiveRangedWeaponOverlayData() {
+        const select = document.getElementById('active-weapon-select');
+        const weaponId = String((select && select.value) || activeWeaponId || '');
+        if (!weaponId) return null;
+
+        const weapon = document.getElementById('item-data-' + weaponId);
+        if (!weapon || weapon.getAttribute('data-eq') !== 'true' || weapon.getAttribute('data-type') !== 'arma') return null;
+
+        const attackType = String(weapon.getAttribute('data-atktype') || '').toLowerCase();
+        if (!attackType.includes('disparo')) return null;
+
+        const capacity = Math.max(0, parseInt(weapon.getAttribute('data-capacity'), 10) || 0);
+        const currentShots = Math.max(0, Math.min(capacity, parseInt(weapon.getAttribute('data-currentshots'), 10) || 0));
+        return {
+            id: weaponId,
+            nome: String(weapon.getAttribute('data-n') || 'Arma de disparo'),
+            municao: String(weapon.getAttribute('data-ammo') || 'Munição'),
+            atual: currentShots,
+            capacidade: capacity
+        };
+    }
+
     function renderActiveWeapon() {
         const id = document.getElementById('active-weapon-select').value, wp = equippedWeaponsData.find(w => w.id === id), container = document.getElementById('equipped-weapons-list');
         if (wp) {
@@ -2937,6 +2959,7 @@ function removeCurrentClue() {
 
         if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
         const currentProfileImageUrl = getActiveProfileImageUrl();
+        const activeRangedWeapon = getActiveRangedWeaponOverlayData();
         const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, charImages: charImages, charStatus: charStatus, modoCombate: combatMode, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
         ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
         d.info['char_img'] = currentProfileImageUrl;
@@ -2970,6 +2993,7 @@ function removeCurrentClue() {
                 sani_atual: document.getElementById('sani_atual') ? document.getElementById('sani_atual').value : 0,
                 sani_max: document.getElementById('sani_max') ? document.getElementById('sani_max').value : 0,
                 modoCombate: combatMode,
+                armaDisparoAtiva: activeRangedWeapon,
                 status: charStatus,
                 fullData: d
             });
