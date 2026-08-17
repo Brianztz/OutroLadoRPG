@@ -12,6 +12,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Mantém a ficha mais recente e todas as conexões ativas de cada jogador.
 const playersData = new Map();
 const playerSockets = new Map();
+let initiativeState = { entries: [], activeId: null, round: 0, started: false };
 
 function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
@@ -23,6 +24,24 @@ function registerPlayerSocket(code, socket) {
     socket.data.playerCode = code;
 }
 
+function normalizeInitiativeState(rawState) {
+    const source = rawState && typeof rawState === 'object' ? rawState : {};
+    const entries = Array.isArray(source.entries) ? source.entries.slice(0, 200).map((entry, index) => ({
+        id: String(entry && entry.id || `initiative_${index}`).slice(0, 100),
+        name: String(entry && entry.name || 'Participante').slice(0, 120),
+        value: Number.isFinite(Number(entry && entry.value)) ? Number(entry.value) : 0,
+        kind: entry && entry.kind === 'player' ? 'player' : 'npc',
+        code: normalizePlayerCode(entry && entry.code)
+    })) : [];
+    const activeId = source.activeId ? String(source.activeId).slice(0, 100) : null;
+    return {
+        entries,
+        activeId: activeId && entries.some(entry => entry.id === activeId) ? activeId : null,
+        round: Math.max(0, Math.floor(Number(source.round) || 0)),
+        started: Boolean(source.started && activeId)
+    };
+}
+
 io.on('connection', socket => {
     console.log('🟢 Conexão aberta:', socket.id);
 
@@ -30,6 +49,21 @@ io.on('connection', socket => {
     socket.on('master_ready', () => {
         socket.data.isMaster = true;
         socket.emit('players_snapshot', Array.from(playersData.values()));
+        socket.emit('initiative_state_updated', initiativeState);
+    });
+
+    // O overlay recebe a lista atual e acompanha alterações sem configuração manual.
+    socket.on('overlay_ready', () => {
+        socket.data.isOverlay = true;
+        socket.emit('players_snapshot', Array.from(playersData.values()));
+        socket.emit('initiative_state_updated', initiativeState);
+    });
+
+    // Mantém o destaque do turno do overlay sincronizado com o Escudo do Mestre.
+    socket.on('initiative_state_change', rawState => {
+        if (!socket.data.isMaster) return;
+        initiativeState = normalizeInitiativeState(rawState);
+        io.emit('initiative_state_updated', initiativeState);
     });
 
     // A própria ficha anuncia o jogador sempre que salva ou reconecta.
