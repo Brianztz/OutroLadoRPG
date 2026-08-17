@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay da Mesa</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --cyan: #00b8f5;
+            --cyan-soft: rgba(0, 184, 245, 0.28);
+            --red: #ec334d;
+            --red-dark: #8b1028;
+            --sanity: #7187ff;
+            --sanity-dark: #303a9e;
+            --gold: #ffc83d;
+            --panel: rgba(10, 13, 18, 0.94);
+            --line: rgba(197, 218, 231, 0.18);
+            --muted: #91a0ab;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            min-height: 100%;
+            margin: 0;
+            background: transparent;
+        }
+
+        body {
+            padding: 24px;
+            overflow: hidden;
+            color: #fff;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        .overlay-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(420px, 500px));
+            gap: 24px 34px;
+            width: min(1034px, calc(100vw - 48px));
+            align-items: center;
+        }
+
+        .player-widget {
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            min-height: 132px;
+            filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.52));
+            animation: widget-in 0.36s ease both;
+        }
+
+        .player-widget.leaving {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.96);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .portrait {
+            position: relative;
+            z-index: 3;
+            flex: 0 0 126px;
+            width: 126px;
+            height: 126px;
+            overflow: hidden;
+            border: 3px solid #0b151d;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 50% 35%, #243440 0 22%, #111920 62%, #080b0e 100%);
+            box-shadow:
+                inset 0 0 24px rgba(0, 0, 0, 0.75),
+                0 0 0 2px var(--cyan),
+                0 0 18px rgba(0, 184, 245, 0.36);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        .portrait::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(140deg, rgba(255, 255, 255, 0.18), transparent 32%, transparent 70%, rgba(0, 184, 245, 0.11));
+            pointer-events: none;
+        }
+
+        .portrait img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .portrait-fallback {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            place-items: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 2.6rem;
+            font-weight: 900;
+        }
+
+        .widget-panel {
+            position: relative;
+            z-index: 2;
+            flex: 1 1 auto;
+            min-width: 0;
+            margin-left: -23px;
+            padding: 13px 17px 12px 38px;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-left: 0;
+            border-radius: 0 10px 10px 0;
+            background:
+                linear-gradient(100deg, rgba(24, 31, 39, 0.98), var(--panel) 58%, rgba(8, 11, 15, 0.97));
+            box-shadow: inset 0 1px rgba(255,255,255,0.04), 0 7px 20px rgba(0,0,0,0.5);
+        }
+
+        .widget-panel::after {
+            content: "";
+            position: absolute;
+            right: -24px;
+            top: -38px;
+            width: 150px;
+            height: 150px;
+            border: 1px solid rgba(0, 184, 245, 0.12);
+            border-radius: 50%;
+            box-shadow: 0 0 35px var(--cyan-soft);
+            pointer-events: none;
+        }
+
+        .identity {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 9px;
+        }
+
+        .name {
+            min-width: 0;
+            overflow: hidden;
+            color: #f6fbff;
+            font-family: Impact, "Arial Narrow", sans-serif;
+            font-size: 1.46rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: 1.1px;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            white-space: nowrap;
+            text-shadow: 0 2px 3px #000, 0 0 8px rgba(0, 184, 245, 0.18);
+        }
+
+        .meta {
+            flex: 0 0 auto;
+            color: var(--muted);
+            font-size: 0.66rem;
+            font-weight: 800;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+        }
+
+        .vitals {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 7px;
+        }
+
+        .vital {
+            display: grid;
+            grid-template-columns: 20px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .vital-label {
+            color: #fff;
+            font-size: 0.61rem;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .bar {
+            height: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 3px;
+            background: rgba(0,0,0,0.62);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.75);
+        }
+
+        .bar-fill {
+            width: 0;
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.8s cubic-bezier(.2,.8,.2,1), filter 0.25s ease;
+        }
+
+        .bar-fill.life {
+            background: linear-gradient(90deg, var(--red-dark), var(--red) 74%, #ff7a8a);
+            box-shadow: 0 0 10px rgba(236, 51, 77, 0.48);
+        }
+
+        .bar-fill.sanity {
+            background: linear-gradient(90deg, var(--sanity-dark), var(--sanity) 74%, #aeb8ff);
+            box-shadow: 0 0 10px rgba(113, 135, 255, 0.48);
+        }
+
+        .vital-value {
+            min-width: 58px;
+            color: #eef5f8;
+            font-family: Consolas, monospace;
+            font-size: 0.72rem;
+            font-weight: 900;
+            text-align: right;
+            text-shadow: 0 1px 2px #000;
+        }
+
+        .status-row {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            min-height: 16px;
+            gap: 5px;
+            margin-top: 7px;
+            overflow: hidden;
+        }
+
+        .status-tag {
+            padding: 2px 7px;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            color: #b9c4cb;
+            font-size: 0.55rem;
+            font-weight: 900;
+            letter-spacing: 0.55px;
+            text-transform: uppercase;
+        }
+
+        .status-tag.danger { border-color: rgba(236, 51, 77, 0.62); color: #ff9aa8; }
+        .status-tag.mind { border-color: rgba(113, 135, 255, 0.68); color: #c2c9ff; }
+
+        .turn-badge {
+            position: absolute;
+            z-index: 5;
+            top: -7px;
+            left: 142px;
+            padding: 4px 11px;
+            border: 1px solid #fff0aa;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #745000, #e0a413);
+            box-shadow: 0 2px 8px #000, 0 0 13px rgba(255, 200, 61, 0.48);
+            color: #fff8d5;
+            font-size: 0.64rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            opacity: 0;
+            text-transform: uppercase;
+            transform: translateY(5px) scale(0.94);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            pointer-events: none;
+        }
+
+        .player-widget.active-turn .turn-badge {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            animation: badge-pulse 1.8s ease-in-out infinite;
+        }
+
+        .player-widget.active-turn .portrait {
+            box-shadow:
+                inset 0 0 24px rgba(0,0,0,0.7),
+                0 0 0 2px #fff0aa,
+                0 0 22px rgba(255, 200, 61, 0.85);
+            animation: portrait-pulse 1.8s ease-in-out infinite;
+        }
+
+        .player-widget.active-turn .widget-panel {
+            border-color: rgba(255, 200, 61, 0.48);
+        }
+
+        .connection-state {
+            display: none;
+            width: max-content;
+            max-width: calc(100vw - 48px);
+            padding: 10px 14px;
+            border: 1px solid rgba(0,184,245,0.35);
+            border-radius: 8px;
+            background: rgba(7,10,14,0.88);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+            color: #a9bac4;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .connection-state.visible { display: block; }
+        .connection-state.error { border-color: rgba(236,51,77,0.6); color: #ff9aaa; }
+
+        .bar-fill.changed { animation: bar-flash 0.65s ease; }
+
+        @keyframes widget-in {
+            from { opacity: 0; transform: translateY(10px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes bar-flash {
+            0%, 100% { filter: brightness(1); }
+            45% { filter: brightness(1.8); }
+        }
+
+        @keyframes badge-pulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.18); }
+        }
+
+        @keyframes portrait-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.025); }
+        }
+
+        @media (max-width: 1050px) {
+            .overlay-grid { grid-template-columns: minmax(0, 500px); }
+        }
+
+        @media (max-width: 560px) {
+            body { padding: 12px; }
+            .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
+            .portrait { flex-basis: 102px; width: 102px; height: 102px; }
+            .widget-panel { margin-left: -19px; padding-left: 31px; }
+            .name { font-size: 1.12rem; }
+            .meta { display: none; }
+            .turn-badge { left: 112px; }
+        }
+    </style>
+</head>
+<body>
+    <main id="overlay-grid" class="overlay-grid" aria-live="polite"></main>
+    <div id="connection-state" class="connection-state visible" role="status">Conectando ao servidor...</div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const grid = document.getElementById('overlay-grid');
+        const connectionState = document.getElementById('connection-state');
+        const players = new Map();
+        const previousVitals = new Map();
+        let initiativeState = { entries: [], activeId: null, round: 0, started: false };
+
+        function safeNumber(value, fallback = 0) {
+            const number = Number(value);
+            return Number.isFinite(number) ? number : fallback;
+        }
+
+        function playerCode(data) {
+            return String(data && (data.codigo || data.id) || '').trim().toUpperCase();
+        }
+
+        function percentage(current, maximum) {
+            const max = Math.max(0, safeNumber(maximum));
+            if (!max) return 0;
+            return Math.min(100, Math.max(0, safeNumber(current) / max * 100));
+        }
+
+        function setConnectionMessage(message, type = '') {
+            connectionState.textContent = message;
+            connectionState.className = `connection-state visible${type ? ` ${type}` : ''}`;
+        }
+
+        function hideConnectionMessage() {
+            connectionState.className = 'connection-state';
+        }
+
+        function createPlayerWidget(code) {
+            const article = document.createElement('article');
+            article.className = 'player-widget';
+            article.dataset.code = code;
+            article.innerHTML = `
+                <div class="turn-badge">⚔ Turno atual</div>
+                <div class="portrait">
+                    <div class="portrait-fallback">?</div>
+                    <img alt="" hidden>
+                </div>
+                <div class="widget-panel">
+                    <div class="identity">
+                        <div class="name">Personagem</div>
+                        <div class="meta"></div>
+                    </div>
+                    <div class="vitals">
+                        <div class="vital">
+                            <span class="vital-label">PV</span>
+                            <div class="bar"><div class="bar-fill life"></div></div>
+                            <span class="vital-value life-value">0 / 0</span>
+                        </div>
+                        <div class="vital">
+                            <span class="vital-label">SAN</span>
+                            <div class="bar"><div class="bar-fill sanity"></div></div>
+                            <span class="vital-value sanity-value">0 / 0</span>
+                        </div>
+                    </div>
+                    <div class="status-row"></div>
+                </div>`;
+
+            const image = article.querySelector('.portrait img');
+            image.addEventListener('error', () => {
+                image.hidden = true;
+                image.removeAttribute('src');
+                article.querySelector('.portrait-fallback').style.display = 'grid';
+            });
+            return article;
+        }
+
+        function updateBar(article, selector, percent, changed) {
+            const fill = article.querySelector(selector);
+            if (changed) {
+                fill.classList.remove('changed');
+                void fill.offsetWidth;
+                fill.classList.add('changed');
+            }
+            requestAnimationFrame(() => { fill.style.width = `${percent}%`; });
+        }
+
+        function renderStatusTags(article, status) {
+            const tags = [];
+            if (status && status.morrendo) tags.push(['Morrendo', 'danger']);
+            else if (status && status.lesionado) tags.push(['Lesionado', 'danger']);
+            if (status && status.inconsciente) tags.push(['Inconsciente', 'danger']);
+            if (status && status.enlouquecendo) tags.push(['Enlouquecendo', 'mind']);
+            article.querySelector('.status-row').innerHTML = tags
+                .map(([label, type]) => `<span class="status-tag ${type}">${label}</span>`)
+                .join('');
+        }
+
+        function updatePlayerWidget(data) {
+            const code = playerCode(data);
+            if (!code) return;
+            players.set(code, data);
+
+            let article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
+            if (!article) {
+                article = createPlayerWidget(code);
+                grid.appendChild(article);
+            }
+
+            const name = String(data.nome || 'Personagem sem nome');
+            const lifeCurrent = safeNumber(data.vida_atual);
+            const lifeMaximum = Math.max(0, safeNumber(data.vida_max));
+            const sanityCurrent = safeNumber(data.sani_atual);
+            const sanityMaximum = Math.max(0, safeNumber(data.sani_max));
+            const previous = previousVitals.get(code);
+
+            article.setAttribute('aria-label', name);
+            article.querySelector('.name').textContent = name;
+            article.querySelector('.meta').textContent = `NEX ${safeNumber(data.nex)}% · DEF ${safeNumber(data.defesa)}`;
+            article.querySelector('.life-value').textContent = `${lifeCurrent} / ${lifeMaximum}`;
+            article.querySelector('.sanity-value').textContent = `${sanityCurrent} / ${sanityMaximum}`;
+            updateBar(article, '.bar-fill.life', percentage(lifeCurrent, lifeMaximum), previous && previous.life !== lifeCurrent);
+            updateBar(article, '.bar-fill.sanity', percentage(sanityCurrent, sanityMaximum), previous && previous.sanity !== sanityCurrent);
+            renderStatusTags(article, data.status);
+
+            const image = article.querySelector('.portrait img');
+            const fallback = article.querySelector('.portrait-fallback');
+            const photo = String(data.foto || '');
+            if (photo && image.getAttribute('src') !== photo) {
+                fallback.style.display = 'none';
+                image.hidden = false;
+                image.src = photo;
+            } else if (!photo) {
+                image.hidden = true;
+                image.removeAttribute('src');
+                fallback.style.display = 'grid';
+            }
+
+            previousVitals.set(code, { life: lifeCurrent, sanity: sanityCurrent });
+            sortWidgets();
+            updateTurnHighlight();
+            hideConnectionMessage();
+        }
+
+        function sortWidgets() {
+            [...grid.children]
+                .sort((first, second) => {
+                    const firstName = players.get(first.dataset.code)?.nome || '';
+                    const secondName = players.get(second.dataset.code)?.nome || '';
+                    return String(firstName).localeCompare(String(secondName), 'pt-BR');
+                })
+                .forEach(widget => grid.appendChild(widget));
+        }
+
+        function removePlayer(codeValue) {
+            const code = String(codeValue || '').trim().toUpperCase();
+            players.delete(code);
+            previousVitals.delete(code);
+            const article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
+            if (article) {
+                article.classList.add('leaving');
+                setTimeout(() => article.remove(), 210);
+            }
+            if (!players.size) setConnectionMessage('Aguardando jogadores conectados...');
+        }
+
+        function activePlayerCode() {
+            if (!initiativeState || !initiativeState.started || !initiativeState.activeId) return '';
+            const activeId = String(initiativeState.activeId);
+            if (activeId.startsWith('player_')) return activeId.slice(7).toUpperCase();
+            const entry = Array.isArray(initiativeState.entries)
+                ? initiativeState.entries.find(item => String(item.id) === activeId)
+                : null;
+            return String(entry && entry.code || '').toUpperCase();
+        }
+
+        function updateTurnHighlight() {
+            const activeCode = activePlayerCode();
+            grid.querySelectorAll('.player-widget').forEach(widget => {
+                widget.classList.toggle('active-turn', Boolean(activeCode) && widget.dataset.code === activeCode);
+            });
+        }
+
+        socket.on('connect', () => {
+            setConnectionMessage('Conectado. Buscando jogadores...');
+            socket.emit('overlay_ready');
+        });
+
+        socket.on('disconnect', () => setConnectionMessage('Servidor desconectado — tentando reconectar...', 'error'));
+
+        socket.on('players_snapshot', snapshot => {
+            const receivedCodes = new Set();
+            (Array.isArray(snapshot) ? snapshot : []).forEach(data => {
+                const code = playerCode(data);
+                if (!code) return;
+                receivedCodes.add(code);
+                updatePlayerWidget(data);
+            });
+            [...players.keys()].forEach(code => { if (!receivedCodes.has(code)) removePlayer(code); });
+            if (!receivedCodes.size) setConnectionMessage('Aguardando jogadores conectados...');
+        });
+
+        socket.on('update_mestre', updatePlayerWidget);
+        socket.on('player_disconnected', data => removePlayer(data && data.codigo));
+        socket.on('initiative_state_updated', state => {
+            initiativeState = state && typeof state === 'object'
+                ? state
+                : { entries: [], activeId: null, round: 0, started: false };
+            updateTurnHighlight();
+        });
+    </script>
+</body>
+</html>
