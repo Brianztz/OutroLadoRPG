@@ -210,6 +210,31 @@
             text-shadow: 0 2px 3px #000, 0 0 5px rgba(92,117,255,0.9), 0 0 10px rgba(92,117,255,0.48);
         }
 
+        .combat-number.ammo {
+            margin-bottom: 4px;
+            color: #ffe47c;
+            font-family: Consolas, monospace;
+            font-size: 1.72rem;
+            letter-spacing: 0;
+            text-shadow: 0 2px 3px #000, 0 0 5px rgba(255,200,61,0.88), 0 0 10px rgba(255,200,61,0.4);
+        }
+
+        .combat-number.ammo[hidden] { display: none; }
+
+        .ammo-icon {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 2px #000) drop-shadow(0 0 5px rgba(255,200,61,0.6));
+        }
+
+        .ammo-icon[hidden], .ammo-text-prefix[hidden] { display: none; }
+
+        .combat-number.ammo.empty {
+            color: #ff8d99;
+            text-shadow: 0 2px 3px #000, 0 0 5px rgba(236,51,77,0.9), 0 0 10px rgba(236,51,77,0.45);
+        }
+
         .turn-badge {
             position: absolute;
             z-index: 5;
@@ -343,6 +368,7 @@
                         <div class="name">Personagem</div>
                     </div>
                     <div class="combat-stats" aria-label="Vida e sanidade">
+                        <span class="combat-number ammo" hidden><span class="combat-prefix ammo-text-prefix">MUN</span><img class="ammo-icon" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png" alt="Munição leve" hidden><span class="ammo-value">0</span></span>
                         <span class="combat-number life"><span class="combat-prefix">PV</span><span class="life-value">0/0</span></span>
                         <span class="combat-number sanity"><span class="combat-prefix">SAN</span><span class="sanity-value">0/0</span></span>
                     </div>
@@ -376,6 +402,9 @@
             const lifeMaximum = Math.max(0, safeNumber(data.vida_max));
             const sanityCurrent = safeNumber(data.sani_atual);
             const sanityMaximum = Math.max(0, safeNumber(data.sani_max));
+            const rangedWeapon = data.armaDisparoAtiva && typeof data.armaDisparoAtiva === 'object' ? data.armaDisparoAtiva : null;
+            const ammoCurrent = rangedWeapon ? Math.max(0, safeNumber(rangedWeapon.atual)) : 0;
+            const ammoCapacity = rangedWeapon ? Math.max(0, safeNumber(rangedWeapon.capacidade)) : 0;
             const previous = previousVitals.get(code);
 
             article.setAttribute('aria-label', name);
@@ -384,6 +413,18 @@
             article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
             flashCombatNumber(article, '.combat-number.life', previous && previous.life !== lifeCurrent);
             flashCombatNumber(article, '.combat-number.sanity', previous && previous.sanity !== sanityCurrent);
+            const ammoLine = article.querySelector('.combat-number.ammo');
+            ammoLine.hidden = !rangedWeapon;
+            ammoLine.classList.toggle('empty', Boolean(rangedWeapon) && ammoCurrent <= 0);
+            if (rangedWeapon) {
+                const ammoType = String(rangedWeapon.municao || 'Munição');
+                const usesLightAmmo = /curta|leve/i.test(ammoType);
+                article.querySelector('.ammo-value').textContent = `${ammoCurrent}`;
+                article.querySelector('.ammo-icon').hidden = !usesLightAmmo;
+                article.querySelector('.ammo-text-prefix').hidden = usesLightAmmo;
+                ammoLine.title = `${String(rangedWeapon.nome || 'Arma de disparo')} — ${ammoType}: ${ammoCurrent} de ${ammoCapacity}`;
+                flashCombatNumber(article, '.combat-number.ammo', previous && previous.ammo !== ammoCurrent);
+            }
             const portrait = article.querySelector('.portrait');
             const portraitImages = [...portrait.querySelectorAll('.portrait-image')];
             const fallback = article.querySelector('.portrait-fallback');
@@ -442,7 +483,7 @@
                 fallback.style.display = 'grid';
             }
 
-            previousVitals.set(code, { life: lifeCurrent, sanity: sanityCurrent });
+            previousVitals.set(code, { life: lifeCurrent, sanity: sanityCurrent, ammo: rangedWeapon ? ammoCurrent : null });
             sortWidgets();
             updateTurnHighlight();
             hideConnectionMessage();
