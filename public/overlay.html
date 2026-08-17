@@ -130,14 +130,28 @@
             pointer-events: none;
         }
 
-        .identity {
+        .display-stack {
             position: relative;
             z-index: 1;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 9px;
+            display: grid;
+            min-height: 76px;
+            align-items: center;
+        }
+
+        .identity {
+            grid-area: 1 / 1;
+            min-width: 0;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s;
+        }
+
+        .identity.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-6px);
+            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s linear 0.45s;
         }
 
         .name {
@@ -145,81 +159,68 @@
             overflow: hidden;
             color: #f6fbff;
             font-family: Impact, "Arial Narrow", sans-serif;
-            font-size: 1.46rem;
+            max-width: 310px;
+            font-size: 2.05rem;
             font-weight: 900;
-            line-height: 1;
+            line-height: 0.95;
             letter-spacing: 1.1px;
             text-overflow: ellipsis;
             text-transform: uppercase;
-            white-space: nowrap;
+            white-space: normal;
+            overflow-wrap: anywhere;
             text-shadow: 0 2px 3px #000, 0 0 8px rgba(0, 184, 245, 0.18);
+            transform: rotate(-2deg);
         }
 
-        .meta {
-            flex: 0 0 auto;
-            color: var(--muted);
-            font-size: 0.66rem;
-            font-weight: 800;
-            letter-spacing: 0.7px;
-            text-transform: uppercase;
+        .combat-stats {
+            grid-area: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(6px);
+            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s linear 0.45s;
+            pointer-events: none;
         }
 
-        .vitals {
-            position: relative;
-            z-index: 1;
-            display: grid;
-            gap: 7px;
+        .combat-stats.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s;
         }
 
-        .vital {
-            display: grid;
-            grid-template-columns: 20px minmax(0, 1fr) auto;
-            align-items: center;
-            gap: 7px;
-        }
-
-        .vital-label {
+        .combat-number {
+            display: flex;
+            align-items: baseline;
+            gap: 9px;
             color: #fff;
-            font-size: 0.61rem;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 2.15rem;
+            font-weight: 700;
+            line-height: 0.96;
+            letter-spacing: -1px;
+            white-space: nowrap;
+            text-shadow: 0 2px 3px #000;
+        }
+
+        .combat-prefix {
+            width: 27px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 0.58rem;
             font-weight: 900;
-            letter-spacing: 0.5px;
-            text-align: center;
-        }
-
-        .bar {
-            height: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 3px;
-            background: rgba(0,0,0,0.62);
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.75);
-        }
-
-        .bar-fill {
-            width: 0;
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.8s cubic-bezier(.2,.8,.2,1), filter 0.25s ease;
-        }
-
-        .bar-fill.life {
-            background: linear-gradient(90deg, var(--red-dark), var(--red) 74%, #ff7a8a);
-            box-shadow: 0 0 10px rgba(236, 51, 77, 0.48);
-        }
-
-        .bar-fill.sanity {
-            background: linear-gradient(90deg, var(--sanity-dark), var(--sanity) 74%, #aeb8ff);
-            box-shadow: 0 0 10px rgba(113, 135, 255, 0.48);
-        }
-
-        .vital-value {
-            min-width: 58px;
-            color: #eef5f8;
-            font-family: Consolas, monospace;
-            font-size: 0.72rem;
-            font-weight: 900;
+            letter-spacing: 0.8px;
             text-align: right;
-            text-shadow: 0 1px 2px #000;
+        }
+
+        .combat-number.life {
+            text-shadow: 0 2px 3px #000, 0 0 5px rgba(255,45,55,0.9), 0 0 10px rgba(255,45,55,0.45);
+        }
+
+        .combat-number.sanity {
+            text-shadow: 0 2px 3px #000, 0 0 5px rgba(92,117,255,0.9), 0 0 10px rgba(92,117,255,0.48);
         }
 
         .status-row {
@@ -305,14 +306,14 @@
         .connection-state.visible { display: block; }
         .connection-state.error { border-color: rgba(236,51,77,0.6); color: #ff9aaa; }
 
-        .bar-fill.changed { animation: bar-flash 0.65s ease; }
+        .combat-number.changed { animation: number-flash 0.65s ease; }
 
         @keyframes widget-in {
             from { opacity: 0; transform: translateY(10px) scale(0.97); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        @keyframes bar-flash {
+        @keyframes number-flash {
             0%, 100% { filter: brightness(1); }
             45% { filter: brightness(1.8); }
         }
@@ -336,8 +337,9 @@
             .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
             .portrait { flex-basis: 102px; width: 102px; height: 102px; }
             .widget-panel { margin-left: -19px; padding-left: 31px; }
-            .name { font-size: 1.12rem; }
-            .meta { display: none; }
+            .display-stack { min-height: 65px; }
+            .name { font-size: 1.55rem; }
+            .combat-number { font-size: 1.75rem; }
             .turn-badge { left: 112px; }
         }
     </style>
@@ -364,12 +366,6 @@
             return String(data && (data.codigo || data.id) || '').trim().toUpperCase();
         }
 
-        function percentage(current, maximum) {
-            const max = Math.max(0, safeNumber(maximum));
-            if (!max) return 0;
-            return Math.min(100, Math.max(0, safeNumber(current) / max * 100));
-        }
-
         function setConnectionMessage(message, type = '') {
             connectionState.textContent = message;
             connectionState.className = `connection-state visible${type ? ` ${type}` : ''}`;
@@ -390,20 +386,13 @@
                     <img alt="" hidden>
                 </div>
                 <div class="widget-panel">
-                    <div class="identity">
-                        <div class="name">Personagem</div>
-                        <div class="meta"></div>
-                    </div>
-                    <div class="vitals">
-                        <div class="vital">
-                            <span class="vital-label">PV</span>
-                            <div class="bar"><div class="bar-fill life"></div></div>
-                            <span class="vital-value life-value">0 / 0</span>
+                    <div class="display-stack">
+                        <div class="identity">
+                            <div class="name">Personagem</div>
                         </div>
-                        <div class="vital">
-                            <span class="vital-label">SAN</span>
-                            <div class="bar"><div class="bar-fill sanity"></div></div>
-                            <span class="vital-value sanity-value">0 / 0</span>
+                        <div class="combat-stats" aria-label="Vida e sanidade">
+                            <span class="combat-number life"><span class="combat-prefix">PV</span><span class="life-value">0/0</span></span>
+                            <span class="combat-number sanity"><span class="combat-prefix">SAN</span><span class="sanity-value">0/0</span></span>
                         </div>
                     </div>
                     <div class="status-row"></div>
@@ -418,14 +407,13 @@
             return article;
         }
 
-        function updateBar(article, selector, percent, changed) {
-            const fill = article.querySelector(selector);
+        function flashCombatNumber(article, selector, changed) {
+            const number = article.querySelector(selector);
             if (changed) {
-                fill.classList.remove('changed');
-                void fill.offsetWidth;
-                fill.classList.add('changed');
+                number.classList.remove('changed');
+                void number.offsetWidth;
+                number.classList.add('changed');
             }
-            requestAnimationFrame(() => { fill.style.width = `${percent}%`; });
         }
 
         function renderStatusTags(article, status) {
@@ -459,11 +447,10 @@
 
             article.setAttribute('aria-label', name);
             article.querySelector('.name').textContent = name;
-            article.querySelector('.meta').textContent = `NEX ${safeNumber(data.nex)}% · DEF ${safeNumber(data.defesa)}`;
-            article.querySelector('.life-value').textContent = `${lifeCurrent} / ${lifeMaximum}`;
-            article.querySelector('.sanity-value').textContent = `${sanityCurrent} / ${sanityMaximum}`;
-            updateBar(article, '.bar-fill.life', percentage(lifeCurrent, lifeMaximum), previous && previous.life !== lifeCurrent);
-            updateBar(article, '.bar-fill.sanity', percentage(sanityCurrent, sanityMaximum), previous && previous.sanity !== sanityCurrent);
+            article.querySelector('.life-value').textContent = `${lifeCurrent}/${lifeMaximum}`;
+            article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
+            flashCombatNumber(article, '.combat-number.life', previous && previous.life !== lifeCurrent);
+            flashCombatNumber(article, '.combat-number.sanity', previous && previous.sanity !== sanityCurrent);
             renderStatusTags(article, data.status);
 
             const image = article.querySelector('.portrait img');
@@ -519,8 +506,11 @@
 
         function updateTurnHighlight() {
             const activeCode = activePlayerCode();
+            const combatActive = Boolean(initiativeState && initiativeState.started);
             grid.querySelectorAll('.player-widget').forEach(widget => {
                 widget.classList.toggle('active-turn', Boolean(activeCode) && widget.dataset.code === activeCode);
+                widget.querySelector('.identity').classList.toggle('hidden', combatActive);
+                widget.querySelector('.combat-stats').classList.toggle('active', combatActive);
             });
         }
 
