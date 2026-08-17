@@ -211,6 +211,7 @@
         }
 
         .combat-number.ammo {
+            align-items: center;
             margin-bottom: 4px;
             color: #ffe47c;
             font-family: Consolas, monospace;
@@ -222,8 +223,6 @@
         .combat-number.ammo[hidden] { display: none; }
 
         .ammo-icon {
-            position: relative;
-            top: 5px;
             width: 44px;
             height: 44px;
             margin: -8px -6px;
@@ -232,6 +231,8 @@
         }
 
         .ammo-icon[hidden], .ammo-text-prefix[hidden] { display: none; }
+
+        .ammo-value { display: inline-flex; align-items: center; line-height: 1; }
 
         .combat-number.ammo.empty {
             color: #ff8d99;
