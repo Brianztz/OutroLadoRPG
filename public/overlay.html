@@ -434,8 +434,9 @@
 
         function updateTurnHighlight() {
             const activeCode = activePlayerCode();
-            const combatActive = Boolean(initiativeState && initiativeState.started);
             grid.querySelectorAll('.player-widget').forEach(widget => {
+                const player = players.get(widget.dataset.code);
+                const combatActive = Boolean(player && (player.modoCombate === true || player.modoCombate === 'true'));
                 widget.classList.toggle('active-turn', Boolean(activeCode) && widget.dataset.code === activeCode);
                 widget.querySelector('.identity').classList.toggle('hidden', combatActive);
                 widget.querySelector('.combat-stats').classList.toggle('active', combatActive);
