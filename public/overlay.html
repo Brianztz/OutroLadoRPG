@@ -101,40 +101,14 @@
             font-weight: 900;
         }
 
-        .widget-panel {
-            position: relative;
-            z-index: 2;
-            flex: 1 1 auto;
-            min-width: 0;
-            margin-left: -23px;
-            padding: 13px 17px 12px 38px;
-            overflow: hidden;
-            border: 1px solid var(--line);
-            border-left: 0;
-            border-radius: 0 10px 10px 0;
-            background:
-                linear-gradient(100deg, rgba(24, 31, 39, 0.98), var(--panel) 58%, rgba(8, 11, 15, 0.97));
-            box-shadow: inset 0 1px rgba(255,255,255,0.04), 0 7px 20px rgba(0,0,0,0.5);
-        }
-
-        .widget-panel::after {
-            content: "";
-            position: absolute;
-            right: -24px;
-            top: -38px;
-            width: 150px;
-            height: 150px;
-            border: 1px solid rgba(0, 184, 245, 0.12);
-            border-radius: 50%;
-            box-shadow: 0 0 35px var(--cyan-soft);
-            pointer-events: none;
-        }
-
         .display-stack {
             position: relative;
-            z-index: 1;
+            z-index: 2;
             display: grid;
+            flex: 1 1 auto;
+            min-width: 0;
             min-height: 76px;
+            margin-left: 16px;
             align-items: center;
         }
 
@@ -223,31 +197,6 @@
             text-shadow: 0 2px 3px #000, 0 0 5px rgba(92,117,255,0.9), 0 0 10px rgba(92,117,255,0.48);
         }
 
-        .status-row {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            min-height: 16px;
-            gap: 5px;
-            margin-top: 7px;
-            overflow: hidden;
-        }
-
-        .status-tag {
-            padding: 2px 7px;
-            border: 1px solid rgba(255,255,255,0.14);
-            border-radius: 999px;
-            background: rgba(255,255,255,0.06);
-            color: #b9c4cb;
-            font-size: 0.55rem;
-            font-weight: 900;
-            letter-spacing: 0.55px;
-            text-transform: uppercase;
-        }
-
-        .status-tag.danger { border-color: rgba(236, 51, 77, 0.62); color: #ff9aa8; }
-        .status-tag.mind { border-color: rgba(113, 135, 255, 0.68); color: #c2c9ff; }
-
         .turn-badge {
             position: absolute;
             z-index: 5;
@@ -281,10 +230,6 @@
                 0 0 0 2px #fff0aa,
                 0 0 22px rgba(255, 200, 61, 0.85);
             animation: portrait-pulse 1.8s ease-in-out infinite;
-        }
-
-        .player-widget.active-turn .widget-panel {
-            border-color: rgba(255, 200, 61, 0.48);
         }
 
         .connection-state {
@@ -336,8 +281,7 @@
             body { padding: 12px; }
             .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
             .portrait { flex-basis: 102px; width: 102px; height: 102px; }
-            .widget-panel { margin-left: -19px; padding-left: 31px; }
-            .display-stack { min-height: 65px; }
+            .display-stack { min-height: 65px; margin-left: 13px; }
             .name { font-size: 1.55rem; }
             .combat-number { font-size: 1.75rem; }
             .turn-badge { left: 112px; }
@@ -385,17 +329,14 @@
                     <div class="portrait-fallback">?</div>
                     <img alt="" hidden>
                 </div>
-                <div class="widget-panel">
-                    <div class="display-stack">
-                        <div class="identity">
-                            <div class="name">Personagem</div>
-                        </div>
-                        <div class="combat-stats" aria-label="Vida e sanidade">
-                            <span class="combat-number life"><span class="combat-prefix">PV</span><span class="life-value">0/0</span></span>
-                            <span class="combat-number sanity"><span class="combat-prefix">SAN</span><span class="sanity-value">0/0</span></span>
-                        </div>
+                <div class="display-stack">
+                    <div class="identity">
+                        <div class="name">Personagem</div>
                     </div>
-                    <div class="status-row"></div>
+                    <div class="combat-stats" aria-label="Vida e sanidade">
+                        <span class="combat-number life"><span class="combat-prefix">PV</span><span class="life-value">0/0</span></span>
+                        <span class="combat-number sanity"><span class="combat-prefix">SAN</span><span class="sanity-value">0/0</span></span>
+                    </div>
                 </div>`;
 
             const image = article.querySelector('.portrait img');
@@ -414,17 +355,6 @@
                 void number.offsetWidth;
                 number.classList.add('changed');
             }
-        }
-
-        function renderStatusTags(article, status) {
-            const tags = [];
-            if (status && status.morrendo) tags.push(['Morrendo', 'danger']);
-            else if (status && status.lesionado) tags.push(['Lesionado', 'danger']);
-            if (status && status.inconsciente) tags.push(['Inconsciente', 'danger']);
-            if (status && status.enlouquecendo) tags.push(['Enlouquecendo', 'mind']);
-            article.querySelector('.status-row').innerHTML = tags
-                .map(([label, type]) => `<span class="status-tag ${type}">${label}</span>`)
-                .join('');
         }
 
         function updatePlayerWidget(data) {
@@ -451,8 +381,6 @@
             article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
             flashCombatNumber(article, '.combat-number.life', previous && previous.life !== lifeCurrent);
             flashCombatNumber(article, '.combat-number.sanity', previous && previous.sanity !== sanityCurrent);
-            renderStatusTags(article, data.status);
-
             const image = article.querySelector('.portrait img');
             const fallback = article.querySelector('.portrait-fallback');
             const photo = String(data.foto || '');
