@@ -86,9 +86,13 @@
         }
 
         .portrait img {
+            display: block;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            opacity: 1;
+            backface-visibility: hidden;
+            transform: translateZ(0);
         }
 
         .portrait-fallback {
@@ -117,15 +121,15 @@
             min-width: 0;
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
-            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s;
+            filter: blur(0);
+            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s;
         }
 
         .identity.hidden {
             opacity: 0;
             visibility: hidden;
-            transform: translateY(-6px);
-            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s linear 0.45s;
+            filter: blur(4px);
+            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s linear 0.7s;
         }
 
         .name {
@@ -154,16 +158,16 @@
             justify-content: center;
             opacity: 0;
             visibility: hidden;
-            transform: translateY(6px);
-            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s linear 0.45s;
+            filter: blur(4px);
+            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s linear 0.7s;
             pointer-events: none;
         }
 
         .combat-stats.active {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
-            transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s;
+            filter: blur(0);
+            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s;
         }
 
         .combat-number {
@@ -229,7 +233,7 @@
                 inset 0 0 24px rgba(0,0,0,0.7),
                 0 0 0 2px #fff0aa,
                 0 0 22px rgba(255, 200, 61, 0.85);
-            animation: portrait-pulse 1.8s ease-in-out infinite;
+            animation: none;
         }
 
         .connection-state {
@@ -266,11 +270,6 @@
         @keyframes badge-pulse {
             0%, 100% { filter: brightness(1); }
             50% { filter: brightness(1.18); }
-        }
-
-        @keyframes portrait-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.025); }
         }
 
         @media (max-width: 1050px) {
@@ -341,8 +340,10 @@
 
             const image = article.querySelector('.portrait img');
             image.addEventListener('error', () => {
+                if (image.dataset.loadingSource) return;
                 image.hidden = true;
                 image.removeAttribute('src');
+                delete image.dataset.currentSource;
                 article.querySelector('.portrait-fallback').style.display = 'grid';
             });
             return article;
@@ -384,11 +385,29 @@
             const image = article.querySelector('.portrait img');
             const fallback = article.querySelector('.portrait-fallback');
             const photo = String(data.foto || '');
-            if (photo && image.getAttribute('src') !== photo) {
-                fallback.style.display = 'none';
-                image.hidden = false;
-                image.src = photo;
+            if (photo && image.dataset.currentSource !== photo && image.dataset.loadingSource !== photo) {
+                image.dataset.loadingSource = photo;
+                const preload = new Image();
+                preload.onload = () => {
+                    if (image.dataset.loadingSource !== photo) return;
+                    image.src = photo;
+                    image.dataset.currentSource = photo;
+                    delete image.dataset.loadingSource;
+                    image.hidden = false;
+                    fallback.style.display = 'none';
+                };
+                preload.onerror = () => {
+                    if (image.dataset.loadingSource !== photo) return;
+                    delete image.dataset.loadingSource;
+                    if (!image.dataset.currentSource) {
+                        image.hidden = true;
+                        fallback.style.display = 'grid';
+                    }
+                };
+                preload.src = photo;
             } else if (!photo) {
+                delete image.dataset.loadingSource;
+                delete image.dataset.currentSource;
                 image.hidden = true;
                 image.removeAttribute('src');
                 fallback.style.display = 'grid';
@@ -401,13 +420,17 @@
         }
 
         function sortWidgets() {
-            [...grid.children]
+            const sortedWidgets = [...grid.children]
                 .sort((first, second) => {
                     const firstName = players.get(first.dataset.code)?.nome || '';
                     const secondName = players.get(second.dataset.code)?.nome || '';
                     return String(firstName).localeCompare(String(secondName), 'pt-BR');
-                })
-                .forEach(widget => grid.appendChild(widget));
+                });
+
+            sortedWidgets.forEach((widget, index) => {
+                const currentWidget = grid.children[index];
+                if (currentWidget !== widget) grid.insertBefore(widget, currentWidget || null);
+            });
         }
 
         function removePlayer(codeValue) {
