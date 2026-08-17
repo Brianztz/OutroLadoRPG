@@ -1699,6 +1699,7 @@
 
         function saveInitiativeState() {
             localStorage.setItem('mestre_initiative_state', JSON.stringify(initiativeState));
+            if (socket && socket.connected) socket.emit('initiative_state_change', initiativeState);
         }
 
         function sortInitiativeEntries() {
@@ -1917,6 +1918,7 @@
         socket.on('connect', () => {
             updateConnection(true);
             socket.emit('master_ready');
+            socket.emit('initiative_state_change', initiativeState);
         });
         socket.on('disconnect', () => updateConnection(false));
         socket.on('players_snapshot', players => {
