@@ -87,15 +87,24 @@
 
         .portrait img {
             display: block;
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 1;
+            opacity: 0;
             backface-visibility: hidden;
             transform: translateZ(0);
+            transition: opacity 0.65s ease;
+        }
+
+        .portrait img.active {
+            opacity: 1;
         }
 
         .portrait-fallback {
+            position: absolute;
+            inset: 0;
             display: grid;
             width: 100%;
             height: 100%;
@@ -326,7 +335,8 @@
                 <div class="turn-badge">⚔ Turno atual</div>
                 <div class="portrait">
                     <div class="portrait-fallback">?</div>
-                    <img alt="" hidden>
+                    <img class="portrait-image" data-layer="a" alt="" hidden>
+                    <img class="portrait-image" data-layer="b" alt="" hidden>
                 </div>
                 <div class="display-stack">
                     <div class="identity">
@@ -338,14 +348,6 @@
                     </div>
                 </div>`;
 
-            const image = article.querySelector('.portrait img');
-            image.addEventListener('error', () => {
-                if (image.dataset.loadingSource) return;
-                image.hidden = true;
-                image.removeAttribute('src');
-                delete image.dataset.currentSource;
-                article.querySelector('.portrait-fallback').style.display = 'grid';
-            });
             return article;
         }
 
@@ -382,34 +384,61 @@
             article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
             flashCombatNumber(article, '.combat-number.life', previous && previous.life !== lifeCurrent);
             flashCombatNumber(article, '.combat-number.sanity', previous && previous.sanity !== sanityCurrent);
-            const image = article.querySelector('.portrait img');
+            const portrait = article.querySelector('.portrait');
+            const portraitImages = [...portrait.querySelectorAll('.portrait-image')];
             const fallback = article.querySelector('.portrait-fallback');
             const photo = String(data.foto || '');
-            if (photo && image.dataset.currentSource !== photo && image.dataset.loadingSource !== photo) {
-                image.dataset.loadingSource = photo;
+
+            if (photo && portrait.dataset.currentSource === photo) {
+                if (portrait.dataset.loadingSource && portrait.dataset.loadingSource !== photo) {
+                    delete portrait.dataset.loadingSource;
+                }
+            } else if (photo && portrait.dataset.loadingSource !== photo) {
+                portrait.dataset.loadingSource = photo;
                 const preload = new Image();
                 preload.onload = () => {
-                    if (image.dataset.loadingSource !== photo) return;
-                    image.src = photo;
-                    image.dataset.currentSource = photo;
-                    delete image.dataset.loadingSource;
-                    image.hidden = false;
+                    if (portrait.dataset.loadingSource !== photo) return;
+                    const currentImage = portrait.querySelector('.portrait-image.active');
+                    const nextImage = portraitImages.find(item => item !== currentImage) || portraitImages[0];
+
+                    nextImage.classList.remove('active');
+                    nextImage.src = photo;
+                    nextImage.hidden = false;
+                    void nextImage.offsetWidth;
+
                     fallback.style.display = 'none';
+                    nextImage.classList.add('active');
+                    if (currentImage && currentImage !== nextImage) currentImage.classList.remove('active');
+
+                    portrait.dataset.currentSource = photo;
+                    delete portrait.dataset.loadingSource;
+
+                    if (portrait._imageCleanupTimer) clearTimeout(portrait._imageCleanupTimer);
+                    portrait._imageCleanupTimer = setTimeout(() => {
+                        portraitImages.forEach(item => {
+                            if (item.classList.contains('active')) return;
+                            item.hidden = true;
+                            item.removeAttribute('src');
+                        });
+                    }, 700);
                 };
                 preload.onerror = () => {
-                    if (image.dataset.loadingSource !== photo) return;
-                    delete image.dataset.loadingSource;
-                    if (!image.dataset.currentSource) {
-                        image.hidden = true;
+                    if (portrait.dataset.loadingSource !== photo) return;
+                    delete portrait.dataset.loadingSource;
+                    if (!portrait.dataset.currentSource) {
                         fallback.style.display = 'grid';
                     }
                 };
                 preload.src = photo;
             } else if (!photo) {
-                delete image.dataset.loadingSource;
-                delete image.dataset.currentSource;
-                image.hidden = true;
-                image.removeAttribute('src');
+                delete portrait.dataset.loadingSource;
+                delete portrait.dataset.currentSource;
+                if (portrait._imageCleanupTimer) clearTimeout(portrait._imageCleanupTimer);
+                portraitImages.forEach(item => {
+                    item.classList.remove('active');
+                    item.hidden = true;
+                    item.removeAttribute('src');
+                });
                 fallback.style.display = 'grid';
             }
 
