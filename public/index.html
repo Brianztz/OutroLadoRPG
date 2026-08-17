@@ -1039,7 +1039,7 @@
         save();
     }
 
-    function updateProfilePicture() {
+    function getActiveProfileImageUrl() {
         let imgUrl = charImages.normal || "https://via.placeholder.com/150x150/202024/a8a8b3?text=FOTO";
         
         if (charStatus.morrendo && charImages.morrendo) imgUrl = charImages.morrendo;
@@ -1048,14 +1048,17 @@
         else if (charStatus.enlouquecendo && charImages.enlouquecendo) imgUrl = charImages.enlouquecendo;
         else if (charStatus.lesionado && charImages.lesionado) imgUrl = charImages.lesionado;
 
+        return imgUrl;
+    }
+
+    function updateProfilePicture() {
+        const imgUrl = getActiveProfileImageUrl();
+
         let imgEl = document.getElementById('char_img_display');
-        if(imgEl && imgEl.src !== imgUrl) {
-            imgEl.style.opacity = 0;
-            setTimeout(() => {
-                imgEl.src = imgUrl;
-                imgEl.onload = () => imgEl.style.opacity = 1;
-                setTimeout(() => imgEl.style.opacity = 1, 100); 
-            }, 300);
+        if(imgEl && imgEl.getAttribute('src') !== imgUrl) {
+            imgEl.onload = null;
+            imgEl.style.opacity = 1;
+            imgEl.src = imgUrl;
         }
 
         ['lesionado', 'inconsciente', 'morrendo', 'enlouquecendo'].forEach(s => {
@@ -2933,9 +2936,10 @@ function removeCurrentClue() {
         if(isLoadingData) return; 
 
         if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
+        const currentProfileImageUrl = getActiveProfileImageUrl();
         const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, charImages: charImages, charStatus: charStatus, modoCombate: combatMode, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
         ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
-        d.info['char_img'] = document.getElementById('char_img_display').src;
+        d.info['char_img'] = currentProfileImageUrl;
         document.querySelectorAll('.attr-input').forEach(i => d.attrs[i.id] = i.value);
         document.querySelectorAll('[id^="skill_"]').forEach(i => d.skills[i.id] = i.value);
         document.querySelectorAll('[id^="chk_"]').forEach(i => d.skills[i.id] = i.checked);
@@ -2958,7 +2962,7 @@ function removeCurrentClue() {
                 codigo: syncCode,
                 id: syncCode,
                 nome: jogadorNome,
-                foto: document.getElementById('char_img_display') ? document.getElementById('char_img_display').src : '',
+                foto: currentProfileImageUrl,
                 nex: document.getElementById('char_nex') ? document.getElementById('char_nex').value : 0,
                 defesa: document.getElementById('defense_val') ? document.getElementById('defense_val').value : 0,
                 vida_atual: document.getElementById('vida_atual') ? document.getElementById('vida_atual').value : 0,
