@@ -60,8 +60,13 @@
         .character-field-name { grid-column: span 3; }
         .character-field-nex { grid-column: span 1; }
         .character-field-credit { grid-column: span 2; }
-        .character-field-occupation { grid-column: span 4; }
+        .character-field-occupation { grid-column: span 3; }
         .character-field-body { grid-column: span 2; }
+        .character-field-color { grid-column: span 1; }
+        .overlay-color-input { width: 100%; height: 35px; padding: 3px; border: 1px solid rgba(255,255,255,0.16); border-radius: 7px; background: #101014; cursor: pointer; }
+        .overlay-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+        .overlay-color-input::-webkit-color-swatch { border: 0; border-radius: 4px; }
+        .overlay-color-input::-moz-color-swatch { border: 0; border-radius: 4px; }
 
         /* BARRAS DE STATUS */
         .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px; }
@@ -275,7 +280,7 @@
             .char-portrait-card { min-height: 0; }
             .character-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .character-field-name, .character-field-occupation { grid-column: span 2; }
-            .character-field-nex, .character-field-credit, .character-field-body { grid-column: span 1; }
+            .character-field-nex, .character-field-credit, .character-field-body, .character-field-color { grid-column: span 1; }
             .status-grid { grid-template-columns: 1fr; gap: 10px; }
             .skill-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
             .popup-box { width: 95%; padding: 15px; box-sizing: border-box; }
@@ -652,6 +657,10 @@
                 <div class="character-field character-field-body">
                     <label for="char_tipo_corpo">Tipo de Corpo</label>
                     <select id="char_tipo_corpo" class="inv-input" onchange="aplicarTipoCorpo(this.value)"><option value="Pequeno">Pequeno</option><option value="Médio" selected>Médio</option><option value="Grande">Grande</option></select>
+                </div>
+                <div class="character-field character-field-color">
+                    <label for="char_cor_overlay">Cor do Overlay</label>
+                    <input type="color" id="char_cor_overlay" class="overlay-color-input" value="#00b8f5" oninput="save()" title="Escolha a cor do brilho ao redor do personagem no overlay">
                 </div>
             </div>
         </div>
@@ -3045,7 +3054,7 @@ function removeCurrentClue() {
         const currentProfileImageUrl = getActiveProfileImageUrl();
         const activeRangedWeapon = getActiveRangedWeaponOverlayData();
         const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, charImages: charImages, charStatus: charStatus, modoCombate: combatMode, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
-        ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
+        ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "char_cor_overlay", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
         d.info['char_img'] = currentProfileImageUrl;
         document.querySelectorAll('.attr-input').forEach(i => d.attrs[i.id] = i.value);
         document.querySelectorAll('[id^="skill_"]').forEach(i => d.skills[i.id] = i.value);
@@ -3070,6 +3079,7 @@ function removeCurrentClue() {
                 id: syncCode,
                 nome: jogadorNome,
                 foto: currentProfileImageUrl,
+                corOverlay: document.getElementById('char_cor_overlay') ? document.getElementById('char_cor_overlay').value : '#00b8f5',
                 nex: document.getElementById('char_nex') ? document.getElementById('char_nex').value : 0,
                 defesa: document.getElementById('defense_val') ? document.getElementById('defense_val').value : 0,
                 vida_atual: document.getElementById('vida_atual') ? document.getElementById('vida_atual').value : 0,
@@ -3281,7 +3291,7 @@ function removeCurrentClue() {
         if(d.charImages) charImages = { ...charImages, ...d.charImages };
         else if (d.info && d.info.char_img) charImages.normal = d.info.char_img;
         if(d.charStatus) charStatus = d.charStatus;
-        if(d.info) { ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id) && d.info[id] !== undefined) document.getElementById(id).value = d.info[id]; }); }
+        if(d.info) { ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "char_cor_overlay", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id) && d.info[id] !== undefined) document.getElementById(id).value = d.info[id]; }); }
         updateProfilePicture();
         currentOccupation = document.getElementById('char_ocupacao') ? document.getElementById('char_ocupacao').value : "Nenhuma";
         for(let id in d.attrs) if(document.getElementById(id)) document.getElementById(id).value = limitarValorAtributo(d.attrs[id]);
