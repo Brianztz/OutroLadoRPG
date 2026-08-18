@@ -157,6 +157,8 @@
         .clue-image-preview { display: none; width: 100%; max-height: 150px; object-fit: contain; border: 1px solid rgba(255,207,51,0.3); border-radius: 8px; background: rgba(0,0,0,0.45); }
         .clue-3d-stage { position: relative; width: 100%; height: 330px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center, rgba(75,64,25,0.22), rgba(5,5,7,0.94)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .clue-3d-stage.dragging { cursor: grabbing; }
+        .clue-3d-stage.move-mode, .clue-book-stage.move-mode { cursor: move; }
+        .clue-3d-stage.move-mode.dragging, .clue-book-stage.move-mode.dragging { cursor: grabbing; }
         .clue-3d-object { position: relative; width: 300px; height: 200px; max-width: 86%; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg) scale(1); transition: transform 0.14s ease-out, width 0.18s ease, height 0.18s ease; will-change: transform; }
         .clue-3d-stage.dragging .clue-3d-object { transition: none; }
         .clue-3d-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
@@ -169,6 +171,7 @@
         .clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
         .clue-3d-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
         .clue-3d-controls .btn-roll { min-width: 42px; padding: 7px 10px; font-weight: 900; }
+        .clue-3d-controls .clue-move-toggle.active { border-color: var(--accent-yellow); background: var(--accent-yellow); color: #000; box-shadow: 0 0 12px rgba(255,207,51,0.32); }
         .clue-3d-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; text-shadow: 1px 1px 2px #000; }
         .clue-type-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .clue-type-button { border: 1px solid #45454d; border-radius: 7px; padding: 10px; background: #111114; color: var(--text-secondary); font-weight: 900; cursor: pointer; transition: 0.2s; }
@@ -556,7 +559,7 @@
     <div class="popup-box" onclick="event.stopPropagation()">
         <h3 id="clue-info-title" style="color:var(--accent-yellow); margin-top:0; text-align:center; text-transform:uppercase;">Pista</h3>
         <div id="clue-book-viewer" class="clue-book-viewer">
-            <div id="clue-book-stage" class="clue-book-stage" aria-label="Livro 3D. Arraste para girar e use a roda do mouse para aproximar.">
+            <div id="clue-book-stage" class="clue-book-stage" aria-label="Livro 3D. Arraste para girar, ative Mover para deslocar e use a roda do mouse para aproximar.">
                 <div id="clue-book-3d-object" class="clue-book-3d-object">
                     <div id="clue-book-cover" class="clue-book-cover"><div id="clue-book-cover-depth" class="clue-book-cover-depth"></div><img id="clue-book-cover-image" class="clue-book-cover-face front" src="" alt="Capa do livro"><img id="clue-book-cover-back-image" class="clue-book-cover-face back" src="" alt="Verso da capa do livro"><div id="clue-book-cover-fallback" class="clue-book-cover-fallback">📖</div></div>
                     <div id="clue-book-back-cover" class="clue-book-back-cover"><div id="clue-book-back-cover-depth" class="clue-book-back-cover-depth"></div><img id="clue-book-back-cover-inside-image" class="clue-book-back-cover-face front" src="" alt="Parte interna da contracapa"><img id="clue-book-back-cover-image" class="clue-book-back-cover-face back" src="" alt="Contracapa do livro"></div>
@@ -569,9 +572,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="clue-3d-hint">Arraste para girar · Roda do mouse para aproximar</div>
+                <div class="clue-3d-hint">Arraste para girar · Ative MOVER para deslocar · Roda para zoom até 4×</div>
             </div>
-            <div class="clue-3d-controls clue-book-3d-controls"><button type="button" class="btn-roll" onclick="rotateClueBook3D(-45)">↶</button><button type="button" class="btn-roll" onclick="zoomClueBook3D(-0.1)">−</button><button type="button" class="btn-roll" onclick="resetClueBook3D()">CENTRALIZAR</button><button type="button" class="btn-roll" onclick="zoomClueBook3D(0.1)">+</button><button type="button" class="btn-roll" onclick="rotateClueBook3D(45)">↷</button></div>
+            <div class="clue-3d-controls clue-book-3d-controls"><button type="button" class="btn-roll" onclick="rotateClueBook3D(-45)">↶</button><button type="button" class="btn-roll" onclick="zoomClueBook3D(-0.25)">−</button><button id="clue-book-move-toggle" type="button" class="btn-roll clue-move-toggle" onclick="toggleClueBookMoveMode()">✥ MOVER</button><button type="button" class="btn-roll" onclick="resetClueBook3D()">CENTRALIZAR</button><button type="button" class="btn-roll" onclick="zoomClueBook3D(0.25)">+</button><button type="button" class="btn-roll" onclick="rotateClueBook3D(45)">↷</button></div>
             <div class="clue-book-controls">
                 <button id="clue-book-toggle" type="button" class="btn-roll" onclick="toggleClueBookCover()">ABRIR LIVRO</button>
                 <button id="clue-book-previous" type="button" class="btn-roll" onclick="turnClueBookPage(-1)">← ANTERIOR</button>
@@ -579,19 +582,20 @@
                 <button id="clue-book-next" type="button" class="btn-roll" onclick="turnClueBookPage(1)">PRÓXIMA →</button>
             </div>
         </div>
-        <div id="clue-3d-stage" class="clue-3d-stage" aria-label="Pista 3D. Arraste para girar e use a roda do mouse para aproximar.">
+        <div id="clue-3d-stage" class="clue-3d-stage" aria-label="Pista 3D. Arraste para girar, ative Mover para deslocar e use a roda do mouse para aproximar.">
             <div id="clue-3d-object" class="clue-3d-object">
                 <div id="clue-3d-depth" class="clue-3d-depth" aria-hidden="true"></div>
                 <div class="clue-3d-face clue-3d-front"><img id="clue-3d-image" class="clue-3d-image" src="" alt=""><div id="clue-3d-fallback" class="clue-3d-fallback">🔎</div></div>
                 <div class="clue-3d-face clue-3d-back"><img id="clue-3d-back-image" class="clue-3d-image" src="" alt=""><div id="clue-3d-back-fallback" class="clue-3d-fallback">🔎</div></div>
             </div>
-            <div class="clue-3d-hint">Arraste para girar · Roda do mouse para aproximar</div>
+            <div class="clue-3d-hint">Arraste para girar · Ative MOVER para deslocar · Roda para zoom até 4×</div>
         </div>
         <div class="clue-3d-controls">
             <button type="button" class="btn-roll" onclick="rotateClue3D(-45)">↶</button>
-            <button type="button" class="btn-roll" onclick="zoomClue3D(-0.1)">−</button>
+            <button type="button" class="btn-roll" onclick="zoomClue3D(-0.25)">−</button>
+            <button id="clue-move-toggle" type="button" class="btn-roll clue-move-toggle" onclick="toggleClue3DMoveMode()">✥ MOVER</button>
             <button type="button" class="btn-roll" onclick="resetClue3D()">CENTRALIZAR</button>
-            <button type="button" class="btn-roll" onclick="zoomClue3D(0.1)">+</button>
+            <button type="button" class="btn-roll" onclick="zoomClue3D(0.25)">+</button>
             <button type="button" class="btn-roll" onclick="rotateClue3D(45)">↷</button>
         </div>
         <div id="clue-info-description" class="clue-info-description"></div>
@@ -797,6 +801,10 @@
     let clueBookRotationX = -8;
     let clueBookRotationY = 0;
     let clueBookZoom = 1;
+    let clueBookPanX = 0;
+    let clueBookPanY = 0;
+    let clueBookMoveMode = false;
+    let clueBookPanning = false;
     let clueBookDragging = false;
     let clueBookLastX = 0;
     let clueBookLastY = 0;
@@ -805,6 +813,10 @@
     let clueRotationX = -8;
     let clueRotationY = 0;
     let clueZoom = 1;
+    let cluePanX = 0;
+    let cluePanY = 0;
+    let clue3DMoveMode = false;
+    let clue3DPanning = false;
     let clue3DDragging = false;
     let clue3DLastX = 0;
     let clue3DLastY = 0;
@@ -1893,7 +1905,7 @@
 
     function updateClue3DTransform() {
         const object = document.getElementById('clue-3d-object');
-        if (object) object.style.transform = `rotateX(${clueRotationX}deg) rotateY(${clueRotationY}deg) scale(${clueZoom})`;
+        if (object) object.style.transform = `translate(${cluePanX}px, ${cluePanY}px) rotateX(${clueRotationX}deg) rotateY(${clueRotationY}deg) scale(${clueZoom})`;
     }
 
     function setClue3DShapeSource(source = '', edgeColor = '') {
@@ -2042,6 +2054,9 @@
         clueRotationX = -8;
         clueRotationY = 0;
         clueZoom = 1;
+        cluePanX = 0;
+        cluePanY = 0;
+        setClue3DMoveMode(false);
         updateClue3DTransform();
     }
 
@@ -2051,8 +2066,24 @@
     }
 
     function zoomClue3D(amount) {
-        clueZoom = Math.max(0.65, Math.min(1.65, clueZoom + (Number(amount) || 0)));
+        clueZoom = Math.max(0.5, Math.min(4, clueZoom + (Number(amount) || 0)));
         updateClue3DTransform();
+    }
+
+    function setClue3DMoveMode(enabled) {
+        clue3DMoveMode = Boolean(enabled);
+        const stage = document.getElementById('clue-3d-stage');
+        const button = document.getElementById('clue-move-toggle');
+        if (stage) stage.classList.toggle('move-mode', clue3DMoveMode);
+        if (button) {
+            button.classList.toggle('active', clue3DMoveMode);
+            button.setAttribute('aria-pressed', String(clue3DMoveMode));
+            button.textContent = clue3DMoveMode ? '✥ MOVENDO' : '✥ MOVER';
+        }
+    }
+
+    function toggleClue3DMoveMode() {
+        setClue3DMoveMode(!clue3DMoveMode);
     }
 
     function applyClue3DThickness(clue) {
@@ -2084,6 +2115,7 @@
 
         stage.addEventListener('pointerdown', event => {
             clue3DDragging = true;
+            clue3DPanning = clue3DMoveMode || event.shiftKey;
             clue3DLastX = event.clientX;
             clue3DLastY = event.clientY;
             stage.classList.add('dragging');
@@ -2093,14 +2125,22 @@
             if (!clue3DDragging) return;
             const deltaX = event.clientX - clue3DLastX;
             const deltaY = event.clientY - clue3DLastY;
-            clueRotationY += deltaX * 0.65;
-            clueRotationX = Math.max(-75, Math.min(75, clueRotationX - deltaY * 0.5));
+            if (clue3DPanning) {
+                const limitX = stage.clientWidth * 1.5;
+                const limitY = stage.clientHeight * 1.5;
+                cluePanX = Math.max(-limitX, Math.min(limitX, cluePanX + deltaX));
+                cluePanY = Math.max(-limitY, Math.min(limitY, cluePanY + deltaY));
+            } else {
+                clueRotationY += deltaX * 0.65;
+                clueRotationX = Math.max(-75, Math.min(75, clueRotationX - deltaY * 0.5));
+            }
             clue3DLastX = event.clientX;
             clue3DLastY = event.clientY;
             updateClue3DTransform();
         });
         const finishDrag = event => {
             clue3DDragging = false;
+            clue3DPanning = false;
             stage.classList.remove('dragging');
             if (event.pointerId !== undefined && stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
         };
@@ -2108,7 +2148,7 @@
         stage.addEventListener('pointercancel', finishDrag);
         stage.addEventListener('wheel', event => {
             event.preventDefault();
-            zoomClue3D(event.deltaY < 0 ? 0.08 : -0.08);
+            zoomClue3D(event.deltaY < 0 ? 0.15 : -0.15);
         }, { passive: false });
         window.addEventListener('resize', () => {
             const image = document.getElementById('clue-3d-image');
@@ -2123,13 +2163,16 @@
     function updateClueBook3DTransform() {
         const object = document.getElementById('clue-book-3d-object');
         const closedOffset = clueBookOpen ? 0 : -25 * Math.cos(clueBookRotationY * Math.PI / 180);
-        if (object) object.style.transform = `translateX(${closedOffset}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg) scale(${clueBookZoom})`;
+        if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) translateX(${closedOffset}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg) scale(${clueBookZoom})`;
     }
 
     function resetClueBook3D() {
         clueBookRotationX = -8;
         clueBookRotationY = 0;
         clueBookZoom = 1;
+        clueBookPanX = 0;
+        clueBookPanY = 0;
+        setClueBookMoveMode(false);
         updateClueBook3DTransform();
     }
 
@@ -2139,8 +2182,24 @@
     }
 
     function zoomClueBook3D(amount) {
-        clueBookZoom = Math.max(0.62, Math.min(1.6, clueBookZoom + (Number(amount) || 0)));
+        clueBookZoom = Math.max(0.5, Math.min(4, clueBookZoom + (Number(amount) || 0)));
         updateClueBook3DTransform();
+    }
+
+    function setClueBookMoveMode(enabled) {
+        clueBookMoveMode = Boolean(enabled);
+        const stage = document.getElementById('clue-book-stage');
+        const button = document.getElementById('clue-book-move-toggle');
+        if (stage) stage.classList.toggle('move-mode', clueBookMoveMode);
+        if (button) {
+            button.classList.toggle('active', clueBookMoveMode);
+            button.setAttribute('aria-pressed', String(clueBookMoveMode));
+            button.textContent = clueBookMoveMode ? '✥ MOVENDO' : '✥ MOVER';
+        }
+    }
+
+    function toggleClueBookMoveMode() {
+        setClueBookMoveMode(!clueBookMoveMode);
     }
 
     function setClueBookCoverShape(source = '', edgeColor = '') {
@@ -2232,6 +2291,7 @@
         clueBook3DControlsInitialized = true;
         stage.addEventListener('pointerdown', event => {
             clueBookDragging = true;
+            clueBookPanning = clueBookMoveMode || event.shiftKey;
             clueBookLastX = event.clientX;
             clueBookLastY = event.clientY;
             stage.classList.add('dragging');
@@ -2239,14 +2299,24 @@
         });
         stage.addEventListener('pointermove', event => {
             if (!clueBookDragging) return;
-            clueBookRotationY += (event.clientX - clueBookLastX) * 0.65;
-            clueBookRotationX = Math.max(-75, Math.min(75, clueBookRotationX - (event.clientY - clueBookLastY) * 0.5));
+            const deltaX = event.clientX - clueBookLastX;
+            const deltaY = event.clientY - clueBookLastY;
+            if (clueBookPanning) {
+                const limitX = stage.clientWidth * 1.5;
+                const limitY = stage.clientHeight * 1.5;
+                clueBookPanX = Math.max(-limitX, Math.min(limitX, clueBookPanX + deltaX));
+                clueBookPanY = Math.max(-limitY, Math.min(limitY, clueBookPanY + deltaY));
+            } else {
+                clueBookRotationY += deltaX * 0.65;
+                clueBookRotationX = Math.max(-75, Math.min(75, clueBookRotationX - deltaY * 0.5));
+            }
             clueBookLastX = event.clientX;
             clueBookLastY = event.clientY;
             updateClueBook3DTransform();
         });
         const finish = event => {
             clueBookDragging = false;
+            clueBookPanning = false;
             stage.classList.remove('dragging');
             if (event.pointerId !== undefined && stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
         };
@@ -2254,7 +2324,7 @@
         stage.addEventListener('pointercancel', finish);
         stage.addEventListener('wheel', event => {
             event.preventDefault();
-            zoomClueBook3D(event.deltaY < 0 ? 0.08 : -0.08);
+            zoomClueBook3D(event.deltaY < 0 ? 0.15 : -0.15);
         }, { passive: false });
         window.addEventListener('resize', updateClueBook3DFit);
     }
