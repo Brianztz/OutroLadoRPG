@@ -247,6 +247,8 @@
         .master-clue-description { padding: 14px; border: 1px solid rgba(255,207,51,0.28); border-radius: 8px; background: rgba(18,18,20,0.8); color: var(--text-primary); font-size: 0.8em; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
         .master-clue-3d-stage { position: relative; width: 100%; height: 360px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(75,64,25,0.22),rgba(5,5,7,0.94)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-3d-stage.dragging { cursor: grabbing; }
+        .master-clue-3d-stage.move-mode, .master-clue-book-stage.move-mode { cursor: move; }
+        .master-clue-3d-stage.move-mode.dragging, .master-clue-book-stage.move-mode.dragging { cursor: grabbing; }
         .master-clue-3d-object { position: relative; width: 300px; height: 200px; max-width: 86%; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg); transition: transform 0.14s ease-out,width 0.18s ease,height 0.18s ease; will-change: transform; }
         .master-clue-3d-stage.dragging .master-clue-3d-object { transition: none; }
         .master-clue-3d-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
@@ -259,6 +261,7 @@
         .master-clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
         .master-clue-3d-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; }
         .master-clue-view-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
+        .master-clue-view-controls .master-clue-move-toggle.active { border-color: var(--accent-yellow); background: var(--accent-yellow); color: #000; box-shadow: 0 0 12px rgba(255,207,51,0.32); }
         .master-clue-view-controls button { min-width: 42px; padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
         .master-clue-book-viewer { display: none; }
         .master-clue-book-stage { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(91,69,29,0.28),rgba(5,5,7,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
@@ -516,16 +519,16 @@
                                 <div id="master-clue-book-flip" class="master-clue-book-flip"><div id="master-clue-book-flip-front" class="master-clue-book-flip-face front"></div><div id="master-clue-book-flip-back" class="master-clue-book-flip-face back"></div></div>
                             </div>
                         </div>
-                        <div class="master-clue-3d-hint">Arraste para girar · Roda do mouse para aproximar</div>
+                        <div class="master-clue-3d-hint">Arraste para girar · Ative MOVER para deslocar · Roda para zoom até 4×</div>
                     </div>
-                    <div class="master-clue-view-controls master-clue-book-3d-controls"><button type="button" onclick="rotateMasterClueBook3D(-45)">↶</button><button type="button" onclick="zoomMasterClueBook3D(-0.1)">−</button><button type="button" onclick="resetMasterClueBook3D()">CENTRALIZAR</button><button type="button" onclick="zoomMasterClueBook3D(0.1)">+</button><button type="button" onclick="rotateMasterClueBook3D(45)">↷</button></div>
+                    <div class="master-clue-view-controls master-clue-book-3d-controls"><button type="button" onclick="rotateMasterClueBook3D(-45)">↶</button><button type="button" onclick="zoomMasterClueBook3D(-0.25)">−</button><button id="master-clue-book-move-toggle" type="button" class="master-clue-move-toggle" onclick="toggleMasterClueBookMoveMode()">✥ MOVER</button><button type="button" onclick="resetMasterClueBook3D()">CENTRALIZAR</button><button type="button" onclick="zoomMasterClueBook3D(0.25)">+</button><button type="button" onclick="rotateMasterClueBook3D(45)">↷</button></div>
                     <div class="master-clue-book-controls"><button id="master-clue-book-toggle" type="button" onclick="toggleMasterClueBook()">ABRIR LIVRO</button><button id="master-clue-book-previous" type="button" onclick="turnMasterClueBookPage(-1)">← ANTERIOR</button><span id="master-clue-book-indicator" class="master-clue-book-indicator">CAPA</span><button id="master-clue-book-next" type="button" onclick="turnMasterClueBookPage(1)">PRÓXIMA →</button></div>
                 </div>
                 <div id="master-clue-3d-stage" class="master-clue-3d-stage">
                     <div id="master-clue-3d-object" class="master-clue-3d-object"><div id="master-clue-3d-depth" class="master-clue-3d-depth"></div><div class="master-clue-3d-face master-clue-3d-front"><img id="master-clue-3d-front-image" class="master-clue-3d-image" src="" alt="Frente"><div id="master-clue-3d-front-fallback" class="master-clue-3d-fallback">🔎</div></div><div class="master-clue-3d-face master-clue-3d-back"><img id="master-clue-3d-back-image" class="master-clue-3d-image" src="" alt="Verso"><div id="master-clue-3d-back-fallback" class="master-clue-3d-fallback">🔎</div></div></div>
-                    <div class="master-clue-3d-hint">Arraste para girar · Roda do mouse para aproximar</div>
+                    <div class="master-clue-3d-hint">Arraste para girar · Ative MOVER para deslocar · Roda para zoom até 4×</div>
                 </div>
-                <div id="master-clue-3d-controls" class="master-clue-view-controls"><button type="button" onclick="rotateMasterClue3D(-45)">↶</button><button type="button" onclick="zoomMasterClue3D(-0.1)">−</button><button type="button" onclick="resetMasterClue3D()">CENTRALIZAR</button><button type="button" onclick="zoomMasterClue3D(0.1)">+</button><button type="button" onclick="rotateMasterClue3D(45)">↷</button></div>
+                <div id="master-clue-3d-controls" class="master-clue-view-controls"><button type="button" onclick="rotateMasterClue3D(-45)">↶</button><button type="button" onclick="zoomMasterClue3D(-0.25)">−</button><button id="master-clue-move-toggle" type="button" class="master-clue-move-toggle" onclick="toggleMasterClue3DMoveMode()">✥ MOVER</button><button type="button" onclick="resetMasterClue3D()">CENTRALIZAR</button><button type="button" onclick="zoomMasterClue3D(0.25)">+</button><button type="button" onclick="rotateMasterClue3D(45)">↷</button></div>
                 <div id="master-clue-info-description" class="master-clue-description"></div>
             </div>
             <div class="clue-modal-footer"><button class="clue-button-danger" type="button" onclick="removeCurrentMasterClue()">REMOVER</button><button class="clue-button-neutral" type="button" onclick="editCurrentMasterClue()">EDITAR</button><button class="clue-button-send" type="button" onclick="sendCurrentMasterClue()">ENVIAR PARA JOGADOR</button><button class="clue-button-neutral" type="button" onclick="closeMasterClueInfo()">FECHAR</button></div>
@@ -589,6 +592,10 @@
         let masterClueRotationX = -8;
         let masterClueRotationY = 0;
         let masterClueZoom = 1;
+        let masterCluePanX = 0;
+        let masterCluePanY = 0;
+        let masterClueMoveMode = false;
+        let masterCluePanning = false;
         let masterClueDragging = false;
         let masterClueLastX = 0;
         let masterClueLastY = 0;
@@ -600,6 +607,10 @@
         let masterBookRotationX = -8;
         let masterBookRotationY = 0;
         let masterBookZoom = 1;
+        let masterBookPanX = 0;
+        let masterBookPanY = 0;
+        let masterBookMoveMode = false;
+        let masterBookPanning = false;
         let masterBookDragging = false;
         let masterBookLastX = 0;
         let masterBookLastY = 0;
@@ -1183,12 +1194,26 @@
         }
 
         function updateMasterClue3DTransform() {
-            document.getElementById('master-clue-3d-object').style.transform = `rotateX(${masterClueRotationX}deg) rotateY(${masterClueRotationY}deg) scale(${masterClueZoom})`;
+            document.getElementById('master-clue-3d-object').style.transform = `translate(${masterCluePanX}px, ${masterCluePanY}px) rotateX(${masterClueRotationX}deg) rotateY(${masterClueRotationY}deg) scale(${masterClueZoom})`;
         }
 
-        function resetMasterClue3D() { masterClueRotationX = -8; masterClueRotationY = 0; masterClueZoom = 1; updateMasterClue3DTransform(); }
+        function resetMasterClue3D() { masterClueRotationX = -8; masterClueRotationY = 0; masterClueZoom = 1; masterCluePanX = 0; masterCluePanY = 0; setMasterClue3DMoveMode(false); updateMasterClue3DTransform(); }
         function rotateMasterClue3D(amount) { masterClueRotationY += Number(amount) || 0; updateMasterClue3DTransform(); }
-        function zoomMasterClue3D(amount) { masterClueZoom = Math.max(0.65, Math.min(1.65, masterClueZoom + (Number(amount) || 0))); updateMasterClue3DTransform(); }
+        function zoomMasterClue3D(amount) { masterClueZoom = Math.max(0.5, Math.min(4, masterClueZoom + (Number(amount) || 0))); updateMasterClue3DTransform(); }
+
+        function setMasterClue3DMoveMode(enabled) {
+            masterClueMoveMode = Boolean(enabled);
+            const stage = document.getElementById('master-clue-3d-stage');
+            const button = document.getElementById('master-clue-move-toggle');
+            if (stage) stage.classList.toggle('move-mode', masterClueMoveMode);
+            if (button) {
+                button.classList.toggle('active', masterClueMoveMode);
+                button.setAttribute('aria-pressed', String(masterClueMoveMode));
+                button.textContent = masterClueMoveMode ? '✥ MOVENDO' : '✥ MOVER';
+            }
+        }
+
+        function toggleMasterClue3DMoveMode() { setMasterClue3DMoveMode(!masterClueMoveMode); }
 
         function applyMasterClue3DThickness(clue) {
             const thickness = normalizeMasterClueThickness(clue && clue.thickness);
@@ -1215,22 +1240,36 @@
             if (masterClue3DInitialized) return;
             masterClue3DInitialized = true;
             const stage = document.getElementById('master-clue-3d-stage');
-            stage.addEventListener('pointerdown', event => { masterClueDragging=true;masterClueLastX=event.clientX;masterClueLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId); });
-            stage.addEventListener('pointermove', event => { if(!masterClueDragging)return;masterClueRotationY+=(event.clientX-masterClueLastX)*0.65;masterClueRotationX=Math.max(-75,Math.min(75,masterClueRotationX-(event.clientY-masterClueLastY)*0.5));masterClueLastX=event.clientX;masterClueLastY=event.clientY;updateMasterClue3DTransform(); });
-            const finish = event => { masterClueDragging=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId); };
+            stage.addEventListener('pointerdown', event => { masterClueDragging=true;masterCluePanning=masterClueMoveMode||event.shiftKey;masterClueLastX=event.clientX;masterClueLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId); });
+            stage.addEventListener('pointermove', event => { if(!masterClueDragging)return;const deltaX=event.clientX-masterClueLastX,deltaY=event.clientY-masterClueLastY;if(masterCluePanning){const limitX=stage.clientWidth*1.5,limitY=stage.clientHeight*1.5;masterCluePanX=Math.max(-limitX,Math.min(limitX,masterCluePanX+deltaX));masterCluePanY=Math.max(-limitY,Math.min(limitY,masterCluePanY+deltaY));}else{masterClueRotationY+=deltaX*0.65;masterClueRotationX=Math.max(-75,Math.min(75,masterClueRotationX-deltaY*0.5));}masterClueLastX=event.clientX;masterClueLastY=event.clientY;updateMasterClue3DTransform(); });
+            const finish = event => { masterClueDragging=false;masterCluePanning=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId); };
             stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);
-            stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClue3D(event.deltaY<0?0.08:-0.08);},{passive:false});
+            stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClue3D(event.deltaY<0?0.15:-0.15);},{passive:false});
         }
 
         function updateMasterClueBook3DTransform() {
             const object=document.getElementById('master-clue-book-3d-object');
             const closedOffset=masterBookOpen?0:-25*Math.cos(masterBookRotationY*Math.PI/180);
-            if(object)object.style.transform=`translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
+            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
         }
 
-        function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;updateMasterClueBook3DTransform();}
+        function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;masterBookPanX=0;masterBookPanY=0;setMasterClueBookMoveMode(false);updateMasterClueBook3DTransform();}
         function rotateMasterClueBook3D(amount){masterBookRotationY+=Number(amount)||0;updateMasterClueBook3DTransform();}
-        function zoomMasterClueBook3D(amount){masterBookZoom=Math.max(0.62,Math.min(1.6,masterBookZoom+(Number(amount)||0)));updateMasterClueBook3DTransform();}
+        function zoomMasterClueBook3D(amount){masterBookZoom=Math.max(0.5,Math.min(4,masterBookZoom+(Number(amount)||0)));updateMasterClueBook3DTransform();}
+
+        function setMasterClueBookMoveMode(enabled) {
+            masterBookMoveMode = Boolean(enabled);
+            const stage = document.getElementById('master-clue-book-stage');
+            const button = document.getElementById('master-clue-book-move-toggle');
+            if (stage) stage.classList.toggle('move-mode', masterBookMoveMode);
+            if (button) {
+                button.classList.toggle('active', masterBookMoveMode);
+                button.setAttribute('aria-pressed', String(masterBookMoveMode));
+                button.textContent = masterBookMoveMode ? '✥ MOVENDO' : '✥ MOVER';
+            }
+        }
+
+        function toggleMasterClueBookMoveMode() { setMasterClueBookMoveMode(!masterBookMoveMode); }
 
         function setMasterBookCoverShape(source='',edgeColor=''){
             const cover=document.getElementById('master-clue-book-cover');if(!cover)return;
@@ -1265,9 +1304,9 @@
         function initializeMasterBook3D(){
             applyMasterBookThickness(masterCluesState.find(item=>item.id===currentMasterClueId));
             if(masterBook3DInitialized)return;const stage=document.getElementById('master-clue-book-stage');if(!stage)return;masterBook3DInitialized=true;
-            stage.addEventListener('pointerdown',event=>{masterBookDragging=true;masterBookLastX=event.clientX;masterBookLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId);});
-            stage.addEventListener('pointermove',event=>{if(!masterBookDragging)return;masterBookRotationY+=(event.clientX-masterBookLastX)*0.65;masterBookRotationX=Math.max(-75,Math.min(75,masterBookRotationX-(event.clientY-masterBookLastY)*0.5));masterBookLastX=event.clientX;masterBookLastY=event.clientY;updateMasterClueBook3DTransform();});
-            const finish=event=>{masterBookDragging=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);};stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClueBook3D(event.deltaY<0?0.08:-0.08);},{passive:false});window.addEventListener('resize',updateMasterBook3DFit);
+            stage.addEventListener('pointerdown',event=>{masterBookDragging=true;masterBookPanning=masterBookMoveMode||event.shiftKey;masterBookLastX=event.clientX;masterBookLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId);});
+            stage.addEventListener('pointermove',event=>{if(!masterBookDragging)return;const deltaX=event.clientX-masterBookLastX,deltaY=event.clientY-masterBookLastY;if(masterBookPanning){const limitX=stage.clientWidth*1.5,limitY=stage.clientHeight*1.5;masterBookPanX=Math.max(-limitX,Math.min(limitX,masterBookPanX+deltaX));masterBookPanY=Math.max(-limitY,Math.min(limitY,masterBookPanY+deltaY));}else{masterBookRotationY+=deltaX*0.65;masterBookRotationX=Math.max(-75,Math.min(75,masterBookRotationX-deltaY*0.5));}masterBookLastX=event.clientX;masterBookLastY=event.clientY;updateMasterClueBook3DTransform();});
+            const finish=event=>{masterBookDragging=false;masterBookPanning=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);};stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClueBook3D(event.deltaY<0?0.15:-0.15);},{passive:false});window.addEventListener('resize',updateMasterBook3DFit);
         }
 
         function setMasterBookPage(element, page, index, total, emptyText) {
