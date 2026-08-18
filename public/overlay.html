@@ -69,7 +69,9 @@
             border-radius: 50%;
             background: transparent;
             box-shadow: none;
-            transition: transform 0.3s ease;
+            transform-origin: 50% 76%;
+            will-change: transform;
+            animation: portrait-breathe 4.2s ease-in-out infinite;
         }
 
         .portrait::after {
@@ -259,7 +261,6 @@
 
         .player-widget.active-turn .portrait {
             box-shadow: none;
-            animation: none;
         }
 
         .connection-state {
@@ -296,6 +297,21 @@
         @keyframes badge-pulse {
             0%, 100% { filter: brightness(1); }
             50% { filter: brightness(1.18); }
+        }
+
+        @keyframes portrait-breathe {
+            0%, 100% {
+                transform: translate3d(0, 1px, 0) rotate(-0.35deg) scale(0.992);
+            }
+            25% {
+                transform: translate3d(1px, -2px, 0) rotate(0.15deg) scale(1.006);
+            }
+            50% {
+                transform: translate3d(0, -5px, 0) rotate(0.45deg) scale(1.022);
+            }
+            75% {
+                transform: translate3d(-1px, -2px, 0) rotate(0deg) scale(1.006);
+            }
         }
 
         @media (max-width: 1050px) {
