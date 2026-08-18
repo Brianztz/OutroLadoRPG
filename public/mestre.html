@@ -249,7 +249,7 @@
         .master-clue-3d-stage.dragging { cursor: grabbing; }
         .master-clue-3d-stage.move-mode, .master-clue-book-stage.move-mode { cursor: move; }
         .master-clue-3d-stage.move-mode.dragging, .master-clue-book-stage.move-mode.dragging { cursor: grabbing; }
-        .master-clue-3d-object { position: relative; width: 300px; height: 200px; max-width: 86%; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg); transition: transform 0.14s ease-out,width 0.18s ease,height 0.18s ease; will-change: transform; }
+        .master-clue-3d-object { position: relative; width: 300px; height: 200px; max-width: none; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg); transition: transform 0.14s ease-out,width 0.18s ease,height 0.18s ease; }
         .master-clue-3d-stage.dragging .master-clue-3d-object { transition: none; }
         .master-clue-3d-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
         .master-clue-3d-depth-layer { position: absolute; inset: 0; display: none; pointer-events: none; background: var(--master-clue-edge-color,#68686f); transform: translateZ(var(--master-clue-depth)); -webkit-mask-image: var(--master-clue-shape-image); mask-image: var(--master-clue-shape-image); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
@@ -257,7 +257,7 @@
         .master-clue-3d-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; backface-visibility: hidden; }
         .master-clue-3d-front { transform: translateZ(var(--master-clue-face-depth,12px)); }
         .master-clue-3d-back { transform: rotateY(180deg) translateZ(var(--master-clue-face-depth,12px)); }
-        .master-clue-3d-image { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 14px 15px rgba(0,0,0,0.58)); }
+        .master-clue-3d-image { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; pointer-events: none; filter: drop-shadow(0 14px 15px rgba(0,0,0,0.58)); }
         .master-clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
         .master-clue-3d-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; }
         .master-clue-view-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
@@ -266,7 +266,7 @@
         .master-clue-book-viewer { display: none; }
         .master-clue-book-stage { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(91,69,29,0.28),rgba(5,5,7,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-book-stage.dragging { cursor: grabbing; }
-        .master-clue-book-3d-object { position: relative; width: 640px; height: 360px; max-width: 90%; transform: translateX(-25%) rotateX(-8deg) rotateY(0deg) scale(1); transform-style: preserve-3d; transition: transform 0.3s ease-out,width 0.3s ease,height 0.3s ease; will-change: transform,width,height; }
+        .master-clue-book-3d-object { position: relative; width: 640px; height: 360px; max-width: none; transform: translateX(-25%) rotateX(-8deg) rotateY(0deg); transform-style: preserve-3d; transition: transform 0.3s ease-out,width 0.3s ease,height 0.3s ease; }
         .master-clue-book-stage.dragging .master-clue-book-3d-object { transition: width 0.3s ease,height 0.3s ease; }
         .master-clue-book { position: absolute; inset: 3.4% 2.8%; z-index: 6; width: auto; height: auto; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(calc(var(--master-book-cover-half,8px) + 2px)); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
         .master-clue-book.open { opacity: 1; }
@@ -275,14 +275,14 @@
         .master-clue-book-cover.open { z-index: 4; transform: rotateY(-180deg) translateZ(var(--master-book-front-center,7px)); opacity: 1; pointer-events: none; }
         .master-clue-book-cover-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
         .master-clue-book-cover-depth-layer { position: absolute; inset: 0; background: var(--master-book-edge-color,#4a2d18); transform: translateZ(var(--master-book-depth)); -webkit-mask-image: var(--master-book-cover-shape); mask-image: var(--master-book-cover-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
-        .master-clue-book-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: fill; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.65)); backface-visibility: hidden; }
+        .master-clue-book-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: fill; image-rendering: auto; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.65)); backface-visibility: hidden; }
         .master-clue-book-cover-face.front { transform: translateZ(var(--master-book-cover-half,8px)); }
         .master-clue-book-cover-face.back { transform: rotateY(180deg) translateZ(var(--master-book-cover-half,8px)) scaleX(-1); }
         .master-clue-book-cover-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: linear-gradient(135deg,#55351e,#21130d); color: var(--accent-yellow); font-size: 4em; transform: translateZ(var(--master-book-cover-half,8px)); }
         .master-clue-book-back-cover { position: absolute; left: 50%; top: 0; z-index: 2; width: 50%; height: 100%; transform: translateZ(var(--master-book-rear-center,-9px)); transform-style: preserve-3d; }
         .master-clue-book-back-cover-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
         .master-clue-book-back-cover-depth-layer { position: absolute; inset: 0; background: var(--master-book-back-edge-color,#4a2d18); transform: translateZ(var(--master-book-back-depth)); -webkit-mask-image: var(--master-book-back-shape); mask-image: var(--master-book-back-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
-        .master-clue-book-back-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: fill; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.58)); backface-visibility: hidden; }
+        .master-clue-book-back-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: fill; image-rendering: auto; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.58)); backface-visibility: hidden; }
         .master-clue-book-back-cover-face.front { transform: translateZ(var(--master-book-cover-half,8px)); }
         .master-clue-book-back-cover-face.back { transform: rotateY(180deg) translateZ(var(--master-book-cover-half,8px)); }
         .master-clue-book-back-cover-face.front.mirrored { transform: translateZ(var(--master-book-cover-half,8px)) scaleX(-1); }
@@ -291,7 +291,7 @@
         .master-clue-book-page.has-image-shape, .master-clue-book-flip-face.has-image-shape { -webkit-mask-image: none; mask-image: none; }
         .master-clue-book-page.left { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(2deg) translateZ(2px); transform-origin: right center; }
         .master-clue-book-page.right { border-radius: 2px 10px 10px 2px; box-shadow: inset 18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(-2deg) translateZ(2px); transform-origin: left center; }
-        .master-clue-book-page img, .master-clue-book-flip-face img { width: 100%; height: 100%; display: block; object-fit: fill; background: transparent; }
+        .master-clue-book-page img, .master-clue-book-flip-face img { width: 100%; height: 100%; display: block; object-fit: fill; image-rendering: auto; background: transparent; }
         .master-clue-book-page-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; color: rgba(49,35,20,0.48); font-family: Georgia,serif; font-size: 1.1em; font-style: italic; text-align: center; }
         .master-clue-book-page-index { position: absolute; left: 10px; right: 10px; bottom: 7px; color: rgba(44,31,18,0.7); font-family: Georgia,serif; font-size: 0.7em; font-weight: bold; text-align: center; }
         .master-clue-book-flip { position: absolute; top: 0; width: 50%; height: 100%; display: none; z-index: 7; transform-style: preserve-3d; }
@@ -1141,11 +1141,13 @@
                 probe.onload = () => {
                     const fallback = original();
                     try {
-                        const scale = Math.min(1, 1200 / Math.max(probe.naturalWidth, probe.naturalHeight));
+                        const scale = Math.min(1, 4096 / Math.max(probe.naturalWidth, probe.naturalHeight));
                         const canvas = document.createElement('canvas');
                         canvas.width = Math.max(1, Math.round(probe.naturalWidth * scale));
                         canvas.height = Math.max(1, Math.round(probe.naturalHeight * scale));
                         const context = canvas.getContext('2d', { willReadFrequently: true });
+                        context.imageSmoothingEnabled = true;
+                        context.imageSmoothingQuality = 'high';
                         context.drawImage(probe, 0, 0, canvas.width, canvas.height);
                         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                         const pixels = imageData.data;
@@ -1169,7 +1171,7 @@
                         minX=Math.max(0,minX-padding);minY=Math.max(0,minY-padding);maxX=Math.min(canvas.width-1,maxX+padding);maxY=Math.min(canvas.height-1,maxY+padding);
                         const width=maxX-minX+1,height=maxY-minY+1;
                         if(!removeBackground&&width===canvas.width&&height===canvas.height) return resolve({...fallback,edgeColor});
-                        const output=document.createElement('canvas');output.width=width;output.height=height;output.getContext('2d').drawImage(canvas,minX,minY,width,height,0,0,width,height);
+                        const output=document.createElement('canvas');output.width=width;output.height=height;const outputContext=output.getContext('2d');outputContext.imageSmoothingEnabled=true;outputContext.imageSmoothingQuality='high';outputContext.drawImage(canvas,minX,minY,width,height,0,0,width,height);
                         resolve({src:output.toDataURL('image/png'),width,height,edgeColor});
                     } catch (error) { resolve(fallback); }
                 };
@@ -1189,17 +1191,28 @@
             let objectWidth = maxWidth;
             let objectHeight = objectWidth / aspect;
             if (objectHeight > maxHeight) { objectHeight = maxHeight; objectWidth = objectHeight * aspect; }
-            object.style.width = `${objectWidth}px`;
-            object.style.height = `${objectHeight}px`;
+            object.dataset.baseWidth = String(objectWidth);
+            object.dataset.baseHeight = String(objectHeight);
+            applyMasterClue3DZoomSize();
+        }
+
+        function applyMasterClue3DZoomSize() {
+            const object = document.getElementById('master-clue-3d-object');
+            if (!object) return;
+            const baseWidth = Number(object.dataset.baseWidth);
+            const baseHeight = Number(object.dataset.baseHeight);
+            if (!baseWidth || !baseHeight) return;
+            object.style.width = `${baseWidth * masterClueZoom}px`;
+            object.style.height = `${baseHeight * masterClueZoom}px`;
         }
 
         function updateMasterClue3DTransform() {
-            document.getElementById('master-clue-3d-object').style.transform = `translate(${masterCluePanX}px, ${masterCluePanY}px) rotateX(${masterClueRotationX}deg) rotateY(${masterClueRotationY}deg) scale(${masterClueZoom})`;
+            document.getElementById('master-clue-3d-object').style.transform = `translate(${masterCluePanX}px, ${masterCluePanY}px) rotateX(${masterClueRotationX}deg) rotateY(${masterClueRotationY}deg)`;
         }
 
-        function resetMasterClue3D() { masterClueRotationX = -8; masterClueRotationY = 0; masterClueZoom = 1; masterCluePanX = 0; masterCluePanY = 0; setMasterClue3DMoveMode(false); updateMasterClue3DTransform(); }
+        function resetMasterClue3D() { masterClueRotationX = -8; masterClueRotationY = 0; masterClueZoom = 1; masterCluePanX = 0; masterCluePanY = 0; setMasterClue3DMoveMode(false); applyMasterClue3DZoomSize(); updateMasterClue3DTransform(); }
         function rotateMasterClue3D(amount) { masterClueRotationY += Number(amount) || 0; updateMasterClue3DTransform(); }
-        function zoomMasterClue3D(amount) { masterClueZoom = Math.max(0.5, Math.min(4, masterClueZoom + (Number(amount) || 0))); updateMasterClue3DTransform(); }
+        function zoomMasterClue3D(amount) { masterClueZoom = Math.max(0.5, Math.min(4, masterClueZoom + (Number(amount) || 0))); applyMasterClue3DZoomSize(); updateMasterClue3DTransform(); }
 
         function setMasterClue3DMoveMode(enabled) {
             masterClueMoveMode = Boolean(enabled);
@@ -1247,15 +1260,25 @@
             stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClue3D(event.deltaY<0?0.15:-0.15);},{passive:false});
         }
 
+        function applyMasterClueBookZoomSize() {
+            const object = document.getElementById('master-clue-book-3d-object');
+            if (!object) return;
+            const baseWidth = Number(object.dataset.baseWidth);
+            const baseHeight = Number(object.dataset.baseHeight);
+            if (!baseWidth || !baseHeight) return;
+            object.style.width = `${baseWidth * masterBookZoom}px`;
+            object.style.height = `${baseHeight * masterBookZoom}px`;
+        }
+
         function updateMasterClueBook3DTransform() {
             const object=document.getElementById('master-clue-book-3d-object');
             const closedOffset=masterBookOpen?0:-25*Math.cos(masterBookRotationY*Math.PI/180);
-            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
+            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg)`;
         }
 
-        function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;masterBookPanX=0;masterBookPanY=0;setMasterClueBookMoveMode(false);updateMasterClueBook3DTransform();}
+        function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;masterBookPanX=0;masterBookPanY=0;setMasterClueBookMoveMode(false);applyMasterClueBookZoomSize();updateMasterClueBook3DTransform();}
         function rotateMasterClueBook3D(amount){masterBookRotationY+=Number(amount)||0;updateMasterClueBook3DTransform();}
-        function zoomMasterClueBook3D(amount){masterBookZoom=Math.max(0.5,Math.min(4,masterBookZoom+(Number(amount)||0)));updateMasterClueBook3DTransform();}
+        function zoomMasterClueBook3D(amount){masterBookZoom=Math.max(0.5,Math.min(4,masterBookZoom+(Number(amount)||0)));applyMasterClueBookZoomSize();updateMasterClueBook3DTransform();}
 
         function setMasterClueBookMoveMode(enabled) {
             masterBookMoveMode = Boolean(enabled);
@@ -1285,7 +1308,7 @@
 
         function fitMasterBook3DToAspect(aspect=1.5){
             const stage=document.getElementById('master-clue-book-stage'),object=document.getElementById('master-clue-book-3d-object');if(!stage||!object)return;
-            const safe=Math.max(0.55,Math.min(5,Number(aspect)||1.5)),maxWidth=Math.max(150,stage.clientWidth*0.87),maxHeight=Math.max(140,stage.clientHeight*0.73);let width=maxWidth,height=width/safe;if(height>maxHeight){height=maxHeight;width=height*safe;}object.style.width=`${width}px`;object.style.height=`${height}px`;
+            const safe=Math.max(0.55,Math.min(5,Number(aspect)||1.5)),maxWidth=Math.max(150,stage.clientWidth*0.87),maxHeight=Math.max(140,stage.clientHeight*0.73);let width=maxWidth,height=width/safe;if(height>maxHeight){height=maxHeight;width=height*safe;}object.dataset.baseWidth=String(width);object.dataset.baseHeight=String(height);applyMasterClueBookZoomSize();
         }
 
         function updateMasterBook3DFit(){
@@ -1315,7 +1338,6 @@
             if (page && page.img) {
                 const image=document.createElement('img');image.src=page.img;image.alt=`Página ${index+1}`;element.dataset.pageSource=page.img;element.appendChild(image);
                 const number=document.createElement('div');number.className='master-clue-book-page-index';number.textContent=`${index+1} / ${total}`;element.appendChild(number);
-                prepareMasterClueCutout(page.img).then(result=>{if(element.dataset.pageSource!==page.img)return;image.src=result.src;element.style.setProperty('--master-page-shape',`url(${JSON.stringify(result.src)})`);element.classList.add('has-image-shape');});
             } else { delete element.dataset.pageSource;const empty=document.createElement('div');empty.className='master-clue-book-page-empty';empty.textContent=emptyText;element.appendChild(empty); }
         }
 
