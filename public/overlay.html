@@ -43,6 +43,7 @@
         }
 
         .player-widget {
+            --player-color: #00b8f5;
             position: relative;
             display: flex;
             align-items: center;
@@ -69,6 +70,7 @@
             border-radius: 50%;
             background: transparent;
             box-shadow: none;
+            filter: drop-shadow(0 0 3px var(--player-color)) drop-shadow(0 0 8px var(--player-color));
             transform-origin: 50% 76%;
             will-change: transform;
             animation: portrait-breathe 4.2s ease-in-out infinite;
@@ -158,6 +160,7 @@
             flex-direction: column;
             align-items: flex-start;
             justify-content: center;
+            margin-left: -8px;
             opacity: 0;
             visibility: hidden;
             filter: blur(4px);
@@ -347,6 +350,15 @@
             return Number.isFinite(number) ? number : fallback;
         }
 
+        function normalizePlayerColor(value) {
+            const color = String(value || '').trim();
+            if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+            if (/^#[0-9a-f]{3}$/i.test(color)) {
+                return `#${color.slice(1).split('').map(char => char + char).join('')}`;
+            }
+            return '#00b8f5';
+        }
+
         function playerCode(data) {
             return String(data && (data.codigo || data.id) || '').trim().toUpperCase();
         }
@@ -377,8 +389,8 @@
                     </div>
                     <div class="combat-stats" aria-label="Vida e sanidade">
                         <span class="combat-number ammo" hidden><span class="combat-prefix ammo-text-prefix">MUN</span><img class="ammo-icon" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png" alt="Munição leve" hidden><span class="ammo-value">0</span></span>
-                        <span class="combat-number life"><span class="combat-prefix">PV</span><span class="life-value">0/0</span></span>
-                        <span class="combat-number sanity"><span class="combat-prefix">SAN</span><span class="sanity-value">0/0</span></span>
+                        <span class="combat-number life" title="Vida"><span class="life-value">0/0</span></span>
+                        <span class="combat-number sanity" title="Sanidade"><span class="sanity-value">0/0</span></span>
                     </div>
                 </div>`;
 
@@ -414,8 +426,10 @@
             const ammoCurrent = rangedWeapon ? Math.max(0, safeNumber(rangedWeapon.atual)) : 0;
             const ammoCapacity = rangedWeapon ? Math.max(0, safeNumber(rangedWeapon.capacidade)) : 0;
             const previous = previousVitals.get(code);
+            const playerColor = normalizePlayerColor(data.corOverlay || data.fullData?.info?.char_cor_overlay);
 
             article.setAttribute('aria-label', name);
+            article.style.setProperty('--player-color', playerColor);
             article.querySelector('.name').textContent = name;
             article.querySelector('.life-value').textContent = `${lifeCurrent}/${lifeMaximum}`;
             article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
