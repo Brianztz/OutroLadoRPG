@@ -65,24 +65,15 @@
             width: 126px;
             height: 126px;
             overflow: hidden;
-            border: 3px solid #0b151d;
+            border: 0;
             border-radius: 50%;
-            background:
-                radial-gradient(circle at 50% 35%, #243440 0 22%, #111920 62%, #080b0e 100%);
-            box-shadow:
-                inset 0 0 24px rgba(0, 0, 0, 0.75),
-                0 0 0 2px var(--cyan),
-                0 0 18px rgba(0, 184, 245, 0.36);
-            transition: box-shadow 0.3s ease, transform 0.3s ease;
+            background: transparent;
+            box-shadow: none;
+            transition: transform 0.3s ease;
         }
 
         .portrait::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: linear-gradient(140deg, rgba(255, 255, 255, 0.18), transparent 32%, transparent 70%, rgba(0, 184, 245, 0.11));
-            pointer-events: none;
+            content: none;
         }
 
         .portrait img {
@@ -267,10 +258,7 @@
         }
 
         .player-widget.active-turn .portrait {
-            box-shadow:
-                inset 0 0 24px rgba(0,0,0,0.7),
-                0 0 0 2px #fff0aa,
-                0 0 22px rgba(255, 200, 61, 0.85);
+            box-shadow: none;
             animation: none;
         }
 
