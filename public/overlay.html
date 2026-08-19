@@ -44,9 +44,9 @@
 
         .overlay-grid {
             display: grid;
-            grid-template-columns: minmax(620px, 720px);
+            grid-template-columns: minmax(460px, 520px);
             gap: 14px;
-            width: min(720px, calc(100vw - 48px));
+            width: min(520px, calc(100vw - 48px));
             align-items: center;
         }
 
@@ -86,7 +86,7 @@
             display: flex;
             align-items: center;
             min-width: 0;
-            min-height: 330px;
+            min-height: 245px;
             filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.52));
             animation: widget-in 0.36s ease both;
         }
@@ -99,10 +99,11 @@
 
         .portrait {
             position: relative;
+            top: -4px;
             z-index: 3;
-            flex: 0 0 320px;
-            width: 320px;
-            height: 320px;
+            flex: 0 0 220px;
+            width: 220px;
+            height: 220px;
             overflow: visible;
             border: 0;
             border-radius: 0;
@@ -147,7 +148,7 @@
             object-fit: contain;
             opacity: 0;
             backface-visibility: hidden;
-            transform: translateZ(0) scale(1.18);
+            transform: translateZ(0) scale(1.12);
             transition: opacity 0.65s ease;
         }
 
@@ -207,8 +208,9 @@
             flex: 1 1 auto;
             min-width: 0;
             min-height: 76px;
-            margin-left: 16px;
+            margin-left: 4px;
             align-items: center;
+            top: -10px;
         }
 
         .identity {
@@ -237,17 +239,17 @@
             overflow: hidden;
             color: #f6fbff;
             font-family: "ITC Krist", sans-serif;
-            max-width: 310px;
-            font-size: 1.55rem;
+            max-width: 260px;
+            font-size: 2rem;
             font-weight: 900;
-            line-height: 0.95;
-            letter-spacing: 1.1px;
+            line-height: 0.83;
+            letter-spacing: 1.25px;
             text-overflow: ellipsis;
             text-transform: uppercase;
             white-space: normal;
             overflow-wrap: anywhere;
             text-shadow: 0 2px 3px #000, 0 0 8px rgba(0, 184, 245, 0.18);
-            transform: translateX(-26px) rotate(-2deg);
+            transform: translateX(-18px) rotate(-2deg);
         }
 
         .name-line { display: block; }
@@ -355,7 +357,7 @@
             position: absolute;
             z-index: 5;
             top: -7px;
-            left: 336px;
+            left: 236px;
             padding: 4px 11px;
             border: 1px solid #fff0aa;
             border-radius: 999px;
@@ -454,11 +456,11 @@
         }
 
         @keyframes sanity-image-glitch {
-            0%, 100% { transform: translate3d(0, 0, 0) scale(1.18); filter: none; }
-            16% { transform: translate3d(-4px, 1px, 0) scale(1.215); filter: hue-rotate(35deg) saturate(1.7); }
-            34% { transform: translate3d(5px, -1px, 0) scale(1.205); filter: hue-rotate(225deg) saturate(1.45); }
-            52% { transform: translate3d(-2px, 0, 0) scale(1.225); filter: hue-rotate(285deg) contrast(1.35); }
-            72% { transform: translate3d(3px, 1px, 0) scale(1.19); filter: hue-rotate(175deg) saturate(1.6); }
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1.12); filter: none; }
+            16% { transform: translate3d(-4px, 1px, 0) scale(1.155); filter: hue-rotate(35deg) saturate(1.7); }
+            34% { transform: translate3d(5px, -1px, 0) scale(1.145); filter: hue-rotate(225deg) saturate(1.45); }
+            52% { transform: translate3d(-2px, 0, 0) scale(1.165); filter: hue-rotate(285deg) contrast(1.35); }
+            72% { transform: translate3d(3px, 1px, 0) scale(1.13); filter: hue-rotate(175deg) saturate(1.6); }
         }
 
         @keyframes ammo-low-warning {
@@ -493,18 +495,18 @@
         }
 
         @media (max-width: 1050px) {
-            .overlay-grid { grid-template-columns: minmax(0, 720px); }
+            .overlay-grid { grid-template-columns: minmax(0, 520px); }
         }
 
         @media (max-width: 560px) {
             body { padding: 12px; }
             .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
-            .player-widget { min-height: 240px; }
-            .portrait { flex-basis: 230px; width: 230px; height: 230px; }
-            .display-stack { min-height: 65px; margin-left: 13px; }
-            .name { font-size: 1.35rem; }
+            .player-widget { min-height: 202px; }
+            .portrait { flex-basis: 190px; width: 190px; height: 190px; }
+            .display-stack { min-height: 65px; margin-left: 3px; top: -7px; }
+            .name { font-size: 1.65rem; }
             .combat-number { font-size: 1.75rem; }
-            .turn-badge { left: 242px; }
+            .turn-badge { left: 202px; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
         }
     </style>
