@@ -112,10 +112,30 @@
             transform-origin: 50% 76%;
             will-change: transform;
             animation: portrait-breathe 4.2s ease-in-out infinite;
+            transition: filter 0.75s ease, opacity 0.75s ease;
+        }
+
+        .portrait::before,
+        .portrait::after {
+            content: "";
+            position: absolute;
+            z-index: 6;
+            inset: 0;
+            border-radius: inherit;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .portrait::before {
+            background: radial-gradient(circle at 50% 55%, rgba(255, 78, 78, 0.12) 0%, rgba(224, 7, 28, 0.7) 72%, rgba(86, 0, 12, 0.92) 100%);
+            mix-blend-mode: screen;
         }
 
         .portrait::after {
-            content: none;
+            background:
+                repeating-linear-gradient(0deg, transparent 0 5px, rgba(106, 80, 255, 0.48) 6px 8px, transparent 9px 13px),
+                linear-gradient(90deg, rgba(29, 199, 255, 0.32), rgba(153, 62, 255, 0.38));
+            mix-blend-mode: screen;
         }
 
         .portrait img {
@@ -133,6 +153,40 @@
 
         .portrait img.active {
             opacity: 1;
+        }
+
+        .player-widget.damage-hit .portrait,
+        .player-widget.damage-hit .display-stack {
+            animation: damage-impact 0.62s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+        }
+
+        .player-widget.damage-hit .portrait::before {
+            animation: damage-red-pulse 0.68s ease-out both;
+        }
+
+        .player-widget.sanity-hit .portrait::after {
+            animation: sanity-interference 0.92s steps(2, end) both;
+        }
+
+        .player-widget.sanity-hit .portrait img.active {
+            animation: sanity-image-glitch 0.92s steps(2, end) both;
+        }
+
+        .player-widget.unconscious .portrait {
+            animation: none;
+            filter: grayscale(1) brightness(0.58) contrast(1.08) drop-shadow(0 0 3px rgba(110, 120, 132, 0.4));
+            opacity: 0.9;
+        }
+
+        .player-widget.unconscious .portrait img {
+            filter: grayscale(1) brightness(0.8);
+            transition: opacity 0.65s ease, filter 0.75s ease;
+        }
+
+        .player-widget.unconscious .display-stack {
+            opacity: 0.68;
+            filter: grayscale(0.78) brightness(0.8);
+            transition: opacity 0.75s ease, filter 0.75s ease;
         }
 
         .portrait-fallback {
@@ -164,14 +218,16 @@
             opacity: 1;
             visibility: visible;
             filter: blur(0);
-            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s;
+            transform: translateX(0) scale(1);
+            transition: opacity 0.72s ease, filter 0.72s ease, transform 0.72s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
         }
 
         .identity.hidden {
             opacity: 0;
             visibility: hidden;
-            filter: blur(4px);
-            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s linear 0.7s;
+            filter: blur(8px);
+            transform: translateX(-18px) scale(0.92);
+            transition: opacity 0.72s ease, filter 0.72s ease, transform 0.72s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.72s;
         }
 
         .name {
@@ -206,8 +262,10 @@
             margin-left: -24px;
             opacity: 0;
             visibility: hidden;
-            filter: blur(4px);
-            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s linear 0.7s;
+            filter: blur(10px) brightness(1.55);
+            clip-path: inset(0 100% 0 0);
+            transform: translateX(24px) scale(0.9);
+            transition: opacity 0.76s ease, filter 0.76s ease, clip-path 0.76s cubic-bezier(0.22, 0.78, 0.18, 1), transform 0.76s cubic-bezier(0.22, 0.78, 0.18, 1), visibility 0s linear 0.76s;
             pointer-events: none;
         }
 
@@ -215,7 +273,13 @@
             opacity: 1;
             visibility: visible;
             filter: blur(0);
-            transition: opacity 0.7s ease, filter 0.7s ease, visibility 0s;
+            clip-path: inset(0 0 0 0);
+            transform: translateX(0) scale(1);
+            transition: opacity 0.76s ease, filter 0.76s ease, clip-path 0.76s cubic-bezier(0.22, 0.78, 0.18, 1), transform 0.76s cubic-bezier(0.22, 0.78, 0.18, 1), visibility 0s;
+        }
+
+        .player-widget.combat-entering .combat-stats.active {
+            animation: combat-stats-arrive 0.9s cubic-bezier(0.16, 0.88, 0.2, 1) both;
         }
 
         .combat-number {
@@ -278,6 +342,16 @@
             text-shadow: 0 2px 3px #000, 0 0 5px rgba(236,51,77,0.9), 0 0 10px rgba(236,51,77,0.45);
         }
 
+        .combat-number.ammo.low:not(.empty) {
+            animation: ammo-low-warning 0.92s ease-in-out infinite;
+        }
+
+        .combat-number.ammo.empty {
+            animation: none;
+            color: #ff3e55;
+            filter: saturate(1.25) brightness(1.08);
+        }
+
         .turn-badge {
             position: absolute;
             z-index: 5;
@@ -338,6 +412,48 @@
         @keyframes number-flash {
             0%, 100% { filter: brightness(1); }
             45% { filter: brightness(1.8); }
+        }
+
+        @keyframes damage-impact {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+            12% { transform: translate3d(-5px, 1px, 0) scale(1.035); }
+            28% { transform: translate3d(5px, -1px, 0) scale(0.985); }
+            46% { transform: translate3d(-3px, 0, 0) scale(1.018); }
+            68% { transform: translate3d(2px, 0, 0) scale(0.995); }
+        }
+
+        @keyframes damage-red-pulse {
+            0%, 100% { opacity: 0; }
+            16% { opacity: 0.96; }
+            46% { opacity: 0.42; }
+        }
+
+        @keyframes sanity-interference {
+            0%, 100% { opacity: 0; transform: translateX(0); clip-path: inset(0 0 0 0); }
+            12% { opacity: 0.86; transform: translateX(-4px); clip-path: inset(12% 0 48% 0); }
+            28% { opacity: 0.48; transform: translateX(5px); clip-path: inset(55% 0 8% 0); }
+            46% { opacity: 0.92; transform: translateX(-2px); clip-path: inset(28% 0 31% 0); }
+            66% { opacity: 0.38; transform: translateX(3px); clip-path: inset(4% 0 70% 0); }
+            82% { opacity: 0.68; transform: translateX(-1px); clip-path: inset(68% 0 4% 0); }
+        }
+
+        @keyframes sanity-image-glitch {
+            0%, 100% { transform: translate3d(0, 0, 0); filter: none; }
+            16% { transform: translate3d(-4px, 1px, 0) scale(1.025); filter: hue-rotate(35deg) saturate(1.7); }
+            34% { transform: translate3d(5px, -1px, 0) scale(1.018); filter: hue-rotate(225deg) saturate(1.45); }
+            52% { transform: translate3d(-2px, 0, 0) scale(1.035); filter: hue-rotate(285deg) contrast(1.35); }
+            72% { transform: translate3d(3px, 1px, 0); filter: hue-rotate(175deg) saturate(1.6); }
+        }
+
+        @keyframes ammo-low-warning {
+            0%, 100% { color: #ffe47c; filter: brightness(0.92); transform: scale(1); }
+            50% { color: #fff1a6; filter: brightness(1.65); transform: scale(1.045); text-shadow: 0 2px 3px #000, 0 0 8px rgba(255, 205, 47, 1), 0 0 17px rgba(255, 174, 0, 0.72); }
+        }
+
+        @keyframes combat-stats-arrive {
+            0% { opacity: 0; filter: blur(12px) brightness(2.2); clip-path: inset(0 100% 0 0); transform: translateX(30px) scale(0.86); }
+            58% { opacity: 1; filter: blur(0) brightness(1.28); clip-path: inset(0 0 0 0); transform: translateX(-3px) scale(1.035); }
+            100% { opacity: 1; filter: blur(0) brightness(1); clip-path: inset(0 0 0 0); transform: translateX(0) scale(1); }
         }
 
         @keyframes badge-pulse {
@@ -432,6 +548,10 @@
             return String(data && (data.codigo || data.id) || '').trim().toUpperCase();
         }
 
+        function isActiveFlag(value) {
+            return value === true || value === 'true' || value === 1 || value === '1';
+        }
+
         function setConnectionMessage(message, type = '') {
             connectionState.textContent = message;
             connectionState.className = `connection-state visible${type ? ` ${type}` : ''}`;
@@ -509,10 +629,24 @@
         function flashCombatNumber(article, selector, changed) {
             const number = article.querySelector(selector);
             if (changed) {
+                if (number._flashTimer) clearTimeout(number._flashTimer);
                 number.classList.remove('changed');
                 void number.offsetWidth;
                 number.classList.add('changed');
+                number._flashTimer = setTimeout(() => number.classList.remove('changed'), 680);
             }
+        }
+
+        function restartTimedEffect(element, className, duration) {
+            if (!element._overlayEffectTimers) element._overlayEffectTimers = {};
+            if (element._overlayEffectTimers[className]) clearTimeout(element._overlayEffectTimers[className]);
+            element.classList.remove(className);
+            void element.offsetWidth;
+            element.classList.add(className);
+            element._overlayEffectTimers[className] = setTimeout(() => {
+                element.classList.remove(className);
+                delete element._overlayEffectTimers[className];
+            }, duration);
         }
 
         function updatePlayerWidget(data) {
@@ -536,9 +670,15 @@
             const ammoCapacity = rangedWeapon ? Math.max(0, safeNumber(rangedWeapon.capacidade)) : 0;
             const previous = previousVitals.get(code);
             const playerColor = normalizePlayerColor(data.corOverlay || data.fullData?.info?.char_cor_overlay);
+            const statusData = data.status && typeof data.status === 'object'
+                ? data.status
+                : (data.fullData?.charStatus && typeof data.fullData.charStatus === 'object' ? data.fullData.charStatus : {});
+            const unconscious = isActiveFlag(statusData.inconsciente);
+            const combatActive = isActiveFlag(data.modoCombate);
 
             article.setAttribute('aria-label', name);
             article.style.setProperty('--player-color', playerColor);
+            article.classList.toggle('unconscious', unconscious);
             renderPlayerName(article.querySelector('.name'), name);
             article.querySelector('.life-value').textContent = `${lifeCurrent}/${lifeMaximum}`;
             article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
@@ -547,6 +687,8 @@
             const ammoLine = article.querySelector('.combat-number.ammo');
             ammoLine.hidden = !rangedWeapon;
             ammoLine.classList.toggle('empty', Boolean(rangedWeapon) && ammoCurrent <= 0);
+            const lowAmmoLimit = ammoCapacity > 0 ? Math.max(1, Math.ceil(ammoCapacity * 0.25)) : 2;
+            ammoLine.classList.toggle('low', Boolean(rangedWeapon) && ammoCurrent > 0 && ammoCurrent <= lowAmmoLimit);
             if (rangedWeapon) {
                 const ammoType = String(rangedWeapon.municao || 'Munição');
                 const ammoIconData = getAmmoIcon(ammoType);
@@ -563,6 +705,12 @@
                 }
                 ammoLine.title = `${String(rangedWeapon.nome || 'Arma de disparo')} — ${ammoType}: ${ammoCurrent} de ${ammoCapacity}`;
                 flashCombatNumber(article, '.combat-number.ammo', previous && previous.ammo !== ammoCurrent);
+            }
+
+            if (previous) {
+                if (lifeCurrent < previous.life) restartTimedEffect(article, 'damage-hit', 720);
+                if (sanityCurrent < previous.sanity) restartTimedEffect(article, 'sanity-hit', 980);
+                if (!previous.combat && combatActive) restartTimedEffect(article, 'combat-entering', 940);
             }
             const portrait = article.querySelector('.portrait');
             const portraitImages = [...portrait.querySelectorAll('.portrait-image')];
@@ -622,7 +770,7 @@
                 fallback.style.display = 'grid';
             }
 
-            previousVitals.set(code, { life: lifeCurrent, sanity: sanityCurrent, ammo: rangedWeapon ? ammoCurrent : null });
+            previousVitals.set(code, { life: lifeCurrent, sanity: sanityCurrent, ammo: rangedWeapon ? ammoCurrent : null, combat: combatActive, unconscious });
             sortWidgets();
             updateTurnHighlight();
             hideConnectionMessage();
@@ -668,8 +816,9 @@
             const activeCode = activePlayerCode();
             grid.querySelectorAll('.player-widget').forEach(widget => {
                 const player = players.get(widget.dataset.code);
-                const combatActive = Boolean(player && (player.modoCombate === true || player.modoCombate === 'true'));
+                const combatActive = Boolean(player && isActiveFlag(player.modoCombate));
                 widget.classList.toggle('active-turn', Boolean(activeCode) && widget.dataset.code === activeCode);
+                widget.classList.toggle('combat-mode', combatActive);
                 widget.querySelector('.identity').classList.toggle('hidden', combatActive);
                 widget.querySelector('.combat-stats').classList.toggle('active', combatActive);
             });
