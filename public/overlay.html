@@ -36,55 +36,19 @@
         }
 
         body {
-            padding: 0;
+            padding: 24px;
             overflow: hidden;
             color: #fff;
             font-family: "ITC Krist", sans-serif;
         }
 
         .overlay-grid {
-            position: fixed;
-            z-index: 5;
-            inset: 0;
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(420px, 500px);
+            gap: 14px;
+            width: min(500px, calc(100vw - 48px));
+            align-items: center;
         }
-
-        .stream-frame {
-            position: fixed;
-            z-index: 20;
-            inset: 0;
-            pointer-events: none;
-            filter: drop-shadow(0 0 3px rgba(145, 0, 0, 0.72));
-        }
-
-        .stream-frame::before {
-            content: "";
-            position: absolute;
-            inset: 0.45%;
-            border: clamp(3px, 0.34vw, 6px) solid #760707;
-            box-shadow: inset 0 0 8px rgba(255, 20, 20, 0.28), 0 0 5px rgba(34, 0, 0, 0.9);
-        }
-
-        .frame-line {
-            position: absolute;
-            display: block;
-            background: linear-gradient(90deg, #3d0204 0%, #940909 22%, #530305 52%, #a30b0b 78%, #420204 100%);
-            box-shadow: 0 0 4px rgba(255, 18, 18, 0.28), 0 1px 0 rgba(20, 0, 0, 0.9);
-        }
-
-        .frame-line.vertical {
-            width: clamp(3px, 0.34vw, 6px);
-            background: linear-gradient(180deg, #3d0204 0%, #940909 22%, #530305 52%, #a30b0b 78%, #420204 100%);
-        }
-
-        .frame-main-vertical { left: 66.55%; top: 0; height: 100%; }
-        .frame-top-vertical { left: 33.85%; top: 0; height: 34.1%; }
-        .frame-short-vertical { left: 19.35%; top: 19.4%; height: 14.7%; }
-        .frame-main-horizontal { left: 0; top: 34.1%; width: 100%; height: clamp(3px, 0.34vw, 6px); }
-        .frame-right-horizontal { left: 66.55%; top: 66.3%; width: 33.45%; height: clamp(3px, 0.34vw, 6px); }
 
         .overlay-table-button {
             position: fixed;
@@ -118,26 +82,14 @@
 
         .player-widget {
             --player-color: #00b8f5;
-            position: absolute;
-            z-index: 6;
+            position: relative;
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             min-width: 0;
-            min-height: 0;
-            padding: 0 0 clamp(6px, 1.1vh, 13px) clamp(7px, 0.8vw, 16px);
-            overflow: hidden;
+            min-height: 132px;
             filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.52));
             animation: widget-in 0.36s ease both;
         }
-
-        .player-widget[data-slot="1"] { left: 66.55%; top: 34.1%; width: 33.45%; height: 32.2%; }
-        .player-widget[data-slot="2"] { left: 66.55%; top: 66.3%; width: 33.45%; height: 33.7%; }
-        .player-widget[data-slot="3"] { left: 66.55%; top: 0; width: 33.45%; height: 34.1%; }
-        .player-widget[data-slot="4"] { left: 33.85%; top: 0; width: 32.7%; height: 34.1%; }
-        .player-widget[data-slot="5"] { left: 0; top: 0; width: 33.85%; height: 34.1%; }
-        .player-widget[data-slot="6"] { left: 0; top: 34.1%; width: 22.18%; height: 65.9%; }
-        .player-widget[data-slot="7"] { left: 22.18%; top: 34.1%; width: 22.18%; height: 65.9%; }
-        .player-widget[data-slot="8"] { left: 44.36%; top: 34.1%; width: 22.19%; height: 65.9%; }
 
         .player-widget.leaving {
             opacity: 0;
@@ -148,9 +100,9 @@
         .portrait {
             position: relative;
             z-index: 3;
-            flex: 0 0 clamp(58px, 7vw, 142px);
-            width: clamp(58px, 7vw, 142px);
-            height: clamp(58px, 7vw, 142px);
+            flex: 0 0 126px;
+            width: 126px;
+            height: 126px;
             overflow: hidden;
             border: 0;
             border-radius: 50%;
@@ -201,8 +153,8 @@
             display: grid;
             flex: 1 1 auto;
             min-width: 0;
-            min-height: clamp(50px, 5.5vw, 106px);
-            margin-left: clamp(7px, 0.85vw, 17px);
+            min-height: 76px;
+            margin-left: 16px;
             align-items: center;
         }
 
@@ -230,8 +182,8 @@
             overflow: hidden;
             color: #f6fbff;
             font-family: "ITC Krist", sans-serif;
-            max-width: 18vw;
-            font-size: clamp(0.82rem, 1.35vw, 1.7rem);
+            max-width: 310px;
+            font-size: 1.55rem;
             font-weight: 900;
             line-height: 0.95;
             letter-spacing: 1.1px;
@@ -240,7 +192,7 @@
             white-space: normal;
             overflow-wrap: anywhere;
             text-shadow: 0 2px 3px #000, 0 0 8px rgba(0, 184, 245, 0.18);
-            transform: translateX(clamp(-26px, -1.35vw, -12px)) rotate(-2deg);
+            transform: translateX(-26px) rotate(-2deg);
         }
 
         .name-line { display: block; }
@@ -251,7 +203,7 @@
             flex-direction: column;
             align-items: flex-start;
             justify-content: center;
-            margin-left: 0;
+            margin-left: -24px;
             opacity: 0;
             visibility: hidden;
             filter: blur(4px);
@@ -269,10 +221,10 @@
         .combat-number {
             display: flex;
             align-items: baseline;
-            gap: clamp(4px, 0.48vw, 10px);
+            gap: 9px;
             color: #fff;
             font-family: "ITC Krist", sans-serif;
-            font-size: clamp(1rem, 1.75vw, 2.25rem);
+            font-size: 2.15rem;
             font-weight: 700;
             line-height: 0.96;
             letter-spacing: -1px;
@@ -299,10 +251,10 @@
 
         .combat-number.ammo {
             align-items: center;
-            margin-bottom: clamp(1px, 0.35vh, 4px);
+            margin-bottom: 4px;
             color: #ffe47c;
             font-family: "ITC Krist", sans-serif;
-            font-size: clamp(0.9rem, 1.45vw, 1.85rem);
+            font-size: 1.72rem;
             letter-spacing: 0;
             text-shadow: 0 2px 3px #000, 0 0 5px rgba(255,200,61,0.88), 0 0 10px rgba(255,200,61,0.4);
         }
@@ -310,9 +262,9 @@
         .combat-number.ammo[hidden] { display: none; }
 
         .ammo-icon {
-            width: clamp(24px, 3vw, 50px);
-            height: clamp(24px, 3vw, 50px);
-            margin: clamp(-8px, -0.4vw, -3px) clamp(-6px, -0.3vw, -2px);
+            width: 44px;
+            height: 44px;
+            margin: -8px -6px;
             object-fit: contain;
             filter: drop-shadow(0 2px 2px #000) drop-shadow(0 0 5px rgba(255,200,61,0.6));
         }
@@ -329,8 +281,8 @@
         .turn-badge {
             position: absolute;
             z-index: 5;
-            top: clamp(4px, 1vh, 12px);
-            left: clamp(65px, 7.8vw, 158px);
+            top: -7px;
+            left: 142px;
             padding: 4px 11px;
             border: 1px solid #fff0aa;
             border-radius: 999px;
@@ -408,7 +360,18 @@
             }
         }
 
+        @media (max-width: 1050px) {
+            .overlay-grid { grid-template-columns: minmax(0, 500px); }
+        }
+
         @media (max-width: 560px) {
+            body { padding: 12px; }
+            .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
+            .portrait { flex-basis: 102px; width: 102px; height: 102px; }
+            .display-stack { min-height: 65px; margin-left: 13px; }
+            .name { font-size: 1.35rem; }
+            .combat-number { font-size: 1.75rem; }
+            .turn-badge { left: 112px; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
         }
     </style>
@@ -416,13 +379,6 @@
 <body>
     <button id="overlay-table-button" class="overlay-table-button" type="button" onclick="chooseOverlayTable()" title="Escolher a mesa exibida no overlay">MESA: <span id="overlay-table-code">PADRAO</span></button>
     <main id="overlay-grid" class="overlay-grid" aria-live="polite"></main>
-    <div class="stream-frame" aria-hidden="true">
-        <span class="frame-line vertical frame-main-vertical"></span>
-        <span class="frame-line vertical frame-top-vertical"></span>
-        <span class="frame-line vertical frame-short-vertical"></span>
-        <span class="frame-line frame-main-horizontal"></span>
-        <span class="frame-line frame-right-horizontal"></span>
-    </div>
     <div id="connection-state" class="connection-state visible" role="status">Conectando ao servidor...</div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -433,8 +389,6 @@
         const overlayTableCode = document.getElementById('overlay-table-code');
         const players = new Map();
         const previousVitals = new Map();
-        const playerSlots = new Map();
-        const playerSlotCount = 8;
         let initiativeState = { entries: [], activeId: null, round: 0, started: false };
         const overlayUrlParams = new URLSearchParams(window.location.search);
         const overlayTableFromUrl = overlayUrlParams.get('mesa');
@@ -478,16 +432,6 @@
             return String(data && (data.codigo || data.id) || '').trim().toUpperCase();
         }
 
-        function assignPlayerSlot(code) {
-            if (playerSlots.has(code)) return playerSlots.get(code);
-            const occupiedSlots = new Set(playerSlots.values());
-            let slot = 1;
-            while (slot <= playerSlotCount && occupiedSlots.has(slot)) slot += 1;
-            if (slot > playerSlotCount) slot = playerSlotCount;
-            playerSlots.set(code, slot);
-            return slot;
-        }
-
         function setConnectionMessage(message, type = '') {
             connectionState.textContent = message;
             connectionState.className = `connection-state visible${type ? ` ${type}` : ''}`;
@@ -519,7 +463,6 @@
             localStorage.setItem('overlay_table_code', tableCode);
             players.clear();
             previousVitals.clear();
-            playerSlots.clear();
             grid.replaceChildren();
             initiativeState = { entries: [], activeId: null, round: 0, started: false };
             setConnectionMessage(`Buscando jogadores da mesa ${tableCode}...`);
@@ -542,7 +485,6 @@
             const article = document.createElement('article');
             article.className = 'player-widget';
             article.dataset.code = code;
-            article.dataset.slot = String(assignPlayerSlot(code));
             article.innerHTML = `
                 <div class="turn-badge">⚔ Turno atual</div>
                 <div class="portrait">
@@ -704,7 +646,6 @@
             const code = String(codeValue || '').trim().toUpperCase();
             players.delete(code);
             previousVitals.delete(code);
-            playerSlots.delete(code);
             const article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
             if (article) {
                 article.classList.add('leaving');
