@@ -145,6 +145,9 @@
         }
 
         .name {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
             min-width: 0;
             overflow: hidden;
             color: #f6fbff;
@@ -161,6 +164,8 @@
             text-shadow: 0 2px 3px #000, 0 0 8px rgba(0, 184, 245, 0.18);
             transform: rotate(-2deg);
         }
+
+        .name-line { display: block; }
 
         .combat-stats {
             grid-area: 1 / 1;
@@ -380,6 +385,16 @@
             connectionState.className = 'connection-state';
         }
 
+        function renderPlayerName(element, name) {
+            const parts = String(name || 'Personagem').trim().split(/\s+/).filter(Boolean);
+            element.replaceChildren(...parts.map(part => {
+                const line = document.createElement('span');
+                line.className = 'name-line';
+                line.textContent = part;
+                return line;
+            }));
+        }
+
         function createPlayerWidget(code) {
             const article = document.createElement('article');
             article.className = 'player-widget';
@@ -438,7 +453,7 @@
 
             article.setAttribute('aria-label', name);
             article.style.setProperty('--player-color', playerColor);
-            article.querySelector('.name').textContent = name;
+            renderPlayerName(article.querySelector('.name'), name);
             article.querySelector('.life-value').textContent = `${lifeCurrent}/${lifeMaximum}`;
             article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
             flashCombatNumber(article, '.combat-number.life', previous && previous.life !== lifeCurrent);
