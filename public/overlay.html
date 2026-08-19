@@ -50,6 +50,36 @@
             align-items: center;
         }
 
+        .overlay-table-button {
+            position: fixed;
+            z-index: 100;
+            top: 16px;
+            right: 16px;
+            padding: 8px 13px;
+            border: 1px solid rgba(0, 184, 245, 0.55);
+            border-radius: 999px;
+            background: rgba(7, 10, 14, 0.78);
+            box-shadow: 0 0 14px rgba(0, 184, 245, 0.14), 0 6px 18px rgba(0, 0, 0, 0.38);
+            color: #a9bac4;
+            font: 800 0.72rem/1 "ITC Krist", sans-serif;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            cursor: pointer;
+            opacity: 0.72;
+            transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .overlay-table-button:hover,
+        .overlay-table-button:focus-visible {
+            opacity: 1;
+            border-color: var(--cyan);
+            box-shadow: 0 0 18px rgba(0, 184, 245, 0.28), 0 6px 18px rgba(0, 0, 0, 0.42);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .overlay-table-button span { color: #fff; }
+
         .player-widget {
             --player-color: #00b8f5;
             position: relative;
@@ -346,6 +376,7 @@
     </style>
 </head>
 <body>
+    <button id="overlay-table-button" class="overlay-table-button" type="button" onclick="chooseOverlayTable()" title="Escolher a mesa exibida no overlay">MESA: <span id="overlay-table-code">PADRAO</span></button>
     <main id="overlay-grid" class="overlay-grid" aria-live="polite"></main>
     <div id="connection-state" class="connection-state visible" role="status">Conectando ao servidor...</div>
 
@@ -354,12 +385,14 @@
         const socket = io();
         const grid = document.getElementById('overlay-grid');
         const connectionState = document.getElementById('connection-state');
+        const overlayTableCode = document.getElementById('overlay-table-code');
         const players = new Map();
         const previousVitals = new Map();
         let initiativeState = { entries: [], activeId: null, round: 0, started: false };
         const overlayUrlParams = new URLSearchParams(window.location.search);
         const overlayTableFromUrl = overlayUrlParams.get('mesa');
-        let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('master_table_code') || localStorage.getItem('overlay_table_code') || 'PADRAO');
+        let overlayTablePinned = Boolean(overlayTableFromUrl);
+        let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('overlay_table_code') || localStorage.getItem('master_table_code') || 'PADRAO');
         localStorage.setItem('overlay_table_code', tableCode);
         const ammoIcons = {
             light: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png',
@@ -407,9 +440,24 @@
             connectionState.className = 'connection-state';
         }
 
+        function chooseOverlayTable() {
+            const value = window.prompt('Digite o nome ou código da mesa que o overlay deve mostrar:', tableCode);
+            if (value === null) return;
+            const nextTable = normalizeTableCode(value);
+            overlayTablePinned = true;
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set('mesa', nextTable);
+            window.history.replaceState(null, '', nextUrl);
+            switchOverlayTable(nextTable);
+        }
+
         function switchOverlayTable(value) {
             const nextTable = normalizeTableCode(value);
-            if (nextTable === tableCode) return;
+            overlayTableCode.textContent = nextTable;
+            if (nextTable === tableCode) {
+                localStorage.setItem('overlay_table_code', nextTable);
+                return;
+            }
             tableCode = nextTable;
             localStorage.setItem('overlay_table_code', tableCode);
             players.clear();
@@ -419,6 +467,8 @@
             setConnectionMessage(`Buscando jogadores da mesa ${tableCode}...`);
             if (socket.connected) socket.emit('overlay_ready', { mesa: tableCode });
         }
+
+        overlayTableCode.textContent = tableCode;
 
         function renderPlayerName(element, name) {
             const parts = String(name || 'Personagem').trim().split(/\s+/).filter(Boolean);
@@ -658,7 +708,7 @@
 
         if (!overlayTableFromUrl) {
             window.addEventListener('storage', event => {
-                if (event.key === 'master_table_code' && event.newValue) switchOverlayTable(event.newValue);
+                if (!overlayTablePinned && event.key === 'master_table_code' && event.newValue) switchOverlayTable(event.newValue);
             });
         }
     </script>
