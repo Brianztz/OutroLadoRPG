@@ -24,6 +24,10 @@
         .connection-info { display: flex; align-items: center; gap: 9px; margin-top: 5px; color: var(--text-secondary); font-size: 0.76em; font-weight: bold; }
         .connection-dot { width: 9px; height: 9px; border-radius: 50%; background: #666; box-shadow: 0 0 0 transparent; transition: 0.2s; }
         .connection-dot.online { background: var(--accent-green); box-shadow: 0 0 10px rgba(0,230,118,0.85); }
+        .master-top-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+        .master-table-button { padding: 10px 15px; border: 1px solid var(--accent-green); border-radius: 7px; background: rgba(0,230,118,0.1); color: var(--accent-green); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .master-table-button:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 12px rgba(0,230,118,0.3); }
+        .master-table-button span { color: #fff; letter-spacing: 1px; }
         .btn-open-player { padding: 10px 15px; border: 1px solid var(--accent-blue); border-radius: 7px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; text-decoration: none; transition: 0.2s; }
         .btn-open-player:hover { background: var(--accent-blue); color: #000; }
         .master-tabs { margin: -8px 0 16px; padding: 5px; display: flex; gap: 6px; align-self: flex-start; border: 1px solid var(--border-color); border-radius: 9px; background: rgba(18,18,20,0.88); }
@@ -344,7 +348,10 @@
             <h1 class="top-title">Escudo do Mestre</h1>
             <div class="connection-info"><span id="connection-dot" class="connection-dot"></span><span id="connection-text">Conectando ao servidor...</span></div>
         </div>
-        <a class="btn-open-player" href="index.html" target="_blank" rel="noopener">+ ABRIR NOVA FICHA</a>
+        <div class="master-top-actions">
+            <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
+            <a id="open-player-link" class="btn-open-player" href="index.html" target="_blank" rel="noopener">+ ABRIR NOVA FICHA</a>
+        </div>
     </header>
 
     <nav class="master-tabs" aria-label="Seções do Escudo do Mestre">
@@ -573,6 +580,7 @@
         const socket = io();
         const playersBoard = document.getElementById('players-board');
         const connectedPlayers = new Map();
+        let masterTableCode = normalizeTableCode(localStorage.getItem('master_table_code') || 'PADRAO');
         let initiativeState = loadInitiativeState();
         let monstersState = loadMonstersState();
         let editingMonsterId = null;
@@ -618,6 +626,37 @@
         let masterBookFitToken = 0;
         const masterClueCutoutCache = new Map();
         const monsterD20Table = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
+
+        function normalizeTableCode(value) {
+            const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+            return normalized || 'PADRAO';
+        }
+
+        function updateMasterTableUI() {
+            document.getElementById('master-table-code').textContent = masterTableCode;
+            document.getElementById('open-player-link').href = `index.html?mesa=${encodeURIComponent(masterTableCode)}`;
+        }
+
+        function chooseMasterTable() {
+            const requestedTable = prompt('Digite o codigo da mesa:', masterTableCode);
+            if (requestedTable === null) return;
+            const nextTable = normalizeTableCode(requestedTable);
+            if (nextTable === masterTableCode) return;
+
+            masterTableCode = nextTable;
+            localStorage.setItem('master_table_code', masterTableCode);
+            updateMasterTableUI();
+            playersBoard.querySelectorAll('.player-card').forEach(card => card.remove());
+            connectedPlayers.clear();
+            updatePlayersCount();
+            initiativeState = loadInitiativeState();
+            renderInitiative();
+
+            if (socket && socket.connected) {
+                socket.emit('master_ready', { mesa: masterTableCode });
+                socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
+            }
+        }
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -811,7 +850,7 @@
                     id: `master_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
                 });
 
-                const updatedPlayer = { ...player, codigo: String(code), id: String(code), fullData };
+                const updatedPlayer = { ...player, codigo: String(code), id: String(code), mesa: masterTableCode, fullData };
                 connectedPlayers.set(String(code), updatedPlayer);
                 socket.emit('master_update_player', updatedPlayer);
             });
@@ -828,7 +867,7 @@
                 const fullData = JSON.parse(JSON.stringify(player.fullData));
                 if (!Array.isArray(fullData.clues)) fullData.clues = [];
                 fullData.clues.push({ ...clueCopy, id: `master_clue_${Date.now()}_${Math.random().toString(36).slice(2,7)}` });
-                const updatedPlayer = { ...player, codigo: String(code), id: String(code), fullData };
+                const updatedPlayer = { ...player, codigo: String(code), id: String(code), mesa: masterTableCode, fullData };
                 connectedPlayers.set(String(code), updatedPlayer);
                 socket.emit('master_update_player', updatedPlayer);
             });
@@ -1743,7 +1782,9 @@
 
         function loadInitiativeState() {
             try {
-                const saved = JSON.parse(localStorage.getItem('mestre_initiative_state'));
+                const tableStorageKey = `mestre_initiative_state_${masterTableCode}`;
+                const storedState = localStorage.getItem(tableStorageKey) || (masterTableCode === 'PADRAO' ? localStorage.getItem('mestre_initiative_state') : null);
+                const saved = JSON.parse(storedState);
                 const entries = Array.isArray(saved && saved.entries) ? saved.entries.map((entry, index) => ({
                     id: String(entry.id || `initiative_saved_${index}`),
                     name: String(entry.name || 'Participante'),
@@ -1758,8 +1799,8 @@
         }
 
         function saveInitiativeState() {
-            localStorage.setItem('mestre_initiative_state', JSON.stringify(initiativeState));
-            if (socket && socket.connected) socket.emit('initiative_state_change', initiativeState);
+            localStorage.setItem(`mestre_initiative_state_${masterTableCode}`, JSON.stringify(initiativeState));
+            if (socket && socket.connected) socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
         }
 
         function sortInitiativeEntries() {
@@ -1822,6 +1863,7 @@
         }
 
         function applyPlayerInitiativeRoll(data) {
+            if (normalizeTableCode(data && data.mesa) !== masterTableCode) return;
             const code = String(data && data.codigo || '');
             const value = Number(data && data.resultado);
             if (!code || !Number.isFinite(value)) return;
@@ -1913,6 +1955,7 @@
 
         function renderPlayer(rawData) {
             if (!rawData || !rawData.codigo) return;
+            if (normalizeTableCode(rawData.mesa) !== masterTableCode) return;
             const data = rawData;
             const code = String(data.codigo);
             connectedPlayers.set(code, data);
@@ -1957,7 +2000,8 @@
             updatePlayersCount();
         }
 
-        function removePlayer(code) {
+        function removePlayer(code, table = masterTableCode) {
+            if (normalizeTableCode(table) !== masterTableCode) return;
             code = String(code || '');
             connectedPlayers.delete(code);
             const card = document.getElementById(`player-${code}`);
@@ -1966,7 +2010,7 @@
         }
 
         function abrirFicha(code) {
-            document.getElementById('iframe-ficha').src = `index.html?view=${encodeURIComponent(code)}`;
+            document.getElementById('iframe-ficha').src = `index.html?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
             document.getElementById('modal-ficha').style.display = 'flex';
         }
 
@@ -1975,20 +2019,23 @@
             document.getElementById('iframe-ficha').src = '';
         }
 
+        localStorage.setItem('master_table_code', masterTableCode);
+        updateMasterTableUI();
+
         socket.on('connect', () => {
             updateConnection(true);
-            socket.emit('master_ready');
-            socket.emit('initiative_state_change', initiativeState);
+            socket.emit('master_ready', { mesa: masterTableCode });
+            socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
         });
         socket.on('disconnect', () => updateConnection(false));
         socket.on('players_snapshot', players => {
             playersBoard.querySelectorAll('.player-card').forEach(card => card.remove());
             connectedPlayers.clear();
-            (Array.isArray(players) ? players : []).forEach(renderPlayer);
+            (Array.isArray(players) ? players : []).filter(player => normalizeTableCode(player && player.mesa) === masterTableCode).forEach(renderPlayer);
             updatePlayersCount();
         });
         socket.on('update_mestre', renderPlayer);
-        socket.on('player_disconnected', data => removePlayer(data && data.codigo));
+        socket.on('player_disconnected', data => removePlayer(data && data.codigo, data && data.mesa));
         socket.on('initiative_rolled', applyPlayerInitiativeRoll);
 
         document.getElementById('initiative-name-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
