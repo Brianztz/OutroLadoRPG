@@ -173,7 +173,7 @@
             flex-direction: column;
             align-items: flex-start;
             justify-content: center;
-            margin-left: -8px;
+            margin-left: -24px;
             opacity: 0;
             visibility: hidden;
             filter: blur(4px);
@@ -357,6 +357,15 @@
         const players = new Map();
         const previousVitals = new Map();
         let initiativeState = { entries: [], activeId: null, round: 0, started: false };
+        const overlayUrlParams = new URLSearchParams(window.location.search);
+        const overlayTableFromUrl = overlayUrlParams.get('mesa');
+        let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('master_table_code') || localStorage.getItem('overlay_table_code') || 'PADRAO');
+        localStorage.setItem('overlay_table_code', tableCode);
+
+        function normalizeTableCode(value) {
+            const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+            return normalized || 'PADRAO';
+        }
 
         function safeNumber(value, fallback = 0) {
             const number = Number(value);
@@ -383,6 +392,19 @@
 
         function hideConnectionMessage() {
             connectionState.className = 'connection-state';
+        }
+
+        function switchOverlayTable(value) {
+            const nextTable = normalizeTableCode(value);
+            if (nextTable === tableCode) return;
+            tableCode = nextTable;
+            localStorage.setItem('overlay_table_code', tableCode);
+            players.clear();
+            previousVitals.clear();
+            grid.replaceChildren();
+            initiativeState = { entries: [], activeId: null, round: 0, started: false };
+            setConnectionMessage(`Buscando jogadores da mesa ${tableCode}...`);
+            if (socket.connected) socket.emit('overlay_ready', { mesa: tableCode });
         }
 
         function renderPlayerName(element, name) {
@@ -582,32 +604,42 @@
         }
 
         socket.on('connect', () => {
-            setConnectionMessage('Conectado. Buscando jogadores...');
-            socket.emit('overlay_ready');
+            setConnectionMessage(`Conectado. Buscando jogadores da mesa ${tableCode}...`);
+            socket.emit('overlay_ready', { mesa: tableCode });
         });
 
         socket.on('disconnect', () => setConnectionMessage('Servidor desconectado — tentando reconectar...', 'error'));
 
         socket.on('players_snapshot', snapshot => {
             const receivedCodes = new Set();
-            (Array.isArray(snapshot) ? snapshot : []).forEach(data => {
+            (Array.isArray(snapshot) ? snapshot : []).filter(data => normalizeTableCode(data && data.mesa) === tableCode).forEach(data => {
                 const code = playerCode(data);
                 if (!code) return;
                 receivedCodes.add(code);
                 updatePlayerWidget(data);
             });
             [...players.keys()].forEach(code => { if (!receivedCodes.has(code)) removePlayer(code); });
-            if (!receivedCodes.size) setConnectionMessage('Aguardando jogadores conectados...');
+            if (!receivedCodes.size) setConnectionMessage(`Aguardando jogadores da mesa ${tableCode}...`);
         });
 
-        socket.on('update_mestre', updatePlayerWidget);
-        socket.on('player_disconnected', data => removePlayer(data && data.codigo));
+        socket.on('update_mestre', data => {
+            if (normalizeTableCode(data && data.mesa) === tableCode) updatePlayerWidget(data);
+        });
+        socket.on('player_disconnected', data => {
+            if (normalizeTableCode(data && data.mesa) === tableCode) removePlayer(data && data.codigo);
+        });
         socket.on('initiative_state_updated', state => {
             initiativeState = state && typeof state === 'object'
                 ? state
                 : { entries: [], activeId: null, round: 0, started: false };
             updateTurnHighlight();
         });
+
+        if (!overlayTableFromUrl) {
+            window.addEventListener('storage', event => {
+                if (event.key === 'master_table_code' && event.newValue) switchOverlayTable(event.newValue);
+            });
+        }
     </script>
 </body>
 </html>
