@@ -249,10 +249,11 @@
             white-space: normal;
             overflow-wrap: anywhere;
             text-shadow: 0 2px 3px #000, 0 0 8px rgba(0, 184, 245, 0.18);
-            transform: translateX(-18px) rotate(-2deg);
+            transform: translateX(-28px) rotate(-2deg);
         }
 
         .name-line { display: block; }
+        .name-line + .name-line { margin-top: 4px; }
 
         .combat-stats {
             grid-area: 1 / 1;
@@ -260,7 +261,7 @@
             flex-direction: column;
             align-items: flex-start;
             justify-content: center;
-            margin-left: -24px;
+            margin-left: -34px;
             opacity: 0;
             visibility: hidden;
             filter: blur(10px) brightness(1.55);
