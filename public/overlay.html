@@ -44,9 +44,9 @@
 
         .overlay-grid {
             display: grid;
-            grid-template-columns: minmax(420px, 500px);
+            grid-template-columns: minmax(620px, 720px);
             gap: 14px;
-            width: min(500px, calc(100vw - 48px));
+            width: min(720px, calc(100vw - 48px));
             align-items: center;
         }
 
@@ -86,7 +86,7 @@
             display: flex;
             align-items: center;
             min-width: 0;
-            min-height: 174px;
+            min-height: 330px;
             filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.52));
             animation: widget-in 0.36s ease both;
         }
@@ -100,9 +100,9 @@
         .portrait {
             position: relative;
             z-index: 3;
-            flex: 0 0 168px;
-            width: 168px;
-            height: 168px;
+            flex: 0 0 320px;
+            width: 320px;
+            height: 320px;
             overflow: visible;
             border: 0;
             border-radius: 0;
@@ -147,7 +147,7 @@
             object-fit: contain;
             opacity: 0;
             backface-visibility: hidden;
-            transform: translateZ(0);
+            transform: translateZ(0) scale(1.18);
             transition: opacity 0.65s ease;
         }
 
@@ -355,7 +355,7 @@
             position: absolute;
             z-index: 5;
             top: -7px;
-            left: 184px;
+            left: 336px;
             padding: 4px 11px;
             border: 1px solid #fff0aa;
             border-radius: 999px;
@@ -454,11 +454,11 @@
         }
 
         @keyframes sanity-image-glitch {
-            0%, 100% { transform: translate3d(0, 0, 0); filter: none; }
-            16% { transform: translate3d(-4px, 1px, 0) scale(1.025); filter: hue-rotate(35deg) saturate(1.7); }
-            34% { transform: translate3d(5px, -1px, 0) scale(1.018); filter: hue-rotate(225deg) saturate(1.45); }
-            52% { transform: translate3d(-2px, 0, 0) scale(1.035); filter: hue-rotate(285deg) contrast(1.35); }
-            72% { transform: translate3d(3px, 1px, 0); filter: hue-rotate(175deg) saturate(1.6); }
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1.18); filter: none; }
+            16% { transform: translate3d(-4px, 1px, 0) scale(1.215); filter: hue-rotate(35deg) saturate(1.7); }
+            34% { transform: translate3d(5px, -1px, 0) scale(1.205); filter: hue-rotate(225deg) saturate(1.45); }
+            52% { transform: translate3d(-2px, 0, 0) scale(1.225); filter: hue-rotate(285deg) contrast(1.35); }
+            72% { transform: translate3d(3px, 1px, 0) scale(1.19); filter: hue-rotate(175deg) saturate(1.6); }
         }
 
         @keyframes ammo-low-warning {
@@ -493,18 +493,18 @@
         }
 
         @media (max-width: 1050px) {
-            .overlay-grid { grid-template-columns: minmax(0, 500px); }
+            .overlay-grid { grid-template-columns: minmax(0, 720px); }
         }
 
         @media (max-width: 560px) {
             body { padding: 12px; }
             .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
-            .player-widget { min-height: 140px; }
-            .portrait { flex-basis: 134px; width: 134px; height: 134px; }
+            .player-widget { min-height: 240px; }
+            .portrait { flex-basis: 230px; width: 230px; height: 230px; }
             .display-stack { min-height: 65px; margin-left: 13px; }
             .name { font-size: 1.35rem; }
             .combat-number { font-size: 1.75rem; }
-            .turn-badge { left: 146px; }
+            .turn-badge { left: 242px; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
         }
     </style>
@@ -881,4 +881,3 @@
     </script>
 </body>
 </html>
-
