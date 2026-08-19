@@ -44,9 +44,9 @@
 
         .overlay-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(420px, 500px));
-            gap: 24px 34px;
-            width: min(1034px, calc(100vw - 48px));
+            grid-template-columns: minmax(420px, 500px);
+            gap: 14px;
+            width: min(500px, calc(100vw - 48px));
             align-items: center;
         }
 
@@ -150,7 +150,7 @@
             color: #f6fbff;
             font-family: "ITC Krist", sans-serif;
             max-width: 310px;
-            font-size: 2.05rem;
+            font-size: 1.55rem;
             font-weight: 900;
             line-height: 0.95;
             letter-spacing: 1.1px;
@@ -334,7 +334,7 @@
             .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
             .portrait { flex-basis: 102px; width: 102px; height: 102px; }
             .display-stack { min-height: 65px; margin-left: 13px; }
-            .name { font-size: 1.55rem; }
+            .name { font-size: 1.35rem; }
             .combat-number { font-size: 1.75rem; }
             .turn-badge { left: 112px; }
         }
