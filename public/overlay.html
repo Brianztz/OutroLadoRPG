@@ -86,7 +86,7 @@
             display: flex;
             align-items: center;
             min-width: 0;
-            min-height: 132px;
+            min-height: 174px;
             filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.52));
             animation: widget-in 0.36s ease both;
         }
@@ -100,9 +100,9 @@
         .portrait {
             position: relative;
             z-index: 3;
-            flex: 0 0 126px;
-            width: 126px;
-            height: 126px;
+            flex: 0 0 168px;
+            width: 168px;
+            height: 168px;
             overflow: visible;
             border: 0;
             border-radius: 0;
@@ -115,22 +115,20 @@
             transition: filter 0.75s ease, opacity 0.75s ease;
         }
 
-        .portrait::before,
+        .portrait::before {
+            content: none;
+        }
+
         .portrait::after {
             content: "";
             position: absolute;
             z-index: 6;
-            inset: 0;
-            border-radius: 44%;
+            inset: 7% 0;
+            border-radius: 0;
             opacity: 0;
             pointer-events: none;
-            -webkit-mask-image: radial-gradient(ellipse at center, #000 34%, rgba(0, 0, 0, 0.76) 55%, transparent 78%);
-            mask-image: radial-gradient(ellipse at center, #000 34%, rgba(0, 0, 0, 0.76) 55%, transparent 78%);
-        }
-
-        .portrait::before {
-            background: radial-gradient(circle at 50% 55%, rgba(255, 78, 78, 0.12) 0%, rgba(224, 7, 28, 0.7) 72%, rgba(86, 0, 12, 0.92) 100%);
-            mix-blend-mode: screen;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
         }
 
         .portrait::after {
@@ -157,13 +155,12 @@
             opacity: 1;
         }
 
-        .player-widget.damage-hit .portrait,
-        .player-widget.damage-hit .display-stack {
-            animation: damage-impact 0.62s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+        .player-widget.damage-hit .portrait {
+            animation: damage-portrait-impact 0.62s cubic-bezier(0.2, 0.85, 0.25, 1) both;
         }
 
-        .player-widget.damage-hit .portrait::before {
-            animation: damage-red-pulse 0.68s ease-out both;
+        .player-widget.damage-hit .display-stack {
+            animation: damage-impact 0.62s cubic-bezier(0.2, 0.85, 0.25, 1) both;
         }
 
         .player-widget.sanity-hit .portrait::after {
@@ -358,7 +355,7 @@
             position: absolute;
             z-index: 5;
             top: -7px;
-            left: 142px;
+            left: 184px;
             padding: 4px 11px;
             border: 1px solid #fff0aa;
             border-radius: 999px;
@@ -424,10 +421,27 @@
             68% { transform: translate3d(2px, 0, 0) scale(0.995); }
         }
 
-        @keyframes damage-red-pulse {
-            0%, 100% { opacity: 0; }
-            16% { opacity: 0.96; }
-            46% { opacity: 0.42; }
+        @keyframes damage-portrait-impact {
+            0%, 100% {
+                transform: translate3d(0, 0, 0) scale(1);
+                filter: drop-shadow(0 0 3px var(--player-color)) drop-shadow(0 0 8px var(--player-color));
+            }
+            12% {
+                transform: translate3d(-5px, 1px, 0) scale(1.045);
+                filter: drop-shadow(0 0 5px #ff253f) drop-shadow(0 0 15px #e00626) drop-shadow(0 0 24px rgba(255, 28, 56, 0.82));
+            }
+            28% {
+                transform: translate3d(5px, -1px, 0) scale(0.985);
+                filter: drop-shadow(0 0 4px #ff4b5f) drop-shadow(0 0 11px rgba(220, 0, 28, 0.82));
+            }
+            46% {
+                transform: translate3d(-3px, 0, 0) scale(1.022);
+                filter: drop-shadow(0 0 4px #ff354d) drop-shadow(0 0 9px rgba(220, 0, 28, 0.72));
+            }
+            68% {
+                transform: translate3d(2px, 0, 0) scale(0.997);
+                filter: drop-shadow(0 0 3px var(--player-color)) drop-shadow(0 0 8px var(--player-color));
+            }
         }
 
         @keyframes sanity-interference {
@@ -485,11 +499,12 @@
         @media (max-width: 560px) {
             body { padding: 12px; }
             .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
-            .portrait { flex-basis: 102px; width: 102px; height: 102px; }
+            .player-widget { min-height: 140px; }
+            .portrait { flex-basis: 134px; width: 134px; height: 134px; }
             .display-stack { min-height: 65px; margin-left: 13px; }
             .name { font-size: 1.35rem; }
             .combat-number { font-size: 1.75rem; }
-            .turn-badge { left: 112px; }
+            .turn-badge { left: 146px; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
         }
     </style>
