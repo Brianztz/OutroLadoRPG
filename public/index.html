@@ -44,8 +44,10 @@
 
         .character-panel { position: relative; overflow: hidden; padding: 0; background: linear-gradient(145deg, rgba(32,32,36,0.96), rgba(18,18,21,0.93)); }
         .character-panel::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); box-shadow: 0 0 16px rgba(0,176,255,0.7); }
-        .character-panel-header { display: flex; align-items: center; padding: 20px 24px 17px; border-bottom: 1px solid rgba(255,255,255,0.07); background: linear-gradient(90deg, rgba(0,176,255,0.08), transparent 55%); }
+        .character-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px 17px; border-bottom: 1px solid rgba(255,255,255,0.07); background: linear-gradient(90deg, rgba(0,176,255,0.08), transparent 55%); }
         .character-panel-heading { margin: 0; color: var(--text-primary); font-size: 1.12em; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+        .character-details-button { flex: 0 0 auto; padding: 9px 13px; border: 1px solid rgba(0,176,255,0.62); border-radius: 7px; background: rgba(0,176,255,0.10); color: var(--accent-blue); font-size: 0.70em; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
+        .character-details-button:hover { background: var(--accent-blue); color: #000; box-shadow: 0 0 12px rgba(0,176,255,0.28); transform: translateY(-1px); }
         .char-info-wrapper { display: grid; grid-template-columns: 175px minmax(0, 1fr); gap: 24px; align-items: stretch; padding: 24px; }
         .char-portrait-card { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 190px; padding: 16px; border: 1px solid rgba(0,176,255,0.22); border-radius: 14px; background: radial-gradient(circle at 50% 35%, rgba(0,176,255,0.13), rgba(8,8,10,0.7) 70%); }
         .char-portrait-frame { position: relative; width: 140px; height: 140px; padding: 3px; border: 2px solid rgba(0,176,255,0.72); border-radius: 14px; background: #101014; box-shadow: 0 8px 20px rgba(0,0,0,0.34); }
@@ -258,6 +260,16 @@
         .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
         .popup-box { background: var(--bg-card); border: 2px solid var(--border-color); padding: 25px; border-radius: 15px; width: 450px; box-shadow: var(--shadow-card); backdrop-filter: blur(15px); max-height: 90vh; overflow-y: auto; }
+        .character-details-popup { width: min(620px, 94vw); }
+        .character-details-popup h2 { margin: 0 0 5px; color: var(--accent-blue); font-size: 1.05em; text-transform: uppercase; letter-spacing: 0.07em; }
+        .character-details-popup .popup-subtitle { margin: 0 0 20px; color: var(--text-secondary); font-size: 0.76em; line-height: 1.45; }
+        .character-details-fields { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; }
+        .character-details-field { min-width: 0; }
+        .character-details-field.full { grid-column: 1 / -1; }
+        .character-details-field label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 0.69em; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
+        .character-details-field textarea.inv-input { min-height: 105px; resize: vertical; line-height: 1.45; }
+        #char_historia_popup { min-height: 170px; }
+        .character-details-actions { display: flex; gap: 9px; margin-top: 18px; }
         .popup-box-dice { position: relative; width: 600px; height: 400px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: #000; border: 4px solid var(--accent-yellow); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
         .popup-box-dice::after { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.3); z-index: 1; }
         .popup-content { position: relative; z-index: 10; display: none; width: 90%; animation: fadeInResult 0.5s forwards; text-align: center; }
@@ -279,7 +291,10 @@
             .tab-btn { flex: 1 1 30%; font-size: 0.85em; padding: 10px 5px; text-align: center; }
             .columns-wrapper { flex-direction: column; }
             .panel { width: 100%; flex: 1 1 100% !important; box-sizing: border-box; padding: 15px; }
-            .character-panel-header { padding: 18px; }
+            .character-panel-header { padding: 18px; align-items: flex-start; flex-direction: column; }
+            .character-details-button { width: 100%; }
+            .character-details-fields { grid-template-columns: 1fr; }
+            .character-details-field.full { grid-column: auto; }
             .char-info-wrapper { grid-template-columns: 1fr; padding: 18px; }
             .char-portrait-card { min-height: 0; }
             .character-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -615,6 +630,40 @@
 </div>
     </div>
 </div>
+<div id="popup-character-details" class="popup-overlay" onclick="closeCharacterDetailsPopup()">
+    <div class="popup-box character-details-popup" onclick="event.stopPropagation()">
+        <h2>📖 Informações do Personagem</h2>
+        <p class="popup-subtitle">Registre detalhes pessoais e de história. Você pode voltar e alterar estas informações quando quiser.</p>
+
+        <div class="character-details-fields">
+            <div class="character-details-field">
+                <label for="char_idade_popup">Idade</label>
+                <input type="number" id="char_idade_popup" class="inv-input" min="0" max="999" placeholder="Ex: 27">
+            </div>
+
+            <div class="character-details-field">
+                <label for="char_pessoas_popup">Pessoas conhecidas</label>
+                <textarea id="char_pessoas_popup" class="inv-input" placeholder="Familiares, amigos, contatos, rivais, conhecidos..."></textarea>
+            </div>
+
+            <div class="character-details-field full">
+                <label for="char_objetos_popup">Objetos importantes</label>
+                <textarea id="char_objetos_popup" class="inv-input" placeholder="Objetos pessoais, lembranças, documentos, relíquias ou itens importantes..."></textarea>
+            </div>
+
+            <div class="character-details-field full">
+                <label for="char_historia_popup">História do personagem</label>
+                <textarea id="char_historia_popup" class="inv-input" placeholder="Conte a história, acontecimentos marcantes, motivações, segredos e outros detalhes do personagem..."></textarea>
+            </div>
+        </div>
+
+        <div class="character-details-actions">
+            <button type="button" class="btn-roll" style="flex:1; padding:11px;" onclick="closeCharacterDetailsPopup()">CANCELAR</button>
+            <button type="button" class="btn-add" style="flex:1; margin:0; background:var(--accent-blue);" onclick="saveCharacterDetailsPopup()">💾 SALVAR INFORMAÇÕES</button>
+        </div>
+    </div>
+</div>
+
 <div id="popup-dice" class="popup-overlay" onclick="closeDice()">
     <div class="popup-box-dice">
         <div id="popup-content" class="popup-content">
@@ -630,6 +679,7 @@
     <div class="panel character-panel" style="margin-bottom:20px;">
         <div class="character-panel-header">
             <h2 class="character-panel-heading">Informações do Personagem</h2>
+            <button type="button" class="character-details-button" onclick="openCharacterDetailsPopup()">📖 MAIS INFORMAÇÕES</button>
         </div>
 
         <div class="char-info-wrapper">
@@ -3075,6 +3125,39 @@ function removeCurrentClue() {
         periciasBase.forEach(p => updateTargetsPericia("skill_"+p.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_"), p.attr, p.mod)); 
     }
 
+    let characterDetails = {
+        idade: '',
+        pessoas: '',
+        objetos: '',
+        historia: ''
+    };
+
+    function openCharacterDetailsPopup() {
+        const popup = document.getElementById('popup-character-details');
+        if (!popup) return;
+        document.getElementById('char_idade_popup').value = characterDetails.idade ?? '';
+        document.getElementById('char_pessoas_popup').value = characterDetails.pessoas ?? '';
+        document.getElementById('char_objetos_popup').value = characterDetails.objetos ?? '';
+        document.getElementById('char_historia_popup').value = characterDetails.historia ?? '';
+        popup.style.display = 'flex';
+    }
+
+    function closeCharacterDetailsPopup() {
+        const popup = document.getElementById('popup-character-details');
+        if (popup) popup.style.display = 'none';
+    }
+
+    function saveCharacterDetailsPopup() {
+        characterDetails = {
+            idade: document.getElementById('char_idade_popup').value.trim(),
+            pessoas: document.getElementById('char_pessoas_popup').value.trim(),
+            objetos: document.getElementById('char_objetos_popup').value.trim(),
+            historia: document.getElementById('char_historia_popup').value.trim()
+        };
+        save();
+        closeCharacterDetailsPopup();
+    }
+
     // --- FUNÇÕES DE SALVAR, EXPORTAR E CARREGAR ---
     function save() {
         if(isLoadingData) return; 
@@ -3082,7 +3165,7 @@ function removeCurrentClue() {
         if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
         const currentProfileImageUrl = getActiveProfileImageUrl();
         const activeRangedWeapon = getActiveRangedWeaponOverlayData();
-        const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, charImages: charImages, charStatus: charStatus, modoCombate: combatMode, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
+        const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, characterDetails: { ...characterDetails }, charImages: charImages, charStatus: charStatus, modoCombate: combatMode, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
         ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "char_cor_overlay", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
         d.info['char_img'] = currentProfileImageUrl;
         document.querySelectorAll('.attr-input').forEach(i => d.attrs[i.id] = i.value);
@@ -3305,6 +3388,12 @@ function removeCurrentClue() {
         activeWeaponId = d.activeWeaponId || "";
         combatMode = d.modoCombate === true || d.modoCombate === 'true';
         updateCombatModeButton();
+        characterDetails = {
+            idade: String((d.characterDetails && d.characterDetails.idade) ?? (d.info && d.info.char_idade) ?? ''),
+            pessoas: String((d.characterDetails && d.characterDetails.pessoas) ?? (d.info && d.info.char_pessoas) ?? ''),
+            objetos: String((d.characterDetails && d.characterDetails.objetos) ?? (d.info && d.info.char_objetos) ?? ''),
+            historia: String((d.characterDetails && d.characterDetails.historia) ?? (d.info && d.info.char_historia) ?? '')
+        };
         cluesData = Array.isArray(d.clues) ? d.clues.map((clue, index) => ({
             id: normalizeClueId(clue.id, index),
             title: String(clue.title || clue.n || 'Pista'),
