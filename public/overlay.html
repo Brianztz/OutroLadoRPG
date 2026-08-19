@@ -361,6 +361,11 @@
         const overlayTableFromUrl = overlayUrlParams.get('mesa');
         let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('master_table_code') || localStorage.getItem('overlay_table_code') || 'PADRAO');
         localStorage.setItem('overlay_table_code', tableCode);
+        const ammoIcons = {
+            light: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png',
+            long: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4Gbg5h1YE1QbOrGtbUDGne4ND4r-bblO6TSVF97zK69AzvJHlwTtM3ywhUCKpYJn8rlpjcskhnD92w9nRcNTAI7QO-1Ah_VkvT0LCr5GK-_BonkUnfQrZM9bY9rHaKWn5Pc0QiCBt5ISLZg4GiwYGd8jXoMjrkoMHCP4jzBDc_l7t9Fh3jfkj_SG8m1_E/s320/Muni%C3%A7%C3%A3o%20Longa.png',
+            heavy: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhCTDQJKWwpqDv-PTxw8q_bvKKvtnNAw6j3J2qte7CTtVDFLeFe_gtQK-xNbDUGYzyeGAAXNa-Wvnk4Z0wr5jmKOEjFya0fuzhF9ROQIaojydXG6gQIKfbYnlrMY2SpskCuXuQtzL7sZjn8kO0AyreCDk-U-OiOEaFcurIUBgRI2UNvUWxqdTorb9YkY-Qi/s320/Muni%C3%A7%C3%A3o%20Pesada.png'
+        };
 
         function normalizeTableCode(value) {
             const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -370,6 +375,14 @@
         function safeNumber(value, fallback = 0) {
             const number = Number(value);
             return Number.isFinite(number) ? number : fallback;
+        }
+
+        function getAmmoIcon(ammoType) {
+            const type = String(ammoType || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            if (/pesad/.test(type)) return { src: ammoIcons.heavy, alt: 'Munição pesada' };
+            if (/long/.test(type)) return { src: ammoIcons.long, alt: 'Munição longa' };
+            if (/curt|leve/.test(type)) return { src: ammoIcons.light, alt: 'Munição leve' };
+            return null;
         }
 
         function normalizePlayerColor(value) {
@@ -433,7 +446,7 @@
                         <div class="name">Personagem</div>
                     </div>
                     <div class="combat-stats" aria-label="Vida e sanidade">
-                        <span class="combat-number ammo" hidden><span class="combat-prefix ammo-text-prefix">MUN</span><img class="ammo-icon" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png" alt="Munição leve" hidden><span class="ammo-value">0</span></span>
+                        <span class="combat-number ammo" hidden><span class="combat-prefix ammo-text-prefix">MUN</span><img class="ammo-icon" alt="" hidden><span class="ammo-value">0</span></span>
                         <span class="combat-number life" title="Vida"><span class="life-value">0/0</span></span>
                         <span class="combat-number sanity" title="Sanidade"><span class="sanity-value">0/0</span></span>
                     </div>
@@ -485,10 +498,18 @@
             ammoLine.classList.toggle('empty', Boolean(rangedWeapon) && ammoCurrent <= 0);
             if (rangedWeapon) {
                 const ammoType = String(rangedWeapon.municao || 'Munição');
-                const usesLightAmmo = /curta|leve/i.test(ammoType);
+                const ammoIconData = getAmmoIcon(ammoType);
+                const ammoIcon = article.querySelector('.ammo-icon');
                 article.querySelector('.ammo-value').textContent = `${ammoCurrent}`;
-                article.querySelector('.ammo-icon').hidden = !usesLightAmmo;
-                article.querySelector('.ammo-text-prefix').hidden = usesLightAmmo;
+                ammoIcon.hidden = !ammoIconData;
+                article.querySelector('.ammo-text-prefix').hidden = Boolean(ammoIconData);
+                if (ammoIconData) {
+                    if (ammoIcon.src !== ammoIconData.src) ammoIcon.src = ammoIconData.src;
+                    ammoIcon.alt = ammoIconData.alt;
+                } else {
+                    ammoIcon.removeAttribute('src');
+                    ammoIcon.alt = '';
+                }
                 ammoLine.title = `${String(rangedWeapon.nome || 'Arma de disparo')} — ${ammoType}: ${ammoCurrent} de ${ammoCapacity}`;
                 flashCombatNumber(article, '.combat-number.ammo', previous && previous.ammo !== ammoCurrent);
             }
