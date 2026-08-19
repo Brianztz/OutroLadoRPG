@@ -22,6 +22,9 @@
 
         .top-bar { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; max-width: 1300px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;}
         .top-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
+        .table-selector-button { min-height: 42px; padding: 8px 14px; border: 2px solid var(--accent-green); border-radius: 7px; background: rgba(0,230,118,0.08); color: var(--accent-green); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
+        .table-selector-button:hover { transform: translateY(-1px); background: rgba(0,230,118,0.16); box-shadow: 0 0 12px rgba(0,230,118,0.28); }
+        .table-selector-button span { color: #fff; letter-spacing: 1px; }
         .combat-mode-button { min-height: 42px; padding: 9px 16px; border: 2px solid var(--accent-yellow); border-radius: 7px; background: rgba(255,207,51,0.08); color: var(--accent-yellow); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: transform 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s; }
         .combat-mode-button:hover { transform: translateY(-1px); background: rgba(255,207,51,0.16); box-shadow: 0 0 12px rgba(255,207,51,0.22); }
         .combat-mode-button.active { border-color: #ff5b5b; background: linear-gradient(135deg, rgba(139,0,0,0.94), rgba(229,57,53,0.92)); color: #fff; box-shadow: 0 0 15px rgba(229,57,53,0.5); animation: combatButtonPulse 1.8s ease-in-out infinite; }
@@ -309,6 +312,7 @@
         <button class="tab-btn" onclick="openTab('tab-pistas', this)">Pistas</button>
     </div>
     <div class="top-buttons" id="main-top-buttons">
+        <button id="player-table-button" class="table-selector-button" type="button" onclick="choosePlayerTable()">MESA: <span id="display-table-code">PADRAO</span></button>
         <div style="background: rgba(18, 18, 20, 0.8); border: 2px solid var(--accent-yellow); padding: 8px 15px; border-radius: 6px; font-weight: bold; color: var(--accent-yellow); margin-right: 10px;">
             CÓDIGO: <span id="display-player-code" style="color: white; letter-spacing: 2px; font-size: 1.1em;">----</span>
         </div>
@@ -776,7 +780,16 @@
     if (typeof io !== 'undefined') socket = io();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const viewCode = urlParams.get('view'); 
+    const viewCode = urlParams.get('view');
+
+    function normalizeTableCode(value) {
+        const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+        return normalized || 'PADRAO';
+    }
+
+    const tableFromUrl = urlParams.get('mesa');
+    let tableCode = normalizeTableCode(tableFromUrl || localStorage.getItem('player_table_code') || 'PADRAO');
+    if (!viewCode) localStorage.setItem('player_table_code', tableCode);
 
     let playerCode = localStorage.getItem('player_sync_code');
     if (!playerCode && !viewCode) {
@@ -786,6 +799,19 @@
     if (viewCode) playerCode = viewCode;
     
     document.getElementById('display-player-code').innerText = viewCode ? "EDITANDO: " + viewCode : playerCode;
+    document.getElementById('display-table-code').textContent = tableCode;
+
+    function choosePlayerTable() {
+        if (viewCode) return;
+        const requestedTable = prompt('Digite o codigo da mesa:', tableCode);
+        if (requestedTable === null) return;
+        const nextTable = normalizeTableCode(requestedTable);
+        if (nextTable === tableCode) return;
+        tableCode = nextTable;
+        localStorage.setItem('player_table_code', tableCode);
+        document.getElementById('display-table-code').textContent = tableCode;
+        if (playerDataReady) save();
+    }
 
     let playerDataReady = false;
     if (socket && !viewCode) {
@@ -2832,6 +2858,7 @@ function removeCurrentClue() {
             const jogadorNome = document.getElementById('char_nome') ? document.getElementById('char_nome').value : 'Desconhecido';
             socket.emit('rolagem_feita', {
                 codigo: playerCode,
+                mesa: tableCode,
                 jogador: jogadorNome,
                 acao: `${nome} — ${resEl.innerText}`,
                 resultado: n,
@@ -3006,6 +3033,7 @@ function removeCurrentClue() {
                 const jogadorNome = document.getElementById('char_nome') ? document.getElementById('char_nome').value : 'Desconhecido';
                 socket.emit('rolagem_feita', {
                     codigo: playerCode,
+                    mesa: tableCode,
                     jogador: jogadorNome,
                     acao: `${nome} (${formula})`,
                     resultado: totalFinal,
@@ -3077,6 +3105,7 @@ function removeCurrentClue() {
             socket.emit(viewCode ? 'master_update_player' : 'status_change', {
                 codigo: syncCode,
                 id: syncCode,
+                mesa: tableCode,
                 nome: jogadorNome,
                 foto: currentProfileImageUrl,
                 corOverlay: document.getElementById('char_cor_overlay') ? document.getElementById('char_cor_overlay').value : '#00b8f5',
@@ -3182,18 +3211,18 @@ function removeCurrentClue() {
             
             if (socket) {
                 socket.on('update_mestre', (dados) => {
-                    if (dados.codigo === viewCode && dados.fullData) {
+                    if (dados.codigo === viewCode && normalizeTableCode(dados.mesa) === tableCode && dados.fullData) {
                         isLoadingData = true;
                         populateData(dados.fullData);
                     }
                 });
-                socket.on('connect', () => socket.emit('request_player', viewCode));
-                if (socket.connected) socket.emit('request_player', viewCode); 
+                socket.on('connect', () => socket.emit('request_player', { codigo: viewCode, mesa: tableCode }));
+                if (socket.connected) socket.emit('request_player', { codigo: viewCode, mesa: tableCode });
             }
         } else {
             if (socket) {
                 socket.on('player_data_updated', (dados) => {
-                    if (dados && dados.codigo === playerCode && dados.fullData) {
+                    if (dados && dados.codigo === playerCode && normalizeTableCode(dados.mesa) === tableCode && dados.fullData) {
                         localStorage.setItem('ordem_save_local', JSON.stringify(dados.fullData));
                         isLoadingData = true;
                         populateData(dados.fullData);
