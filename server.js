@@ -9,19 +9,99 @@ const io = new Server(server, { maxHttpBufferSize: 20 * 1024 * 1024 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Mantém a ficha mais recente e todas as conexões ativas de cada jogador.
+const DEFAULT_TABLE = 'PADRAO';
 const playersData = new Map();
 const playerSockets = new Map();
-let initiativeState = { entries: [], activeId: null, round: 0, started: false };
+const initiativeStates = new Map();
 
 function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
 }
 
-function registerPlayerSocket(code, socket) {
-    if (!playerSockets.has(code)) playerSockets.set(code, new Set());
-    playerSockets.get(code).add(socket.id);
-    socket.data.playerCode = code;
+function normalizeTableCode(value) {
+    const normalized = String(value || DEFAULT_TABLE)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40);
+    return normalized || DEFAULT_TABLE;
+}
+
+function tableRoom(table) {
+    return `mesa:${normalizeTableCode(table)}`;
+}
+
+function playerKey(table, code) {
+    return `${normalizeTableCode(table)}::${normalizePlayerCode(code)}`;
+}
+
+function emptyInitiativeState() {
+    return { entries: [], activeId: null, round: 0, started: false };
+}
+
+function getInitiativeState(table) {
+    const normalizedTable = normalizeTableCode(table);
+    if (!initiativeStates.has(normalizedTable)) initiativeStates.set(normalizedTable, emptyInitiativeState());
+    return initiativeStates.get(normalizedTable);
+}
+
+function playersSnapshot(table) {
+    const normalizedTable = normalizeTableCode(table);
+    return Array.from(playersData.values()).filter(player => player && player.mesa === normalizedTable);
+}
+
+function setAudienceTable(socket, type, rawTable) {
+    const field = type === 'master' ? 'masterTable' : 'overlayTable';
+    const previous = socket.data[field];
+    const table = normalizeTableCode(rawTable);
+    if (previous && previous !== table) socket.leave(tableRoom(previous));
+    socket.join(tableRoom(table));
+    socket.data[field] = table;
+    socket.data[type === 'master' ? 'isMaster' : 'isOverlay'] = true;
+    return table;
+}
+
+function unregisterPlayerSocket(socket, announce = true) {
+    const key = socket.data.playerKey;
+    if (!key || !playerSockets.has(key)) return;
+
+    const sockets = playerSockets.get(key);
+    sockets.delete(socket.id);
+    if (!sockets.size) {
+        playerSockets.delete(key);
+        const data = playersData.get(key);
+        playersData.delete(key);
+        if (announce && data) {
+            io.to(tableRoom(data.mesa)).emit('player_disconnected', { codigo: data.codigo, mesa: data.mesa });
+        }
+    }
+
+    socket.data.playerKey = null;
+    socket.data.playerCode = null;
+    socket.data.playerTable = null;
+}
+
+function registerPlayerSocket(table, code, socket) {
+    const normalizedTable = normalizeTableCode(table);
+    const normalizedCode = normalizePlayerCode(code);
+    const key = playerKey(normalizedTable, normalizedCode);
+
+    if (socket.data.playerKey && socket.data.playerKey !== key) {
+        const previousTable = socket.data.playerTable;
+        unregisterPlayerSocket(socket, true);
+        if (previousTable) socket.leave(tableRoom(previousTable));
+    }
+
+    if (!playerSockets.has(key)) playerSockets.set(key, new Set());
+    playerSockets.get(key).add(socket.id);
+    socket.join(tableRoom(normalizedTable));
+    socket.data.playerKey = key;
+    socket.data.playerCode = normalizedCode;
+    socket.data.playerTable = normalizedTable;
+    return key;
 }
 
 function normalizeInitiativeState(rawState) {
@@ -43,67 +123,71 @@ function normalizeInitiativeState(rawState) {
 }
 
 io.on('connection', socket => {
-    console.log('🟢 Conexão aberta:', socket.id);
+    console.log('Conexao aberta:', socket.id);
 
-    // O Escudo do Mestre solicita automaticamente todos os jogadores já conectados.
-    socket.on('master_ready', () => {
-        socket.data.isMaster = true;
-        socket.emit('players_snapshot', Array.from(playersData.values()));
-        socket.emit('initiative_state_updated', initiativeState);
+    socket.on('master_ready', rawData => {
+        const table = setAudienceTable(socket, 'master', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
+        socket.emit('players_snapshot', playersSnapshot(table));
+        socket.emit('initiative_state_updated', getInitiativeState(table));
     });
 
-    // O overlay recebe a lista atual e acompanha alterações sem configuração manual.
-    socket.on('overlay_ready', () => {
-        socket.data.isOverlay = true;
-        socket.emit('players_snapshot', Array.from(playersData.values()));
-        socket.emit('initiative_state_updated', initiativeState);
+    socket.on('overlay_ready', rawData => {
+        const table = setAudienceTable(socket, 'overlay', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
+        socket.emit('players_snapshot', playersSnapshot(table));
+        socket.emit('initiative_state_updated', getInitiativeState(table));
     });
 
-    // Mantém o destaque do turno do overlay sincronizado com o Escudo do Mestre.
     socket.on('initiative_state_change', rawState => {
         if (!socket.data.isMaster) return;
-        initiativeState = normalizeInitiativeState(rawState);
-        io.emit('initiative_state_updated', initiativeState);
+        const table = normalizeTableCode(rawState && rawState.mesa || socket.data.masterTable);
+        const state = normalizeInitiativeState(rawState);
+        initiativeStates.set(table, state);
+        io.to(tableRoom(table)).emit('initiative_state_updated', state);
     });
 
-    // A própria ficha anuncia o jogador sempre que salva ou reconecta.
     socket.on('status_change', rawData => {
-        const code = normalizePlayerCode(rawData && (rawData.codigo || rawData.id));
-        if (!code || !rawData || typeof rawData !== 'object') return;
+        if (!rawData || typeof rawData !== 'object') return;
+        const code = normalizePlayerCode(rawData.codigo || rawData.id);
+        const table = normalizeTableCode(rawData.mesa);
+        if (!code) return;
 
-        registerPlayerSocket(code, socket);
-        const data = { ...rawData, codigo: code, id: code, online: true };
-        playersData.set(code, data);
-        io.emit('update_mestre', data);
+        const key = registerPlayerSocket(table, code, socket);
+        const data = { ...rawData, codigo: code, id: code, mesa: table, online: true };
+        playersData.set(key, data);
+        io.to(tableRoom(table)).emit('update_mestre', data);
     });
 
-    // Alterações feitas pelo mestre na ficha aberta são enviadas ao jogador real.
     socket.on('master_update_player', rawData => {
-        const code = normalizePlayerCode(rawData && (rawData.codigo || rawData.id));
-        if (!code || !rawData || typeof rawData !== 'object' || !rawData.fullData) return;
+        if (!rawData || typeof rawData !== 'object' || !rawData.fullData) return;
+        const code = normalizePlayerCode(rawData.codigo || rawData.id);
+        const table = normalizeTableCode(rawData.mesa || socket.data.masterTable);
+        if (!code) return;
 
-        const previousData = playersData.get(code) || {};
-        const data = { ...previousData, ...rawData, codigo: code, id: code, online: true };
-        playersData.set(code, data);
+        const key = playerKey(table, code);
+        const previousData = playersData.get(key) || {};
+        const data = { ...previousData, ...rawData, codigo: code, id: code, mesa: table, online: true };
+        playersData.set(key, data);
 
-        const sockets = playerSockets.get(code);
+        const sockets = playerSockets.get(key);
         if (sockets) sockets.forEach(socketId => io.to(socketId).emit('player_data_updated', data));
-        io.emit('update_mestre', data);
+        io.to(tableRoom(table)).emit('update_mestre', data);
     });
 
-    // Envia silenciosamente um item do catálogo para todos os jogadores conectados.
     socket.on('grant_catalog_item', rawData => {
         const rawItem = rawData && rawData.item;
         if (!rawItem || typeof rawItem !== 'object') return;
         const name = String(rawItem.n || '').trim().slice(0, 120);
         if (!name) return;
+
+        const table = normalizeTableCode(rawData.mesa || socket.data.masterTable);
+        const recipients = new Set((Array.isArray(rawData.codigos) ? rawData.codigos : []).map(normalizePlayerCode).filter(Boolean));
         const item = {
             id: String(rawItem.id || `master_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
             n: name,
             w: Math.max(0, Math.min(999, Number(rawItem.w) || 0)),
             d: String(rawItem.d || '').slice(0, 5000),
             eq: true,
-            type: ['arma','municao','comum'].includes(rawItem.type) ? rawItem.type : 'comum',
+            type: ['arma', 'municao', 'comum'].includes(rawItem.type) ? rawItem.type : 'comum',
             dmg: String(rawItem.dmg || '0').slice(0, 40),
             extra: String(rawItem.extra || '0').slice(0, 40),
             crit: String(rawItem.crit || '20/x2').slice(0, 40),
@@ -116,41 +200,40 @@ io.on('connection', socket => {
             capacity: Math.max(0, Math.min(999, Number(rawItem.capacity) || 0)),
             currentShots: Math.max(0, Math.min(999, Number(rawItem.currentShots) || 0))
         };
-        playerSockets.forEach(sockets => sockets.forEach(socketId => io.to(socketId).emit('catalog_item_granted', { item })));
+
+        playersData.forEach(player => {
+            if (!player || player.mesa !== table || (recipients.size && !recipients.has(player.codigo))) return;
+            const sockets = playerSockets.get(playerKey(table, player.codigo));
+            if (sockets) sockets.forEach(socketId => io.to(socketId).emit('catalog_item_granted', { item }));
+        });
     });
 
     socket.on('rolagem_feita', rawData => {
         if (!rawData || typeof rawData !== 'object') return;
         const code = normalizePlayerCode(rawData.codigo || socket.data.playerCode);
-        const rollData = { ...rawData, codigo: code };
-        io.emit('novo_log', rollData);
+        const table = normalizeTableCode(rawData.mesa || socket.data.playerTable);
+        const rollData = { ...rawData, codigo: code, mesa: table };
+        io.to(tableRoom(table)).emit('novo_log', rollData);
         if (code && /^iniciativa\b/i.test(String(rawData.acao || '').trim())) {
-            io.emit('initiative_rolled', rollData);
+            io.to(tableRoom(table)).emit('initiative_rolled', rollData);
         }
     });
 
-    // Continua sendo usado internamente ao abrir a ficha completa no Escudo.
-    socket.on('request_player', rawCode => {
-        const code = normalizePlayerCode(rawCode);
-        if (playersData.has(code)) socket.emit('update_mestre', playersData.get(code));
+    socket.on('request_player', rawData => {
+        const source = rawData && typeof rawData === 'object' ? rawData : { codigo: rawData };
+        const code = normalizePlayerCode(source.codigo || source.id);
+        const table = normalizeTableCode(source.mesa || socket.data.masterTable);
+        const key = playerKey(table, code);
+        if (playersData.has(key)) socket.emit('update_mestre', playersData.get(key));
     });
 
     socket.on('disconnect', () => {
-        const code = socket.data.playerCode;
-        if (code && playerSockets.has(code)) {
-            const sockets = playerSockets.get(code);
-            sockets.delete(socket.id);
-            if (!sockets.size) {
-                playerSockets.delete(code);
-                playersData.delete(code);
-                io.emit('player_disconnected', { codigo: code });
-            }
-        }
-        console.log('🔴 Conexão encerrada:', socket.id);
+        unregisterPlayerSocket(socket, true);
+        console.log('Conexao encerrada:', socket.id);
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 Servidor iniciado na porta ${PORT}`);
+    console.log(`Servidor iniciado na porta ${PORT}`);
 });
