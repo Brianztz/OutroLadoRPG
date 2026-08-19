@@ -249,7 +249,7 @@
             white-space: normal;
             overflow-wrap: anywhere;
             text-shadow: 0 2px 3px #000, 0 0 8px rgba(0, 184, 245, 0.18);
-            transform: translateX(-28px) rotate(-2deg);
+            transform: translateX(-52px) rotate(-2deg);
         }
 
         .name-line { display: block; }
@@ -261,7 +261,7 @@
             flex-direction: column;
             align-items: flex-start;
             justify-content: center;
-            margin-left: -34px;
+            margin-left: -52px;
             opacity: 0;
             visibility: hidden;
             filter: blur(10px) brightness(1.55);
@@ -354,35 +354,11 @@
             filter: saturate(1.25) brightness(1.08);
         }
 
-        .turn-badge {
-            position: absolute;
-            z-index: 5;
-            top: -7px;
-            left: 236px;
-            padding: 4px 11px;
-            border: 1px solid #fff0aa;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #745000, #e0a413);
-            box-shadow: 0 2px 8px #000, 0 0 13px rgba(255, 200, 61, 0.48);
-            color: #fff8d5;
-            font-size: 0.64rem;
-            font-weight: 900;
-            letter-spacing: 1px;
-            opacity: 0;
-            text-transform: uppercase;
-            transform: translateY(5px) scale(0.94);
-            transition: opacity 0.25s ease, transform 0.25s ease;
-            pointer-events: none;
-        }
-
-        .player-widget.active-turn .turn-badge {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            animation: badge-pulse 1.8s ease-in-out infinite;
-        }
-
-        .player-widget.active-turn .portrait {
-            box-shadow: none;
+        .player-widget.active-turn:not(.unconscious) .portrait {
+            filter:
+                drop-shadow(0 0 5px var(--player-color))
+                drop-shadow(0 0 14px var(--player-color))
+                drop-shadow(0 0 28px var(--player-color));
         }
 
         .connection-state {
@@ -475,11 +451,6 @@
             100% { opacity: 1; filter: blur(0) brightness(1); clip-path: inset(0 0 0 0); transform: translateX(0) scale(1); }
         }
 
-        @keyframes badge-pulse {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.18); }
-        }
-
         @keyframes portrait-breathe {
             0%, 100% {
                 transform: translate3d(0, 1px, 0) rotate(-0.35deg) scale(0.992);
@@ -507,7 +478,6 @@
             .display-stack { min-height: 65px; margin-left: 3px; top: -7px; }
             .name { font-size: 1.65rem; }
             .combat-number { font-size: 1.75rem; }
-            .turn-badge { left: 202px; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
         }
     </style>
@@ -626,7 +596,6 @@
             article.className = 'player-widget';
             article.dataset.code = code;
             article.innerHTML = `
-                <div class="turn-badge">⚔ Turno atual</div>
                 <div class="portrait">
                     <div class="portrait-fallback">?</div>
                     <img class="portrait-image" data-layer="a" alt="" hidden>
@@ -837,7 +806,7 @@
             grid.querySelectorAll('.player-widget').forEach(widget => {
                 const player = players.get(widget.dataset.code);
                 const combatActive = Boolean(player && isActiveFlag(player.modoCombate));
-                widget.classList.toggle('active-turn', Boolean(activeCode) && widget.dataset.code === activeCode);
+                widget.classList.toggle('active-turn', combatActive && Boolean(activeCode) && widget.dataset.code === activeCode);
                 widget.classList.toggle('combat-mode', combatActive);
                 widget.querySelector('.identity').classList.toggle('hidden', combatActive);
                 widget.querySelector('.combat-stats').classList.toggle('active', combatActive);
@@ -884,4 +853,3 @@
     </script>
 </body>
 </html>
-
