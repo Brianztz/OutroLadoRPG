@@ -2927,7 +2927,7 @@ function removeCurrentClue() {
         }
     }
     
-    function rolarTesteD20(n, id, ak, modPerc) {
+    function rolarTesteD20(n, id, ak, modPerc, rolagemDeArma = false, armaId = null) {
         lastAttackWasCrit = false;
         let sn = id.replace("skill_","");
         let skEl = document.getElementById(id); let sk = skEl ? parseInt(skEl.value)||0 : 0;
@@ -2945,38 +2945,38 @@ function removeCurrentClue() {
         let isCrit = false;
         
         let numAttacks = 1;
+        let armaDaRolagem = null;
 
-        if (n === "Luta" || n === "Pontaria") {
-            const sel = document.getElementById('active-weapon-select');
-            if (sel && sel.value && sel.style.display !== 'none' || equippedWeaponsData.length > 0) {
-                const wpId = sel && sel.value ? sel.value : equippedWeaponsData[0].id;
-                const wp = equippedWeaponsData.find(w => w.id === wpId);
-                if (wp) {
-                    if (wp.crit && wp.crit.toLowerCase() !== "nenhum") { 
-                        let cMarg = parseInt(wp.crit.split('/')[0])||20; 
-                        if (d >= cMarg) isCrit = true; 
-                    }
-                    if (wp.atk) { numAttacks = parseInt(wp.atk) || 1; }
+        // Só ataques iniciados pelo botão ATQ da arma podem gerar CRÍTICO.
+        if (rolagemDeArma) {
+            armaDaRolagem = equippedWeaponsData.find(w => w.id === armaId) || null;
+
+            if (armaDaRolagem) {
+                if (armaDaRolagem.crit && armaDaRolagem.crit.toLowerCase() !== "nenhum") {
+                    const cMarg = parseInt(armaDaRolagem.crit.split('/')[0]) || 20;
+                    if (d >= cMarg) isCrit = true;
+                }
+
+                if (armaDaRolagem.atk) {
+                    numAttacks = parseInt(armaDaRolagem.atk) || 1;
                 }
             }
+
             lastAttackWasCrit = isCrit || d === 20;
         }
-        
-        if (numAttacks > 1 && (n === "Luta" || n === "Pontaria")) {
+
+        if (rolagemDeArma && numAttacks > 1) {
             let results = []; let anyCrit = false;
             for(let i=0; i<numAttacks; i++) {
                 let rd = Math.floor(Math.random()*20)+1; 
                 let isThisCrit = false;
                 
-                const sel = document.getElementById('active-weapon-select');
-                if (sel && sel.value) {
-                    const wp = equippedWeaponsData.find(w => w.id === sel.value);
-                    if (wp && wp.crit && wp.crit.toLowerCase() !== "nenhum") { 
-                        let cMarg = parseInt(wp.crit.split('/')[0])||20; 
-                        if (rd >= cMarg) isThisCrit = true; 
-                    }
+                const wp = armaDaRolagem;
+                if (wp && wp.crit && wp.crit.toLowerCase() !== "nenhum") {
+                    const cMarg = parseInt(wp.crit.split('/')[0]) || 20;
+                    if (rd >= cMarg) isThisCrit = true;
                 }
-                
+
                 if (isThisCrit || rd === 20) anyCrit = true;
                 let rm = obterFaixasPericia(f);
                 if (isThisCrit || rd === 20) { results.push(`<span style="color:var(--accent-red)">${rd} (CRÍTICO)</span>`); } 
@@ -2991,7 +2991,7 @@ function removeCurrentClue() {
             showPopup(numAttacks + "x", n, finalHtml, "color:white; margin-top:0;");
         } else {
             let res;
-            if (isCrit || d === 20) { res = ["CRÍTICO", "var(--accent-red)"]; } 
+            if (rolagemDeArma && (isCrit || d === 20)) { res = ["CRÍTICO", "var(--accent-red)"]; } 
             else { res = d >= m.e && m.e != 99 ? ["EXTREMO","var(--accent-yellow)"] : d >= m.b && m.b != 99 ? ["BOM","var(--accent-blue)"] : d >= m.n ? ["NORMAL","var(--accent-green)"] : ["FALHA","var(--accent-red)"]; }
             showPopup(d, n, res[0], "color:" + res[1]);
         }
@@ -3005,7 +3005,7 @@ function removeCurrentClue() {
         let skillObj = periciasBase.find(p => p.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_") === sn);
         if(!skillObj) { skillObj = periciasBase.find(p => p.nome === "Luta"); } 
         
-        rolarTesteD20(skillObj.nome, "skill_" + skillObj.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_"), skillObj.attr, skillObj.mod); 
+        rolarTesteD20(skillObj.nome, "skill_" + skillObj.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_"), skillObj.attr, skillObj.mod, true, wp.id); 
     }
 
     function rolarDanoArma(id) { 
