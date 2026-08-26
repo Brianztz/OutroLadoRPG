@@ -706,17 +706,17 @@
                 <div class="character-field character-field-occupation">
                     <label for="char_ocupacao">Ocupação</label>
                     <select id="char_ocupacao" class="inv-input" onchange="applyOccupation(this.value); save()">
-                                <option value="">Selecione...</option>
-                                <option value="Acadêmico">Acadêmico</option>
-                                <option value="Artista">Artista</option>
-                                <option value="Atleta">Atleta</option>
-                                <option value="Curioso">Curioso</option>
-                                <option value="Investigador">Investigador</option>
-                                <option value="Lutador">Lutador</option>
-                                <option value="Religioso">Religioso</option>
-                                <option value="T.I">T.I</option>
-                                <option value="Revoltado">Revoltado</option>
-</select>
+                        <option value="">Selecione...</option>
+                        <option value="Academico">Acadêmico</option>
+                        <option value="Artista">Artista</option>
+                        <option value="Atleta">Atleta</option>
+                        <option value="Curioso">Curioso</option>
+                        <option value="Investigador">Investigador</option>
+                        <option value="Lutador">Lutador</option>
+                        <option value="Religioso">Religioso</option>
+                        <option value="TI">T.I</option>
+                        <option value="Revoltado">Revoltado</option>
+                    </select>
                 </div>
                 <div class="character-field character-field-body">
                     <label for="char_tipo_corpo">Tipo de Corpo</label>
@@ -1177,16 +1177,28 @@
         });
     }
 
+    function normalizeOccupationValue(value) {
+        const aliases = {
+            'Nenhuma': '',
+            'Acadêmico': 'Academico',
+            'T.I': 'TI'
+        };
+        const occupation = String(value ?? '');
+        return Object.prototype.hasOwnProperty.call(aliases, occupation) ? aliases[occupation] : occupation;
+    }
+
     function applyOccupation(newOcc) {
+        newOcc = normalizeOccupationValue(newOcc);
+        currentOccupation = normalizeOccupationValue(currentOccupation);
         const skillsMap = {
             "Academico": ["ciencias", "investigacao"], "AgenteSaude": ["intuicao", "medicina"], "Artista": ["artes", "enganacao"], "Atleta": ["acrobacia", "atletismo"],
             "Chef": ["fortitude", "profissao"], "Criminoso": ["crime", "furtividade"], "EntendedorOculto": ["ocultismo", "religiao"], "Engenheiro": ["profissao", "tecnologia"],
             "Desgarrado": ["fortitude", "sobrevivencia"], "Investigador": ["investigacao", "percepcao"], "Lutador": ["luta", "reflexos"], "Policial": ["pontaria", "percepcao"],
             "Religioso": ["religiao"], "TI": ["investigacao", "tecnologia"], "Universitario": ["atualidades", "investigacao"], "Jornalista": ["atualidades", "investigacao"],
-            "Revoltado": ["furtividade"]
+            "Revoltado": ["furtividade"], "Curioso": ["atualidades", "investigacao"]
         };
-        if(currentOccupation !== "Nenhuma" && skillsMap[currentOccupation]) { skillsMap[currentOccupation].forEach(s => { const chk = document.getElementById('chk_' + s); if(chk) { chk.checked = false; toggleTrained(s); } }); }
-        if(newOcc !== "Nenhuma" && skillsMap[newOcc]) { skillsMap[newOcc].forEach(s => { const chk = document.getElementById('chk_' + s); if(chk) { chk.checked = true; toggleTrained(s); } }); }
+        if(skillsMap[currentOccupation]) { skillsMap[currentOccupation].forEach(s => { const chk = document.getElementById('chk_' + s); if(chk) { chk.checked = false; toggleTrained(s); } }); }
+        if(skillsMap[newOcc]) { skillsMap[newOcc].forEach(s => { const chk = document.getElementById('chk_' + s); if(chk) { chk.checked = true; toggleTrained(s); } }); }
         currentOccupation = newOcc;
     }
 
@@ -2976,7 +2988,7 @@ function removeCurrentClue() {
                     const cMarg = parseInt(wp.crit.split('/')[0]) || 20;
                     if (rd >= cMarg) isThisCrit = true;
                 }
-
+                
                 if (isThisCrit || rd === 20) anyCrit = true;
                 let rm = obterFaixasPericia(f);
                 if (isThisCrit || rd === 20) { results.push(`<span style="color:var(--accent-red)">${rd} (CRÍTICO)</span>`); } 
@@ -3419,9 +3431,9 @@ function removeCurrentClue() {
         if(d.charImages) charImages = { ...charImages, ...d.charImages };
         else if (d.info && d.info.char_img) charImages.normal = d.info.char_img;
         if(d.charStatus) charStatus = d.charStatus;
-        if(d.info) { ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "char_cor_overlay", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id) && d.info[id] !== undefined) document.getElementById(id).value = d.info[id]; }); }
+        if(d.info) { ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "char_cor_overlay", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id) && d.info[id] !== undefined) document.getElementById(id).value = id === "char_ocupacao" ? normalizeOccupationValue(d.info[id]) : d.info[id]; }); }
         updateProfilePicture();
-        currentOccupation = document.getElementById('char_ocupacao') ? document.getElementById('char_ocupacao').value : "Nenhuma";
+        currentOccupation = document.getElementById('char_ocupacao') ? normalizeOccupationValue(document.getElementById('char_ocupacao').value) : "";
         for(let id in d.attrs) if(document.getElementById(id)) document.getElementById(id).value = limitarValorAtributo(d.attrs[id]);
         if (d.attrBasesCorpo && typeof d.attrBasesCorpo === 'object') {
             atributosBaseCorpo = {};
