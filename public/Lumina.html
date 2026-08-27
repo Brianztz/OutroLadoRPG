@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Protótipo de buscador fictício para o RPG de investigação Aurora.">
+  <title>Lumina — Busca em Aurora</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="wordmark wordmark--small" data-home aria-label="Voltar ao início">L<span>u</span>m<span>i</span>n<span>a</span></button>
+    <nav aria-label="Links rápidos"><button data-search="notícias de aurora">Notícias</button><button data-search="imagens adelanio">Imagens</button><button class="apps" aria-label="Aplicativos">⋮⋮⋮</button><span class="avatar">A</span></nav>
+  </header>
+
+  <main>
+    <section id="home" class="home-view">
+      <p class="eyebrow">A internet de Aurora, num só lugar</p>
+      <h1 class="wordmark">L<span>u</span>m<span>i</span>n<span>a</span></h1>
+      <form class="search-box" role="search">
+        <span aria-hidden="true">⌕</span>
+        <input id="home-input" autocomplete="off" aria-label="Pesquisar" placeholder="Pesquise em Aurora...">
+        <button type="submit" aria-label="Pesquisar">→</button>
+        <div class="suggestions" role="listbox"></div>
+      </form>
+      <div class="quick-searches">
+        <button data-search="desaparecimentos em aurora">Desaparecimentos em Aurora</button>
+        <button data-search="adelanio pintor">Quem foi Adelanio?</button>
+      </div>
+      <p class="hint">Dica para investigadores: nomes, datas e lugares podem revelar caminhos diferentes.</p>
+    </section>
+
+    <section id="results" class="results-view" hidden>
+      <div class="results-head">
+        <form class="search-box search-box--compact" role="search">
+          <span aria-hidden="true">⌕</span>
+          <input id="results-input" autocomplete="off" aria-label="Pesquisar resultados">
+          <button type="submit" aria-label="Pesquisar">→</button>
+          <div class="suggestions" role="listbox"></div>
+        </form>
+        <div class="tabs" role="tablist" aria-label="Tipo de resultado">
+          <button class="active" data-tab="todos" role="tab">Tudo</button>
+          <button data-tab="imagens" role="tab">Imagens</button>
+          <button data-tab="noticias" role="tab">Notícias</button>
+          <button data-tab="mapas" role="tab">Mapas</button>
+        </div>
+      </div>
+      <div class="results-layout">
+        <div><p id="result-count" class="result-count"></p><div id="results-list"></div></div>
+        <aside id="case-card" class="case-card"></aside>
+      </div>
+    </section>
+
+    <article id="article" class="article-view" hidden>
+      <button class="back-button" id="back-results">← Voltar aos resultados</button>
+      <div id="article-content"></div>
+    </article>
+  </main>
+
+  <footer><span>Lumina Busca</span><span>Região: Aurora</span><button id="reset-game">Reiniciar pistas</button></footer>
+  <div id="clue-toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
+</body>
+</html>
