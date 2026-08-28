@@ -466,12 +466,10 @@
 
 <div id="popup-char-imgs" class="popup-overlay" onclick="closeCharImgPopup()">
     <div class="popup-box" onclick="event.stopPropagation()">
-        <h3 style="color: var(--accent-blue); margin-top: 0; text-align: center;">Fotos de Status do Personagem</h3>
+        <h3 style="color: var(--accent-blue); margin-top: 0; text-align: center;">Fotos do Personagem</h3>
         <div style="display:flex; flex-direction:column; gap:10px;">
             <div><label style="font-size:0.7em; color:var(--text-secondary)">NORMAL</label><input type="text" id="img-normal" class="inv-input" placeholder="URL da foto normal..."></div>
             <div><label style="font-size:0.7em; color:var(--text-secondary)">LESIONADO</label><input type="text" id="img-lesionado" class="inv-input" placeholder="URL da foto lesionado..."></div>
-            <div><label style="font-size:0.7em; color:var(--text-secondary)">INCONSCIENTE</label><input type="text" id="img-inconsciente" class="inv-input" placeholder="URL da foto inconsciente..."></div>
-            <div><label style="font-size:0.7em; color:var(--text-secondary)">MORRENDO</label><input type="text" id="img-morrendo" class="inv-input" placeholder="URL da foto morrendo..."></div>
             <div><label style="font-size:0.7em; color:var(--text-secondary)">ENLOUQUECENDO</label><input type="text" id="img-enlouquecendo" class="inv-input" placeholder="URL da foto enlouquecendo..."></div>
             <div><label style="font-size:0.7em; color:var(--accent-yellow); font-weight:bold;">LESIONADO + ENLOUQUECENDO</label><input type="text" id="img-les-enlouq" class="inv-input" placeholder="URL da foto combinada..."></div>
         </div>
@@ -1029,7 +1027,7 @@
     let atributosBaseCorpo = null;
     let tipoCorpoAplicado = null;
 
-    let charImages = { normal: '', lesionado: '', inconsciente: '', morrendo: '', enlouquecendo: '', les_enlouq: '' };
+    let charImages = { normal: '', lesionado: '', enlouquecendo: '', les_enlouq: '' };
     let charStatus = { lesionado: false, inconsciente: false, morrendo: false, enlouquecendo: false };
     let combatMode = false;
 
@@ -1107,8 +1105,6 @@
     function openCharImgPopup() {
         document.getElementById('img-normal').value = charImages.normal || '';
         document.getElementById('img-lesionado').value = charImages.lesionado || '';
-        document.getElementById('img-inconsciente').value = charImages.inconsciente || '';
-        document.getElementById('img-morrendo').value = charImages.morrendo || '';
         document.getElementById('img-enlouquecendo').value = charImages.enlouquecendo || '';
         document.getElementById('img-les-enlouq').value = charImages.les_enlouq || '';
         document.getElementById('popup-char-imgs').style.display = 'flex';
@@ -1119,8 +1115,6 @@
     function saveCharImgPopup() {
         charImages.normal = document.getElementById('img-normal').value;
         charImages.lesionado = document.getElementById('img-lesionado').value;
-        charImages.inconsciente = document.getElementById('img-inconsciente').value;
-        charImages.morrendo = document.getElementById('img-morrendo').value;
         charImages.enlouquecendo = document.getElementById('img-enlouquecendo').value;
         charImages.les_enlouq = document.getElementById('img-les-enlouq').value;
         updateProfilePicture(); save(); closeCharImgPopup();
@@ -1149,9 +1143,7 @@
     function getActiveProfileImageUrl() {
         let imgUrl = charImages.normal || "https://via.placeholder.com/150x150/202024/a8a8b3?text=FOTO";
         
-        if (charStatus.morrendo && charImages.morrendo) imgUrl = charImages.morrendo;
-        else if (charStatus.inconsciente && charImages.inconsciente) imgUrl = charImages.inconsciente;
-        else if (charStatus.lesionado && charStatus.enlouquecendo && charImages.les_enlouq) imgUrl = charImages.les_enlouq; 
+        if (charStatus.lesionado && charStatus.enlouquecendo && charImages.les_enlouq) imgUrl = charImages.les_enlouq; 
         else if (charStatus.enlouquecendo && charImages.enlouquecendo) imgUrl = charImages.enlouquecendo;
         else if (charStatus.lesionado && charImages.lesionado) imgUrl = charImages.lesionado;
 
