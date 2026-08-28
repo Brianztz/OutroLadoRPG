@@ -112,6 +112,11 @@
 
         /* ATRIBUTOS E PERÍCIAS */
         .attr-box { background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid rgba(51, 51, 51, 0.5); margin-bottom: 15px; text-align: center; }
+        .attr-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+        .attr-header label { color: var(--text-primary); font-size: 0.78em; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+        .attr-roll-button { width: 34px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); cursor: pointer; transition: 0.2s; }
+        .attr-roll-button:hover { background: var(--accent-blue); color: #000; box-shadow: 0 0 11px rgba(0,176,255,0.32); transform: translateY(-1px); }
+        .attr-roll-button img { width: 20px; height: 20px; display: block; filter: invert(1); pointer-events: none; }
         .attr-input { width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--accent-yellow); color: white; text-align: center; font-size: 1.5em; font-weight: 900; }
         .skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
         .skill-card { background: rgba(25, 25, 27, 0.7); border: 1px solid rgba(45, 45, 48, 0.8); border-radius: 8px; padding: 10px; text-align: center; transition: 0.3s; display: flex; flex-direction: column; justify-content: space-between; }
@@ -1013,6 +1018,30 @@
         const valorConvertido = Math.floor((Number(valorRelevante) || 0) * 2);
         const indice = Math.max(1, Math.min(20, valorConvertido));
         return tabelaD20[indice];
+    }
+
+    function rolarTesteAtributo(nome, codigo) {
+        const valor = obterValorAtributoEfetivo(codigo);
+        const faixas = obterFaixasAtributo(valor);
+        const resultado = Math.floor(Math.random() * 20) + 1;
+
+        let tipoResultado;
+        let corResultado;
+        if (resultado >= faixas.e && faixas.e !== 99) {
+            tipoResultado = 'EXTREMO';
+            corResultado = 'var(--accent-yellow)';
+        } else if (resultado >= faixas.b && faixas.b !== 99) {
+            tipoResultado = 'BOM';
+            corResultado = 'var(--accent-blue)';
+        } else if (resultado >= faixas.n) {
+            tipoResultado = 'NORMAL';
+            corResultado = 'var(--accent-green)';
+        } else {
+            tipoResultado = 'FALHA';
+            corResultado = 'var(--accent-red)';
+        }
+
+        showPopup(resultado, nome, tipoResultado, `color:${corResultado}`);
     }
 
     function obterFaixasPericia(valorRelevante) {
@@ -3282,7 +3311,8 @@ function removeCurrentClue() {
     function init() {
         ["Força", "Agilidade", "Vigor", "Intelecto", "Presença"].forEach(a => {
             let id = "attr_" + a.toLowerCase().substring(0,3);
-            document.getElementById('atributos-container').innerHTML += `<div class="attr-box"><label>${a}</label><input type="number" id="${id}" class="attr-input" value="1" max="10" step="1" oninput="limitarAtributo(this); registrarEdicaoAtributo(this); updateAllPericias(); updateWeight(); save()"><div class="attr-targets" id="${id}_targets"></div></div>`;
+            let codigo = id.replace('attr_', '');
+            document.getElementById('atributos-container').innerHTML += `<div class="attr-box"><div class="attr-header"><label for="${id}">${a}</label><button type="button" class="attr-roll-button" title="Rolar teste de ${a}" aria-label="Rolar teste de ${a}" onclick="rolarTesteAtributo('${a}', '${codigo}')"><img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" alt=""></button></div><input type="number" id="${id}" class="attr-input" value="1" max="10" step="1" oninput="limitarAtributo(this); registrarEdicaoAtributo(this); updateAllPericias(); updateWeight(); save()"><div class="attr-targets" id="${id}_targets"></div></div>`;
         });
         periciasBase.forEach(p => {
             let sn = p.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_");
