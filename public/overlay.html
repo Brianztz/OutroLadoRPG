@@ -183,6 +183,12 @@
             transition: opacity 0.65s ease, filter 0.75s ease;
         }
 
+        .player-widget.dying .portrait img {
+            filter: grayscale(1) brightness(0) !important;
+            animation: none;
+            transition: opacity 0.65s ease, filter 0.75s ease;
+        }
+
         .player-widget.unconscious .display-stack {
             opacity: 0.68;
             filter: grayscale(0.78) brightness(0.8);
@@ -666,11 +672,13 @@
                 ? data.status
                 : (data.fullData?.charStatus && typeof data.fullData.charStatus === 'object' ? data.fullData.charStatus : {});
             const unconscious = isActiveFlag(statusData.inconsciente);
+            const dying = isActiveFlag(statusData.morrendo);
             const combatActive = isActiveFlag(data.modoCombate);
 
             article.setAttribute('aria-label', name);
             article.style.setProperty('--player-color', playerColor);
             article.classList.toggle('unconscious', unconscious);
+            article.classList.toggle('dying', dying);
             renderPlayerName(article.querySelector('.name'), name);
             article.querySelector('.life-value').textContent = `${lifeCurrent}/${lifeMaximum}`;
             article.querySelector('.sanity-value').textContent = `${sanityCurrent}/${sanityMaximum}`;
