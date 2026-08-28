@@ -172,7 +172,8 @@
             animation: sanity-image-glitch 0.92s steps(2, end) both;
         }
 
-        .player-widget.unconscious .portrait {
+        .player-widget.unconscious .portrait,
+        .player-widget.dying .portrait {
             animation: none;
             filter: grayscale(1) brightness(0.58) contrast(1.08) drop-shadow(0 0 3px rgba(110, 120, 132, 0.4));
             opacity: 0.9;
@@ -189,7 +190,8 @@
             transition: opacity 0.65s ease, filter 0.75s ease;
         }
 
-        .player-widget.unconscious .display-stack {
+        .player-widget.unconscious .display-stack,
+        .player-widget.dying .display-stack {
             opacity: 0.68;
             filter: grayscale(0.78) brightness(0.8);
             transition: opacity 0.75s ease, filter 0.75s ease;
@@ -363,7 +365,7 @@
             filter: saturate(1.25) brightness(1.08);
         }
 
-        .player-widget.active-turn:not(.unconscious) .portrait {
+        .player-widget.active-turn:not(.unconscious):not(.dying) .portrait {
             filter:
                 drop-shadow(0 0 4px var(--player-color))
                 drop-shadow(0 0 11px var(--player-color))
