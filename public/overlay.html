@@ -511,6 +511,7 @@
         const overlayTableFromUrl = overlayUrlParams.get('mesa');
         let overlayTablePinned = Boolean(overlayTableFromUrl);
         let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('overlay_table_code') || localStorage.getItem('master_table_code') || 'PADRAO');
+        let stablePlayerOrder = loadPlayerOrder(tableCode);
         localStorage.setItem('overlay_table_code', tableCode);
         const ammoIcons = {
             light: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png',
@@ -521,6 +522,30 @@
         function normalizeTableCode(value) {
             const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
             return normalized || 'PADRAO';
+        }
+
+        function playerOrderStorageKey(table) {
+            return `overlay_player_order_${normalizeTableCode(table)}`;
+        }
+
+        function loadPlayerOrder(table) {
+            try {
+                const storedOrder = JSON.parse(localStorage.getItem(playerOrderStorageKey(table)) || '[]');
+                if (!Array.isArray(storedOrder)) return [];
+                return [...new Set(storedOrder.map(code => String(code || '').trim().toUpperCase()).filter(Boolean))];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function savePlayerOrder() {
+            localStorage.setItem(playerOrderStorageKey(tableCode), JSON.stringify(stablePlayerOrder));
+        }
+
+        function ensureStablePlayerPosition(code) {
+            if (stablePlayerOrder.includes(code)) return;
+            stablePlayerOrder.push(code);
+            savePlayerOrder();
         }
 
         function safeNumber(value, fallback = 0) {
@@ -582,6 +607,7 @@
             }
             tableCode = nextTable;
             localStorage.setItem('overlay_table_code', tableCode);
+            stablePlayerOrder = loadPlayerOrder(tableCode);
             players.clear();
             previousVitals.clear();
             grid.replaceChildren();
@@ -652,6 +678,7 @@
         function updatePlayerWidget(data) {
             const code = playerCode(data);
             if (!code) return;
+            ensureStablePlayerPosition(code);
             players.set(code, data);
 
             let article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
@@ -779,11 +806,12 @@
         }
 
         function sortWidgets() {
+            const positions = new Map(stablePlayerOrder.map((code, index) => [code, index]));
             const sortedWidgets = [...grid.children]
                 .sort((first, second) => {
-                    const firstName = players.get(first.dataset.code)?.nome || '';
-                    const secondName = players.get(second.dataset.code)?.nome || '';
-                    return String(firstName).localeCompare(String(secondName), 'pt-BR');
+                    const firstPosition = positions.get(first.dataset.code) ?? Number.MAX_SAFE_INTEGER;
+                    const secondPosition = positions.get(second.dataset.code) ?? Number.MAX_SAFE_INTEGER;
+                    return firstPosition - secondPosition;
                 });
 
             sortedWidgets.forEach((widget, index) => {
