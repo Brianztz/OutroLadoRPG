@@ -556,7 +556,7 @@
             <span id="skill-roll-default-value" class="skill-roll-default-value">0 × 2 = 0</span>
         </button>
 
-        <div class="skill-roll-choice-divider">Usar outro atributo</div>
+        <div id="skill-roll-alternative-divider" class="skill-roll-choice-divider">Alternativas para esta perícia</div>
         <div id="skill-roll-other-attributes" class="skill-roll-attribute-grid"></div>
         <button type="button" class="skill-roll-cancel" onclick="closeSkillRollAttributeChoice()">CANCELAR</button>
     </div>
@@ -1316,6 +1316,35 @@
         { code: 'INT', name: 'Intelecto' },
         { code: 'PRE', name: 'Presença' }
     ];
+    const SKILL_ROLL_RELEVANT_ATTRIBUTES = {
+        'Acrobacia': ['AGI', 'FOR'],
+        'Adestramento': ['PRE', 'INT'],
+        'Artes': ['PRE', 'AGI', 'INT'],
+        'Atletismo': ['FOR', 'AGI', 'VIG'],
+        'Atualidades': ['INT', 'PRE'],
+        'Ciências': ['INT', 'AGI'],
+        'Crime': ['AGI', 'INT', 'PRE'],
+        'Diplomacia': ['PRE', 'INT'],
+        'Enganação': ['PRE', 'INT'],
+        'Fortitude': ['VIG', 'FOR'],
+        'Furtividade': ['AGI', 'INT'],
+        'Iniciativa': ['AGI', 'PRE', 'INT'],
+        'Intimidação': ['PRE', 'FOR'],
+        'Intuição': ['PRE', 'INT'],
+        'Investigação': ['INT', 'PRE'],
+        'Luta': ['FOR', 'AGI'],
+        'Medicina': ['INT', 'AGI'],
+        'Ocultismo': ['INT', 'PRE'],
+        'Percepção': ['PRE', 'INT'],
+        'Pilotagem': ['AGI', 'INT'],
+        'Pontaria': ['AGI', 'INT'],
+        'Profissão': ['INT', 'PRE', 'AGI', 'FOR', 'VIG'],
+        'Reflexos': ['AGI', 'PRE'],
+        'Religião': ['PRE', 'INT'],
+        'Sobrevivência': ['INT', 'VIG', 'PRE'],
+        'Tática': ['INT', 'PRE'],
+        'Tecnologia': ['INT', 'AGI']
+    };
     let pendingSkillRoll = null;
 
     function getSkillRollAttributeName(attributeCode) {
@@ -1338,10 +1367,17 @@
         document.getElementById('skill-roll-default-value').textContent = getSkillRollAttributeSummary(normalizedDefault);
 
         const attributesContainer = document.getElementById('skill-roll-other-attributes');
+        const alternativeDivider = document.getElementById('skill-roll-alternative-divider');
+        const relevantAttributes = SKILL_ROLL_RELEVANT_ATTRIBUTES[name] || [normalizedDefault];
+        const alternativeAttributes = relevantAttributes
+            .filter(code => code !== normalizedDefault)
+            .map(code => SKILL_ROLL_ATTRIBUTES.find(attribute => attribute.code === code))
+            .filter(Boolean);
+
         attributesContainer.replaceChildren();
-        SKILL_ROLL_ATTRIBUTES
-            .filter(attribute => attribute.code !== normalizedDefault)
-            .forEach(attribute => {
+        alternativeDivider.style.display = alternativeAttributes.length ? 'flex' : 'none';
+        attributesContainer.style.display = alternativeAttributes.length ? 'grid' : 'none';
+        alternativeAttributes.forEach(attribute => {
                 const button = document.createElement('button');
                 const nameElement = document.createElement('strong');
                 const valueElement = document.createElement('span');
