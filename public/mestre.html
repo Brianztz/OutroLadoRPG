@@ -1509,8 +1509,27 @@
             return `N:${ranges.n} B:${ranges.b === 99 ? 'X' : ranges.b} E:${ranges.e === 99 ? 'X' : ranges.e}`;
         }
 
-        function resolveMonsterD20(value, isAttribute) {
-            const roll = Math.floor(Math.random() * 20) + 1;
+        const MONSTER_SKILL_RELATED_ATTRIBUTES = {
+            fortitude: 'vig',
+            reflexos: 'agi',
+            vontade: 'pre',
+            percepcao: 'pre',
+            iniciativa: 'agi'
+        };
+
+        function rollMonsterD20PoolByAttribute(attributeValue) {
+            const attribute = Math.trunc(Number(attributeValue) || 0);
+            const quantity = attribute === 0 ? 1 : Math.abs(attribute);
+            const rolls = Array.from({ length: quantity }, () => Math.floor(Math.random() * 20) + 1);
+            const selectedRoll = attribute < 0 ? Math.min(...rolls) : Math.max(...rolls);
+            return { attribute, quantity, rolls, selectedRoll, takesLowest: attribute < 0 };
+        }
+
+        function resolveMonsterD20(value, isAttribute, relatedAttributeValue = null) {
+            const pool = relatedAttributeValue === null
+                ? { selectedRoll: Math.floor(Math.random() * 20) + 1 }
+                : rollMonsterD20PoolByAttribute(relatedAttributeValue);
+            const roll = pool.selectedRoll;
             const ranges = getMonsterRanges(value, isAttribute);
             if (roll === 20) return { roll, result: 'CRÍTICO', color: 'var(--accent-red)' };
             if (ranges.e !== 99 && roll >= ranges.e) return { roll, result: 'EXTREMO', color: 'var(--accent-yellow)' };
@@ -1551,7 +1570,9 @@
         function rollMonsterSkill(monsterId, skillKey, label) {
             const monster = monstersState.find(item => item.id === monsterId);
             if (!monster) return;
-            const result = resolveMonsterD20(monster.skills[skillKey], false);
+            const relatedAttributeKey = MONSTER_SKILL_RELATED_ATTRIBUTES[skillKey];
+            const relatedAttributeValue = relatedAttributeKey ? monster.attrs[relatedAttributeKey] : 0;
+            const result = resolveMonsterD20(monster.skills[skillKey], false, relatedAttributeValue);
             showMasterDicePopup(result.roll, `${monster.name} — ${label}`, result.result, result.color);
             if (skillKey === 'iniciativa') applyMonsterInitiativeRoll(monster, result.roll);
         }
