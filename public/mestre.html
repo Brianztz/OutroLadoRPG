@@ -29,8 +29,8 @@
         .master-table-button { padding: 10px 15px; border: 1px solid var(--accent-green); border-radius: 7px; background: rgba(0,230,118,0.1); color: var(--accent-green); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-table-button:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 12px rgba(0,230,118,0.3); }
         .master-table-button span { color: #fff; letter-spacing: 1px; }
-        .btn-open-player { padding: 10px 15px; border: 1px solid var(--accent-blue); border-radius: 7px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; text-decoration: none; transition: 0.2s; }
-        .btn-open-player:hover { background: var(--accent-blue); color: #000; }
+        .btn-create-catalog-entry { padding: 10px 15px; border: 1px solid var(--accent-blue); border-radius: 7px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .btn-create-catalog-entry:hover { background: var(--accent-blue); color: #000; box-shadow: 0 0 12px rgba(0,176,255,0.25); }
         .master-tabs { margin: -8px 0 16px; padding: 5px; display: flex; gap: 6px; align-self: flex-start; border: 1px solid var(--border-color); border-radius: 9px; background: rgba(18,18,20,0.88); }
         .master-tab-button { padding: 9px 18px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-secondary); font-size: 0.73em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-tab-button:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
@@ -334,13 +334,30 @@
         .catalog-recipient-cancel { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
         .catalog-recipient-send { border: 1px solid var(--accent-green); background: var(--accent-green); color: #000; }
         .catalog-recipient-send:disabled { opacity: 0.38; cursor: not-allowed; }
+        .catalog-creator-modal { position: fixed; inset: 0; z-index: 10600; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
+        .catalog-creator-modal.open { display: flex; }
+        .catalog-creator-dialog { width: min(720px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(0,176,255,0.55); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
+        .catalog-creator-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid #35353b; background: #18181c; }
+        .catalog-creator-title { margin: 0; color: var(--accent-blue); font-size: 0.96em; text-transform: uppercase; }
+        .catalog-creator-close { width: 34px; height: 34px; border: 0; border-radius: 6px; background: rgba(229,57,53,0.2); color: #ff7772; font-weight: 900; cursor: pointer; }
+        .catalog-creator-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+        .catalog-creator-section { padding: 13px; border: 1px solid #34343a; border-radius: 9px; background: rgba(0,0,0,0.18); }
+        .catalog-creator-section-title { margin: 0 0 11px; color: var(--accent-yellow); font-size: 0.7em; font-weight: 900; text-transform: uppercase; }
+        .catalog-creator-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+        .catalog-creator-grid .full { grid-column: 1 / -1; }
+        .catalog-creator-field { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+        .catalog-creator-field label { color: var(--text-secondary); font-size: 0.62em; font-weight: 900; text-transform: uppercase; }
+        .catalog-creator-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; border-top: 1px solid #35353b; background: #18181c; }
+        .catalog-creator-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
+        .catalog-creator-cancel { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
+        .catalog-creator-save { border: 1px solid var(--accent-blue); background: var(--accent-blue); color: #000; }
         #modal-ficha { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,0.92); }
         .modal-toolbar { width: 95%; max-width: 1400px; display: flex; justify-content: flex-end; }
         .btn-close-modal { margin-bottom: 10px; padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent-red); color: white; font-size: 1em; font-weight: 900; cursor: pointer; }
         #iframe-ficha { width: 95%; max-width: 1400px; height: 85vh; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-body); }
         @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
-        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 285px; } .master-clue-book-stage { height: 300px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
+        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 285px; } .master-clue-book-stage { height: 300px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
     </style>
 </head>
 <body>
@@ -351,7 +368,7 @@
         </div>
         <div class="master-top-actions">
             <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
-            <a id="open-player-link" class="btn-open-player" href="index.html" target="_blank" rel="noopener">+ ABRIR NOVA FICHA</a>
+            <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
         </div>
     </header>
 
@@ -553,6 +570,68 @@
         </div>
     </div>
 
+    <div id="catalog-creator-modal" class="catalog-creator-modal" onclick="if(event.target===this) closeCatalogCreator()">
+        <div class="catalog-creator-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-creator-title">
+            <div class="catalog-creator-header">
+                <h2 id="catalog-creator-title" class="catalog-creator-title">Criar item ou arma</h2>
+                <button class="catalog-creator-close" type="button" onclick="closeCatalogCreator()" aria-label="Fechar">×</button>
+            </div>
+            <div class="catalog-creator-body">
+                <section class="catalog-creator-section">
+                    <h3 class="catalog-creator-section-title">Tipo</h3>
+                    <div class="catalog-creator-field">
+                        <label for="catalog-creator-type">O que deseja criar?</label>
+                        <select id="catalog-creator-type" class="monster-input" onchange="updateCatalogCreatorFields()">
+                            <option value="item">Item ou munição</option>
+                            <option value="melee">Arma corpo a corpo</option>
+                            <option value="ranged">Arma de disparo</option>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="catalog-creator-section">
+                    <h3 class="catalog-creator-section-title">Informações básicas</h3>
+                    <div class="catalog-creator-grid">
+                        <div class="catalog-creator-field"><label for="catalog-creator-name">Nome</label><input id="catalog-creator-name" class="monster-input" type="text" maxlength="80" placeholder="Nome do item ou arma"></div>
+                        <div class="catalog-creator-field"><label for="catalog-creator-weight">Peso / espaços</label><input id="catalog-creator-weight" class="monster-input" type="number" min="0" value="1"></div>
+                        <div class="catalog-creator-field full"><label for="catalog-creator-image">Imagem</label><input id="catalog-creator-image" class="monster-input" type="text" placeholder="Cole o link da imagem (opcional)"></div>
+                    </div>
+                </section>
+
+                <section id="catalog-creator-item-fields" class="catalog-creator-section">
+                    <h3 class="catalog-creator-section-title">Dados do item</h3>
+                    <div class="catalog-creator-grid">
+                        <div class="catalog-creator-field full"><label for="catalog-creator-description">Descrição</label><textarea id="catalog-creator-description" class="monster-textarea" placeholder="Descrição e efeitos do item..."></textarea></div>
+                        <div class="catalog-creator-field"><label for="catalog-creator-item-ammo">Tipo de munição</label><select id="catalog-creator-item-ammo" class="monster-input"><option value="Nenhuma">Não é munição</option><option value="Curta">Curta</option><option value="Longa">Longa</option><option value="Pesada">Pesada</option><option value="Especial">Especial</option></select></div>
+                    </div>
+                </section>
+
+                <section id="catalog-creator-weapon-fields" class="catalog-creator-section" style="display:none">
+                    <h3 class="catalog-creator-section-title">Dados da arma</h3>
+                    <div class="catalog-creator-grid">
+                        <div class="catalog-creator-field"><label for="catalog-creator-damage">Dano</label><input id="catalog-creator-damage" class="monster-input" type="text" value="1d6" placeholder="Ex.: 2d8+3"></div>
+                        <div class="catalog-creator-field"><label for="catalog-creator-critical">Crítico</label><input id="catalog-creator-critical" class="monster-input" type="text" value="20/x2" placeholder="Ex.: 19/x2"></div>
+                        <div class="catalog-creator-field"><label for="catalog-creator-attacks">Ataques</label><input id="catalog-creator-attacks" class="monster-input" type="number" min="1" value="1"></div>
+                        <div class="catalog-creator-field"><label for="catalog-creator-range">Alcance</label><input id="catalog-creator-range" class="monster-input" type="text" value="Curto" placeholder="Ex.: Toque, Curto, Longo"></div>
+                        <div class="catalog-creator-field full"><label for="catalog-creator-skill">Perícia</label><input id="catalog-creator-skill" class="monster-input" type="text" value="Luta" placeholder="Ex.: Luta ou Pontaria"></div>
+                    </div>
+                </section>
+
+                <section id="catalog-creator-ranged-fields" class="catalog-creator-section" style="display:none">
+                    <h3 class="catalog-creator-section-title">Munição da arma</h3>
+                    <div class="catalog-creator-grid">
+                        <div class="catalog-creator-field"><label for="catalog-creator-weapon-ammo">Tipo de munição</label><select id="catalog-creator-weapon-ammo" class="monster-input"><option value="Curta">Curta</option><option value="Longa">Longa</option><option value="Pesada">Pesada</option><option value="Especial">Especial</option><option value="Nenhuma">Nenhuma</option></select></div>
+                        <div class="catalog-creator-field"><label for="catalog-creator-capacity">Capacidade</label><input id="catalog-creator-capacity" class="monster-input" type="number" min="0" value="6"></div>
+                    </div>
+                </section>
+            </div>
+            <div class="catalog-creator-footer">
+                <button class="catalog-creator-cancel" type="button" onclick="closeCatalogCreator()">CANCELAR</button>
+                <button class="catalog-creator-save" type="button" onclick="saveCatalogCreatorEntry()">ADICIONAR AO CATÁLOGO</button>
+            </div>
+        </div>
+    </div>
+
     <div id="catalog-recipient-modal" class="catalog-recipient-modal" onclick="if(event.target===this) closeCatalogRecipientPopup()">
         <div class="catalog-recipient-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-recipient-title">
             <div class="catalog-recipient-header">
@@ -588,6 +667,7 @@
         let editingMonsterActions = [];
         let monsterRollRevealTimer = null;
         let masterCatalogFilter = 'all';
+        let customCatalogEntries = loadCustomCatalogEntries();
         let pendingCatalogItem = null;
         let pendingClueToSend = null;
         let masterCluesState = loadMasterCluesState();
@@ -635,7 +715,6 @@
 
         function updateMasterTableUI() {
             document.getElementById('master-table-code').textContent = masterTableCode;
-            document.getElementById('open-player-link').href = `index.html?mesa=${encodeURIComponent(masterTableCode)}`;
         }
 
         function chooseMasterTable() {
@@ -681,6 +760,109 @@
             return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         }
 
+        function normalizeCustomCatalogEntry(entry, index = 0) {
+            const source = entry && typeof entry === 'object' ? entry : {};
+            const catalogType = source.catalogType === 'Disparo' ? 'Disparo' : source.catalogType === 'Corpo a corpo' ? 'Corpo a corpo' : (source.ammo && source.ammo !== 'Nenhuma' ? 'Munição' : 'Item');
+            const isWeapon = catalogType === 'Disparo' || catalogType === 'Corpo a corpo';
+            const ammo = String(source.ammo || 'Nenhuma');
+            return {
+                id: String(source.id || `custom_catalog_${Date.now()}_${index}`),
+                custom: true,
+                catalogKind: isWeapon ? 'weapons' : 'items',
+                catalogType,
+                name: String(source.name || 'Sem nome'),
+                weight: Math.max(0, safeNumber(source.weight, 1)),
+                desc: String(source.desc || ''),
+                img: String(source.img || ''),
+                atk: isWeapon ? Math.max(1, safeNumber(source.atk, 1)) : 1,
+                dmg: isWeapon ? String(source.dmg || '1d6') : '0',
+                crit: isWeapon ? String(source.crit || '20/x2') : '20/x2',
+                range: isWeapon ? String(source.range || 'Curto') : 'Curto',
+                skill: isWeapon ? String(source.skill || (catalogType === 'Disparo' ? 'Pontaria' : 'Luta')) : 'Luta',
+                ammo: !isWeapon && catalogType === 'Item' ? '' : ammo,
+                capacity: catalogType === 'Disparo' ? Math.max(0, safeNumber(source.capacity, 0)) : 0
+            };
+        }
+
+        function loadCustomCatalogEntries() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('mestre_custom_catalog_state'));
+                return Array.isArray(saved) ? saved.map(normalizeCustomCatalogEntry) : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function saveCustomCatalogEntries() {
+            localStorage.setItem('mestre_custom_catalog_state', JSON.stringify(customCatalogEntries));
+        }
+
+        function openCatalogCreator() {
+            switchMasterTab('catalog');
+            document.getElementById('catalog-creator-type').value = 'item';
+            document.getElementById('catalog-creator-name').value = '';
+            document.getElementById('catalog-creator-weight').value = 1;
+            document.getElementById('catalog-creator-image').value = '';
+            document.getElementById('catalog-creator-description').value = '';
+            document.getElementById('catalog-creator-item-ammo').value = 'Nenhuma';
+            document.getElementById('catalog-creator-damage').value = '1d6';
+            document.getElementById('catalog-creator-critical').value = '20/x2';
+            document.getElementById('catalog-creator-attacks').value = 1;
+            document.getElementById('catalog-creator-range').value = 'Curto';
+            document.getElementById('catalog-creator-skill').value = 'Luta';
+            document.getElementById('catalog-creator-weapon-ammo').value = 'Curta';
+            document.getElementById('catalog-creator-capacity').value = 6;
+            updateCatalogCreatorFields();
+            document.getElementById('catalog-creator-modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('catalog-creator-name').focus(), 0);
+        }
+
+        function closeCatalogCreator() {
+            document.getElementById('catalog-creator-modal').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function updateCatalogCreatorFields() {
+            const type = document.getElementById('catalog-creator-type').value;
+            const isWeapon = type === 'melee' || type === 'ranged';
+            document.getElementById('catalog-creator-item-fields').style.display = type === 'item' ? 'block' : 'none';
+            document.getElementById('catalog-creator-weapon-fields').style.display = isWeapon ? 'block' : 'none';
+            document.getElementById('catalog-creator-ranged-fields').style.display = type === 'ranged' ? 'block' : 'none';
+            document.getElementById('catalog-creator-skill').value = type === 'ranged' ? 'Pontaria' : 'Luta';
+        }
+
+        function saveCatalogCreatorEntry() {
+            const type = document.getElementById('catalog-creator-type').value;
+            const nameInput = document.getElementById('catalog-creator-name');
+            const name = nameInput.value.trim();
+            if (!name) return nameInput.focus();
+
+            const isRanged = type === 'ranged';
+            const isWeapon = type === 'melee' || isRanged;
+            const itemAmmo = document.getElementById('catalog-creator-item-ammo').value;
+            const entry = normalizeCustomCatalogEntry({
+                id: `custom_catalog_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+                catalogType: isRanged ? 'Disparo' : type === 'melee' ? 'Corpo a corpo' : (itemAmmo !== 'Nenhuma' ? 'Munição' : 'Item'),
+                name,
+                weight: document.getElementById('catalog-creator-weight').value,
+                img: document.getElementById('catalog-creator-image').value.trim(),
+                desc: type === 'item' ? document.getElementById('catalog-creator-description').value.trim() : '',
+                atk: isWeapon ? document.getElementById('catalog-creator-attacks').value : 1,
+                dmg: isWeapon ? document.getElementById('catalog-creator-damage').value.trim() : '0',
+                crit: isWeapon ? document.getElementById('catalog-creator-critical').value.trim() : '20/x2',
+                range: isWeapon ? document.getElementById('catalog-creator-range').value.trim() : 'Curto',
+                skill: isWeapon ? document.getElementById('catalog-creator-skill').value.trim() : 'Luta',
+                ammo: isRanged ? document.getElementById('catalog-creator-weapon-ammo').value : itemAmmo,
+                capacity: isRanged ? document.getElementById('catalog-creator-capacity').value : 0
+            });
+
+            customCatalogEntries.push(entry);
+            saveCustomCatalogEntries();
+            closeCatalogCreator();
+            renderMasterCatalog();
+        }
+
         function setMasterCatalogFilter(filter) {
             masterCatalogFilter = ['weapons','items'].includes(filter) ? filter : 'all';
             document.querySelectorAll('.catalog-filter').forEach(button => button.classList.toggle('active', button.dataset.catalogFilter === masterCatalogFilter));
@@ -694,7 +876,8 @@
             const entries = [
                 ...data.meleeWeapons.map(item => ({ ...item, catalogKind: 'weapons', catalogType: 'Corpo a corpo' })),
                 ...data.rangedWeapons.map(item => ({ ...item, catalogKind: 'weapons', catalogType: 'Disparo' })),
-                ...data.items.map(item => ({ ...item, catalogKind: 'items', catalogType: item.ammo ? 'Munição' : 'Item' }))
+                ...data.items.map(item => ({ ...item, catalogKind: 'items', catalogType: item.ammo ? 'Munição' : 'Item' })),
+                ...customCatalogEntries
             ];
             const query = normalizeCatalogText(document.getElementById('catalog-search').value);
             const filtered = entries.filter(item => {
@@ -2065,6 +2248,7 @@
         document.addEventListener('keydown', event => {
             if (event.key !== 'Escape') return;
             if (document.getElementById('master-dice-popup').classList.contains('open')) closeMasterDicePopup();
+            else if (document.getElementById('catalog-creator-modal').classList.contains('open')) closeCatalogCreator();
             else if (document.getElementById('catalog-recipient-modal').classList.contains('open')) closeCatalogRecipientPopup();
             else if (document.getElementById('master-clue-form-modal').classList.contains('open')) closeMasterClueForm();
             else if (document.getElementById('master-clue-info-modal').classList.contains('open')) closeMasterClueInfo();
