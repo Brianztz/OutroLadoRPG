@@ -964,11 +964,9 @@
         return campo ? limitarValorAtributo(campo.value) : 0;
     }
 
-    function calcularNaturalPericia(valorAtributo, modificador) {
+    function calcularNaturalPericia(valorAtributo) {
         const atributo = Math.max(0, Number(valorAtributo) || 0);
-        const multiplicador = Math.max(0, Number(modificador) || 0);
-        if (atributo === 0 || multiplicador === 0) return 0;
-        return Math.max(1, Math.floor(atributo * multiplicador));
+        return Math.floor(atributo * 2);
     }
 
     function capturarAtributosBaseCorpo() {
@@ -1243,7 +1241,7 @@
     // --- SKILL POPUP ---
     function openSkillPopup(sn, nome, attr, mod) {
         document.getElementById('popup-skill-name').innerText = nome;
-        document.getElementById('popup-skill-attr-name').innerText = attr + " (x" + mod + ")";
+        document.getElementById('popup-skill-attr-name').innerText = attr + " (x2)";
         let at = obterValorAtributoEfetivo(attr);
         document.getElementById('popup-skill-natural').innerText = calcularNaturalPericia(at, mod);
         document.getElementById('popup-skill-trained').checked = document.getElementById('chk_'+sn).checked;
