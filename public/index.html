@@ -272,6 +272,22 @@
         .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
         .popup-box { background: var(--bg-card); border: 2px solid var(--border-color); padding: 25px; border-radius: 15px; width: 450px; box-shadow: var(--shadow-card); backdrop-filter: blur(15px); max-height: 90vh; overflow-y: auto; }
+        .skill-roll-choice-popup { width: min(470px, 94vw); box-sizing: border-box; border-color: rgba(0,176,255,0.62); }
+        .skill-roll-choice-title { margin: 0; color: var(--accent-blue); font-size: 1.08em; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+        .skill-roll-choice-description { margin: 7px 0 18px; color: var(--text-secondary); font-size: 0.78em; line-height: 1.45; text-align: center; }
+        .skill-roll-default-button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--accent-blue); border-radius: 9px; background: rgba(0,176,255,0.12); color: white; cursor: pointer; text-align: left; transition: 0.2s; }
+        .skill-roll-default-button:hover { background: rgba(0,176,255,0.24); box-shadow: 0 0 16px rgba(0,176,255,0.2); transform: translateY(-1px); }
+        .skill-roll-default-label { display: block; color: var(--accent-blue); font-size: 0.68em; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; }
+        .skill-roll-default-name { display: block; margin-top: 3px; font-size: 0.98em; font-weight: 900; text-transform: uppercase; }
+        .skill-roll-default-value { flex: 0 0 auto; color: var(--accent-green); font-size: 0.82em; font-weight: 900; white-space: nowrap; }
+        .skill-roll-choice-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; color: var(--text-secondary); font-size: 0.65em; font-weight: 900; letter-spacing: 0.09em; text-transform: uppercase; }
+        .skill-roll-choice-divider::before, .skill-roll-choice-divider::after { content: ''; height: 1px; flex: 1; background: var(--border-color); }
+        .skill-roll-attribute-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .skill-roll-attribute-button { min-width: 0; padding: 10px 11px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(18,18,20,0.82); color: var(--text-primary); cursor: pointer; text-align: left; transition: 0.2s; }
+        .skill-roll-attribute-button:hover { border-color: var(--accent-yellow); background: rgba(255,207,51,0.1); transform: translateY(-1px); }
+        .skill-roll-attribute-button strong { display: block; overflow: hidden; font-size: 0.75em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+        .skill-roll-attribute-button span { display: block; margin-top: 4px; color: var(--accent-yellow); font-size: 0.67em; font-weight: 900; }
+        .skill-roll-cancel { width: 100%; margin-top: 15px; padding: 9px; border: 1px solid #3b3b42; border-radius: 7px; background: #242429; color: var(--text-secondary); cursor: pointer; font-size: 0.72em; font-weight: 900; }
         .character-details-popup { width: min(620px, 94vw); }
         .character-details-popup h2 { margin: 0 0 5px; color: var(--accent-blue); font-size: 1.05em; text-transform: uppercase; letter-spacing: 0.07em; }
         .character-details-popup .popup-subtitle { margin: 0 0 20px; color: var(--text-secondary); font-size: 0.76em; line-height: 1.45; }
@@ -524,6 +540,25 @@
             <button class="btn-add" style="flex:1; margin:0; background: var(--accent-blue);" onclick="saveSkillPopup()">SALVAR</button>
             <button class="btn-del" style="flex:1; padding:12px; border-radius:6px; background:#333;" onclick="closeSkillPopup()">FECHAR</button>
         </div>
+    </div>
+</div>
+
+<div id="popup-skill-roll-attribute" class="popup-overlay" onclick="closeSkillRollAttributeChoice()">
+    <div class="popup-box skill-roll-choice-popup" onclick="event.stopPropagation()">
+        <h3 id="skill-roll-choice-title" class="skill-roll-choice-title">ROLAR PERÍCIA</h3>
+        <p class="skill-roll-choice-description">Use o atributo padrão da perícia ou escolha outro atributo somente para esta rolagem.</p>
+
+        <button id="skill-roll-default-button" type="button" class="skill-roll-default-button" onclick="rollPendingSkillWithAttribute()">
+            <span>
+                <span class="skill-roll-default-label">Rolagem padrão</span>
+                <strong id="skill-roll-default-name" class="skill-roll-default-name">ATRIBUTO</strong>
+            </span>
+            <span id="skill-roll-default-value" class="skill-roll-default-value">0 × 2 = 0</span>
+        </button>
+
+        <div class="skill-roll-choice-divider">Usar outro atributo</div>
+        <div id="skill-roll-other-attributes" class="skill-roll-attribute-grid"></div>
+        <button type="button" class="skill-roll-cancel" onclick="closeSkillRollAttributeChoice()">CANCELAR</button>
     </div>
 </div>
 
@@ -1273,6 +1308,68 @@
         toggleTrained(sn); save(); closeSkillPopup();
     }
     function closeSkillPopup() { document.getElementById('popup-skill-info').style.display = 'none'; }
+
+    const SKILL_ROLL_ATTRIBUTES = [
+        { code: 'FOR', name: 'Força' },
+        { code: 'AGI', name: 'Agilidade' },
+        { code: 'VIG', name: 'Vigor' },
+        { code: 'INT', name: 'Intelecto' },
+        { code: 'PRE', name: 'Presença' }
+    ];
+    let pendingSkillRoll = null;
+
+    function getSkillRollAttributeName(attributeCode) {
+        const normalizedCode = String(attributeCode || '').toUpperCase();
+        const attribute = SKILL_ROLL_ATTRIBUTES.find(item => item.code === normalizedCode);
+        return attribute ? attribute.name : normalizedCode;
+    }
+
+    function getSkillRollAttributeSummary(attributeCode) {
+        const value = obterValorAtributoEfetivo(attributeCode);
+        return `${value} × 2 = ${calcularNaturalPericia(value)}`;
+    }
+
+    function openSkillRollAttributeChoice(name, id, defaultAttribute, modifier) {
+        const normalizedDefault = String(defaultAttribute || '').toUpperCase();
+        pendingSkillRoll = { name, id, defaultAttribute: normalizedDefault, modifier };
+
+        document.getElementById('skill-roll-choice-title').textContent = `ROLAR ${name}`;
+        document.getElementById('skill-roll-default-name').textContent = getSkillRollAttributeName(normalizedDefault);
+        document.getElementById('skill-roll-default-value').textContent = getSkillRollAttributeSummary(normalizedDefault);
+
+        const attributesContainer = document.getElementById('skill-roll-other-attributes');
+        attributesContainer.replaceChildren();
+        SKILL_ROLL_ATTRIBUTES
+            .filter(attribute => attribute.code !== normalizedDefault)
+            .forEach(attribute => {
+                const button = document.createElement('button');
+                const nameElement = document.createElement('strong');
+                const valueElement = document.createElement('span');
+
+                button.type = 'button';
+                button.className = 'skill-roll-attribute-button';
+                nameElement.textContent = attribute.name;
+                valueElement.textContent = getSkillRollAttributeSummary(attribute.code);
+                button.append(nameElement, valueElement);
+                button.addEventListener('click', () => rollPendingSkillWithAttribute(attribute.code));
+                attributesContainer.appendChild(button);
+            });
+
+        document.getElementById('popup-skill-roll-attribute').style.display = 'flex';
+    }
+
+    function rollPendingSkillWithAttribute(attributeCode = null) {
+        if (!pendingSkillRoll) return;
+        const roll = { ...pendingSkillRoll };
+        const chosenAttribute = String(attributeCode || roll.defaultAttribute).toUpperCase();
+        closeSkillRollAttributeChoice();
+        rolarTesteD20(roll.name, roll.id, chosenAttribute, roll.modifier);
+    }
+
+    function closeSkillRollAttributeChoice() {
+        document.getElementById('popup-skill-roll-attribute').style.display = 'none';
+        pendingSkillRoll = null;
+    }
 
     // --- HABILIDADES E ITENS ---
     function openAbilityPopup() { document.getElementById('popup-new-ability').style.display='flex'; }
@@ -3327,7 +3424,7 @@ function removeCurrentClue() {
                     <span style="font-size: 0.7em; font-weight: bold; text-transform: uppercase; color: var(--text-primary); pointer-events: none;">${p.nome}</span>
                 </div>
                 <div style="display:flex; justify-content:center; align-items:center; margin-bottom: 8px;">
-                    <button onclick="event.stopPropagation(); rolarTesteD20('${p.nome}','skill_${sn}','${p.attr}',${p.mod})" class="btn-roll" style="width:100%; border-color:var(--accent-blue); background:rgba(0,176,255,0.1); display:flex; justify-content:center; align-items:center; padding: 6px 0;">
+                    <button onclick="event.stopPropagation(); openSkillRollAttributeChoice('${p.nome}','skill_${sn}','${p.attr}',${p.mod})" class="btn-roll" style="width:100%; border-color:var(--accent-blue); background:rgba(0,176,255,0.1); display:flex; justify-content:center; align-items:center; padding: 6px 0;">
                         <img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" style="width: 20px; height: 20px; filter: invert(1);">
                     </button>
                 </div>
