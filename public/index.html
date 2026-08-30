@@ -272,21 +272,41 @@
         .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
         .popup-box { background: var(--bg-card); border: 2px solid var(--border-color); padding: 25px; border-radius: 15px; width: 450px; box-shadow: var(--shadow-card); backdrop-filter: blur(15px); max-height: 90vh; overflow-y: auto; }
-        .skill-bonus-popup { width: min(430px, 94vw); box-sizing: border-box; border-color: rgba(255,207,51,0.55); }
-        .skill-bonus-title { margin: 0; color: var(--accent-yellow); font-size: 1.02em; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
-        .skill-bonus-description { margin: 8px 0 18px; color: var(--text-secondary); font-size: 0.77em; line-height: 1.45; text-align: center; }
-        .skill-bonus-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .skill-bonus-option { padding: 14px 10px; border-radius: 9px; background: rgba(18,18,20,0.85); cursor: pointer; font-weight: 900; text-align: center; transition: 0.2s; }
-        .skill-bonus-option:hover { transform: translateY(-2px); }
-        .skill-bonus-option strong { display: block; font-size: 0.82em; text-transform: uppercase; }
-        .skill-bonus-option span { display: block; margin-top: 5px; font-size: 0.67em; }
-        .skill-bonus-option.advantage { border: 1px solid var(--accent-green); color: var(--accent-green); }
-        .skill-bonus-option.advantage:hover { background: rgba(0,230,118,0.13); box-shadow: 0 0 14px rgba(0,230,118,0.18); }
-        .skill-bonus-option.disadvantage { border: 1px solid var(--accent-red); color: #ff7772; }
-        .skill-bonus-option.disadvantage:hover { background: rgba(229,57,53,0.13); box-shadow: 0 0 14px rgba(229,57,53,0.18); }
-        .skill-bonus-cancel { width: 100%; margin-top: 12px; padding: 9px; border: 1px solid #414148; border-radius: 7px; background: #25252a; color: var(--text-secondary); cursor: pointer; font-size: 0.7em; font-weight: 900; }
-        .skill-bonus-button { flex: 0 0 auto; padding: 6px 8px; border: 1px solid var(--accent-yellow); border-radius: 6px; background: rgba(255,207,51,0.09); color: var(--accent-yellow); cursor: pointer; font-size: 0.56em; font-weight: 900; transition: 0.2s; }
-        .skill-bonus-button:hover { background: var(--accent-yellow); color: #000; }
+        .skill-group-popup { width: min(650px, 95vw); box-sizing: border-box; border-color: rgba(255,207,51,0.55); }
+        .skill-group-title { margin: 0; color: var(--accent-yellow); font-size: 1.05em; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+        .skill-group-description { margin: 7px 0 17px; color: var(--text-secondary); font-size: 0.76em; line-height: 1.45; text-align: center; }
+        .skill-group-effects { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 15px; }
+        .skill-group-effect { padding: 12px 10px; border: 1px solid #3d3d44; border-radius: 8px; background: #17171b; color: var(--text-secondary); cursor: pointer; text-align: center; transition: 0.2s; }
+        .skill-group-effect strong { display: block; font-size: 0.78em; text-transform: uppercase; }
+        .skill-group-effect span { display: block; margin-top: 4px; font-size: 0.65em; }
+        .skill-group-effect.advantage.active { border-color: var(--accent-green); background: rgba(0,230,118,0.12); color: var(--accent-green); box-shadow: 0 0 13px rgba(0,230,118,0.12); }
+        .skill-group-effect.disadvantage.active { border-color: var(--accent-red); background: rgba(229,57,53,0.12); color: #ff7772; box-shadow: 0 0 13px rgba(229,57,53,0.12); }
+        .skill-group-toolbar { padding: 9px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #34343a; border-radius: 8px 8px 0 0; background: rgba(0,0,0,0.28); }
+        .skill-group-counter { color: var(--accent-yellow); font-size: 0.68em; font-weight: 900; }
+        .skill-group-toolbar-actions { display: flex; gap: 6px; }
+        .skill-group-toolbar-actions button { padding: 6px 8px; border: 1px solid #414148; border-radius: 5px; background: #25252a; color: var(--text-secondary); cursor: pointer; font-size: 0.58em; font-weight: 900; }
+        .skill-group-list { max-height: 245px; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 9px; border: 1px solid #34343a; border-top: 0; border-radius: 0 0 8px 8px; background: rgba(0,0,0,0.16); }
+        .skill-group-option { min-width: 0; padding: 8px 9px; display: flex; align-items: center; gap: 7px; border: 1px solid #36363d; border-radius: 6px; background: #17171b; color: var(--text-primary); cursor: pointer; font-size: 0.65em; font-weight: 800; }
+        .skill-group-option:has(input:checked) { border-color: var(--accent-yellow); background: rgba(255,207,51,0.09); }
+        .skill-group-option input { width: 16px; height: 16px; flex: 0 0 auto; margin: 0; accent-color: var(--accent-yellow); }
+        .skill-group-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .skill-group-apply { width: 100%; margin-top: 12px; padding: 11px; border: 1px solid var(--accent-yellow); border-radius: 7px; background: var(--accent-yellow); color: #000; cursor: pointer; font-size: 0.72em; font-weight: 900; }
+        .skill-group-active-section { margin-top: 18px; padding-top: 14px; border-top: 1px solid #3a3a41; }
+        .skill-group-active-title { margin: 0 0 9px; color: var(--text-primary); font-size: 0.72em; text-align: center; text-transform: uppercase; }
+        .skill-group-active-list { display: flex; flex-direction: column; gap: 7px; }
+        .skill-group-active-card { padding: 9px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #414148; border-left: 4px solid var(--accent-yellow); border-radius: 7px; background: #17171b; }
+        .skill-group-active-card.advantage { border-left-color: var(--accent-green); }
+        .skill-group-active-card.disadvantage { border-left-color: var(--accent-red); }
+        .skill-group-active-info { min-width: 0; }
+        .skill-group-active-effect { font-size: 0.68em; font-weight: 900; text-transform: uppercase; }
+        .skill-group-active-card.advantage .skill-group-active-effect { color: var(--accent-green); }
+        .skill-group-active-card.disadvantage .skill-group-active-effect { color: #ff7772; }
+        .skill-group-active-skills { margin-top: 3px; color: var(--text-secondary); font-size: 0.61em; line-height: 1.35; overflow-wrap: anywhere; }
+        .skill-group-remove { flex: 0 0 auto; padding: 6px 8px; border: 1px solid rgba(229,57,53,0.55); border-radius: 5px; background: rgba(229,57,53,0.14); color: #ff7772; cursor: pointer; font-size: 0.58em; font-weight: 900; }
+        .skill-group-empty { padding: 11px; border: 1px dashed #414148; border-radius: 7px; color: var(--text-secondary); font-size: 0.66em; text-align: center; }
+        .skill-group-header-button { width: auto; min-width: 76px; height: 34px; padding: 5px 10px; border: 1px solid var(--accent-yellow); border-radius: 6px; background: rgba(255,207,51,0.1); color: var(--accent-yellow); cursor: pointer; font-size: 0.64em; font-weight: 900; }
+        .skill-group-header-button:hover { background: var(--accent-yellow); color: #000; }
+        .skill-dice-bonus-tag { min-height: 12px; margin-top: -3px; color: var(--accent-yellow); font-size: 0.55em; font-weight: 900; text-align: center; text-transform: uppercase; }
         .character-details-popup { width: min(620px, 94vw); }
         .character-details-popup h2 { margin: 0 0 5px; color: var(--accent-blue); font-size: 1.05em; text-transform: uppercase; letter-spacing: 0.07em; }
         .character-details-popup .popup-subtitle { margin: 0 0 20px; color: var(--text-secondary); font-size: 0.76em; line-height: 1.45; }
@@ -333,6 +353,7 @@
             .popup-box-dice { width: 95%; height: 300px; }
             .popup-grid { grid-template-columns: 1fr; }
             .custom-dice-grid { grid-template-columns: 1fr; }
+            .skill-group-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .inv-table th, .inv-table td { padding: 8px 5px; font-size: 0.85em; }
             .inventory-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
             .clues-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
@@ -542,15 +563,31 @@
     </div>
 </div>
 
-<div id="popup-skill-dice-bonus" class="popup-overlay" onclick="closeSkillBonusPopup()">
-    <div class="popup-box skill-bonus-popup" onclick="event.stopPropagation()">
-        <h3 id="skill-bonus-title" class="skill-bonus-title">BÔNUS DA PERÍCIA</h3>
-        <p class="skill-bonus-description">Escolha um modificador para esta rolagem.</p>
-        <div class="skill-bonus-options">
-            <button type="button" class="skill-bonus-option advantage" onclick="rollPendingSkillWithDiceModifier(1)"><strong>Vantagem</strong><span>+1 dado</span></button>
-            <button type="button" class="skill-bonus-option disadvantage" onclick="rollPendingSkillWithDiceModifier(-1)"><strong>Desvantagem</strong><span>−1 dado</span></button>
+<div id="popup-skill-groups" class="popup-overlay" onclick="closeSkillGroupPopup()">
+    <div class="popup-box skill-group-popup" onclick="event.stopPropagation()">
+        <h3 class="skill-group-title">✨ BÔNUS DE PERÍCIAS</h3>
+        <p class="skill-group-description">Escolha o efeito e aplique em uma ou várias perícias. O bônus permanece ativo até ser removido.</p>
+
+        <input type="hidden" id="skill-group-effect" value="1">
+        <div class="skill-group-effects">
+            <button id="skill-group-advantage" type="button" class="skill-group-effect advantage active" onclick="selectSkillGroupEffect(1)"><strong>Vantagem</strong><span>Adiciona +1 dado</span></button>
+            <button id="skill-group-disadvantage" type="button" class="skill-group-effect disadvantage" onclick="selectSkillGroupEffect(-1)"><strong>Desvantagem</strong><span>Remove −1 dado</span></button>
         </div>
-        <button type="button" class="skill-bonus-cancel" onclick="closeSkillBonusPopup()">CANCELAR</button>
+
+        <div class="skill-group-toolbar">
+            <strong id="skill-group-counter" class="skill-group-counter">0 selecionadas</strong>
+            <div class="skill-group-toolbar-actions">
+                <button type="button" onclick="selectAllSkillGroupOptions(true)">SELECIONAR TODAS</button>
+                <button type="button" onclick="selectAllSkillGroupOptions(false)">LIMPAR</button>
+            </div>
+        </div>
+        <div id="skill-group-list" class="skill-group-list"></div>
+        <button type="button" class="skill-group-apply" onclick="applySkillDiceBonusGroup()">APLICAR BÔNUS</button>
+
+        <div class="skill-group-active-section">
+            <h4 class="skill-group-active-title">Bônus ativos</h4>
+            <div id="skill-group-active-list" class="skill-group-active-list"></div>
+        </div>
     </div>
 </div>
 
@@ -805,6 +842,7 @@
         <div class="panel" style="flex:1;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
                 <div class="panel-title" style="flex:1; margin:0; padding:0; border:0; text-align:left;">Perícias (Clique para Editar)</div>
+                <button type="button" class="skill-group-header-button" onclick="openSkillGroupPopup()" title="Aplicar vantagem ou desvantagem em várias perícias">✨ BÔNUS</button>
                 <button type="button" class="btn-roll" onclick="abrirDadoPersonalizado()" title="Rolar dado personalizado" aria-label="Rolar dado personalizado" style="width:40px; min-width:40px; height:34px; padding:5px; margin:0; display:flex; align-items:center; justify-content:center; border-color:var(--accent-blue); background:rgba(0,176,255,0.1);">
                     <img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" alt="" style="width:20px; height:20px; filter:invert(1);">
                 </button>
@@ -1087,6 +1125,7 @@
     let lastAttackWasCrit = false;
     let atributosBaseCorpo = null;
     let tipoCorpoAplicado = null;
+    let skillDiceBonusGroups = [];
 
     let charImages = { normal: '', lesionado: '', enlouquecendo: '', les_enlouq: '' };
     let charStatus = { lesionado: false, inconsciente: false, morrendo: false, enlouquecendo: false };
@@ -1301,25 +1340,142 @@
     }
     function closeSkillPopup() { document.getElementById('popup-skill-info').style.display = 'none'; }
 
-    let pendingSkillBonusRoll = null;
-
-    function openSkillBonusPopup(name, id, attribute, modifier) {
-        pendingSkillBonusRoll = { name, id, attribute, modifier };
-        document.getElementById('skill-bonus-title').textContent = `BÔNUS — ${name}`;
-        document.getElementById('popup-skill-dice-bonus').style.display = 'flex';
+    function normalizeSkillDiceBonusGroups(groups) {
+        if (!Array.isArray(groups)) return [];
+        const validSkillNames = new Set(periciasBase.map(skill => skill.nome));
+        return groups.map((group, index) => {
+            const effect = Number(group && group.effect) < 0 ? -1 : 1;
+            const skills = Array.isArray(group && group.skills)
+                ? [...new Set(group.skills.map(String).filter(name => validSkillNames.has(name)))]
+                : [];
+            return { id: String(group && group.id || `skill_bonus_${Date.now()}_${index}`), effect, skills };
+        }).filter(group => group.skills.length > 0);
     }
 
-    function rollPendingSkillWithDiceModifier(diceModifier) {
-        if (!pendingSkillBonusRoll) return;
-        const roll = { ...pendingSkillBonusRoll };
-        const normalizedModifier = Math.max(-1, Math.min(1, Math.trunc(Number(diceModifier) || 0)));
-        closeSkillBonusPopup();
-        rolarTesteD20(roll.name, roll.id, roll.attribute, roll.modifier, false, null, normalizedModifier);
+    function calculateSkillDiceModifier(skillName) {
+        return skillDiceBonusGroups.reduce((total, group) => group.skills.includes(skillName) ? total + group.effect : total, 0);
     }
 
-    function closeSkillBonusPopup() {
-        document.getElementById('popup-skill-dice-bonus').style.display = 'none';
-        pendingSkillBonusRoll = null;
+    function formatSkillDiceModifier(value) {
+        const modifier = Math.trunc(Number(value) || 0);
+        if (!modifier) return '';
+        const quantity = Math.abs(modifier);
+        return `${modifier > 0 ? '+' : '−'}${quantity} ${quantity === 1 ? 'DADO' : 'DADOS'}`;
+    }
+
+    function updateSkillDiceBonusTags() {
+        periciasBase.forEach(skill => {
+            const slug = skill.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\W/g, "_");
+            const tag = document.getElementById(`skill_${slug}_dice_bonus`);
+            if (!tag) return;
+            const modifier = calculateSkillDiceModifier(skill.nome);
+            tag.textContent = formatSkillDiceModifier(modifier);
+            tag.style.display = modifier ? 'block' : 'none';
+            tag.style.color = modifier > 0 ? 'var(--accent-green)' : '#ff7772';
+        });
+    }
+
+    function selectSkillGroupEffect(effect) {
+        const normalized = Number(effect) < 0 ? -1 : 1;
+        document.getElementById('skill-group-effect').value = normalized;
+        document.getElementById('skill-group-advantage').classList.toggle('active', normalized > 0);
+        document.getElementById('skill-group-disadvantage').classList.toggle('active', normalized < 0);
+    }
+
+    function updateSkillGroupCounter() {
+        const selected = document.querySelectorAll('#skill-group-list input[type="checkbox"]:checked').length;
+        document.getElementById('skill-group-counter').textContent = `${selected} ${selected === 1 ? 'selecionada' : 'selecionadas'}`;
+    }
+
+    function renderSkillGroupSelection() {
+        const list = document.getElementById('skill-group-list');
+        list.replaceChildren();
+        periciasBase.forEach(skill => {
+            const option = document.createElement('label');
+            const checkbox = document.createElement('input');
+            const name = document.createElement('span');
+            option.className = 'skill-group-option';
+            checkbox.type = 'checkbox';
+            checkbox.value = skill.nome;
+            checkbox.addEventListener('change', updateSkillGroupCounter);
+            name.textContent = skill.nome;
+            option.append(checkbox, name);
+            list.appendChild(option);
+        });
+        updateSkillGroupCounter();
+    }
+
+    function selectAllSkillGroupOptions(checked) {
+        document.querySelectorAll('#skill-group-list input[type="checkbox"]').forEach(input => { input.checked = checked; });
+        updateSkillGroupCounter();
+    }
+
+    function renderActiveSkillDiceBonusGroups() {
+        const list = document.getElementById('skill-group-active-list');
+        list.replaceChildren();
+        if (!skillDiceBonusGroups.length) {
+            const empty = document.createElement('div');
+            empty.className = 'skill-group-empty';
+            empty.textContent = 'Nenhuma vantagem ou desvantagem ativa.';
+            list.appendChild(empty);
+            return;
+        }
+
+        skillDiceBonusGroups.forEach(group => {
+            const card = document.createElement('div');
+            const info = document.createElement('div');
+            const effect = document.createElement('div');
+            const skills = document.createElement('div');
+            const remove = document.createElement('button');
+            const advantage = group.effect > 0;
+
+            card.className = `skill-group-active-card ${advantage ? 'advantage' : 'disadvantage'}`;
+            info.className = 'skill-group-active-info';
+            effect.className = 'skill-group-active-effect';
+            skills.className = 'skill-group-active-skills';
+            remove.type = 'button';
+            remove.className = 'skill-group-remove';
+            effect.textContent = advantage ? 'Vantagem · +1 dado' : 'Desvantagem · −1 dado';
+            skills.textContent = group.skills.join(', ');
+            remove.textContent = 'REMOVER';
+            remove.addEventListener('click', () => removeSkillDiceBonusGroup(group.id));
+            info.append(effect, skills);
+            card.append(info, remove);
+            list.appendChild(card);
+        });
+    }
+
+    function openSkillGroupPopup() {
+        selectSkillGroupEffect(1);
+        renderSkillGroupSelection();
+        renderActiveSkillDiceBonusGroups();
+        document.getElementById('popup-skill-groups').style.display = 'flex';
+    }
+
+    function closeSkillGroupPopup() {
+        document.getElementById('popup-skill-groups').style.display = 'none';
+    }
+
+    function applySkillDiceBonusGroup() {
+        const skills = Array.from(document.querySelectorAll('#skill-group-list input[type="checkbox"]:checked')).map(input => input.value);
+        if (!skills.length) return alert('Escolha pelo menos uma perícia.');
+        const effect = Number(document.getElementById('skill-group-effect').value) < 0 ? -1 : 1;
+        skillDiceBonusGroups.push({
+            id: `skill_bonus_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            effect,
+            skills
+        });
+        selectAllSkillGroupOptions(false);
+        updateSkillDiceBonusTags();
+        renderActiveSkillDiceBonusGroups();
+        save();
+    }
+
+    function removeSkillDiceBonusGroup(id) {
+        skillDiceBonusGroups = skillDiceBonusGroups.filter(group => group.id !== id);
+        updateSkillDiceBonusTags();
+        renderActiveSkillDiceBonusGroups();
+        save();
     }
 
     // --- HABILIDADES E ITENS ---
@@ -3016,7 +3172,7 @@ function removeCurrentClue() {
     function rolarPoolD20PorAtributo(valorAtributo, modificadorDados = 0) {
         const atributo = Math.trunc(Number(valorAtributo) || 0);
         const quantidadeBase = atributo === 0 ? 1 : Math.abs(atributo);
-        const ajusteDados = Math.max(-1, Math.min(1, Math.trunc(Number(modificadorDados) || 0)));
+        const ajusteDados = Math.max(-20, Math.min(20, Math.trunc(Number(modificadorDados) || 0)));
         const quantidade = Math.max(1, quantidadeBase + ajusteDados);
         const resultados = Array.from({ length: quantidade }, () => Math.floor(Math.random() * 20) + 1);
         const resultadoEscolhido = atributo < 0 ? Math.min(...resultados) : Math.max(...resultados);
@@ -3032,12 +3188,13 @@ function removeCurrentClue() {
         };
     }
 
-    function rolarTesteD20(n, id, ak, modPerc, rolagemDeArma = false, armaId = null, modificadorDados = 0) {
+    function rolarTesteD20(n, id, ak, modPerc, rolagemDeArma = false, armaId = null, modificadorDados = null) {
         lastAttackWasCrit = false;
         const sn = id.replace("skill_", "");
         const skEl = document.getElementById(id);
         const sk = skEl ? parseInt(skEl.value) || 0 : 0;
         const at = obterValorAtributoEfetivo(ak);
+        const ajusteDadosAtivo = modificadorDados === null ? calculateSkillDiceModifier(n) : Math.trunc(Number(modificadorDados) || 0);
         const chkEl = document.getElementById("chk_" + sn);
         const tr = chkEl ? chkEl.checked : false;
 
@@ -3070,7 +3227,7 @@ function removeCurrentClue() {
             let anyCrit = false;
 
             for (let i = 0; i < numAttacks; i++) {
-                const pool = rolarPoolD20PorAtributo(at, modificadorDados);
+                const pool = rolarPoolD20PorAtributo(at, ajusteDadosAtivo);
                 const rd = pool.resultadoEscolhido;
                 const isThisCrit = rd === 20 || (possuiCriticoPersonalizado && rd >= margemCritico);
 
@@ -3090,7 +3247,7 @@ function removeCurrentClue() {
             return;
         }
 
-        const pool = rolarPoolD20PorAtributo(at, modificadorDados);
+        const pool = rolarPoolD20PorAtributo(at, ajusteDadosAtivo);
         const d = pool.resultadoEscolhido;
         const isCrit = rolagemDeArma && (d === 20 || (possuiCriticoPersonalizado && d >= margemCritico));
         if (rolagemDeArma) lastAttackWasCrit = isCrit;
@@ -3281,7 +3438,7 @@ function removeCurrentClue() {
         if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
         const currentProfileImageUrl = getActiveProfileImageUrl();
         const activeRangedWeapon = getActiveRangedWeaponOverlayData();
-        const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), defense: document.getElementById('defense_val').value, info:{}, characterDetails: { ...characterDetails }, charImages: charImages, charStatus: charStatus, modoCombate: combatMode, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
+        const d = { attrs:{}, skills:{}, inv:[], abilities:[], rituals:[], clues: cluesData.map(clue => ({ ...clue })), skillDiceBonusGroups: normalizeSkillDiceBonusGroups(skillDiceBonusGroups), defense: document.getElementById('defense_val').value, info:{}, characterDetails: { ...characterDetails }, charImages: charImages, charStatus: charStatus, modoCombate: combatMode, attrBasesCorpo: { ...atributosBaseCorpo }, tipoCorpoAplicado: tipoCorpoAplicado || obterTipoCorpoAtual(), activeWeaponId: activeWeaponId || (document.getElementById('active-weapon-select') ? document.getElementById('active-weapon-select').value : "") };
         ["char_nome", "char_nex", "char_ocupacao", "char_credito", "char_tipo_corpo", "char_cor_overlay", "vida_atual", "vida_max", "sani_atual", "sani_max"].forEach(id => { if(document.getElementById(id)) d.info[id] = document.getElementById(id).value; });
         d.info['char_img'] = currentProfileImageUrl;
         document.querySelectorAll('.attr-input').forEach(i => d.attrs[i.id] = i.value);
@@ -3395,11 +3552,11 @@ function removeCurrentClue() {
                 <div class="skill-header" style="margin-bottom: 8px;">
                     <span style="font-size: 0.7em; font-weight: bold; text-transform: uppercase; color: var(--text-primary); pointer-events: none;">${p.nome}</span>
                 </div>
-                <div style="display:flex; justify-content:center; align-items:stretch; gap:5px; margin-bottom:8px;">
-                    <button onclick="event.stopPropagation(); rolarTesteD20('${p.nome}','skill_${sn}','${p.attr}',${p.mod})" class="btn-roll" style="min-width:0; flex:1; border-color:var(--accent-blue); background:rgba(0,176,255,0.1); display:flex; justify-content:center; align-items:center; padding:6px 0;">
+                <div id="skill_${sn}_dice_bonus" class="skill-dice-bonus-tag" style="display:none;"></div>
+                <div style="display:flex; justify-content:center; align-items:center; margin-bottom:8px;">
+                    <button onclick="event.stopPropagation(); rolarTesteD20('${p.nome}','skill_${sn}','${p.attr}',${p.mod})" class="btn-roll" style="width:100%; border-color:var(--accent-blue); background:rgba(0,176,255,0.1); display:flex; justify-content:center; align-items:center; padding:6px 0;">
                         <img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" style="width: 20px; height: 20px; filter: invert(1);">
                     </button>
-                    <button type="button" class="skill-bonus-button" onclick="event.stopPropagation(); openSkillBonusPopup('${p.nome}','skill_${sn}','${p.attr}',${p.mod})">BÔNUS</button>
                 </div>
                 <div class="skill-targets" id="skill_${sn}_targets" style="pointer-events: none;"></div>
                 <input type="checkbox" id="chk_${sn}" style="display:none;">
@@ -3505,6 +3662,7 @@ function removeCurrentClue() {
     function populateData(d) {
         activeWeaponId = d.activeWeaponId || "";
         combatMode = d.modoCombate === true || d.modoCombate === 'true';
+        skillDiceBonusGroups = normalizeSkillDiceBonusGroups(d.skillDiceBonusGroups);
         updateCombatModeButton();
         characterDetails = {
             idade: String((d.characterDetails && d.characterDetails.idade) ?? (d.info && d.info.char_idade) ?? ''),
@@ -3561,7 +3719,7 @@ function removeCurrentClue() {
             addRitual(r.n, r.el, dHTML, r.circ||'1º', r.ex||'-', r.alc||'-', r.alv||'-', r.dur||'-', r.res||'-', descGeral, descDisc, descVerd, r.eq !== false, r.img || "");
         });
         
-        updateStatusBars(); updateAllPericias(); updateWeight(); updateWeaponsDisplay(); updateRitualsCount(); updateLearnedRitualsDisplay();
+        updateStatusBars(); updateAllPericias(); updateSkillDiceBonusTags(); updateWeight(); updateWeaponsDisplay(); updateRitualsCount(); updateLearnedRitualsDisplay();
         document.querySelectorAll('[id^="chk_"]').forEach(c => { if(c.checked) toggleTrained(c.id.replace('chk_','')); });
         isLoadingData = false; 
         if (migrouMunicoesAntigas && !viewCode) save();
