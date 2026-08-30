@@ -272,6 +272,21 @@
         .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
         .popup-box { background: var(--bg-card); border: 2px solid var(--border-color); padding: 25px; border-radius: 15px; width: 450px; box-shadow: var(--shadow-card); backdrop-filter: blur(15px); max-height: 90vh; overflow-y: auto; }
+        .skill-bonus-popup { width: min(430px, 94vw); box-sizing: border-box; border-color: rgba(255,207,51,0.55); }
+        .skill-bonus-title { margin: 0; color: var(--accent-yellow); font-size: 1.02em; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+        .skill-bonus-description { margin: 8px 0 18px; color: var(--text-secondary); font-size: 0.77em; line-height: 1.45; text-align: center; }
+        .skill-bonus-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .skill-bonus-option { padding: 14px 10px; border-radius: 9px; background: rgba(18,18,20,0.85); cursor: pointer; font-weight: 900; text-align: center; transition: 0.2s; }
+        .skill-bonus-option:hover { transform: translateY(-2px); }
+        .skill-bonus-option strong { display: block; font-size: 0.82em; text-transform: uppercase; }
+        .skill-bonus-option span { display: block; margin-top: 5px; font-size: 0.67em; }
+        .skill-bonus-option.advantage { border: 1px solid var(--accent-green); color: var(--accent-green); }
+        .skill-bonus-option.advantage:hover { background: rgba(0,230,118,0.13); box-shadow: 0 0 14px rgba(0,230,118,0.18); }
+        .skill-bonus-option.disadvantage { border: 1px solid var(--accent-red); color: #ff7772; }
+        .skill-bonus-option.disadvantage:hover { background: rgba(229,57,53,0.13); box-shadow: 0 0 14px rgba(229,57,53,0.18); }
+        .skill-bonus-cancel { width: 100%; margin-top: 12px; padding: 9px; border: 1px solid #414148; border-radius: 7px; background: #25252a; color: var(--text-secondary); cursor: pointer; font-size: 0.7em; font-weight: 900; }
+        .skill-bonus-button { flex: 0 0 auto; padding: 6px 8px; border: 1px solid var(--accent-yellow); border-radius: 6px; background: rgba(255,207,51,0.09); color: var(--accent-yellow); cursor: pointer; font-size: 0.56em; font-weight: 900; transition: 0.2s; }
+        .skill-bonus-button:hover { background: var(--accent-yellow); color: #000; }
         .character-details-popup { width: min(620px, 94vw); }
         .character-details-popup h2 { margin: 0 0 5px; color: var(--accent-blue); font-size: 1.05em; text-transform: uppercase; letter-spacing: 0.07em; }
         .character-details-popup .popup-subtitle { margin: 0 0 20px; color: var(--text-secondary); font-size: 0.76em; line-height: 1.45; }
@@ -524,6 +539,18 @@
             <button class="btn-add" style="flex:1; margin:0; background: var(--accent-blue);" onclick="saveSkillPopup()">SALVAR</button>
             <button class="btn-del" style="flex:1; padding:12px; border-radius:6px; background:#333;" onclick="closeSkillPopup()">FECHAR</button>
         </div>
+    </div>
+</div>
+
+<div id="popup-skill-dice-bonus" class="popup-overlay" onclick="closeSkillBonusPopup()">
+    <div class="popup-box skill-bonus-popup" onclick="event.stopPropagation()">
+        <h3 id="skill-bonus-title" class="skill-bonus-title">BÔNUS DA PERÍCIA</h3>
+        <p class="skill-bonus-description">Escolha um modificador para esta rolagem.</p>
+        <div class="skill-bonus-options">
+            <button type="button" class="skill-bonus-option advantage" onclick="rollPendingSkillWithDiceModifier(1)"><strong>Vantagem</strong><span>+1 dado</span></button>
+            <button type="button" class="skill-bonus-option disadvantage" onclick="rollPendingSkillWithDiceModifier(-1)"><strong>Desvantagem</strong><span>−1 dado</span></button>
+        </div>
+        <button type="button" class="skill-bonus-cancel" onclick="closeSkillBonusPopup()">CANCELAR</button>
     </div>
 </div>
 
@@ -1273,6 +1300,27 @@
         toggleTrained(sn); save(); closeSkillPopup();
     }
     function closeSkillPopup() { document.getElementById('popup-skill-info').style.display = 'none'; }
+
+    let pendingSkillBonusRoll = null;
+
+    function openSkillBonusPopup(name, id, attribute, modifier) {
+        pendingSkillBonusRoll = { name, id, attribute, modifier };
+        document.getElementById('skill-bonus-title').textContent = `BÔNUS — ${name}`;
+        document.getElementById('popup-skill-dice-bonus').style.display = 'flex';
+    }
+
+    function rollPendingSkillWithDiceModifier(diceModifier) {
+        if (!pendingSkillBonusRoll) return;
+        const roll = { ...pendingSkillBonusRoll };
+        const normalizedModifier = Math.max(-1, Math.min(1, Math.trunc(Number(diceModifier) || 0)));
+        closeSkillBonusPopup();
+        rolarTesteD20(roll.name, roll.id, roll.attribute, roll.modifier, false, null, normalizedModifier);
+    }
+
+    function closeSkillBonusPopup() {
+        document.getElementById('popup-skill-dice-bonus').style.display = 'none';
+        pendingSkillBonusRoll = null;
+    }
 
     // --- HABILIDADES E ITENS ---
     function openAbilityPopup() { document.getElementById('popup-new-ability').style.display='flex'; }
@@ -2965,14 +3013,18 @@ function removeCurrentClue() {
         }
     }
     
-    function rolarPoolD20PorAtributo(valorAtributo) {
+    function rolarPoolD20PorAtributo(valorAtributo, modificadorDados = 0) {
         const atributo = Math.trunc(Number(valorAtributo) || 0);
-        const quantidade = atributo === 0 ? 1 : Math.abs(atributo);
+        const quantidadeBase = atributo === 0 ? 1 : Math.abs(atributo);
+        const ajusteDados = Math.max(-1, Math.min(1, Math.trunc(Number(modificadorDados) || 0)));
+        const quantidade = Math.max(1, quantidadeBase + ajusteDados);
         const resultados = Array.from({ length: quantidade }, () => Math.floor(Math.random() * 20) + 1);
         const resultadoEscolhido = atributo < 0 ? Math.min(...resultados) : Math.max(...resultados);
 
         return {
             atributo,
+            quantidadeBase,
+            ajusteDados,
             quantidade,
             resultados,
             resultadoEscolhido,
@@ -2980,7 +3032,7 @@ function removeCurrentClue() {
         };
     }
 
-    function rolarTesteD20(n, id, ak, modPerc, rolagemDeArma = false, armaId = null) {
+    function rolarTesteD20(n, id, ak, modPerc, rolagemDeArma = false, armaId = null, modificadorDados = 0) {
         lastAttackWasCrit = false;
         const sn = id.replace("skill_", "");
         const skEl = document.getElementById(id);
@@ -3018,7 +3070,7 @@ function removeCurrentClue() {
             let anyCrit = false;
 
             for (let i = 0; i < numAttacks; i++) {
-                const pool = rolarPoolD20PorAtributo(at);
+                const pool = rolarPoolD20PorAtributo(at, modificadorDados);
                 const rd = pool.resultadoEscolhido;
                 const isThisCrit = rd === 20 || (possuiCriticoPersonalizado && rd >= margemCritico);
 
@@ -3038,7 +3090,7 @@ function removeCurrentClue() {
             return;
         }
 
-        const pool = rolarPoolD20PorAtributo(at);
+        const pool = rolarPoolD20PorAtributo(at, modificadorDados);
         const d = pool.resultadoEscolhido;
         const isCrit = rolagemDeArma && (d === 20 || (possuiCriticoPersonalizado && d >= margemCritico));
         if (rolagemDeArma) lastAttackWasCrit = isCrit;
@@ -3343,10 +3395,11 @@ function removeCurrentClue() {
                 <div class="skill-header" style="margin-bottom: 8px;">
                     <span style="font-size: 0.7em; font-weight: bold; text-transform: uppercase; color: var(--text-primary); pointer-events: none;">${p.nome}</span>
                 </div>
-                <div style="display:flex; justify-content:center; align-items:center; margin-bottom: 8px;">
-                    <button onclick="event.stopPropagation(); rolarTesteD20('${p.nome}','skill_${sn}','${p.attr}',${p.mod})" class="btn-roll" style="width:100%; border-color:var(--accent-blue); background:rgba(0,176,255,0.1); display:flex; justify-content:center; align-items:center; padding: 6px 0;">
+                <div style="display:flex; justify-content:center; align-items:stretch; gap:5px; margin-bottom:8px;">
+                    <button onclick="event.stopPropagation(); rolarTesteD20('${p.nome}','skill_${sn}','${p.attr}',${p.mod})" class="btn-roll" style="min-width:0; flex:1; border-color:var(--accent-blue); background:rgba(0,176,255,0.1); display:flex; justify-content:center; align-items:center; padding:6px 0;">
                         <img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" style="width: 20px; height: 20px; filter: invert(1);">
                     </button>
+                    <button type="button" class="skill-bonus-button" onclick="event.stopPropagation(); openSkillBonusPopup('${p.nome}','skill_${sn}','${p.attr}',${p.mod})">BÔNUS</button>
                 </div>
                 <div class="skill-targets" id="skill_${sn}_targets" style="pointer-events: none;"></div>
                 <input type="checkbox" id="chk_${sn}" style="display:none;">
