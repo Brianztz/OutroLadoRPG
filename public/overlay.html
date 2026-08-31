@@ -832,6 +832,13 @@
             if (!players.size) setConnectionMessage('Aguardando jogadores conectados...');
         }
 
+        function keepDisconnectedPlayer(codeValue) {
+            const code = String(codeValue || '').trim().toUpperCase();
+            const data = players.get(code);
+            if (!data) return;
+            players.set(code, { ...data, online: false });
+        }
+
         function activePlayerCode() {
             if (!initiativeState || !initiativeState.started || !initiativeState.activeId) return '';
             const activeId = String(initiativeState.activeId);
@@ -869,15 +876,15 @@
                 receivedCodes.add(code);
                 updatePlayerWidget(data);
             });
-            [...players.keys()].forEach(code => { if (!receivedCodes.has(code)) removePlayer(code); });
-            if (!receivedCodes.size) setConnectionMessage(`Aguardando jogadores da mesa ${tableCode}...`);
+            if (!receivedCodes.size && !players.size) setConnectionMessage(`Aguardando jogadores da mesa ${tableCode}...`);
+            else hideConnectionMessage();
         });
 
         socket.on('update_mestre', data => {
             if (normalizeTableCode(data && data.mesa) === tableCode) updatePlayerWidget(data);
         });
         socket.on('player_disconnected', data => {
-            if (normalizeTableCode(data && data.mesa) === tableCode) removePlayer(data && data.codigo);
+            if (normalizeTableCode(data && data.mesa) === tableCode) keepDisconnectedPlayer(data && data.codigo);
         });
         socket.on('initiative_state_updated', state => {
             initiativeState = state && typeof state === 'object'
