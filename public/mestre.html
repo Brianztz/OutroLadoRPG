@@ -87,6 +87,20 @@
         .initiative-previous { background: #3b3b43; color: white; }
         .initiative-next { background: var(--accent-yellow); color: #000; }
         .initiative-clear { grid-column: 1 / -1; border: 1px solid rgba(229,57,53,0.5) !important; background: rgba(229,57,53,0.12); color: #ff7772; }
+        .combat-sidebar { min-width: 340px; flex: 1.15; display: flex; flex-direction: column; gap: 12px; }
+        .combat-sidebar .initiative-container { min-width: 0; flex: 1 1 auto; }
+        .player-rolls-container { min-height: 190px; max-height: 310px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); box-shadow: 0 8px 28px rgba(0,0,0,0.55); backdrop-filter: blur(8px); }
+        .player-rolls-title { padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.52); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; }
+        .player-rolls-clear { padding: 5px 8px; border: 1px solid #45454c; border-radius: 5px; background: #29292f; color: var(--text-secondary); font-size: 0.72em; font-weight: 900; cursor: pointer; }
+        .player-rolls-clear:hover { border-color: var(--accent-red); color: #ff7772; }
+        .player-rolls-list { min-height: 0; padding: 8px; display: flex; flex: 1; flex-direction: column; gap: 7px; overflow-y: auto; }
+        .player-rolls-empty { margin: auto; padding: 20px 12px; color: var(--text-secondary); font-size: 0.72em; line-height: 1.45; text-align: center; }
+        .player-roll-entry { --roll-color: var(--accent-blue); padding: 9px 10px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 9px; align-items: center; border: 1px solid #3b3b42; border-left: 3px solid var(--roll-color); border-radius: 7px; background: rgba(10,10,12,0.88); animation: roll-entry-in 0.28s ease-out; }
+        .player-roll-info { min-width: 0; }
+        .player-roll-name { overflow: hidden; color: var(--text-primary); font-size: 0.73em; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+        .player-roll-action { margin-top: 3px; overflow: hidden; color: var(--roll-color); font-size: 0.62em; font-weight: 800; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+        .player-roll-time { margin-top: 3px; color: #696974; font-size: 0.55em; }
+        .player-roll-value { min-width: 48px; color: var(--roll-color); font-size: 1.48em; font-weight: 900; line-height: 1; text-align: center; text-shadow: 0 0 10px var(--roll-color); overflow-wrap: anywhere; }
         .master-tab-panel { display: none; }
         .master-tab-panel.active { display: flex; }
         .monsters-workspace { min-height: 0; flex: 1; flex-direction: column; gap: 14px; }
@@ -356,8 +370,9 @@
         .btn-close-modal { margin-bottom: 10px; padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent-red); color: white; font-size: 1em; font-weight: 900; cursor: pointer; }
         #iframe-ficha { width: 95%; max-width: 1400px; height: 85vh; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-body); }
         @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes roll-entry-in { from { opacity: 0; transform: translateX(12px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
-        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .initiative-container { min-width: 0; min-height: 480px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 285px; } .master-clue-book-stage { height: 300px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
+        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 480px; } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 285px; } .master-clue-book-stage { height: 300px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
     </style>
 </head>
 <body>
@@ -386,23 +401,29 @@
                 <div id="players-empty" class="players-empty"><strong>Aguardando jogadores</strong>Assim que uma ficha for aberta, ela aparecerá aqui automaticamente.</div>
             </div>
         </section>
-        <aside class="initiative-container">
-            <div class="initiative-title"><span>⚔️ CONTROLE DE INICIATIVA</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
-            <div class="initiative-add">
-                <div class="initiative-add-row">
-                    <input id="initiative-name-input" class="initiative-input" type="text" placeholder="Nome do inimigo ou NPC">
-                    <input id="initiative-value-input" class="initiative-input" type="number" value="0" aria-label="Iniciativa">
-                    <button class="initiative-add-button" type="button" onclick="addManualInitiative()">+</button>
+        <div class="combat-sidebar">
+            <aside class="initiative-container">
+                <div class="initiative-title"><span>⚔️ CONTROLE DE INICIATIVA</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
+                <div class="initiative-add">
+                    <div class="initiative-add-row">
+                        <input id="initiative-name-input" class="initiative-input" type="text" placeholder="Nome do inimigo ou NPC">
+                        <input id="initiative-value-input" class="initiative-input" type="number" value="0" aria-label="Iniciativa">
+                        <button class="initiative-add-button" type="button" onclick="addManualInitiative()">+</button>
+                    </div>
+                    <div class="initiative-auto-note">Jogadores entram automaticamente quando rolam Iniciativa na ficha.</div>
                 </div>
-                <div class="initiative-auto-note">Jogadores entram automaticamente quando rolam Iniciativa na ficha.</div>
-            </div>
-            <div id="initiative-list" class="initiative-list"></div>
-            <div class="initiative-controls">
-                <button id="initiative-previous" class="initiative-previous" type="button" onclick="previousInitiativeTurn()">← VOLTAR</button>
-                <button id="initiative-next" class="initiative-next" type="button" onclick="nextInitiativeTurn()">INICIAR COMBATE</button>
-                <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
-            </div>
-        </aside>
+                <div id="initiative-list" class="initiative-list"></div>
+                <div class="initiative-controls">
+                    <button id="initiative-previous" class="initiative-previous" type="button" onclick="previousInitiativeTurn()">← VOLTAR</button>
+                    <button id="initiative-next" class="initiative-next" type="button" onclick="nextInitiativeTurn()">INICIAR COMBATE</button>
+                    <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
+                </div>
+            </aside>
+            <section class="player-rolls-container" aria-label="Resultados das rolagens dos jogadores">
+                <div class="player-rolls-title"><span>🎲 ÚLTIMAS ROLAGENS</span><button class="player-rolls-clear" type="button" onclick="clearPlayerRollResults()">LIMPAR</button></div>
+                <div id="player-rolls-list" class="player-rolls-list" aria-live="polite"></div>
+            </section>
+        </div>
     </main>
 
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
@@ -660,6 +681,7 @@
         const socket = io();
         const playersBoard = document.getElementById('players-board');
         const connectedPlayers = new Map();
+        let playerRollHistory = [];
         let masterTableCode = normalizeTableCode(localStorage.getItem('master_table_code') || 'PADRAO');
         let initiativeState = loadInitiativeState();
         let monstersState = loadMonstersState();
@@ -729,6 +751,8 @@
             playersBoard.querySelectorAll('.player-card').forEach(card => card.remove());
             connectedPlayers.clear();
             updatePlayersCount();
+            playerRollHistory = [];
+            renderPlayerRollResults();
             initiativeState = loadInitiativeState();
             renderInitiative();
 
@@ -745,6 +769,79 @@
         function safeNumber(value, fallback = 0) {
             const number = Number(value);
             return Number.isFinite(number) ? number : fallback;
+        }
+
+        function playerRollColor(action) {
+            const normalized = String(action || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+            if (/FALHA|FRACASSO|CRITICO/.test(normalized)) return 'var(--accent-red)';
+            if (/EXTREMO/.test(normalized)) return 'var(--accent-yellow)';
+            if (/NORMAL|SUCESSO/.test(normalized)) return 'var(--accent-green)';
+            return 'var(--accent-blue)';
+        }
+
+        function renderPlayerRollResults() {
+            const list = document.getElementById('player-rolls-list');
+            if (!list) return;
+            list.replaceChildren();
+
+            if (!playerRollHistory.length) {
+                const empty = document.createElement('div');
+                empty.className = 'player-rolls-empty';
+                empty.textContent = 'As rolagens feitas pelos jogadores aparecerão aqui automaticamente.';
+                list.appendChild(empty);
+                return;
+            }
+
+            playerRollHistory.forEach(roll => {
+                const entry = document.createElement('article');
+                const info = document.createElement('div');
+                const name = document.createElement('div');
+                const action = document.createElement('div');
+                const time = document.createElement('div');
+                const value = document.createElement('div');
+
+                entry.className = 'player-roll-entry';
+                entry.style.setProperty('--roll-color', roll.color);
+                info.className = 'player-roll-info';
+                name.className = 'player-roll-name';
+                action.className = 'player-roll-action';
+                time.className = 'player-roll-time';
+                value.className = 'player-roll-value';
+                name.textContent = roll.player;
+                action.textContent = roll.action;
+                time.textContent = roll.time;
+                value.textContent = roll.result;
+                entry.setAttribute('aria-label', `${roll.player}: ${roll.action}. Resultado ${roll.result}`);
+
+                info.append(name, action, time);
+                entry.append(info, value);
+                list.appendChild(entry);
+            });
+        }
+
+        function addPlayerRollResult(rawData) {
+            if (!rawData || normalizeTableCode(rawData.mesa) !== masterTableCode) return;
+            const code = String(rawData.codigo || '').trim().toUpperCase();
+            const player = connectedPlayers.get(code);
+            const playerName = String(rawData.jogador || (player && player.nome) || 'Jogador').trim().slice(0, 120) || 'Jogador';
+            const action = String(rawData.acao || 'Rolagem').trim().slice(0, 500) || 'Rolagem';
+            const result = String(rawData.resultado ?? '—').trim().slice(0, 80) || '—';
+
+            playerRollHistory.unshift({
+                id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                player: playerName,
+                action,
+                result,
+                color: playerRollColor(action),
+                time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            });
+            playerRollHistory = playerRollHistory.slice(0, 20);
+            renderPlayerRollResults();
+        }
+
+        function clearPlayerRollResults() {
+            playerRollHistory = [];
+            renderPlayerRollResults();
         }
 
         function switchMasterTab(tab) {
@@ -2241,6 +2338,7 @@
         });
         socket.on('update_mestre', renderPlayer);
         socket.on('player_disconnected', data => removePlayer(data && data.codigo, data && data.mesa));
+        socket.on('novo_log', addPlayerRollResult);
         socket.on('initiative_rolled', applyPlayerInitiativeRoll);
 
         document.getElementById('initiative-name-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
@@ -2256,6 +2354,7 @@
         });
         updatePlayersCount();
         renderInitiative();
+        renderPlayerRollResults();
         renderMonsters();
         renderMasterClues();
         switchMasterTab(localStorage.getItem('mestre_active_tab'));
