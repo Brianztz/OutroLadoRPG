@@ -48,9 +48,13 @@ function getInitiativeState(table) {
     return initiativeStates.get(normalizedTable);
 }
 
-function playersSnapshot(table) {
+function playersSnapshot(table, includeOffline = false) {
     const normalizedTable = normalizeTableCode(table);
-    return Array.from(playersData.values()).filter(player => player && player.mesa === normalizedTable);
+    return Array.from(playersData.values()).filter(player => (
+        player
+        && player.mesa === normalizedTable
+        && (includeOffline || player.online !== false)
+    ));
 }
 
 function setAudienceTable(socket, type, rawTable) {
@@ -73,8 +77,8 @@ function unregisterPlayerSocket(socket, announce = true) {
     if (!sockets.size) {
         playerSockets.delete(key);
         const data = playersData.get(key);
-        playersData.delete(key);
         if (announce && data) {
+            playersData.set(key, { ...data, online: false });
             io.to(tableRoom(data.mesa)).emit('player_disconnected', { codigo: data.codigo, mesa: data.mesa });
         }
     }
@@ -133,7 +137,7 @@ io.on('connection', socket => {
 
     socket.on('overlay_ready', rawData => {
         const table = setAudienceTable(socket, 'overlay', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
-        socket.emit('players_snapshot', playersSnapshot(table));
+        socket.emit('players_snapshot', playersSnapshot(table, true));
         socket.emit('initiative_state_updated', getInitiativeState(table));
     });
 
