@@ -99,12 +99,16 @@ function registerPlayerSocket(table, code, socket) {
         if (previousTable) socket.leave(tableRoom(previousTable));
     }
 
+    const isFreshConnection = !playerSockets.has(key) || playerSockets.get(key).size === 0;
     if (!playerSockets.has(key)) playerSockets.set(key, new Set());
     playerSockets.get(key).add(socket.id);
     socket.join(tableRoom(normalizedTable));
     socket.data.playerKey = key;
     socket.data.playerCode = normalizedCode;
     socket.data.playerTable = normalizedTable;
+    if (isFreshConnection) {
+        io.to(tableRoom(normalizedTable)).emit('player_connected', { codigo: normalizedCode, mesa: normalizedTable });
+    }
     return key;
 }
 
