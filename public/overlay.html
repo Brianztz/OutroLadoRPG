@@ -156,6 +156,41 @@
             opacity: 1;
         }
 
+        .portrait-remove {
+            position: absolute;
+            top: 10px;
+            right: 4px;
+            z-index: 20;
+            width: 29px;
+            height: 29px;
+            padding: 0;
+            border: 1px solid rgba(255, 75, 86, 0.72);
+            border-radius: 50%;
+            background: rgba(15, 7, 9, 0.88);
+            color: #ff6570;
+            font-size: 1rem;
+            font-weight: 900;
+            line-height: 27px;
+            text-align: center;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.82);
+            transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+        }
+
+        .player-widget:hover .portrait-remove,
+        .portrait-remove:focus-visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        .portrait-remove:hover {
+            background: #d7192d;
+            color: white;
+        }
+
         .player-widget.damage-hit .portrait {
             animation: damage-portrait-impact 0.62s cubic-bezier(0.2, 0.85, 0.25, 1) both;
         }
@@ -491,6 +526,10 @@
             .combat-number { font-size: 1.75rem; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
         }
+
+        @media (hover: none) {
+            .portrait-remove { opacity: 0.78; pointer-events: auto; transform: scale(0.92); }
+        }
     </style>
 </head>
 <body>
@@ -512,6 +551,7 @@
         let overlayTablePinned = Boolean(overlayTableFromUrl);
         let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('overlay_table_code') || localStorage.getItem('master_table_code') || 'PADRAO');
         let stablePlayerOrder = loadPlayerOrder(tableCode);
+        let manuallyHiddenPlayers = loadHiddenPlayers(tableCode);
         localStorage.setItem('overlay_table_code', tableCode);
         const ammoIcons = {
             light: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png',
@@ -540,6 +580,24 @@
 
         function savePlayerOrder() {
             localStorage.setItem(playerOrderStorageKey(tableCode), JSON.stringify(stablePlayerOrder));
+        }
+
+        function hiddenPlayersStorageKey(table) {
+            return `overlay_hidden_players_${normalizeTableCode(table)}`;
+        }
+
+        function loadHiddenPlayers(table) {
+            try {
+                const storedCodes = JSON.parse(localStorage.getItem(hiddenPlayersStorageKey(table)) || '[]');
+                if (!Array.isArray(storedCodes)) return new Set();
+                return new Set(storedCodes.map(code => String(code || '').trim().toUpperCase()).filter(Boolean));
+            } catch (_) {
+                return new Set();
+            }
+        }
+
+        function saveHiddenPlayers() {
+            localStorage.setItem(hiddenPlayersStorageKey(tableCode), JSON.stringify([...manuallyHiddenPlayers]));
         }
 
         function ensureStablePlayerPosition(code) {
@@ -608,6 +666,7 @@
             tableCode = nextTable;
             localStorage.setItem('overlay_table_code', tableCode);
             stablePlayerOrder = loadPlayerOrder(tableCode);
+            manuallyHiddenPlayers = loadHiddenPlayers(tableCode);
             players.clear();
             previousVitals.clear();
             grid.replaceChildren();
@@ -637,6 +696,7 @@
                     <div class="portrait-fallback">?</div>
                     <img class="portrait-image" data-layer="a" alt="" hidden>
                     <img class="portrait-image" data-layer="b" alt="" hidden>
+                    <button class="portrait-remove" type="button" title="Remover do overlay até o jogador reconectar" aria-label="Remover jogador do overlay">×</button>
                 </div>
                 <div class="display-stack">
                     <div class="identity">
@@ -648,6 +708,11 @@
                         <span class="combat-number sanity" title="Sanidade"><span class="sanity-value">0/0</span></span>
                     </div>
                 </div>`;
+
+            article.querySelector('.portrait-remove').addEventListener('click', event => {
+                event.stopPropagation();
+                hidePlayerUntilReconnect(code);
+            });
 
             return article;
         }
@@ -680,6 +745,12 @@
             if (!code) return;
             ensureStablePlayerPosition(code);
             players.set(code, data);
+
+            if (manuallyHiddenPlayers.has(code)) {
+                const hiddenArticle = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
+                if (hiddenArticle) hiddenArticle.remove();
+                return;
+            }
 
             let article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
             if (!article) {
@@ -839,6 +910,26 @@
             players.set(code, { ...data, online: false });
         }
 
+        function hidePlayerUntilReconnect(codeValue) {
+            const code = String(codeValue || '').trim().toUpperCase();
+            if (!code) return;
+            manuallyHiddenPlayers.add(code);
+            saveHiddenPlayers();
+            previousVitals.delete(code);
+            const article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
+            if (article) {
+                article.classList.add('leaving');
+                setTimeout(() => article.remove(), 210);
+            }
+        }
+
+        function releasePlayerAfterReconnect(data) {
+            if (normalizeTableCode(data && data.mesa) !== tableCode) return;
+            const code = playerCode(data);
+            if (!code || !manuallyHiddenPlayers.delete(code)) return;
+            saveHiddenPlayers();
+        }
+
         function activePlayerCode() {
             if (!initiativeState || !initiativeState.started || !initiativeState.activeId) return '';
             const activeId = String(initiativeState.activeId);
@@ -883,6 +974,7 @@
         socket.on('update_mestre', data => {
             if (normalizeTableCode(data && data.mesa) === tableCode) updatePlayerWidget(data);
         });
+        socket.on('player_connected', releasePlayerAfterReconnect);
         socket.on('player_disconnected', data => {
             if (normalizeTableCode(data && data.mesa) === tableCode) keepDisconnectedPlayer(data && data.codigo);
         });
