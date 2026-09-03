@@ -7,14 +7,16 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <style>
         :root {
-            --bg-body: #121214; --bg-card: rgba(32,32,36,0.9); --border-color: rgba(50,50,56,0.86);
-            --text-primary: #e1e1e6; --text-secondary: #a8a8b3; --accent-blue: #00b0ff;
-            --accent-yellow: #ffcf33; --accent-green: #00e676; --accent-red: #e53935;
+            --bg-body: #02050a; --bg-card: rgba(6,12,19,0.92); --border-color: rgba(121,166,201,0.30);
+            --text-primary: #e7f1f7; --text-secondary: #94a9b9; --accent-blue: #8bccf6;
+            --accent-yellow: #d2e8f8; --accent-green: #4a99da; --accent-red: #d94b53;
         }
         * { box-sizing: border-box; }
         body {
             min-height: 100vh; margin: 0; padding: 20px; display: flex; flex-direction: column;
-            background: var(--bg-body) url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhj-H1CrLywWPDTFYUiAfN0fblQnGH3NKbZhb7nVbbJASv2JENXK4TgRPS8w4IOxxLHi8GVVyXwg4ZNAWeAnECODYIiGWTEbfSyckMu_eR8OA0mODh-CuM8FxInMy61LrxeGFnBGbVIYXuy4U333EkPMDstP8sF-S_-lfeb8SPeo77FNIlpz3Q0_R70q6yf/w1214-h684/Outro%20Lado%20RPG%20-%20Titulo.jpg') center / cover fixed;
+            background-color: var(--bg-body);
+            background-image: linear-gradient(rgba(0,4,9,0.84),rgba(0,3,8,0.93)), radial-gradient(circle at 50% -8%,rgba(139,204,246,0.19),transparent 38%), url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhj-H1CrLywWPDTFYUiAfN0fblQnGH3NKbZhb7nVbbJASv2JENXK4TgRPS8w4IOxxLHi8GVVyXwg4ZNAWeAnECODYIiGWTEbfSyckMu_eR8OA0mODh-CuM8FxInMy61LrxeGFnBGbVIYXuy4U333EkPMDstP8sF-S_-lfeb8SPeo77FNIlpz3Q0_R70q6yf/w1214-h684/Outro%20Lado%20RPG%20-%20Titulo.jpg');
+            background-position: center; background-size: cover; background-attachment: fixed; background-repeat: no-repeat; background-blend-mode: normal,screen,luminosity;
             color: var(--text-primary); font-family: Roboto, Arial, sans-serif;
         }
         .mestre-top-bar {
@@ -24,26 +26,26 @@
         .top-title { margin: 0; color: var(--accent-yellow); font-size: 1.08em; text-transform: uppercase; letter-spacing: 0.06em; }
         .connection-info { display: flex; align-items: center; gap: 9px; margin-top: 5px; color: var(--text-secondary); font-size: 0.76em; font-weight: bold; }
         .connection-dot { width: 9px; height: 9px; border-radius: 50%; background: #666; box-shadow: 0 0 0 transparent; transition: 0.2s; }
-        .connection-dot.online { background: var(--accent-green); box-shadow: 0 0 10px rgba(0,230,118,0.85); }
+        .connection-dot.online { background: var(--accent-green); box-shadow: 0 0 10px rgba(74,153,218,0.85); }
         .master-top-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-        .master-table-button { padding: 10px 15px; border: 1px solid var(--accent-green); border-radius: 7px; background: rgba(0,230,118,0.1); color: var(--accent-green); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
-        .master-table-button:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 12px rgba(0,230,118,0.3); }
+        .master-table-button { padding: 10px 15px; border: 1px solid var(--accent-green); border-radius: 7px; background: rgba(74,153,218,0.1); color: var(--accent-green); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .master-table-button:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 12px rgba(74,153,218,0.3); }
         .master-table-button span { color: #fff; letter-spacing: 1px; }
-        .btn-create-catalog-entry { padding: 10px 15px; border: 1px solid var(--accent-blue); border-radius: 7px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
-        .btn-create-catalog-entry:hover { background: var(--accent-blue); color: #000; box-shadow: 0 0 12px rgba(0,176,255,0.25); }
-        .master-tabs { margin: -8px 0 16px; padding: 5px; display: flex; gap: 6px; align-self: flex-start; border: 1px solid var(--border-color); border-radius: 9px; background: rgba(18,18,20,0.88); }
+        .btn-create-catalog-entry { padding: 10px 15px; border: 1px solid var(--accent-blue); border-radius: 7px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .btn-create-catalog-entry:hover { background: var(--accent-blue); color: #000; box-shadow: 0 0 12px rgba(139,204,246,0.25); }
+        .master-tabs { margin: -8px 0 16px; padding: 5px; display: flex; gap: 6px; align-self: flex-start; border: 1px solid var(--border-color); border-radius: 9px; background: rgba(2,7,14,0.9); }
         .master-tab-button { padding: 9px 18px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-secondary); font-size: 0.73em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-tab-button:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-        .master-tab-button.active { border-color: rgba(255,207,51,0.45); background: rgba(255,207,51,0.13); color: var(--accent-yellow); }
+        .master-tab-button.active { border-color: rgba(210,232,248,0.45); background: rgba(210,232,248,0.13); color: var(--accent-yellow); }
         .content-wrapper { min-height: 0; display: flex; flex: 1; gap: 20px; }
         .players-section { min-width: 0; flex: 3; display: flex; flex-direction: column; }
         .section-heading { margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; color: var(--text-secondary); font-size: 0.76em; font-weight: 900; text-transform: uppercase; }
         .players-count { color: var(--accent-green); }
         .players-container { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 20px; align-content: flex-start; overflow-y: auto; padding-right: 8px; }
-        .players-empty { grid-column: 1 / -1; padding: 45px 20px; border: 1px dashed rgba(0,230,118,0.3); border-radius: 12px; background: rgba(18,18,20,0.72); color: var(--text-secondary); text-align: center; }
+        .players-empty { grid-column: 1 / -1; padding: 45px 20px; border: 1px dashed rgba(74,153,218,0.3); border-radius: 12px; background: rgba(2,7,14,0.78); color: var(--text-secondary); text-align: center; }
         .players-empty strong { display: block; margin-bottom: 7px; color: var(--accent-green); }
         .player-card { padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-card); box-shadow: 0 8px 32px rgba(0,0,0,0.8); backdrop-filter: blur(8px); animation: card-in 0.25s ease-out; }
-        .player-card::before { content: ''; position: absolute; top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 9px rgba(0,230,118,0.8); }
+        .player-card::before { content: ''; position: absolute; top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 9px rgba(74,153,218,0.8); }
         .player-header { display: flex; align-items: center; gap: 15px; padding: 0 20px 10px 0; border-bottom: 1px solid var(--border-color); }
         .player-img { width: 60px; height: 60px; flex: 0 0 60px; border: 2px solid var(--accent-blue); border-radius: 50%; background: #09090b; object-fit: cover; }
         .player-name { margin: 0; color: var(--accent-yellow); font-size: 1.08em; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
@@ -59,14 +61,14 @@
         .tag { padding: 3px 6px; border-radius: 4px; font-size: 0.65em; font-weight: 900; text-transform: uppercase; }
         .tag-lesionado { border: 1px solid var(--accent-red); background: rgba(229,57,53,0.4); }
         .tag-morrendo { background: var(--accent-red); animation: pulse-red 1.5s infinite; }
-        .tag-enlouquecendo { border: 1px solid var(--accent-blue); background: rgba(0,176,255,0.4); }
+        .tag-enlouquecendo { border: 1px solid var(--accent-blue); background: rgba(139,204,246,0.4); }
         .player-actions { display: block; }
         .btn-ver-ficha { width: 100%; margin-top: 3px; padding: 10px 6px; border-radius: 6px; font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
-        .btn-ver-ficha { border: 1px solid var(--accent-blue); background: rgba(0,176,255,0.1); color: var(--accent-blue); }
+        .btn-ver-ficha { border: 1px solid var(--accent-blue); background: rgba(139,204,246,0.1); color: var(--accent-blue); }
         .btn-ver-ficha:hover { background: var(--accent-blue); color: #000; }
         .initiative-container { min-width: 340px; flex: 1.15; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); backdrop-filter: blur(8px); }
         .initiative-title { padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.52); color: var(--accent-yellow); font-weight: 900; }
-        .initiative-round { padding: 4px 8px; border: 1px solid rgba(255,207,51,0.35); border-radius: 999px; font-size: 0.65em; white-space: nowrap; }
+        .initiative-round { padding: 4px 8px; border: 1px solid rgba(210,232,248,0.35); border-radius: 999px; font-size: 0.65em; white-space: nowrap; }
         .initiative-add { padding: 12px; border-bottom: 1px solid var(--border-color); }
         .initiative-add-row { display: grid; grid-template-columns: minmax(0,1fr) 70px 42px; gap: 6px; }
         .initiative-input { min-width: 0; width: 100%; padding: 9px; border: 1px solid #414148; border-radius: 5px; background: #111114; color: white; }
@@ -74,8 +76,8 @@
         .initiative-auto-note { margin: 8px 2px 0; color: var(--text-secondary); font-size: 0.68em; line-height: 1.4; text-align: center; }
         .initiative-list { min-height: 130px; padding: 10px; display: flex; flex: 1; flex-direction: column; gap: 7px; overflow-y: auto; }
         .initiative-empty { padding: 30px 12px; color: var(--text-secondary); font-size: 0.78em; line-height: 1.5; text-align: center; }
-        .initiative-entry { padding: 8px; display: grid; grid-template-columns: 30px minmax(0,1fr) 58px 30px; gap: 7px; align-items: center; border: 1px solid #3b3b42; border-radius: 8px; background: rgba(18,18,20,0.94); transition: 0.2s; }
-        .initiative-entry.active { border-color: var(--accent-yellow); background: rgba(255,207,51,0.12); box-shadow: 0 0 14px rgba(255,207,51,0.17); }
+        .initiative-entry { padding: 8px; display: grid; grid-template-columns: 30px minmax(0,1fr) 58px 30px; gap: 7px; align-items: center; border: 1px solid #31485b; border-radius: 8px; background: rgba(2,7,14,0.94); transition: 0.2s; }
+        .initiative-entry.active { border-color: var(--accent-yellow); background: rgba(210,232,248,0.12); box-shadow: 0 0 14px rgba(139,204,246,0.17); }
         .initiative-rank { width: 27px; height: 27px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #29292f; color: var(--text-secondary); font-size: 0.72em; font-weight: 900; }
         .initiative-entry.active .initiative-rank { background: var(--accent-yellow); color: #000; }
         .initiative-name { min-width: 0; overflow: hidden; color: var(--text-primary); font-size: 0.8em; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
@@ -111,16 +113,16 @@
         .monster-create-button:hover { background: var(--accent-red); color: white; }
         .monsters-count { color: var(--accent-red); }
         .monsters-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(360px,1fr)); gap: 16px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
-        .monsters-empty { grid-column: 1 / -1; padding: 50px 20px; border: 1px dashed rgba(229,57,53,0.38); border-radius: 12px; background: rgba(18,18,20,0.72); color: var(--text-secondary); text-align: center; }
+        .monsters-empty { grid-column: 1 / -1; padding: 50px 20px; border: 1px dashed rgba(229,57,53,0.38); border-radius: 12px; background: rgba(2,7,14,0.78); color: var(--text-secondary); text-align: center; }
         .monsters-empty strong { display: block; margin-bottom: 7px; color: #ff7772; }
-        .monster-card { min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(229,57,53,0.42); border-radius: 11px; background: rgba(29,25,28,0.95); box-shadow: 0 8px 25px rgba(0,0,0,0.48); animation: card-in 0.25s ease-out; }
+        .monster-card { min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(229,57,53,0.42); border-radius: 11px; background: rgba(13,12,20,0.96); box-shadow: 0 8px 25px rgba(0,0,0,0.48); animation: card-in 0.25s ease-out; }
         .monster-card-header { display: flex; align-items: center; gap: 8px; }
         .monster-card-name { min-width: 0; flex: 1; margin: 0; color: #ffb0ad; font-size: 1em; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
         .monster-card-button { height: 30px; padding: 0 9px; border: 1px solid #48484f; border-radius: 5px; background: #29292f; color: var(--text-primary); font-size: 0.64em; font-weight: 900; cursor: pointer; }
         .monster-card-button.remove { border-color: rgba(229,57,53,0.35); background: rgba(229,57,53,0.18); color: #ff7772; }
         .monster-attributes { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; }
         .monster-attribute { min-width: 0; padding: 7px 2px; border: 1px solid #3b3b42; border-radius: 6px; background: rgba(0,0,0,0.28); color: inherit; text-align: center; cursor: pointer; transition: 0.2s; }
-        .monster-attribute:hover { border-color: var(--accent-yellow); background: rgba(255,207,51,0.08); }
+        .monster-attribute:hover { border-color: var(--accent-yellow); background: rgba(210,232,248,0.08); }
         .monster-attribute span { display: block; color: var(--text-secondary); font-size: 0.55em; font-weight: 900; }
         .monster-attribute strong { display: block; margin-top: 3px; color: var(--accent-yellow); font-size: 0.88em; }
         .monster-life-controls { display: grid; grid-template-columns: 34px 1fr 34px; gap: 7px; align-items: center; }
@@ -133,7 +135,7 @@
         .monster-info-line strong { color: var(--text-primary); }
         .monster-skills-summary { display: flex; flex-wrap: wrap; gap: 5px; }
         .monster-skill-chip { padding: 6px 8px; border: 1px solid #3d3d44; border-radius: 999px; background: rgba(0,0,0,0.27); color: var(--text-secondary); font-size: 0.6em; cursor: pointer; transition: 0.2s; }
-        .monster-skill-chip:hover { border-color: var(--accent-blue); background: rgba(0,176,255,0.08); }
+        .monster-skill-chip:hover { border-color: var(--accent-blue); background: rgba(139,204,246,0.08); }
         .monster-skill-chip strong { color: var(--accent-blue); }
         .monster-roll-targets { display: block; margin-top: 3px; color: #777783; font-family: Consolas,monospace; font-size: 0.78em; }
         .monster-actions-summary { display: flex; flex-direction: column; gap: 6px; }
@@ -141,14 +143,14 @@
         .monster-action-summary strong { color: #ffb0ad; }
         .monster-action-text { min-width: 0; flex: 1; }
         .monster-roll-buttons { display: flex; gap: 5px; flex: 0 0 auto; }
-        .monster-roll-button { padding: 6px 8px; border: 1px solid var(--accent-blue); border-radius: 5px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.85em; font-weight: 900; cursor: pointer; }
+        .monster-roll-button { padding: 6px 8px; border: 1px solid var(--accent-blue); border-radius: 5px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-size: 0.85em; font-weight: 900; cursor: pointer; }
         .monster-roll-button.damage { border-color: var(--accent-red); background: rgba(229,57,53,0.1); color: #ff7772; }
         .monster-roll-button:disabled { opacity: 0.35; cursor: not-allowed; }
         .monster-presence-row { display: flex; align-items: center; gap: 9px; }
         .monster-presence-row .monster-info-line { min-width: 0; flex: 1; }
         .master-dice-popup { position: fixed; inset: 0; z-index: 11000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.86); }
         .master-dice-popup.open { display: flex; }
-        .master-dice-box { width: min(460px,90vw); min-height: 300px; padding: 28px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.13); border-radius: 16px; background: #111114 center / cover no-repeat; box-shadow: 0 22px 70px rgba(0,0,0,0.9); text-align: center; }
+        .master-dice-box { width: min(460px,90vw); min-height: 300px; padding: 28px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(139,204,246,0.22); border-radius: 16px; background: #040a13 center / cover no-repeat; box-shadow: 0 22px 70px rgba(0,0,0,0.9); text-align: center; }
         .master-dice-content { opacity: 0; transform: scale(0.88); transition: opacity 0.22s, transform 0.22s; }
         .master-dice-content.revealed { opacity: 1; transform: scale(1); }
         .master-dice-name { color: var(--text-primary); font-size: 0.85em; font-weight: 900; text-transform: uppercase; }
@@ -156,8 +158,8 @@
         .master-dice-result { font-size: 1.05em; font-weight: 900; text-transform: uppercase; }
         .monster-modal { position: fixed; inset: 0; z-index: 10000; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
         .monster-modal.open { display: flex; }
-        .monster-modal-dialog { width: min(900px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(229,57,53,0.55); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.85); }
-        .monster-modal-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid #35353b; background: #18181c; }
+        .monster-modal-dialog { width: min(900px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(229,57,53,0.55); border-radius: 13px; background: #07101d; box-shadow: 0 22px 70px rgba(0,0,0,0.85); }
+        .monster-modal-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid #293b4b; background: #07101d; }
         .monster-modal-title { margin: 0; color: #ff7772; font-size: 1em; text-transform: uppercase; }
         .monster-modal-close { width: 34px; height: 34px; border: 0; border-radius: 6px; background: rgba(229,57,53,0.2); color: #ff7772; font-weight: 900; cursor: pointer; }
         .monster-modal-body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
@@ -172,12 +174,12 @@
         .monster-textarea { min-height: 76px; resize: vertical; }
         .monster-actions-heading { margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .monster-actions-heading .monster-form-section-title { margin: 0; }
-        .monster-add-action { padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-size: 0.65em; font-weight: 900; cursor: pointer; }
+        .monster-add-action { padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-size: 0.65em; font-weight: 900; cursor: pointer; }
         .monster-action-editors { display: flex; flex-direction: column; gap: 9px; }
-        .monster-action-editor { padding: 11px; border: 1px solid #3b3b42; border-radius: 7px; background: #111114; }
+        .monster-action-editor { padding: 11px; border: 1px solid #31485b; border-radius: 7px; background: #040a13; }
         .monster-action-editor-head { margin-bottom: 9px; display: flex; justify-content: space-between; align-items: center; color: #ffb0ad; font-size: 0.7em; font-weight: 900; }
         .monster-action-remove { border: 0; background: transparent; color: #ff7772; font-weight: 900; cursor: pointer; }
-        .monster-modal-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; border-top: 1px solid #35353b; background: #18181c; }
+        .monster-modal-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; border-top: 1px solid #293b4b; background: #07101d; }
         .monster-modal-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
         .monster-cancel-button { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
         .monster-save-button { border: 1px solid var(--accent-red); background: var(--accent-red); color: white; }
@@ -186,15 +188,15 @@
         .catalog-search { min-width: 220px; flex: 1; padding: 10px 12px; border: 1px solid #414148; border-radius: 7px; background: #0e0e11; color: var(--text-primary); font: inherit; }
         .catalog-filters { display: flex; gap: 6px; }
         .catalog-filter { padding: 9px 12px; border: 1px solid #414148; border-radius: 6px; background: #25252a; color: var(--text-secondary); font-size: 0.68em; font-weight: 900; cursor: pointer; }
-        .catalog-filter.active { border-color: var(--accent-green); background: rgba(0,230,118,0.1); color: var(--accent-green); }
+        .catalog-filter.active { border-color: var(--accent-green); background: rgba(74,153,218,0.1); color: var(--accent-green); }
         .catalog-count { min-width: 95px; color: var(--accent-green); font-size: 0.7em; font-weight: 900; text-align: right; }
         .catalog-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 15px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
-        .catalog-empty { grid-column: 1 / -1; padding: 48px 20px; border: 1px dashed rgba(0,230,118,0.34); border-radius: 11px; background: rgba(18,18,20,0.72); color: var(--text-secondary); text-align: center; }
+        .catalog-empty { grid-column: 1 / -1; padding: 48px 20px; border: 1px dashed rgba(74,153,218,0.34); border-radius: 11px; background: rgba(2,7,14,0.78); color: var(--text-secondary); text-align: center; }
         .catalog-card { min-width: 0; overflow: hidden; display: flex; flex-direction: column; border: 1px solid #3b3b42; border-radius: 11px; background: rgba(27,27,31,0.95); box-shadow: 0 8px 24px rgba(0,0,0,0.45); cursor: pointer; transition: transform 0.16s,border-color 0.16s; animation: card-in 0.2s ease-out; }
         .catalog-card:hover { transform: translateY(-2px); border-color: var(--accent-yellow); }
         .catalog-card:active { transform: translateY(0) scale(0.99); }
         .catalog-card.weapon { border-color: rgba(229,57,53,0.38); }
-        .catalog-card.item { border-color: rgba(0,230,118,0.3); }
+        .catalog-card.item { border-color: rgba(74,153,218,0.3); }
         .catalog-image-wrap { height: 145px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: radial-gradient(circle at center,#27272d,#0d0d10 72%); }
         .catalog-image { width: 100%; height: 100%; padding: 12px; object-fit: contain; filter: drop-shadow(0 7px 12px rgba(0,0,0,0.75)); }
         .catalog-image-fallback { font-size: 3.2em; opacity: 0.55; }
@@ -215,56 +217,56 @@
         .clues-toolbar-title { margin: 0; color: var(--accent-yellow); font-size: 0.9em; font-weight: 900; text-transform: uppercase; }
         .clues-toolbar-info { margin-top: 4px; color: var(--text-secondary); font-size: 0.68em; }
         .clues-count { color: var(--accent-yellow); }
-        .clue-create-button { padding: 10px 16px; border: 1px solid var(--accent-yellow); border-radius: 7px; background: rgba(255,207,51,0.13); color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .clue-create-button { padding: 10px 16px; border: 1px solid var(--accent-yellow); border-radius: 7px; background: rgba(210,232,248,0.13); color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .clue-create-button:hover { background: var(--accent-yellow); color: #000; }
         .master-clues-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 15px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
-        .master-clues-empty { grid-column: 1 / -1; padding: 50px 20px; border: 1px dashed rgba(255,207,51,0.36); border-radius: 12px; background: rgba(18,18,20,0.72); color: var(--text-secondary); text-align: center; }
+        .master-clues-empty { grid-column: 1 / -1; padding: 50px 20px; border: 1px dashed rgba(210,232,248,0.36); border-radius: 12px; background: rgba(2,7,14,0.78); color: var(--text-secondary); text-align: center; }
         .master-clues-empty strong { display: block; margin-bottom: 7px; color: var(--accent-yellow); }
-        .master-clue-card { min-width: 0; overflow: hidden; border: 1px solid rgba(255,207,51,0.36); border-radius: 11px; background: linear-gradient(145deg,rgba(31,29,22,0.97),rgba(12,12,14,0.97)); box-shadow: 0 8px 24px rgba(0,0,0,0.45); cursor: pointer; transition: transform 0.16s,border-color 0.16s; }
+        .master-clue-card { min-width: 0; overflow: hidden; border: 1px solid rgba(210,232,248,0.36); border-radius: 11px; background: linear-gradient(145deg,rgba(7,16,27,0.97),rgba(2,7,14,0.97)); box-shadow: 0 8px 24px rgba(0,0,0,0.45); cursor: pointer; transition: transform 0.16s,border-color 0.16s; }
         .master-clue-card:hover { transform: translateY(-2px); border-color: var(--accent-yellow); }
-        .master-clue-card-media { height: 165px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(circle at center,rgba(74,64,28,0.42),rgba(7,7,9,0.96)); border-bottom: 1px solid rgba(255,207,51,0.22); }
+        .master-clue-card-media { height: 165px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(circle at center,rgba(32,65,91,0.42),rgba(2,7,14,0.96)); border-bottom: 1px solid rgba(210,232,248,0.22); }
         .master-clue-card-image { width: 100%; height: 100%; object-fit: contain; }
         .master-clue-card-fallback { color: var(--accent-yellow); font-size: 3.1em; opacity: 0.7; }
         .master-clue-card-body { padding: 13px; }
         .master-clue-card-title { color: var(--accent-yellow); font-size: 0.9em; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
         .master-clue-card-description { margin-top: 7px; color: var(--text-secondary); font-size: 0.7em; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
-        .master-clue-card-type { display: inline-flex; margin-top: 9px; padding: 3px 7px; border: 1px solid rgba(255,207,51,0.32); border-radius: 999px; color: var(--accent-yellow); font-size: 0.58em; font-weight: 900; text-transform: uppercase; }
+        .master-clue-card-type { display: inline-flex; margin-top: 9px; padding: 3px 7px; border: 1px solid rgba(210,232,248,0.32); border-radius: 999px; color: var(--accent-yellow); font-size: 0.58em; font-weight: 900; text-transform: uppercase; }
         .clue-modal { position: fixed; inset: 0; z-index: 10000; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
         .clue-modal.open { display: flex; }
-        .clue-dialog { width: min(880px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(255,207,51,0.48); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
+        .clue-dialog { width: min(880px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(210,232,248,0.48); border-radius: 13px; background: #07101d; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
         .clue-dialog.viewer { width: min(900px,96vw); }
-        .clue-modal-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 4; border-bottom: 1px solid #35353b; background: #18181c; }
+        .clue-modal-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 4; border-bottom: 1px solid #293b4b; background: #07101d; }
         .clue-modal-title { margin: 0; color: var(--accent-yellow); font-size: 1em; text-transform: uppercase; }
         .clue-modal-close { width: 34px; height: 34px; border: 0; border-radius: 6px; background: rgba(229,57,53,0.2); color: #ff7772; font-weight: 900; cursor: pointer; }
         .clue-modal-body { padding: 18px; display: flex; flex-direction: column; gap: 15px; }
         .clue-type-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .clue-type-button { padding: 10px; border: 1px solid #45454d; border-radius: 7px; background: #111114; color: var(--text-secondary); font-weight: 900; cursor: pointer; }
-        .clue-type-button.active { border-color: var(--accent-yellow); background: rgba(255,207,51,0.12); color: var(--accent-yellow); }
+        .clue-type-button { padding: 10px; border: 1px solid #31485b; border-radius: 7px; background: #040a13; color: var(--text-secondary); font-weight: 900; cursor: pointer; }
+        .clue-type-button.active { border-color: var(--accent-yellow); background: rgba(210,232,248,0.12); color: var(--accent-yellow); }
         .clue-image-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
         .clue-image-field { min-width: 0; padding: 12px; border: 1px solid #36363d; border-radius: 8px; background: rgba(0,0,0,0.2); }
         .clue-image-field label { display: block; margin-bottom: 7px; color: var(--accent-yellow); font-size: 0.65em; font-weight: 900; text-transform: uppercase; }
-        .clue-image-preview { display: none; width: 100%; height: 145px; margin-top: 8px; object-fit: contain; border: 1px solid rgba(255,207,51,0.28); border-radius: 7px; background: #09090b; }
+        .clue-image-preview { display: none; width: 100%; height: 145px; margin-top: 8px; object-fit: contain; border: 1px solid rgba(210,232,248,0.28); border-radius: 7px; background: #03070d; }
         .clue-image-remove { width: 100%; margin-top: 7px; padding: 7px; border: 1px solid rgba(229,57,53,0.4); border-radius: 5px; background: rgba(229,57,53,0.12); color: #ff7772; font-size: 0.63em; font-weight: 900; cursor: pointer; }
         .clue-thickness-control { display: grid; grid-template-columns: minmax(0,1fr) 72px; gap: 13px; align-items: center; }
         .clue-thickness-control input[type="range"] { width: 100%; accent-color: var(--accent-yellow); cursor: pointer; }
-        .clue-thickness-value { padding: 8px 9px; border: 1px solid rgba(255,207,51,0.38); border-radius: 7px; background: rgba(255,207,51,0.08); color: var(--accent-yellow); font-size: 0.76em; font-weight: 900; text-align: center; }
+        .clue-thickness-value { padding: 8px 9px; border: 1px solid rgba(210,232,248,0.38); border-radius: 7px; background: rgba(210,232,248,0.08); color: var(--accent-yellow); font-size: 0.76em; font-weight: 900; text-align: center; }
         .clue-thickness-hint { margin-top: 7px; display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.62em; font-weight: 800; text-transform: uppercase; }
         .clue-book-pages-editor { display: grid; grid-template-columns: repeat(auto-fill,minmax(105px,1fr)); gap: 9px; margin-top: 10px; }
-        .clue-book-page-editor { min-width: 0; padding: 7px; border: 1px solid rgba(255,207,51,0.28); border-radius: 8px; background: #111114; }
+        .clue-book-page-editor { min-width: 0; padding: 7px; border: 1px solid rgba(210,232,248,0.28); border-radius: 8px; background: #040a13; }
         .clue-book-page-editor img { width: 100%; aspect-ratio: 3 / 4; display: block; object-fit: contain; border-radius: 5px; background: #08080a; }
         .clue-book-page-number { margin: 6px 0; color: var(--text-secondary); font-size: 0.62em; font-weight: 900; text-align: center; }
         .clue-book-page-controls { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
         .clue-book-page-controls button { min-width: 0; padding: 5px 2px; border: 0; border-radius: 4px; background: #303037; color: white; font-weight: 900; cursor: pointer; }
         .clue-book-page-controls button:last-child { background: #8f2424; }
-        .clue-book-pages-empty { margin-top: 10px; padding: 16px 10px; border: 1px dashed rgba(255,207,51,0.28); border-radius: 8px; color: var(--text-secondary); font-size: 0.73em; text-align: center; }
-        .clue-modal-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; z-index: 4; border-top: 1px solid #35353b; background: #18181c; }
+        .clue-book-pages-empty { margin-top: 10px; padding: 16px 10px; border: 1px dashed rgba(210,232,248,0.28); border-radius: 8px; color: var(--text-secondary); font-size: 0.73em; text-align: center; }
+        .clue-modal-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; z-index: 4; border-top: 1px solid #293b4b; background: #07101d; }
         .clue-modal-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
         .clue-button-neutral { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
         .clue-button-primary { border: 1px solid var(--accent-yellow); background: var(--accent-yellow); color: #000; }
         .clue-button-send { border: 1px solid var(--accent-green); background: var(--accent-green); color: #000; }
         .clue-button-danger { border: 1px solid var(--accent-red); background: rgba(229,57,53,0.18); color: #ff7772; }
-        .master-clue-description { padding: 14px; border: 1px solid rgba(255,207,51,0.28); border-radius: 8px; background: rgba(18,18,20,0.8); color: var(--text-primary); font-size: 0.8em; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
-        .master-clue-3d-stage { position: relative; width: 100%; height: 360px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(75,64,25,0.22),rgba(5,5,7,0.94)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
+        .master-clue-description { padding: 14px; border: 1px solid rgba(210,232,248,0.28); border-radius: 8px; background: rgba(2,7,14,0.88); color: var(--text-primary); font-size: 0.8em; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .master-clue-3d-stage { position: relative; width: 100%; height: 360px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(36,72,102,0.24),rgba(1,5,11,0.96)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-3d-stage.dragging { cursor: grabbing; }
         .master-clue-3d-stage.move-mode, .master-clue-book-stage.move-mode { cursor: move; }
         .master-clue-3d-stage.move-mode.dragging, .master-clue-book-stage.move-mode.dragging { cursor: grabbing; }
@@ -280,10 +282,10 @@
         .master-clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
         .master-clue-3d-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; }
         .master-clue-view-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
-        .master-clue-view-controls .master-clue-move-toggle.active { border-color: var(--accent-yellow); background: var(--accent-yellow); color: #000; box-shadow: 0 0 12px rgba(255,207,51,0.32); }
-        .master-clue-view-controls button { min-width: 42px; padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
+        .master-clue-view-controls .master-clue-move-toggle.active { border-color: var(--accent-yellow); background: var(--accent-yellow); color: #000; box-shadow: 0 0 12px rgba(210,232,248,0.32); }
+        .master-clue-view-controls button { min-width: 42px; padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
         .master-clue-book-viewer { display: none; }
-        .master-clue-book-stage { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,207,51,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(91,69,29,0.28),rgba(5,5,7,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
+        .master-clue-book-stage { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(36,75,109,0.28),rgba(1,5,11,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-book-stage.dragging { cursor: grabbing; }
         .master-clue-book-3d-object { position: relative; width: 640px; height: 360px; max-width: none; transform: translateX(-25%) rotateX(-8deg) rotateY(0deg); transform-style: preserve-3d; transition: transform 0.3s ease-out,width 0.3s ease,height 0.3s ease; }
         .master-clue-book-stage.dragging .master-clue-book-3d-object { transition: width 0.3s ease,height 0.3s ease; }
@@ -319,24 +321,24 @@
         .master-clue-book-flip.next { left: 50%; display: block; transform-origin: left center; animation: master-clue-book-next 0.76s cubic-bezier(0.58,0.02,0.28,1) forwards; }
         .master-clue-book-flip.previous { left: 0; display: block; transform-origin: right center; animation: master-clue-book-previous 0.76s cubic-bezier(0.58,0.02,0.28,1) forwards; }
         .master-clue-book-controls { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 9px; }
-        .master-clue-book-controls button { min-width: 105px; padding: 8px 10px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(0,176,255,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
+        .master-clue-book-controls button { min-width: 105px; padding: 8px 10px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
         .master-clue-book-controls button:disabled { opacity: 0.35; cursor: not-allowed; }
         .master-clue-book-indicator { min-width: 100px; color: var(--text-secondary); font-size: 0.7em; font-weight: 900; text-align: center; }
         @keyframes master-clue-book-next { from { transform: rotateY(0deg); } to { transform: rotateY(-180deg); } }
         @keyframes master-clue-book-previous { from { transform: rotateY(0deg); } to { transform: rotateY(180deg); } }
         .catalog-recipient-modal { position: fixed; inset: 0; z-index: 10500; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.88); }
         .catalog-recipient-modal.open { display: flex; }
-        .catalog-recipient-dialog { width: min(520px,95vw); max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; border: 1px solid rgba(0,230,118,0.48); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
+        .catalog-recipient-dialog { width: min(520px,95vw); max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; border: 1px solid rgba(74,153,218,0.48); border-radius: 13px; background: #07101d; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
         .catalog-recipient-header { padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #35353b; }
         .catalog-recipient-title { margin: 0; color: var(--accent-green); font-size: 0.94em; text-transform: uppercase; }
         .catalog-recipient-item { margin-top: 5px; color: var(--text-secondary); font-size: 0.7em; }
         .catalog-recipient-close { width: 34px; height: 34px; flex: 0 0 auto; border: 0; border-radius: 6px; background: rgba(229,57,53,0.2); color: #ff7772; font-size: 1em; font-weight: 900; cursor: pointer; }
         .catalog-recipient-body { min-height: 120px; padding: 15px 18px; overflow-y: auto; }
-        .catalog-recipient-all { margin-bottom: 9px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,207,51,0.28); border-radius: 8px; background: rgba(255,207,51,0.06); color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; cursor: pointer; }
+        .catalog-recipient-all { margin-bottom: 9px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(210,232,248,0.28); border-radius: 8px; background: rgba(210,232,248,0.06); color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; cursor: pointer; }
         .catalog-recipient-list { display: flex; flex-direction: column; gap: 8px; }
-        .catalog-recipient-option { padding: 10px 12px; display: grid; grid-template-columns: 22px 42px minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid #3d3d44; border-radius: 8px; background: #111114; cursor: pointer; transition: 0.16s; }
-        .catalog-recipient-option:hover { border-color: var(--accent-green); background: rgba(0,230,118,0.06); }
-        .catalog-recipient-option:has(input:checked) { border-color: var(--accent-green); background: rgba(0,230,118,0.1); }
+        .catalog-recipient-option { padding: 10px 12px; display: grid; grid-template-columns: 22px 42px minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid #31485b; border-radius: 8px; background: #040a13; cursor: pointer; transition: 0.16s; }
+        .catalog-recipient-option:hover { border-color: var(--accent-green); background: rgba(74,153,218,0.06); }
+        .catalog-recipient-option:has(input:checked) { border-color: var(--accent-green); background: rgba(74,153,218,0.1); }
         .catalog-recipient-option input, .catalog-recipient-all input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent-green); cursor: pointer; }
         .catalog-recipient-avatar { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--accent-blue); border-radius: 50%; background: #08080a; color: var(--accent-blue); font-weight: 900; }
         .catalog-recipient-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -350,8 +352,8 @@
         .catalog-recipient-send:disabled { opacity: 0.38; cursor: not-allowed; }
         .catalog-creator-modal { position: fixed; inset: 0; z-index: 10600; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
         .catalog-creator-modal.open { display: flex; }
-        .catalog-creator-dialog { width: min(720px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(0,176,255,0.55); border-radius: 13px; background: #18181c; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
-        .catalog-creator-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid #35353b; background: #18181c; }
+        .catalog-creator-dialog { width: min(720px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(139,204,246,0.55); border-radius: 13px; background: #07101d; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
+        .catalog-creator-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid #293b4b; background: #07101d; }
         .catalog-creator-title { margin: 0; color: var(--accent-blue); font-size: 0.96em; text-transform: uppercase; }
         .catalog-creator-close { width: 34px; height: 34px; border: 0; border-radius: 6px; background: rgba(229,57,53,0.2); color: #ff7772; font-weight: 900; cursor: pointer; }
         .catalog-creator-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
@@ -361,7 +363,7 @@
         .catalog-creator-grid .full { grid-column: 1 / -1; }
         .catalog-creator-field { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
         .catalog-creator-field label { color: var(--text-secondary); font-size: 0.62em; font-weight: 900; text-transform: uppercase; }
-        .catalog-creator-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; border-top: 1px solid #35353b; background: #18181c; }
+        .catalog-creator-footer { padding: 13px 18px; display: flex; justify-content: flex-end; gap: 9px; position: sticky; bottom: 0; border-top: 1px solid #293b4b; background: #07101d; }
         .catalog-creator-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
         .catalog-creator-cancel { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
         .catalog-creator-save { border: 1px solid var(--accent-blue); background: var(--accent-blue); color: #000; }
