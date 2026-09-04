@@ -37,6 +37,23 @@
         .master-tab-button { padding: 9px 18px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-secondary); font-size: 0.73em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-tab-button:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
         .master-tab-button.active { border-color: rgba(210,232,248,0.45); background: rgba(210,232,248,0.13); color: var(--accent-yellow); }
+        .lumina-workspace { min-height: 520px; padding: 30px; }
+        .lumina-master-panel { max-width: 920px; margin: 0 auto; padding: clamp(24px,4vw,44px); border: 1px solid rgba(83,188,247,0.3); border-radius: 18px; background: radial-gradient(circle at 85% 15%,rgba(32,142,205,0.14),transparent 34%),linear-gradient(145deg,rgba(7,16,27,0.98),rgba(2,7,14,0.98)); box-shadow: 0 24px 60px rgba(0,0,0,0.42),inset 0 0 30px rgba(41,154,218,0.05); }
+        .lumina-master-brand { margin: 0; color: #e7f7ff; font-family: Georgia,serif; font-size: clamp(2.5rem,6vw,4.7rem); letter-spacing: -0.08em; }
+        .lumina-master-brand span:nth-child(1) { color: #e95246; }
+        .lumina-master-brand span:nth-child(2) { color: #f2b84b; }
+        .lumina-master-brand span:nth-child(3) { color: #249b68; }
+        .lumina-master-copy { max-width: 650px; margin: 12px 0 28px; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.65; }
+        .lumina-access-control { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px; border: 1px solid rgba(255,255,255,0.1); border-radius: 13px; background: rgba(0,0,0,0.26); }
+        .lumina-access-status { display: grid; gap: 6px; }
+        .lumina-access-status strong { color: #eaf7ff; font-size: 0.95rem; letter-spacing: 0.06em; text-transform: uppercase; }
+        .lumina-access-status span { color: #83929d; font-size: 0.8rem; }
+        .lumina-access-status .lumina-live-state { color: #ff8997; font-weight: 900; }
+        .lumina-access-status .lumina-live-state.enabled { color: #69e6b1; text-shadow: 0 0 12px rgba(55,224,155,0.3); }
+        .lumina-toggle-button { flex: 0 0 auto; min-width: 190px; padding: 13px 18px; border: 1px solid #3c4a54; border-radius: 8px; background: #141a20; color: #a9b5be; cursor: pointer; font-weight: 1000; letter-spacing: 0.05em; transition: 0.2s ease; }
+        .lumina-toggle-button:hover { transform: translateY(-1px); border-color: #69cfff; }
+        .lumina-toggle-button.enabled { border-color: #3ed598; background: linear-gradient(135deg,#0d4b37,#092c23); color: #c9ffe9; box-shadow: 0 0 20px rgba(42,214,148,0.16); }
+        .lumina-preview-button { display: inline-flex; margin-top: 18px; padding: 10px 15px; border: 1px solid rgba(83,188,247,0.36); border-radius: 7px; background: rgba(37,135,192,0.1); color: #a9e4ff; cursor: pointer; font-weight: 900; }
         .content-wrapper { min-height: 0; display: flex; flex: 1; gap: 20px; }
         .players-section { min-width: 0; flex: 3; display: flex; flex-direction: column; }
         .section-heading { margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; color: var(--text-secondary); font-size: 0.76em; font-weight: 900; text-transform: uppercase; }
@@ -394,6 +411,7 @@
         <button class="master-tab-button" type="button" data-master-tab="monsters" onclick="switchMasterTab('monsters')">👹 MONSTROS</button>
         <button class="master-tab-button" type="button" data-master-tab="catalog" onclick="switchMasterTab('catalog')">🎒 CATÁLOGO</button>
         <button class="master-tab-button" type="button" data-master-tab="clues" onclick="switchMasterTab('clues')">🔎 PISTAS</button>
+        <button class="master-tab-button" type="button" data-master-tab="lumina" onclick="switchMasterTab('lumina')">🌐 LUMINA</button>
     </nav>
 
     <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
@@ -455,6 +473,22 @@
             <button class="clue-create-button" type="button" onclick="openMasterClueForm()">+ NOVA PISTA</button>
         </div>
         <div id="master-clues-grid" class="master-clues-grid"></div>
+    </section>
+
+    <section id="master-tab-lumina" class="lumina-workspace master-tab-panel">
+        <div class="lumina-master-panel">
+            <h2 class="lumina-master-brand">L<span>u</span>m<span>i</span>n<span>a</span></h2>
+            <p class="lumina-master-copy">O navegador continua disponível na ficha mesmo com o caso oculto. Ao liberar o conteúdo investigativo, os resultados sobre Adelanio, os arquivos de Aurora, as imagens e os acessos do S.I.J.A. aparecem imediatamente para todos os jogadores desta mesa.</p>
+            <div class="lumina-access-control">
+                <div class="lumina-access-status">
+                    <strong>Conteúdo investigativo de Aurora</strong>
+                    <span id="lumina-master-description">Oculto para os jogadores desta mesa.</span>
+                    <span id="lumina-master-state" class="lumina-live-state">DESATIVADO</span>
+                </div>
+                <button id="lumina-toggle-button" class="lumina-toggle-button" type="button" aria-pressed="false" onclick="toggleLuminaAccess()">LIBERAR CONTEÚDO</button>
+            </div>
+            <button class="lumina-preview-button" type="button" onclick="openLuminaPreview()">ABRIR LUMINA DESTA MESA ↗</button>
+        </div>
     </section>
 
     <div id="monster-modal" class="monster-modal" onclick="if(event.target===this) closeMonsterPopup()">
@@ -685,6 +719,7 @@
         const connectedPlayers = new Map();
         let playerRollHistory = [];
         let masterTableCode = normalizeTableCode(localStorage.getItem('master_table_code') || 'PADRAO');
+        let luminaEnabled = loadLuminaAccess(masterTableCode);
         let initiativeState = loadInitiativeState();
         let monstersState = loadMonstersState();
         let editingMonsterId = null;
@@ -741,6 +776,44 @@
             document.getElementById('master-table-code').textContent = masterTableCode;
         }
 
+        function luminaStorageKey(table) {
+            return `mestre_lumina_enabled_${normalizeTableCode(table)}`;
+        }
+
+        function loadLuminaAccess(table) {
+            return localStorage.getItem(luminaStorageKey(table)) === 'true';
+        }
+
+        function renderLuminaControl() {
+            const state = document.getElementById('lumina-master-state');
+            const description = document.getElementById('lumina-master-description');
+            const button = document.getElementById('lumina-toggle-button');
+            if (!state || !description || !button) return;
+            state.textContent = luminaEnabled ? 'ATIVADO PARA A MESA' : 'DESATIVADO';
+            state.classList.toggle('enabled',luminaEnabled);
+            description.textContent = luminaEnabled ? 'As pesquisas e pistas do caso estão disponíveis agora.' : 'O navegador funciona, mas as pistas do caso permanecem ocultas.';
+            button.textContent = luminaEnabled ? 'OCULTAR CONTEÚDO' : 'LIBERAR CONTEÚDO';
+            button.classList.toggle('enabled',luminaEnabled);
+            button.setAttribute('aria-pressed',String(luminaEnabled));
+        }
+
+        function publishLuminaAccess() {
+            localStorage.setItem(luminaStorageKey(masterTableCode),String(luminaEnabled));
+            renderLuminaControl();
+            if (socket && socket.connected) socket.emit('lumina_master_set',{ mesa: masterTableCode,enabled: luminaEnabled });
+        }
+
+        function toggleLuminaAccess() {
+            luminaEnabled = !luminaEnabled;
+            publishLuminaAccess();
+        }
+
+        function openLuminaPreview() {
+            const url = new URL('./lumina/index.html',window.location.href);
+            url.searchParams.set('mesa',masterTableCode);
+            window.open(url.href,'_blank','noopener');
+        }
+
         function chooseMasterTable() {
             const requestedTable = prompt('Digite o codigo da mesa:', masterTableCode);
             if (requestedTable === null) return;
@@ -748,8 +821,10 @@
             if (nextTable === masterTableCode) return;
 
             masterTableCode = nextTable;
+            luminaEnabled = loadLuminaAccess(masterTableCode);
             localStorage.setItem('master_table_code', masterTableCode);
             updateMasterTableUI();
+            renderLuminaControl();
             playersBoard.querySelectorAll('.player-card').forEach(card => card.remove());
             connectedPlayers.clear();
             updatePlayersCount();
@@ -761,6 +836,7 @@
             if (socket && socket.connected) {
                 socket.emit('master_ready', { mesa: masterTableCode });
                 socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
+                socket.emit('lumina_master_set',{ mesa: masterTableCode,enabled: luminaEnabled });
             }
         }
 
@@ -847,12 +923,13 @@
         }
 
         function switchMasterTab(tab) {
-            const selectedTab = ['monsters','catalog','clues'].includes(tab) ? tab : 'combat';
+            const selectedTab = ['monsters','catalog','clues','lumina'].includes(tab) ? tab : 'combat';
             document.querySelectorAll('.master-tab-button').forEach(button => button.classList.toggle('active', button.dataset.masterTab === selectedTab));
             document.querySelectorAll('.master-tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `master-tab-${selectedTab}`));
             localStorage.setItem('mestre_active_tab', selectedTab);
             if (selectedTab === 'catalog') renderMasterCatalog();
             if (selectedTab === 'clues') renderMasterClues();
+            if (selectedTab === 'lumina') renderLuminaControl();
         }
 
         function normalizeCatalogText(value) {
@@ -2330,6 +2407,7 @@
             updateConnection(true);
             socket.emit('master_ready', { mesa: masterTableCode });
             socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
+            socket.emit('lumina_master_set',{ mesa: masterTableCode,enabled: luminaEnabled });
         });
         socket.on('disconnect', () => updateConnection(false));
         socket.on('players_snapshot', players => {
@@ -2342,6 +2420,12 @@
         socket.on('player_disconnected', data => removePlayer(data && data.codigo, data && data.mesa));
         socket.on('novo_log', addPlayerRollResult);
         socket.on('initiative_rolled', applyPlayerInitiativeRoll);
+        socket.on('lumina_state_updated', state => {
+            if (normalizeTableCode(state && state.mesa) !== masterTableCode) return;
+            luminaEnabled = Boolean(state && state.enabled);
+            localStorage.setItem(luminaStorageKey(masterTableCode),String(luminaEnabled));
+            renderLuminaControl();
+        });
 
         document.getElementById('initiative-name-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
         document.getElementById('initiative-value-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
@@ -2359,6 +2443,7 @@
         renderPlayerRollResults();
         renderMonsters();
         renderMasterClues();
+        renderLuminaControl();
         switchMasterTab(localStorage.getItem('mestre_active_tab'));
     </script>
 </body>
