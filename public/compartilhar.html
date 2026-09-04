@@ -145,7 +145,7 @@
         const tableCode = normalizeTableCode(params.get('mesa') || localStorage.getItem('screen_share_table') || 'PADRAO');
         localStorage.setItem('screen_share_table', tableCode);
 
-        const socket = io();
+        const socket = io({ transports: ['websocket', 'polling'], tryAllTransports: true });
         const rtcConfig = { iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' }
@@ -177,6 +177,18 @@
         let fallbackViewerCount = 0;
         let fallbackObjectUrl = '';
         let remotePlaybackConfirmed = false;
+        let relayRecorder = null;
+        let relayRestartTimer = null;
+        let relayMediaSource = null;
+        let relaySourceBuffer = null;
+        let relayObjectUrl = '';
+        let relayMimeType = '';
+        let relayQueue = [];
+        let relaySendChain = Promise.resolve();
+        let relayPlaybackStarted = false;
+        let relayPlayPending = false;
+        let viewerCount = 0;
+        let fallbackRequested = false;
         const hostPeers = new Map();
         const pendingIce = new Map();
         const fallbackCanvas = document.createElement('canvas');
@@ -196,6 +208,12 @@
         }
 
         function showVideo(stream, local = false) {
+            if (relayObjectUrl) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+                cleanupRelayPlayback();
+            }
             video.srcObject = stream;
             video.muted = true;
             video.classList.add('visible');
@@ -213,6 +231,10 @@
 
         function confirmRemotePlayback() {
             if (isBroadcasting || remotePlaybackConfirmed || !viewerPeer || !video.srcObject || video.readyState < 2 || video.paused) return;
+            if (viewerCount > 1) {
+                requestFallback();
+                return;
+            }
             remotePlaybackConfirmed = true;
             if (peerConnectTimer) clearTimeout(peerConnectTimer);
             peerConnectTimer = null;
@@ -225,6 +247,12 @@
         }
 
         function showFallbackFrame(frame, mimeType) {
+            if (relayObjectUrl) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+                cleanupRelayPlayback();
+            }
             const blob = frame instanceof Blob ? frame : new Blob([frame], { type: mimeType || 'image/jpeg' });
             const nextUrl = URL.createObjectURL(blob);
             const previousUrl = fallbackObjectUrl;
@@ -278,9 +306,10 @@
         }
 
         function requestFallback() {
-            if (!isBroadcasting && broadcastAvailable && socket.connected) {
+            if (!isBroadcasting && broadcastAvailable && socket.connected && !fallbackRequested) {
+                fallbackRequested = true;
                 socket.emit('screen_share_fallback_request', { mesa: tableCode });
-                setStatus('a ligação direta demorou; ativando o modo compatível...');
+                setStatus('ativando a transmissão 1080p para o grupo...');
             }
         }
 
@@ -289,8 +318,142 @@
             peerConnectTimer = setTimeout(requestFallback, 6000);
         }
 
+        function chooseRelayMimeType() {
+            if (typeof MediaRecorder === 'undefined') return '';
+            const options = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+            return options.find(type => MediaRecorder.isTypeSupported(type) && (!window.MediaSource || MediaSource.isTypeSupported(type))) || '';
+        }
+
+        function stopRelayRecorder() {
+            if (relayRestartTimer) clearTimeout(relayRestartTimer);
+            relayRestartTimer = null;
+            if (relayRecorder) {
+                relayRecorder.ondataavailable = null;
+                relayRecorder.onerror = null;
+                if (relayRecorder.state !== 'inactive') relayRecorder.stop();
+                relayRecorder = null;
+            }
+            relaySendChain = Promise.resolve();
+        }
+
+        function startRelayRecorder() {
+            stopRelayRecorder();
+            if (!isBroadcasting || !localStream || fallbackViewerCount < 1) {
+                updateFallbackCapture();
+                return;
+            }
+            relayMimeType = chooseRelayMimeType();
+            if (!relayMimeType) {
+                updateFallbackCapture();
+                return;
+            }
+            try {
+                socket.emit('screen_share_relay_reset', { mimeType: relayMimeType });
+                relayRecorder = new MediaRecorder(localStream, {
+                    mimeType: relayMimeType,
+                    videoBitsPerSecond: 20000000,
+                    audioBitsPerSecond: 192000
+                });
+                relayRecorder.ondataavailable = event => {
+                    if (!event.data || !event.data.size || !isBroadcasting || fallbackViewerCount < 1 || !socket.connected) return;
+                    relaySendChain = relaySendChain.then(async () => {
+                        if (!isBroadcasting || fallbackViewerCount < 1 || !socket.connected) return;
+                        const chunk = await event.data.arrayBuffer();
+                        socket.emit('screen_share_relay_chunk', { chunk });
+                    }).catch(() => {});
+                };
+                relayRecorder.onerror = () => {
+                    stopRelayRecorder();
+                    updateFallbackCapture();
+                };
+                relayRecorder.start(250);
+                updateFallbackCapture();
+            } catch (error) {
+                relayRecorder = null;
+                updateFallbackCapture();
+            }
+        }
+
+        function scheduleRelayRecorder() {
+            if (relayRestartTimer) clearTimeout(relayRestartTimer);
+            relayRestartTimer = setTimeout(startRelayRecorder, 220);
+        }
+
+        function cleanupRelayPlayback() {
+            relayQueue = [];
+            relayPlaybackStarted = false;
+            relayPlayPending = false;
+            try {
+                if (relaySourceBuffer && relaySourceBuffer.updating) relaySourceBuffer.abort();
+            } catch (error) {}
+            try {
+                if (relayMediaSource && relayMediaSource.readyState === 'open') relayMediaSource.endOfStream();
+            } catch (error) {}
+            relaySourceBuffer = null;
+            relayMediaSource = null;
+            if (relayObjectUrl) URL.revokeObjectURL(relayObjectUrl);
+            relayObjectUrl = '';
+        }
+
+        function pumpRelayQueue() {
+            if (!relaySourceBuffer || relaySourceBuffer.updating || !relayQueue.length) return;
+            try {
+                if (relaySourceBuffer.buffered.length && video.currentTime > 12) {
+                    const start = relaySourceBuffer.buffered.start(0);
+                    const removeUntil = video.currentTime - 8;
+                    if (removeUntil > start) {
+                        relaySourceBuffer.remove(start, removeUntil);
+                        return;
+                    }
+                }
+                const nextChunk = relayQueue[0];
+                relaySourceBuffer.appendBuffer(nextChunk);
+                relayQueue.shift();
+            } catch (error) {
+                relayQueue.shift();
+                setStatus('ajustando o fluxo de vídeo...');
+            }
+        }
+
+        function resetRelayPlayback(mimeType) {
+            if (!window.MediaSource || !MediaSource.isTypeSupported(mimeType)) return;
+            closeViewerPeer();
+            video.pause();
+            video.srcObject = null;
+            video.removeAttribute('src');
+            video.load();
+            cleanupRelayPlayback();
+            relayMimeType = mimeType;
+            relayMediaSource = new MediaSource();
+            relayObjectUrl = URL.createObjectURL(relayMediaSource);
+            video.src = relayObjectUrl;
+            video.muted = true;
+            video.classList.add('visible');
+            fallbackImage.classList.remove('visible');
+            emptyState.classList.add('hidden');
+            soundButton.hidden = false;
+            soundButton.textContent = 'Ativar áudio';
+            relayMediaSource.addEventListener('sourceopen', () => {
+                try {
+                    relaySourceBuffer = relayMediaSource.addSourceBuffer(relayMimeType);
+                    relaySourceBuffer.addEventListener('updateend', () => {
+                        pumpRelayQueue();
+                        if (relaySourceBuffer && relaySourceBuffer.buffered.length) {
+                            const liveEdge = relaySourceBuffer.buffered.end(relaySourceBuffer.buffered.length - 1);
+                            if (liveEdge - video.currentTime > 2) video.currentTime = Math.max(0, liveEdge - 0.25);
+                        }
+                    });
+                    pumpRelayQueue();
+                } catch (error) {
+                    setStatus('o navegador não abriu o vídeo em alta qualidade.');
+                }
+            }, { once: true });
+            socket.emit('screen_share_relay_selected', { mesa: tableCode });
+            setStatus('preparando transmissão 1080p60...');
+        }
+
         function updateFallbackCapture() {
-            const shouldCapture = isBroadcasting && localStream && fallbackViewerCount > 0;
+            const shouldCapture = isBroadcasting && localStream && fallbackViewerCount > 0 && !relayRecorder;
             if (!shouldCapture && fallbackCaptureTimer) {
                 clearInterval(fallbackCaptureTimer);
                 fallbackCaptureTimer = null;
@@ -331,10 +494,10 @@
             try {
                 const parameters = sender.getParameters();
                 if (!parameters.encodings || !parameters.encodings.length) return;
-                parameters.encodings[0].maxBitrate = 12000000;
+                parameters.encodings[0].maxBitrate = 20000000;
                 parameters.encodings[0].maxFramerate = 60;
                 parameters.encodings[0].scaleResolutionDownBy = 1;
-                if ('degradationPreference' in parameters) parameters.degradationPreference = 'maintain-framerate';
+                if ('degradationPreference' in parameters) parameters.degradationPreference = 'maintain-resolution';
                 await sender.setParameters(parameters);
             } catch (error) {
                 console.info('O navegador ajustará automaticamente a qualidade da transmissão.');
@@ -397,9 +560,22 @@
                 broadcastAvailable = true;
                 fallbackViewerCount = 0;
                 const screenTrack = stream.getVideoTracks()[0];
+                let captureLabel = 'alta qualidade';
                 if (screenTrack) {
-                    screenTrack.contentHint = 'motion';
-                    try { await screenTrack.applyConstraints({ cursor: 'never' }); } catch (error) { console.info('O navegador controla a captura do cursor.'); }
+                    screenTrack.contentHint = 'detail';
+                    try {
+                        await screenTrack.applyConstraints({
+                            width: { ideal: 1920, max: 1920 },
+                            height: { ideal: 1080, max: 1080 },
+                            frameRate: { ideal: 60, max: 60 },
+                            cursor: 'never'
+                        });
+                    } catch (error) { console.info('O navegador ajustou automaticamente a captura da tela.'); }
+                    const settings = screenTrack.getSettings();
+                    if (settings.width && settings.height) {
+                        const fps = Math.round(Number(settings.frameRate) || 60);
+                        captureLabel = `${settings.width}×${settings.height} a ${fps} FPS`;
+                    }
                     screenTrack.onended = () => stopSharing(true);
                 }
                 showVideo(stream, true);
@@ -409,7 +585,7 @@
                 audioOption.disabled = true;
                 liveBadge.textContent = 'Você está ao vivo';
                 liveBadge.classList.add('live');
-                setStatus('sua tela está sendo transmitida para esta mesa.');
+                setStatus(`sua tela está sendo transmitida em ${captureLabel}.`);
                 socket.emit('screen_share_start', { mesa: tableCode });
             } catch (error) {
                 if (error && error.name === 'NotAllowedError') setStatus('compartilhamento cancelado.');
@@ -422,6 +598,7 @@
             isBroadcasting = false;
             broadcastAvailable = false;
             fallbackViewerCount = 0;
+            stopRelayRecorder();
             updateFallbackCapture();
             closeHostPeers();
             if (localStream) {
@@ -448,7 +625,8 @@
         }
 
         function toggleSound() {
-            if (!video.srcObject || !video.srcObject.getAudioTracks().length) return;
+            const usingRelay = Boolean(relayObjectUrl && video.src);
+            if (!usingRelay && (!video.srcObject || !video.srcObject.getAudioTracks().length)) return;
             video.muted = !video.muted;
             soundButton.textContent = video.muted ? 'Ativar áudio' : 'Silenciar áudio';
             video.play().catch(() => setStatus('clique em reproduzir para ativar o áudio.'));
@@ -502,11 +680,21 @@
 
         socket.on('screen_share_state', state => {
             if (normalizeTableCode(state && state.mesa) !== tableCode) return;
-            viewerBadge.textContent = `${Number(state.viewers) || 0} ${Number(state.viewers) === 1 ? 'espectador' : 'espectadores'}`;
+            viewerCount = Math.max(0, Number(state.viewers) || 0);
+            viewerBadge.textContent = `${viewerCount} ${viewerCount === 1 ? 'espectador' : 'espectadores'}`;
             broadcastAvailable = Boolean(state.active);
+            if (!isBroadcasting && state.active && viewerCount > 1) {
+                remotePlaybackConfirmed = false;
+                requestFallback();
+            }
             if (!state.active && !isBroadcasting) {
                 closeViewerPeer();
+                fallbackRequested = false;
+                video.pause();
                 video.srcObject = null;
+                video.removeAttribute('src');
+                video.load();
+                cleanupRelayPlayback();
                 fallbackImage.classList.remove('visible');
                 liveBadge.textContent = 'Aguardando';
                 liveBadge.classList.remove('live');
@@ -517,6 +705,7 @@
         socket.on('screen_share_available', data => {
             if (normalizeTableCode(data && data.mesa) !== tableCode || isBroadcasting || !data.broadcasterId || data.broadcasterId === socket.id) return;
             broadcastAvailable = true;
+            fallbackRequested = false;
             if (viewerHostId === data.broadcasterId && viewerPeer) return;
             closeViewerPeer();
             viewerHostId = data.broadcasterId;
@@ -582,7 +771,39 @@
         socket.on('screen_share_fallback_count', data => {
             if (!isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode) return;
             fallbackViewerCount = Math.max(0, Number(data.count) || 0);
-            updateFallbackCapture();
+            if (fallbackViewerCount > 0) scheduleRelayRecorder();
+            else {
+                stopRelayRecorder();
+                updateFallbackCapture();
+            }
+        });
+
+        socket.on('screen_share_relay_reset', data => {
+            if (isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode || !data.mimeType) return;
+            resetRelayPlayback(String(data.mimeType));
+        });
+
+        socket.on('screen_share_relay_chunk', async data => {
+            if (isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode || !data.chunk || !relayMediaSource) return;
+            let chunk = null;
+            if (data.chunk instanceof ArrayBuffer) chunk = data.chunk;
+            else if (ArrayBuffer.isView(data.chunk)) chunk = data.chunk.buffer.slice(data.chunk.byteOffset, data.chunk.byteOffset + data.chunk.byteLength);
+            else if (data.chunk instanceof Blob) chunk = await data.chunk.arrayBuffer();
+            else if (data.chunk.data && Array.isArray(data.chunk.data)) chunk = Uint8Array.from(data.chunk.data).buffer;
+            if (!chunk) return;
+            relayQueue.push(chunk);
+            if (relayQueue.length > 80) relayQueue.splice(0, relayQueue.length - 80);
+            pumpRelayQueue();
+            if (!relayPlaybackStarted && !relayPlayPending) {
+                relayPlayPending = true;
+                video.play().then(() => {
+                    relayPlaybackStarted = true;
+                    liveBadge.textContent = 'Ao vivo';
+                    liveBadge.classList.add('live');
+                    setStatus('assistindo em alta qualidade 1080p60.');
+                }).catch(() => setStatus('pressione reproduzir para iniciar a transmissão.'))
+                    .finally(() => { relayPlayPending = false; });
+            }
         });
 
         socket.on('screen_share_frame', data => {
@@ -595,8 +816,13 @@
         socket.on('screen_share_ended', data => {
             if (normalizeTableCode(data && data.mesa) !== tableCode || isBroadcasting) return;
             broadcastAvailable = false;
+            fallbackRequested = false;
             closeViewerPeer();
+            video.pause();
             video.srcObject = null;
+            video.removeAttribute('src');
+            video.load();
+            cleanupRelayPlayback();
             fallbackImage.classList.remove('visible');
             liveBadge.textContent = 'Encerrada';
             liveBadge.classList.remove('live');
@@ -612,6 +838,8 @@
         });
 
         window.addEventListener('beforeunload', () => {
+            stopRelayRecorder();
+            cleanupRelayPlayback();
             if (fallbackCaptureTimer) clearInterval(fallbackCaptureTimer);
             if (fallbackObjectUrl) URL.revokeObjectURL(fallbackObjectUrl);
             if (localStream) localStream.getTracks().forEach(track => track.stop());
