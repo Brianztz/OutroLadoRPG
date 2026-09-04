@@ -426,6 +426,14 @@ io.on('connection', socket => {
         });
     });
 
+    socket.on('screen_share_relay_failed', rawData => {
+        const table = normalizeTableCode(rawData && typeof rawData === 'object' ? rawData.mesa : socket.data.screenShareTable);
+        if (socket.data.screenShareTable !== table) return;
+        const room = getScreenShareRoom(table);
+        if (!room.broadcasterId || !room.fallbackViewers.has(socket.id)) return;
+        io.to(room.broadcasterId).emit('screen_share_relay_failed', { mesa: table, viewerId: socket.id });
+    });
+
     socket.on('screen_share_stop', () => {
         const table = socket.data.screenShareTable;
         if (!table || !screenShareRooms.has(table)) return;
