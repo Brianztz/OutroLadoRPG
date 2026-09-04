@@ -149,7 +149,7 @@
         const rtcConfig = { iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' }
-        ] };
+        ], bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require', iceCandidatePoolSize: 6 };
         const video = document.getElementById('screen-video');
         const fallbackImage = document.getElementById('fallback-frame');
         const emptyState = document.getElementById('empty-state');
@@ -220,6 +220,7 @@
                 cleanupRelayPlayback();
             }
             video.srcObject = stream;
+            video.playbackRate = 1;
             video.muted = true;
             video.classList.add('visible');
             emptyState.classList.add('hidden');
@@ -236,10 +237,6 @@
 
         function confirmRemotePlayback() {
             if (isBroadcasting || remotePlaybackConfirmed || !viewerPeer || !video.srcObject || video.readyState < 2 || video.paused) return;
-            if (viewerCount > 1) {
-                requestFallback();
-                return;
-            }
             remotePlaybackConfirmed = true;
             if (peerConnectTimer) clearTimeout(peerConnectTimer);
             peerConnectTimer = null;
@@ -322,7 +319,7 @@
 
         function armFallbackTimer() {
             if (peerConnectTimer) clearTimeout(peerConnectTimer);
-            peerConnectTimer = setTimeout(requestFallback, 6000);
+            peerConnectTimer = setTimeout(requestFallback, 3500);
         }
 
         function chooseRelayMimeType() {
@@ -384,7 +381,7 @@
                     stopRelayRecorder();
                     updateFallbackCapture();
                 };
-                relayRecorder.start(250);
+                relayRecorder.start(100);
                 relayWatchdogTimer = setTimeout(() => {
                     if (relayChunkProduced || !isBroadcasting) return;
                     relayDisabledForShare = true;
@@ -427,9 +424,9 @@
         function pumpRelayQueue() {
             if (!relaySourceBuffer || relaySourceBuffer.updating || !relayQueue.length) return;
             try {
-                if (relaySourceBuffer.buffered.length && video.currentTime > 12) {
+                if (relaySourceBuffer.buffered.length && video.currentTime > 4) {
                     const start = relaySourceBuffer.buffered.start(0);
-                    const removeUntil = video.currentTime - 8;
+                    const removeUntil = video.currentTime - 2;
                     if (removeUntil > start) {
                         relaySourceBuffer.remove(start, removeUntil);
                         return;
@@ -483,7 +480,9 @@
                         pumpRelayQueue();
                         if (relaySourceBuffer && relaySourceBuffer.buffered.length) {
                             const liveEdge = relaySourceBuffer.buffered.end(relaySourceBuffer.buffered.length - 1);
-                            if (liveEdge - video.currentTime > 2) video.currentTime = Math.max(0, liveEdge - 0.25);
+                            const delay = liveEdge - video.currentTime;
+                            if (delay > 0.65) video.currentTime = Math.max(0, liveEdge - 0.08);
+                            video.playbackRate = delay > 0.25 ? 1.08 : 1;
                         }
                     });
                     pumpRelayQueue();
@@ -537,12 +536,17 @@
             }, 'image/webp', 0.98);
         }
 
-        async function configureVideoSender(sender) {
+        function targetPeerBitrate() {
+            const peerCount = Math.max(1, hostPeers.size);
+            return Math.max(5000000, Math.min(20000000, Math.floor(30000000 / peerCount)));
+        }
+
+        async function configureVideoSender(sender, bitrate = targetPeerBitrate()) {
             if (!sender || !sender.track || sender.track.kind !== 'video') return;
             try {
                 const parameters = sender.getParameters();
                 if (!parameters.encodings || !parameters.encodings.length) return;
-                parameters.encodings[0].maxBitrate = 20000000;
+                parameters.encodings[0].maxBitrate = bitrate;
                 parameters.encodings[0].maxFramerate = 60;
                 parameters.encodings[0].scaleResolutionDownBy = 1;
                 if ('degradationPreference' in parameters) parameters.degradationPreference = 'maintain-resolution';
@@ -552,6 +556,13 @@
             }
         }
 
+        async function rebalanceHostBitrates() {
+            const bitrate = targetPeerBitrate();
+            const updates = [];
+            hostPeers.forEach(peer => peer.getSenders().forEach(sender => updates.push(configureVideoSender(sender, bitrate))));
+            await Promise.allSettled(updates);
+        }
+
         function createPeer(peerId, viewerSide) {
             const peer = new RTCPeerConnection(rtcConfig);
             peer.onicecandidate = event => {
@@ -559,6 +570,10 @@
             };
             if (viewerSide) {
                 peer.ontrack = event => {
+                    try {
+                        if ('playoutDelayHint' in event.receiver) event.receiver.playoutDelayHint = 0;
+                        if ('jitterBufferTarget' in event.receiver) event.receiver.jitterBufferTarget = 0;
+                    } catch (error) {}
                     const stream = event.streams && event.streams[0];
                     if (stream) showVideo(stream, false);
                     setStatus('recebendo o vídeo; aguardando o primeiro quadro...');
@@ -583,6 +598,7 @@
             hostPeers.set(viewerId, peer);
             const senders = localStream.getTracks().map(track => peer.addTrack(track, localStream));
             await Promise.all(senders.map(configureVideoSender));
+            await rebalanceHostBitrates();
             const offer = await peer.createOffer();
             await peer.setLocalDescription(offer);
             socket.emit('screen_share_offer', { target: viewerId, sdp: peer.localDescription });
@@ -734,10 +750,6 @@
             viewerCount = Math.max(0, Number(state.viewers) || 0);
             viewerBadge.textContent = `${viewerCount} ${viewerCount === 1 ? 'espectador' : 'espectadores'}`;
             broadcastAvailable = Boolean(state.active);
-            if (!isBroadcasting && state.active && viewerCount > 1) {
-                remotePlaybackConfirmed = false;
-                requestFallback();
-            }
             if (!state.active && !isBroadcasting) {
                 closeViewerPeer();
                 fallbackRequested = false;
@@ -776,6 +788,7 @@
             closePeer(hostPeers.get(viewerId));
             hostPeers.delete(viewerId);
             pendingIce.delete(viewerId);
+            rebalanceHostBitrates();
         });
 
         socket.on('screen_share_offer', async data => {
