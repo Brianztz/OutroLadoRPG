@@ -13,6 +13,7 @@ const DEFAULT_TABLE = 'PADRAO';
 const playersData = new Map();
 const playerSockets = new Map();
 const initiativeStates = new Map();
+const clueInspections = new Map();
 
 function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
@@ -80,6 +81,11 @@ function unregisterPlayerSocket(socket, announce = true) {
         if (announce && data) {
             playersData.set(key, { ...data, online: false });
             io.to(tableRoom(data.mesa)).emit('player_disconnected', { codigo: data.codigo, mesa: data.mesa });
+            const inspection = clueInspections.get(data.mesa);
+            if (inspection && inspection.codigo === data.codigo) {
+                clueInspections.delete(data.mesa);
+                io.to(tableRoom(data.mesa)).emit('clue_inspection_stopped', { mesa: data.mesa, codigo: data.codigo, reason: 'disconnect' });
+            }
         }
     }
 
@@ -130,6 +136,55 @@ function normalizeInitiativeState(rawState) {
     };
 }
 
+function normalizeClueInspectionState(rawState) {
+    const source = rawState && typeof rawState === 'object' ? rawState : {};
+    const clamp = (value, minimum, maximum, fallback = 0) => {
+        const number = Number(value);
+        return Math.max(minimum, Math.min(maximum, Number.isFinite(number) ? number : fallback));
+    };
+    return {
+        type: source.type === 'book' ? 'book' : 'object',
+        rotationX: clamp(source.rotationX, -90, 90, -8),
+        rotationY: clamp(source.rotationY, -100000, 100000, 0),
+        zoom: clamp(source.zoom, 0.5, 4, 1),
+        panXRatio: clamp(source.panXRatio, -1.5, 1.5, 0),
+        panYRatio: clamp(source.panYRatio, -1.5, 1.5, 0),
+        aspect: clamp(source.aspect, 0, 8, 0),
+        open: Boolean(source.open),
+        spread: Math.max(0, Math.min(198, Math.floor(Number(source.spread) || 0)))
+    };
+}
+
+function normalizeClueForInspection(rawClue) {
+    const source = rawClue && typeof rawClue === 'object' ? rawClue : {};
+    let imageBudget = 18 * 1024 * 1024;
+    const takeImage = value => {
+        const image = String(value || '');
+        if (!image || image.length > imageBudget) return '';
+        imageBudget -= image.length;
+        return image;
+    };
+    const type = source.type === 'book' ? 'book' : 'object';
+    const clue = {
+        id: String(source.id || `clue_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100),
+        title: String(source.title || 'Pista').slice(0, 160),
+        desc: String(source.desc || '').slice(0, 5000),
+        type,
+        thickness: Math.max(4, Math.min(40, Math.round((Number(source.thickness) || 18) / 2) * 2))
+    };
+    if (type === 'book') {
+        clue.coverImg = takeImage(source.coverImg || source.img);
+        clue.coverBackImg = takeImage(source.coverBackImg || clue.coverImg);
+        clue.pages = (Array.isArray(source.pages) ? source.pages : []).slice(0, 100).map(page => ({
+            img: takeImage(typeof page === 'string' ? page : page && (page.img || page.src))
+        }));
+    } else {
+        clue.img = takeImage(source.img);
+        clue.backImg = takeImage(source.backImg || clue.img);
+    }
+    return clue;
+}
+
 io.on('connection', socket => {
     console.log('Conexao aberta:', socket.id);
 
@@ -143,6 +198,52 @@ io.on('connection', socket => {
         const table = setAudienceTable(socket, 'overlay', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
         socket.emit('players_snapshot', playersSnapshot(table, true));
         socket.emit('initiative_state_updated', getInitiativeState(table));
+        const inspection = clueInspections.get(table);
+        if (inspection) socket.emit('clue_inspection_started', inspection);
+    });
+
+    socket.on('clue_inspection_start', rawData => {
+        if (!rawData || typeof rawData !== 'object' || !rawData.clue) return;
+        const code = normalizePlayerCode(rawData.codigo || socket.data.playerCode);
+        const table = normalizeTableCode(rawData.mesa || socket.data.playerTable);
+        const registeredCode = normalizePlayerCode(socket.data.playerCode);
+        if (!code || (registeredCode && registeredCode !== code)) return;
+        const clue = normalizeClueForInspection(rawData.clue);
+        const inspection = {
+            mesa: table,
+            codigo: code,
+            jogador: String(rawData.jogador || 'Jogador').slice(0, 120),
+            clue,
+            state: normalizeClueInspectionState({ ...rawData.state, type: clue.type })
+        };
+        clueInspections.set(table, inspection);
+        io.to(tableRoom(table)).emit('clue_inspection_started', inspection);
+    });
+
+    socket.on('clue_inspection_update', rawData => {
+        if (!rawData || typeof rawData !== 'object') return;
+        const code = normalizePlayerCode(rawData.codigo || socket.data.playerCode);
+        const table = normalizeTableCode(rawData.mesa || socket.data.playerTable);
+        const inspection = clueInspections.get(table);
+        if (!inspection || inspection.codigo !== code) return;
+        if (rawData.clueId && String(rawData.clueId) !== inspection.clue.id) return;
+        inspection.state = normalizeClueInspectionState({ ...rawData.state, type: inspection.clue.type });
+        io.to(tableRoom(table)).emit('clue_inspection_updated', {
+            mesa: table,
+            codigo: code,
+            clueId: inspection.clue.id,
+            state: inspection.state
+        });
+    });
+
+    socket.on('clue_inspection_stop', rawData => {
+        const source = rawData && typeof rawData === 'object' ? rawData : {};
+        const code = normalizePlayerCode(source.codigo || socket.data.playerCode);
+        const table = normalizeTableCode(source.mesa || socket.data.playerTable);
+        const inspection = clueInspections.get(table);
+        if (!inspection || inspection.codigo !== code) return;
+        clueInspections.delete(table);
+        io.to(tableRoom(table)).emit('clue_inspection_stopped', { mesa: table, codigo: code });
     });
 
     socket.on('initiative_state_change', rawState => {
