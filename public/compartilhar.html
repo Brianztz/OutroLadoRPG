@@ -127,6 +127,7 @@
             <div class="controls">
                 <div class="control-group">
                     <button id="share-button" class="control-button primary" type="button" onclick="toggleSharing()">Compartilhar minha tela</button>
+                    <button id="streamlabs-button" class="control-button" type="button" onclick="toggleStreamlabs()">Transmitir pelo Streamlabs</button>
                     <label class="audio-option"><input id="share-audio" type="checkbox" checked> Compartilhar áudio</label>
                     <button id="sound-button" class="control-button" type="button" onclick="toggleSound()" hidden>Ativar áudio</button>
                     <button class="control-button" type="button" onclick="toggleFullscreen()">Tela cheia</button>
@@ -159,6 +160,7 @@
         const emptyTitle = document.getElementById('empty-title');
         const emptyCopy = document.getElementById('empty-copy');
         const shareButton = document.getElementById('share-button');
+        const streamlabsButton = document.getElementById('streamlabs-button');
         const audioOption = document.getElementById('share-audio');
         const soundButton = document.getElementById('sound-button');
         const liveBadge = document.getElementById('live-badge');
@@ -170,6 +172,7 @@
 
         let localStream = null;
         let isBroadcasting = false;
+        let activeSourceMode = '';
         let broadcastAvailable = false;
         let viewerHostId = null;
         let viewerPeer = null;
@@ -607,11 +610,72 @@
             socket.emit('screen_share_offer', { target: viewerId, sdp: peer.localDescription });
         }
 
-        async function startSharing() {
+        function ensureReadyToBroadcast() {
             if (!socket.connected) {
                 setStatus('sem conexão com o servidor. Aguarde alguns segundos.');
-                return;
+                return false;
             }
+            return true;
+        }
+
+        async function activateBroadcastStream(stream, mode, sourceName) {
+            closeViewerPeer();
+            localStream = stream;
+            isBroadcasting = true;
+            activeSourceMode = mode;
+            broadcastAvailable = true;
+            fallbackViewerCount = 0;
+            relayDisabledForShare = false;
+            const videoTrack = stream.getVideoTracks()[0];
+            let captureLabel = 'alta qualidade';
+            if (videoTrack) {
+                const selectedSurface = videoTrack.getSettings().displaySurface;
+                videoTrack.contentHint = mode === 'streamlabs' || selectedSurface === 'window' ? 'motion' : 'detail';
+                try {
+                    await videoTrack.applyConstraints({
+                        width: { ideal: 1920, max: 1920 },
+                        height: { ideal: 1080, max: 1080 },
+                        frameRate: { ideal: 60, max: 60 }
+                    });
+                } catch (error) { console.info('O navegador ajustou automaticamente a resolução da captura.'); }
+                if (mode === 'screen') {
+                    try {
+                        await videoTrack.applyConstraints({ cursor: { exact: 'never' } });
+                    } catch (error) {
+                        try { await videoTrack.applyConstraints({ cursor: 'never' }); } catch (cursorError) {
+                            console.info('O navegador não confirmou a remoção do cursor na captura.');
+                        }
+                    }
+                }
+                const settings = videoTrack.getSettings();
+                if (settings.width && settings.height) {
+                    const fps = Math.round(Number(settings.frameRate) || 60);
+                    captureLabel = `${settings.width}×${settings.height} a ${fps} FPS`;
+                }
+                videoTrack.onended = () => stopSharing(true);
+            }
+            showVideo(stream, true);
+            if (mode === 'streamlabs') {
+                streamlabsButton.textContent = 'Parar Streamlabs';
+                streamlabsButton.classList.add('danger');
+                streamlabsButton.disabled = false;
+                shareButton.disabled = true;
+            } else {
+                shareButton.textContent = 'Parar transmissão';
+                shareButton.classList.remove('primary');
+                shareButton.classList.add('danger');
+                streamlabsButton.disabled = true;
+            }
+            audioOption.disabled = true;
+            liveBadge.textContent = 'Você está ao vivo';
+            liveBadge.classList.add('live');
+            const audioNote = mode === 'streamlabs' ? ' A câmera virtual envia somente o vídeo da cena.' : '';
+            setStatus(`${sourceName} está sendo transmitido em ${captureLabel}.${audioNote}`);
+            socket.emit('screen_share_start', { mesa: tableCode });
+        }
+
+        async function startSharing() {
+            if (!ensureReadyToBroadcast()) return;
             if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
                 setStatus('este navegador não permite compartilhar a tela.');
                 return;
@@ -621,56 +685,62 @@
                     video: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 60, max: 60 }, cursor: 'never' },
                     audio: audioOption.checked
                 });
-                closeViewerPeer();
-                localStream = stream;
-                isBroadcasting = true;
-                broadcastAvailable = true;
-                fallbackViewerCount = 0;
-                relayDisabledForShare = false;
-                const screenTrack = stream.getVideoTracks()[0];
-                let captureLabel = 'alta qualidade';
-                if (screenTrack) {
-                    const selectedSurface = screenTrack.getSettings().displaySurface;
-                    screenTrack.contentHint = selectedSurface === 'window' ? 'motion' : 'detail';
-                    try {
-                        await screenTrack.applyConstraints({
-                            width: { ideal: 1920, max: 1920 },
-                            height: { ideal: 1080, max: 1080 },
-                            frameRate: { ideal: 60, max: 60 }
-                        });
-                    } catch (error) { console.info('O navegador ajustou automaticamente a captura da tela.'); }
-                    try {
-                        await screenTrack.applyConstraints({ cursor: { exact: 'never' } });
-                    } catch (error) {
-                        try { await screenTrack.applyConstraints({ cursor: 'never' }); } catch (cursorError) {
-                            console.info('O navegador não confirmou a remoção do cursor na captura.');
-                        }
-                    }
-                    const settings = screenTrack.getSettings();
-                    if (settings.width && settings.height) {
-                        const fps = Math.round(Number(settings.frameRate) || 60);
-                        captureLabel = `${settings.width}×${settings.height} a ${fps} FPS`;
-                    }
-                    screenTrack.onended = () => stopSharing(true);
-                }
-                showVideo(stream, true);
-                shareButton.textContent = 'Parar transmissão';
-                shareButton.classList.remove('primary');
-                shareButton.classList.add('danger');
-                audioOption.disabled = true;
-                liveBadge.textContent = 'Você está ao vivo';
-                liveBadge.classList.add('live');
-                setStatus(`sua tela está sendo transmitida em ${captureLabel}.`);
-                socket.emit('screen_share_start', { mesa: tableCode });
+                await activateBroadcastStream(stream, 'screen', 'Sua tela');
             } catch (error) {
                 if (error && error.name === 'NotAllowedError') setStatus('compartilhamento cancelado.');
                 else setStatus('não foi possível iniciar o compartilhamento.');
             }
         }
 
+        async function findStreamlabsCamera() {
+            let devices = await navigator.mediaDevices.enumerateDevices();
+            let camera = devices.find(device => device.kind === 'videoinput' && /streamlabs/i.test(device.label));
+            if (camera) return camera;
+            if (devices.some(device => device.kind === 'videoinput' && !device.label)) {
+                const permissionStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                permissionStream.getTracks().forEach(track => track.stop());
+                devices = await navigator.mediaDevices.enumerateDevices();
+                camera = devices.find(device => device.kind === 'videoinput' && /streamlabs/i.test(device.label));
+            }
+            return camera || null;
+        }
+
+        async function startStreamlabsSharing() {
+            if (!ensureReadyToBroadcast()) return;
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !navigator.mediaDevices.enumerateDevices) {
+                setStatus('este navegador não permite usar a câmera virtual do Streamlabs.');
+                return;
+            }
+            streamlabsButton.disabled = true;
+            setStatus('procurando a câmera virtual do Streamlabs...');
+            try {
+                const camera = await findStreamlabsCamera();
+                if (!camera) {
+                    setStatus('câmera virtual não encontrada. Inicie a Virtual Webcam no Streamlabs e tente novamente.');
+                    return;
+                }
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: { exact: camera.deviceId },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        frameRate: { ideal: 60, max: 60 }
+                    },
+                    audio: false
+                });
+                await activateBroadcastStream(stream, 'streamlabs', 'A cena do Streamlabs');
+            } catch (error) {
+                if (error && error.name === 'NotAllowedError') setStatus('permita o acesso à câmera para usar o Streamlabs.');
+                else setStatus('não foi possível abrir a câmera virtual do Streamlabs.');
+            } finally {
+                if (!isBroadcasting) streamlabsButton.disabled = false;
+            }
+        }
+
         function stopSharing(notifyServer = true) {
             const wasBroadcasting = isBroadcasting;
             isBroadcasting = false;
+            activeSourceMode = '';
             broadcastAvailable = false;
             fallbackViewerCount = 0;
             relayDisabledForShare = false;
@@ -687,6 +757,10 @@
             shareButton.textContent = 'Compartilhar minha tela';
             shareButton.classList.remove('danger');
             shareButton.classList.add('primary');
+            shareButton.disabled = false;
+            streamlabsButton.textContent = 'Transmitir pelo Streamlabs';
+            streamlabsButton.classList.remove('danger');
+            streamlabsButton.disabled = false;
             audioOption.disabled = false;
             liveBadge.textContent = 'Aguardando';
             liveBadge.classList.remove('live');
@@ -698,6 +772,11 @@
         function toggleSharing() {
             if (isBroadcasting) stopSharing(true);
             else startSharing();
+        }
+
+        function toggleStreamlabs() {
+            if (isBroadcasting) stopSharing(true);
+            else startStreamlabsSharing();
         }
 
         function toggleSound() {
