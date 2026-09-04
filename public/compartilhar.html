@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Transmissão de tela por mesa para Outro Lado RPG.">
+    <title>Outro Lado RPG — Compartilhar Tela</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #02050a;
+            --panel: rgba(4, 10, 18, 0.94);
+            --panel-soft: rgba(10, 20, 31, 0.82);
+            --line: rgba(139, 204, 246, 0.25);
+            --blue: #8bccf6;
+            --blue-strong: #39aee8;
+            --text: #edf7fc;
+            --muted: #8ea5b5;
+            --green: #56dda7;
+            --red: #ff5d6c;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; }
+        body {
+            margin: 0;
+            padding: clamp(14px, 2.5vw, 30px);
+            background:
+                radial-gradient(circle at 50% -15%, rgba(57,174,232,0.20), transparent 38%),
+                linear-gradient(rgba(0,4,9,0.88), rgba(0,3,8,0.96)),
+                url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhj-H1CrLywWPDTFYUiAfN0fblQnGH3NKbZhb7nVbbJASv2JENXK4TgRPS8w4IOxxLHi8GVVyXwg4ZNAWeAnECODYIiGWTEbfSyckMu_eR8OA0mODh-CuM8FxInMy61LrxeGFnBGbVIYXuy4U333EkPMDstP8sF-S_-lfeb8SPeo77FNIlpz3Q0_R70q6yf/w1214-h684/Outro%20Lado%20RPG%20-%20Titulo.jpg') center/cover fixed;
+            color: var(--text);
+            font-family: Inter, Roboto, Arial, sans-serif;
+        }
+
+        button, input { font: inherit; }
+        button { -webkit-tap-highlight-color: transparent; }
+        .page { width: min(1500px, 100%); margin: 0 auto; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
+        .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+        .brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(139,204,246,0.55); border-radius: 10px; background: rgba(57,174,232,0.10); color: var(--blue); box-shadow: inset 0 0 18px rgba(57,174,232,0.08), 0 0 18px rgba(57,174,232,0.08); font-size: 1.25rem; }
+        .brand-copy { min-width: 0; }
+        .brand-copy strong { display: block; font-size: clamp(1rem, 2vw, 1.3rem); letter-spacing: 0.08em; text-transform: uppercase; }
+        .brand-copy span { display: block; margin-top: 2px; color: var(--muted); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+        .connection { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+        .connection-dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7780; box-shadow: 0 0 8px currentColor; }
+        .connection.online .connection-dot { background: var(--green); }
+        .table-button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(139,204,246,0.48); border-radius: 8px; background: rgba(5,16,26,0.9); color: var(--blue); cursor: pointer; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+        .table-button span { color: #fff; }
+
+        .screen-shell { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
+        .stage { position: relative; display: grid; place-items: center; width: 100%; min-height: min(74vh, 880px); overflow: hidden; background: radial-gradient(circle at center, rgba(21,39,54,0.52), rgba(1,4,8,0.96) 64%); }
+        .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(139,204,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(139,204,246,0.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at center, black, transparent 78%); }
+        video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; opacity: 0; transition: opacity 0.35s ease; }
+        video.visible { opacity: 1; }
+        .empty-state { position: relative; z-index: 1; width: min(480px, calc(100% - 40px)); text-align: center; transition: opacity 0.25s ease; }
+        .empty-state.hidden { opacity: 0; pointer-events: none; }
+        .empty-icon { display: grid; place-items: center; width: 78px; height: 78px; margin: 0 auto 18px; border: 1px solid rgba(139,204,246,0.34); border-radius: 20px; background: rgba(57,174,232,0.07); color: var(--blue); box-shadow: 0 0 30px rgba(57,174,232,0.08); font-size: 2.1rem; }
+        .empty-state h1 { margin: 0 0 8px; font-size: clamp(1.25rem, 3vw, 2rem); }
+        .empty-state p { margin: 0; color: var(--muted); font-size: 1rem; line-height: 1.55; }
+        .stage-badge { position: absolute; z-index: 3; top: 14px; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 7px 11px; border: 1px solid rgba(255,255,255,0.10); border-radius: 99px; background: rgba(1,5,10,0.78); backdrop-filter: blur(12px); color: #cfe5f2; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+        .live-badge { left: 14px; }
+        .live-badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #6f7b84; }
+        .live-badge.live { color: #fff; border-color: rgba(255,93,108,0.4); }
+        .live-badge.live::before { background: var(--red); box-shadow: 0 0 10px var(--red); animation: livePulse 1.5s ease-in-out infinite; }
+        .viewer-badge { right: 14px; }
+        @keyframes livePulse { 50% { opacity: 0.35; } }
+
+        .controls { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 17px; border-top: 1px solid rgba(139,204,246,0.13); background: linear-gradient(180deg, rgba(9,18,28,0.97), rgba(3,9,15,0.98)); }
+        .control-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .control-button { min-height: 43px; padding: 10px 15px; border: 1px solid rgba(139,204,246,0.34); border-radius: 9px; background: rgba(139,204,246,0.07); color: var(--text); cursor: pointer; font-weight: 850; transition: 0.2s ease; }
+        .control-button:hover { transform: translateY(-1px); border-color: var(--blue); background: rgba(139,204,246,0.13); }
+        .control-button.primary { border-color: var(--blue-strong); background: linear-gradient(135deg, #126a9a, #164b6b); color: #fff; box-shadow: 0 0 18px rgba(57,174,232,0.14); }
+        .control-button.danger { border-color: rgba(255,93,108,0.68); background: rgba(130,24,37,0.65); color: #fff; }
+        .audio-option { display: inline-flex; align-items: center; gap: 9px; min-height: 43px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.09); border-radius: 9px; color: var(--muted); font-size: 0.86rem; cursor: pointer; }
+        .audio-option input { width: 17px; height: 17px; accent-color: var(--blue-strong); }
+        .status-line { padding: 10px 17px; border-top: 1px solid rgba(255,255,255,0.055); background: rgba(1,5,9,0.96); color: var(--muted); font-size: 0.8rem; }
+        .status-line strong { color: var(--blue); }
+        .secure-note { color: #738895; font-size: 0.75rem; }
+
+        @media (max-width: 760px) {
+            body { padding: 10px; }
+            .topbar { align-items: flex-start; flex-direction: column; }
+            .top-actions { width: 100%; justify-content: space-between; }
+            .stage { min-height: 58vh; }
+            .controls { align-items: stretch; flex-direction: column; }
+            .control-group { display: grid; grid-template-columns: 1fr 1fr; }
+            .control-button.primary, .audio-option { grid-column: 1 / -1; }
+            .control-button { width: 100%; }
+            .secure-note { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">▣</div>
+                <div class="brand-copy"><strong>Transmissão da Mesa</strong><span>Outro Lado RPG</span></div>
+            </div>
+            <div class="top-actions">
+                <div id="connection" class="connection"><span class="connection-dot"></span><span id="connection-label">Conectando</span></div>
+                <button class="table-button" type="button" onclick="chooseTable()">Mesa: <span id="table-code">PADRAO</span></button>
+            </div>
+        </header>
+
+        <main class="screen-shell">
+            <section id="stage" class="stage">
+                <div id="live-badge" class="stage-badge live-badge">Aguardando</div>
+                <div id="viewer-badge" class="stage-badge viewer-badge">0 espectadores</div>
+                <video id="screen-video" autoplay playsinline controls></video>
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon" aria-hidden="true">▣</div>
+                    <h1 id="empty-title">Nenhuma tela sendo transmitida</h1>
+                    <p id="empty-copy">Quando alguém desta mesa iniciar o compartilhamento, a transmissão aparecerá aqui automaticamente.</p>
+                </div>
+            </section>
+
+            <div class="controls">
+                <div class="control-group">
+                    <button id="share-button" class="control-button primary" type="button" onclick="toggleSharing()">Compartilhar minha tela</button>
+                    <label class="audio-option"><input id="share-audio" type="checkbox" checked> Compartilhar áudio</label>
+                    <button class="control-button" type="button" onclick="toggleFullscreen()">Tela cheia</button>
+                    <button class="control-button" type="button" onclick="copyViewerLink()">Copiar link</button>
+                </div>
+                <span class="secure-note">O navegador sempre pedirá sua permissão antes de transmitir.</span>
+            </div>
+            <div id="status-line" class="status-line"><strong>Status:</strong> entrando na mesa...</div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const normalizeTableCode = value => {
+            const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+            return normalized || 'PADRAO';
+        };
+        const tableCode = normalizeTableCode(params.get('mesa') || localStorage.getItem('screen_share_table') || 'PADRAO');
+        localStorage.setItem('screen_share_table', tableCode);
+
+        const socket = io();
+        const rtcConfig = { iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ] };
+        const video = document.getElementById('screen-video');
+        const emptyState = document.getElementById('empty-state');
+        const emptyTitle = document.getElementById('empty-title');
+        const emptyCopy = document.getElementById('empty-copy');
+        const shareButton = document.getElementById('share-button');
+        const audioOption = document.getElementById('share-audio');
+        const liveBadge = document.getElementById('live-badge');
+        const viewerBadge = document.getElementById('viewer-badge');
+        const statusLine = document.getElementById('status-line');
+        const connection = document.getElementById('connection');
+        const connectionLabel = document.getElementById('connection-label');
+        document.getElementById('table-code').textContent = tableCode;
+
+        let localStream = null;
+        let isBroadcasting = false;
+        let broadcastAvailable = false;
+        let viewerHostId = null;
+        let viewerPeer = null;
+        let reconnectTimer = null;
+        const hostPeers = new Map();
+        const pendingIce = new Map();
+
+        function setStatus(message) {
+            statusLine.innerHTML = `<strong>Status:</strong> ${message}`;
+        }
+
+        function setEmpty(title, copy) {
+            emptyTitle.textContent = title;
+            emptyCopy.textContent = copy;
+            emptyState.classList.remove('hidden');
+            video.classList.remove('visible');
+        }
+
+        function showVideo(stream, local = false) {
+            video.srcObject = stream;
+            video.muted = local;
+            video.classList.add('visible');
+            emptyState.classList.add('hidden');
+            video.play().catch(() => setStatus('transmissão pronta; pressione reproduzir para iniciar.'));
+        }
+
+        function closePeer(peer) {
+            if (!peer) return;
+            peer.onicecandidate = null;
+            peer.ontrack = null;
+            peer.onconnectionstatechange = null;
+            peer.close();
+        }
+
+        function closeViewerPeer() {
+            closePeer(viewerPeer);
+            viewerPeer = null;
+            viewerHostId = null;
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+        }
+
+        function closeHostPeers() {
+            hostPeers.forEach(closePeer);
+            hostPeers.clear();
+        }
+
+        function queueIce(peerId, candidate) {
+            if (!pendingIce.has(peerId)) pendingIce.set(peerId, []);
+            pendingIce.get(peerId).push(candidate);
+        }
+
+        async function flushIce(peerId, peer) {
+            const queued = pendingIce.get(peerId) || [];
+            pendingIce.delete(peerId);
+            for (const candidate of queued) {
+                try { await peer.addIceCandidate(candidate); } catch (error) { console.warn('ICE ignorado:', error); }
+            }
+        }
+
+        function createPeer(peerId, viewerSide) {
+            const peer = new RTCPeerConnection(rtcConfig);
+            peer.onicecandidate = event => {
+                if (event.candidate) socket.emit('screen_share_ice', { target: peerId, candidate: event.candidate });
+            };
+            if (viewerSide) {
+                peer.ontrack = event => {
+                    const stream = event.streams && event.streams[0];
+                    if (stream) showVideo(stream, false);
+                    liveBadge.textContent = 'Ao vivo';
+                    liveBadge.classList.add('live');
+                    setStatus('assistindo à transmissão da mesa.');
+                };
+            }
+            peer.onconnectionstatechange = () => {
+                if (!['failed', 'closed'].includes(peer.connectionState)) return;
+                if (viewerSide && broadcastAvailable && !isBroadcasting) {
+                    closeViewerPeer();
+                    setStatus('reconectando à transmissão...');
+                    reconnectTimer = setTimeout(() => socket.emit('screen_share_watch', { mesa: tableCode }), 1200);
+                }
+            };
+            return peer;
+        }
+
+        async function connectViewer(viewerId) {
+            if (!isBroadcasting || !localStream || !viewerId) return;
+            closePeer(hostPeers.get(viewerId));
+            const peer = createPeer(viewerId, false);
+            hostPeers.set(viewerId, peer);
+            localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+            const offer = await peer.createOffer();
+            await peer.setLocalDescription(offer);
+            socket.emit('screen_share_offer', { target: viewerId, sdp: peer.localDescription });
+        }
+
+        async function startSharing() {
+            if (!socket.connected) {
+                setStatus('sem conexão com o servidor. Aguarde alguns segundos.');
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                setStatus('este navegador não permite compartilhar a tela.');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 60 } },
+                    audio: audioOption.checked
+                });
+                closeViewerPeer();
+                localStream = stream;
+                isBroadcasting = true;
+                broadcastAvailable = true;
+                const screenTrack = stream.getVideoTracks()[0];
+                if (screenTrack) screenTrack.onended = () => stopSharing(true);
+                showVideo(stream, true);
+                shareButton.textContent = 'Parar transmissão';
+                shareButton.classList.remove('primary');
+                shareButton.classList.add('danger');
+                audioOption.disabled = true;
+                liveBadge.textContent = 'Você está ao vivo';
+                liveBadge.classList.add('live');
+                setStatus('sua tela está sendo transmitida para esta mesa.');
+                socket.emit('screen_share_start', { mesa: tableCode });
+            } catch (error) {
+                if (error && error.name === 'NotAllowedError') setStatus('compartilhamento cancelado.');
+                else setStatus('não foi possível iniciar o compartilhamento.');
+            }
+        }
+
+        function stopSharing(notifyServer = true) {
+            const wasBroadcasting = isBroadcasting;
+            isBroadcasting = false;
+            broadcastAvailable = false;
+            closeHostPeers();
+            if (localStream) {
+                localStream.getTracks().forEach(track => { track.onended = null; track.stop(); });
+                localStream = null;
+            }
+            video.srcObject = null;
+            video.muted = false;
+            shareButton.textContent = 'Compartilhar minha tela';
+            shareButton.classList.remove('danger');
+            shareButton.classList.add('primary');
+            audioOption.disabled = false;
+            liveBadge.textContent = 'Aguardando';
+            liveBadge.classList.remove('live');
+            setEmpty('Nenhuma tela sendo transmitida', 'Quando alguém desta mesa iniciar o compartilhamento, a transmissão aparecerá aqui automaticamente.');
+            setStatus('aguardando uma transmissão nesta mesa.');
+            if (notifyServer && wasBroadcasting && socket.connected) socket.emit('screen_share_stop');
+        }
+
+        function toggleSharing() {
+            if (isBroadcasting) stopSharing(true);
+            else startSharing();
+        }
+
+        function chooseTable() {
+            const requested = prompt('Digite o código da mesa:', tableCode);
+            if (requested === null) return;
+            const nextTable = normalizeTableCode(requested);
+            localStorage.setItem('screen_share_table', nextTable);
+            const url = new URL(window.location.href);
+            url.searchParams.set('mesa', nextTable);
+            window.location.href = url.href;
+        }
+
+        async function copyViewerLink() {
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.searchParams.set('mesa', tableCode);
+            try {
+                await navigator.clipboard.writeText(url.href);
+                setStatus('link da mesa copiado.');
+            } catch (error) {
+                prompt('Copie o link da transmissão:', url.href);
+            }
+        }
+
+        function toggleFullscreen() {
+            const stage = document.getElementById('stage');
+            if (document.fullscreenElement) document.exitFullscreen();
+            else stage.requestFullscreen().catch(() => setStatus('não foi possível abrir em tela cheia.'));
+        }
+
+        socket.on('connect', () => {
+            connection.classList.add('online');
+            connectionLabel.textContent = 'Conectado';
+            socket.emit('screen_share_join', { mesa: tableCode });
+            setStatus('conectado à mesa; aguardando transmissão.');
+        });
+
+        socket.on('disconnect', () => {
+            connection.classList.remove('online');
+            connectionLabel.textContent = 'Desconectado';
+            if (!isBroadcasting) setStatus('conexão perdida; tentando reconectar...');
+        });
+
+        socket.on('screen_share_state', state => {
+            if (normalizeTableCode(state && state.mesa) !== tableCode) return;
+            viewerBadge.textContent = `${Number(state.viewers) || 0} ${Number(state.viewers) === 1 ? 'espectador' : 'espectadores'}`;
+            broadcastAvailable = Boolean(state.active);
+            if (!state.active && !isBroadcasting) {
+                closeViewerPeer();
+                video.srcObject = null;
+                liveBadge.textContent = 'Aguardando';
+                liveBadge.classList.remove('live');
+                setEmpty('Nenhuma tela sendo transmitida', 'Quando alguém desta mesa iniciar o compartilhamento, a transmissão aparecerá aqui automaticamente.');
+            }
+        });
+
+        socket.on('screen_share_available', data => {
+            if (normalizeTableCode(data && data.mesa) !== tableCode || isBroadcasting || !data.broadcasterId || data.broadcasterId === socket.id) return;
+            broadcastAvailable = true;
+            if (viewerHostId === data.broadcasterId && viewerPeer) return;
+            closeViewerPeer();
+            viewerHostId = data.broadcasterId;
+            setEmpty('Conectando à transmissão', 'A tela será exibida assim que a conexão direta estiver pronta.');
+            setStatus('conectando à tela compartilhada...');
+            socket.emit('screen_share_watch', { mesa: tableCode });
+        });
+
+        socket.on('screen_share_viewer_joined', data => {
+            if (!isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode) return;
+            connectViewer(data.viewerId).catch(() => setStatus('um espectador não conseguiu conectar.'));
+        });
+
+        socket.on('screen_share_viewer_left', data => {
+            const viewerId = data && data.viewerId;
+            closePeer(hostPeers.get(viewerId));
+            hostPeers.delete(viewerId);
+            pendingIce.delete(viewerId);
+        });
+
+        socket.on('screen_share_offer', async data => {
+            if (isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode || !data.broadcasterId || !data.sdp) return;
+            closeViewerPeer();
+            viewerHostId = data.broadcasterId;
+            viewerPeer = createPeer(viewerHostId, true);
+            try {
+                await viewerPeer.setRemoteDescription(data.sdp);
+                await flushIce(viewerHostId, viewerPeer);
+                const answer = await viewerPeer.createAnswer();
+                await viewerPeer.setLocalDescription(answer);
+                socket.emit('screen_share_answer', { target: viewerHostId, sdp: viewerPeer.localDescription });
+            } catch (error) {
+                setStatus('não foi possível abrir a transmissão.');
+                closeViewerPeer();
+            }
+        });
+
+        socket.on('screen_share_answer', async data => {
+            if (!isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode) return;
+            const peer = hostPeers.get(data.viewerId);
+            if (!peer || !data.sdp) return;
+            try {
+                await peer.setRemoteDescription(data.sdp);
+                await flushIce(data.viewerId, peer);
+            } catch (error) {
+                closePeer(peer);
+                hostPeers.delete(data.viewerId);
+            }
+        });
+
+        socket.on('screen_share_ice', async data => {
+            if (normalizeTableCode(data && data.mesa) !== tableCode || !data.from || !data.candidate) return;
+            const peer = isBroadcasting ? hostPeers.get(data.from) : (data.from === viewerHostId ? viewerPeer : null);
+            if (!peer || !peer.remoteDescription) {
+                queueIce(data.from, data.candidate);
+                return;
+            }
+            try { await peer.addIceCandidate(data.candidate); } catch (error) { console.warn('ICE ignorado:', error); }
+        });
+
+        socket.on('screen_share_ended', data => {
+            if (normalizeTableCode(data && data.mesa) !== tableCode || isBroadcasting) return;
+            broadcastAvailable = false;
+            closeViewerPeer();
+            video.srcObject = null;
+            liveBadge.textContent = 'Encerrada';
+            liveBadge.classList.remove('live');
+            setEmpty('Transmissão encerrada', 'A página continuará aguardando a próxima tela compartilhada nesta mesa.');
+            setStatus('a transmissão foi encerrada.');
+        });
+
+        socket.on('screen_share_replaced', data => {
+            if (normalizeTableCode(data && data.mesa) !== tableCode || !isBroadcasting) return;
+            stopSharing(false);
+            setEmpty('Outra transmissão foi iniciada', 'Somente uma pessoa pode compartilhar a tela por vez em cada mesa.');
+            setStatus('sua transmissão foi substituída por outra nesta mesa.');
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (localStream) localStream.getTracks().forEach(track => track.stop());
+        });
+    </script>
+</body>
+</html>
