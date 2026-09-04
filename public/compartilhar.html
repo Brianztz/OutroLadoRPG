@@ -187,6 +187,11 @@
         let relaySendChain = Promise.resolve();
         let relayPlaybackStarted = false;
         let relayPlayPending = false;
+        let relayLoadTimer = null;
+        let relayWatchdogTimer = null;
+        let relayChunkProduced = false;
+        let relayDisabledForShare = false;
+        let relayFailureReported = false;
         let viewerCount = 0;
         let fallbackRequested = false;
         const hostPeers = new Map();
@@ -247,6 +252,8 @@
         }
 
         function showFallbackFrame(frame, mimeType) {
+            if (relayLoadTimer) clearTimeout(relayLoadTimer);
+            relayLoadTimer = null;
             if (relayObjectUrl) {
                 video.pause();
                 video.removeAttribute('src');
@@ -320,13 +327,18 @@
 
         function chooseRelayMimeType() {
             if (typeof MediaRecorder === 'undefined') return '';
-            const options = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+            const hasAudio = Boolean(localStream && localStream.getAudioTracks().length);
+            const options = hasAudio
+                ? ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm']
+                : ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm'];
             return options.find(type => MediaRecorder.isTypeSupported(type) && (!window.MediaSource || MediaSource.isTypeSupported(type))) || '';
         }
 
         function stopRelayRecorder() {
             if (relayRestartTimer) clearTimeout(relayRestartTimer);
             relayRestartTimer = null;
+            if (relayWatchdogTimer) clearTimeout(relayWatchdogTimer);
+            relayWatchdogTimer = null;
             if (relayRecorder) {
                 relayRecorder.ondataavailable = null;
                 relayRecorder.onerror = null;
@@ -338,24 +350,29 @@
 
         function startRelayRecorder() {
             stopRelayRecorder();
-            if (!isBroadcasting || !localStream || fallbackViewerCount < 1) {
+            if (!isBroadcasting || !localStream || fallbackViewerCount < 1 || relayDisabledForShare) {
                 updateFallbackCapture();
                 return;
             }
-            relayMimeType = chooseRelayMimeType();
-            if (!relayMimeType) {
+            const requestedMimeType = chooseRelayMimeType();
+            if (!requestedMimeType) {
                 updateFallbackCapture();
                 return;
             }
             try {
-                socket.emit('screen_share_relay_reset', { mimeType: relayMimeType });
+                relayChunkProduced = false;
                 relayRecorder = new MediaRecorder(localStream, {
-                    mimeType: relayMimeType,
+                    mimeType: requestedMimeType,
                     videoBitsPerSecond: 20000000,
                     audioBitsPerSecond: 192000
                 });
+                relayMimeType = relayRecorder.mimeType || requestedMimeType;
+                socket.emit('screen_share_relay_reset', { mimeType: relayMimeType });
                 relayRecorder.ondataavailable = event => {
                     if (!event.data || !event.data.size || !isBroadcasting || fallbackViewerCount < 1 || !socket.connected) return;
+                    relayChunkProduced = true;
+                    if (relayWatchdogTimer) clearTimeout(relayWatchdogTimer);
+                    relayWatchdogTimer = null;
                     relaySendChain = relaySendChain.then(async () => {
                         if (!isBroadcasting || fallbackViewerCount < 1 || !socket.connected) return;
                         const chunk = await event.data.arrayBuffer();
@@ -363,12 +380,21 @@
                     }).catch(() => {});
                 };
                 relayRecorder.onerror = () => {
+                    relayDisabledForShare = true;
                     stopRelayRecorder();
                     updateFallbackCapture();
                 };
                 relayRecorder.start(250);
+                relayWatchdogTimer = setTimeout(() => {
+                    if (relayChunkProduced || !isBroadcasting) return;
+                    relayDisabledForShare = true;
+                    stopRelayRecorder();
+                    updateFallbackCapture();
+                    setStatus('transmitindo pelo modo compatível para manter a imagem visível.');
+                }, 5000);
                 updateFallbackCapture();
             } catch (error) {
+                relayDisabledForShare = true;
                 relayRecorder = null;
                 updateFallbackCapture();
             }
@@ -380,9 +406,12 @@
         }
 
         function cleanupRelayPlayback() {
+            if (relayLoadTimer) clearTimeout(relayLoadTimer);
+            relayLoadTimer = null;
             relayQueue = [];
             relayPlaybackStarted = false;
             relayPlayPending = false;
+            relayFailureReported = false;
             try {
                 if (relaySourceBuffer && relaySourceBuffer.updating) relaySourceBuffer.abort();
             } catch (error) {}
@@ -415,8 +444,20 @@
             }
         }
 
+        function reportRelayPlaybackFailure() {
+            if (relayFailureReported || isBroadcasting || !broadcastAvailable) return;
+            relayFailureReported = true;
+            if (relayLoadTimer) clearTimeout(relayLoadTimer);
+            relayLoadTimer = null;
+            socket.emit('screen_share_relay_failed', { mesa: tableCode });
+            setStatus('trocando para o modo compatível da transmissão...');
+        }
+
         function resetRelayPlayback(mimeType) {
-            if (!window.MediaSource || !MediaSource.isTypeSupported(mimeType)) return;
+            if (!window.MediaSource || !MediaSource.isTypeSupported(mimeType)) {
+                reportRelayPlaybackFailure();
+                return;
+            }
             closeViewerPeer();
             video.pause();
             video.srcObject = null;
@@ -436,6 +477,8 @@
             relayMediaSource.addEventListener('sourceopen', () => {
                 try {
                     relaySourceBuffer = relayMediaSource.addSourceBuffer(relayMimeType);
+                    try { relaySourceBuffer.mode = 'sequence'; } catch (error) {}
+                    relaySourceBuffer.addEventListener('error', reportRelayPlaybackFailure);
                     relaySourceBuffer.addEventListener('updateend', () => {
                         pumpRelayQueue();
                         if (relaySourceBuffer && relaySourceBuffer.buffered.length) {
@@ -446,10 +489,15 @@
                     pumpRelayQueue();
                 } catch (error) {
                     setStatus('o navegador não abriu o vídeo em alta qualidade.');
+                    reportRelayPlaybackFailure();
                 }
             }, { once: true });
             socket.emit('screen_share_relay_selected', { mesa: tableCode });
             setStatus('preparando transmissão 1080p60...');
+            relayLoadTimer = setTimeout(() => {
+                if (relayPlaybackStarted || isBroadcasting || !broadcastAvailable) return;
+                reportRelayPlaybackFailure();
+            }, 6500);
         }
 
         function updateFallbackCapture() {
@@ -486,7 +534,7 @@
                 } finally {
                     fallbackCaptureBusy = false;
                 }
-            }, 'image/webp', 0.90);
+            }, 'image/webp', 0.98);
         }
 
         async function configureVideoSender(sender) {
@@ -559,10 +607,12 @@
                 isBroadcasting = true;
                 broadcastAvailable = true;
                 fallbackViewerCount = 0;
+                relayDisabledForShare = false;
                 const screenTrack = stream.getVideoTracks()[0];
                 let captureLabel = 'alta qualidade';
                 if (screenTrack) {
-                    screenTrack.contentHint = 'detail';
+                    const selectedSurface = screenTrack.getSettings().displaySurface;
+                    screenTrack.contentHint = selectedSurface === 'window' ? 'motion' : 'detail';
                     try {
                         await screenTrack.applyConstraints({
                             width: { ideal: 1920, max: 1920 },
@@ -598,6 +648,7 @@
             isBroadcasting = false;
             broadcastAvailable = false;
             fallbackViewerCount = 0;
+            relayDisabledForShare = false;
             stopRelayRecorder();
             updateFallbackCapture();
             closeHostPeers();
@@ -771,11 +822,19 @@
         socket.on('screen_share_fallback_count', data => {
             if (!isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode) return;
             fallbackViewerCount = Math.max(0, Number(data.count) || 0);
-            if (fallbackViewerCount > 0) scheduleRelayRecorder();
+            if (fallbackViewerCount > 0 && !relayDisabledForShare) scheduleRelayRecorder();
             else {
                 stopRelayRecorder();
                 updateFallbackCapture();
             }
+        });
+
+        socket.on('screen_share_relay_failed', data => {
+            if (!isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode) return;
+            relayDisabledForShare = true;
+            stopRelayRecorder();
+            updateFallbackCapture();
+            setStatus('transmitindo pelo modo compatível para quem não recebeu o vídeo.');
         });
 
         socket.on('screen_share_relay_reset', data => {
@@ -798,6 +857,8 @@
                 relayPlayPending = true;
                 video.play().then(() => {
                     relayPlaybackStarted = true;
+                    if (relayLoadTimer) clearTimeout(relayLoadTimer);
+                    relayLoadTimer = null;
                     liveBadge.textContent = 'Ao vivo';
                     liveBadge.classList.add('live');
                     setStatus('assistindo em alta qualidade 1080p60.');
