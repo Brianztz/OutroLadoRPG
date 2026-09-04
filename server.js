@@ -16,6 +16,7 @@ const initiativeStates = new Map();
 const clueInspections = new Map();
 const luminaStates = new Map();
 const screenShareRooms = new Map();
+const screenShareChats = new Map();
 
 function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
@@ -47,6 +48,20 @@ function getScreenShareRoom(table) {
         screenShareRooms.set(normalizedTable, { broadcasterId: null, viewers: new Set(), fallbackViewers: new Set() });
     }
     return screenShareRooms.get(normalizedTable);
+}
+
+function getScreenShareChat(table) {
+    const normalizedTable = normalizeTableCode(table);
+    if (!screenShareChats.has(normalizedTable)) screenShareChats.set(normalizedTable, []);
+    return screenShareChats.get(normalizedTable);
+}
+
+function normalizeScreenChatName(value) {
+    return String(value || 'Espectador').trim().replace(/\s+/g, ' ').slice(0, 30) || 'Espectador';
+}
+
+function normalizeScreenChatText(value) {
+    return String(value || '').replace(/\r\n?/g, '\n').trim().slice(0, 400);
 }
 
 function emitScreenShareFallbackCount(table, room = getScreenShareRoom(table)) {
@@ -259,6 +274,7 @@ function normalizeClueForInspection(rawClue) {
 
 io.on('connection', socket => {
     console.log('Conexao aberta:', socket.id);
+    socket.data.screenShareSpectator = Boolean(socket.handshake.auth && socket.handshake.auth.screenShareMode === 'spectator');
 
     socket.on('master_ready', rawData => {
         const table = setAudienceTable(socket, 'master', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
@@ -291,13 +307,41 @@ io.on('connection', socket => {
         socket.data.screenShareTable = table;
         const room = getScreenShareRoom(table);
         socket.emit('screen_share_state', { mesa: table, active: Boolean(room.broadcasterId), viewers: room.viewers.size });
+        socket.emit('screen_share_chat_history', { mesa: table, messages: getScreenShareChat(table) });
         if (room.broadcasterId && room.broadcasterId !== socket.id) {
             socket.emit('screen_share_available', { mesa: table, broadcasterId: room.broadcasterId });
         }
     });
 
+    socket.on('screen_share_chat_send', rawData => {
+        if (!rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.screenShareTable);
+        if (socket.data.screenShareTable !== table) return;
+        const text = normalizeScreenChatText(rawData.text);
+        if (!text) return;
+        const now = Date.now();
+        if (now - Number(socket.data.lastScreenChatAt || 0) < 350) return;
+        socket.data.lastScreenChatAt = now;
+        const message = {
+            id: `${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            mesa: table,
+            senderId: socket.id,
+            name: normalizeScreenChatName(rawData.name),
+            text,
+            createdAt: now
+        };
+        const messages = getScreenShareChat(table);
+        messages.push(message);
+        if (messages.length > 120) messages.splice(0, messages.length - 120);
+        io.to(screenRoom(table)).emit('screen_share_chat_message', message);
+    });
+
     socket.on('screen_share_start', rawData => {
         const table = normalizeTableCode(rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
+        if (socket.data.screenShareSpectator) {
+            socket.emit('screen_share_start_denied', { mesa: table, reason: 'spectator' });
+            return;
+        }
         if (socket.data.screenShareTable !== table) {
             if (socket.data.screenShareTable) leaveScreenShare(socket, true);
             socket.join(screenRoom(table));
