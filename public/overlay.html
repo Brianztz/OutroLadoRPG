@@ -48,7 +48,110 @@
             gap: 14px;
             width: min(520px, calc(100vw - 48px));
             align-items: center;
+            transition: opacity 0.38s ease, filter 0.38s ease, transform 0.38s ease;
         }
+
+        body.clue-inspection-active .overlay-grid,
+        body.clue-inspection-active .connection-state {
+            opacity: 0;
+            visibility: hidden;
+            filter: blur(10px);
+            transform: scale(0.97);
+            pointer-events: none;
+        }
+
+        .clue-inspection-layer {
+            position: fixed;
+            z-index: 70;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            perspective: 1800px;
+            transition: opacity 0.38s ease, visibility 0s linear 0.38s;
+        }
+
+        .clue-inspection-layer.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.38s ease;
+        }
+
+        .clue-inspection-stage {
+            position: absolute;
+            inset: 3vh 3vw 8vh;
+            display: grid;
+            place-items: center;
+            perspective: 1800px;
+            transform-style: preserve-3d;
+        }
+
+        .clue-inspection-shell {
+            --inspection-half-depth: 9px;
+            position: relative;
+            display: none;
+            transform-style: preserve-3d;
+            transform-origin: center;
+            will-change: transform;
+            filter: drop-shadow(0 24px 24px rgba(0,0,0,0.72));
+            transition: width 0.24s ease, height 0.24s ease;
+        }
+
+        .clue-inspection-shell.visible { display: block; }
+        .clue-inspection-object-depth { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+        .clue-inspection-object-depth span { position: absolute; inset: 0; background: #3e444b; transform: translateZ(var(--inspection-layer-depth)); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+        .clue-inspection-face { position: absolute; inset: 0; display: grid; place-items: center; transform-style: preserve-3d; backface-visibility: hidden; }
+        .clue-inspection-face.front { transform: translateZ(var(--inspection-half-depth)); }
+        .clue-inspection-face.back { transform: rotateY(180deg) translateZ(var(--inspection-half-depth)); }
+        .clue-inspection-face img { width: 100%; height: 100%; display: block; object-fit: contain; filter: drop-shadow(0 5px 7px rgba(0,0,0,0.45)); }
+        .clue-inspection-fallback { position: absolute; inset: 0; display: none; place-items: center; color: rgba(255,255,255,0.72); font-size: clamp(3rem,9vw,8rem); }
+
+        .clue-inspection-book-shell { transform-origin: center; }
+        .inspection-book-closed,
+        .inspection-book-open { position: absolute; inset: 0; transform-style: preserve-3d; }
+        .inspection-book-closed { left: 25%; right: 25%; filter: drop-shadow(0 18px 18px rgba(0,0,0,0.7)); }
+        .inspection-book-cover-face { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; border-radius: 1.5% 4% 4% 1.5%; background: #17120e; backface-visibility: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+        .inspection-book-cover-face.front { transform: translateZ(var(--inspection-half-depth)); }
+        .inspection-book-cover-face.back { transform: rotateY(180deg) translateZ(var(--inspection-half-depth)); }
+        .inspection-book-cover-face img,
+        .inspection-book-cover-under img,
+        .inspection-book-page img { width: 100%; height: 100%; display: block; object-fit: fill; }
+        .inspection-book-open { display: none; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.72)); }
+        .clue-inspection-book-shell.open .inspection-book-closed { display: none; }
+        .clue-inspection-book-shell.open .inspection-book-open { display: block; }
+        .inspection-book-cover-under { position: absolute; top: 0; bottom: 0; width: 50%; z-index: 0; overflow: hidden; background: #20160f; }
+        .inspection-book-cover-under.left { left: 0; transform: translateZ(var(--inspection-back-depth)); border-radius: 4% 1% 1% 4%; }
+        .inspection-book-cover-under.right { right: 0; transform: translateZ(var(--inspection-back-depth)); border-radius: 1% 4% 4% 1%; }
+        .inspection-book-cover-under.left img { transform: scaleX(-1); }
+        .inspection-book-page { position: absolute; top: 2.7%; bottom: 2.7%; z-index: 2; width: 48.8%; display: grid; place-items: center; overflow: hidden; background: linear-gradient(90deg,#bca77d,#efe4c6 8%,#f5edda 90%,#aa936b); backface-visibility: visible; box-shadow: inset 0 0 18px rgba(58,37,18,0.22); }
+        .inspection-book-page.left { left: 1.2%; transform: translateZ(calc(var(--inspection-half-depth) + 2px)) rotateY(2.5deg); transform-origin: right center; border-radius: 2.8% 0.8% 0.8% 2.8%; }
+        .inspection-book-page.right { right: 1.2%; transform: translateZ(calc(var(--inspection-half-depth) + 2px)) rotateY(-2.5deg); transform-origin: left center; border-radius: 0.8% 2.8% 2.8% 0.8%; }
+        .inspection-book-page.empty img { display: none; }
+        .inspection-book-page-placeholder { display: none; color: rgba(41,28,18,0.58); font-size: clamp(0.8rem,1.8vw,1.35rem); letter-spacing: 1px; text-transform: uppercase; }
+        .inspection-book-page.empty .inspection-book-page-placeholder { display: block; }
+        .inspection-book-spine { position: absolute; z-index: 5; left: 50%; top: 1%; bottom: 1%; width: 2.3%; transform: translateX(-50%) translateZ(calc(var(--inspection-half-depth) + 4px)); border-radius: 50%; background: linear-gradient(90deg,rgba(51,31,15,0.75),rgba(9,6,4,0.95),rgba(68,42,20,0.72)); box-shadow: 0 0 12px rgba(0,0,0,0.8); }
+        .clue-inspection-book-shell.page-changing .inspection-book-page.right { animation: inspection-page-turn 0.5s cubic-bezier(0.56,0.05,0.3,1); }
+
+        .clue-inspection-caption {
+            position: absolute;
+            left: 50%;
+            bottom: 2.4vh;
+            display: grid;
+            gap: 3px;
+            min-width: 220px;
+            padding: 9px 18px;
+            border: 1px solid rgba(0,184,245,0.28);
+            border-radius: 999px;
+            background: rgba(4,8,13,0.74);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.46),0 0 18px rgba(0,184,245,0.09);
+            text-align: center;
+            transform: translateX(-50%);
+        }
+        .clue-inspection-caption strong { color: #eaf8ff; font-size: clamp(0.8rem,1.3vw,1.1rem); letter-spacing: 1.2px; text-transform: uppercase; }
+        .clue-inspection-caption span { color: #7fcff0; font-size: clamp(0.55rem,0.8vw,0.72rem); letter-spacing: 0.7px; text-transform: uppercase; }
 
         .overlay-table-button {
             position: fixed;
@@ -433,6 +536,12 @@
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
+        @keyframes inspection-page-turn {
+            0% { filter: brightness(1); transform: translateZ(calc(var(--inspection-half-depth) + 2px)) rotateY(-2.5deg); }
+            45% { filter: brightness(0.72); transform: translateZ(calc(var(--inspection-half-depth) + 18px)) rotateY(-78deg); }
+            100% { filter: brightness(1); transform: translateZ(calc(var(--inspection-half-depth) + 2px)) rotateY(-2.5deg); }
+        }
+
         @keyframes number-flash {
             0%, 100% { filter: brightness(1); }
             45% { filter: brightness(1.8); }
@@ -534,6 +643,29 @@
 </head>
 <body>
     <button id="overlay-table-button" class="overlay-table-button" type="button" onclick="chooseOverlayTable()" title="Escolher a mesa exibida no overlay">MESA: <span id="overlay-table-code">PADRAO</span></button>
+    <section id="clue-inspection-layer" class="clue-inspection-layer" aria-hidden="true">
+        <div id="clue-inspection-stage" class="clue-inspection-stage">
+            <div id="clue-inspection-object" class="clue-inspection-shell clue-inspection-object-shell">
+                <div id="clue-inspection-object-depth" class="clue-inspection-object-depth" aria-hidden="true"></div>
+                <div class="clue-inspection-face front"><img id="clue-inspection-front-image" alt="Frente da pista"><div id="clue-inspection-front-fallback" class="clue-inspection-fallback">🔎</div></div>
+                <div class="clue-inspection-face back"><img id="clue-inspection-back-image" alt="Verso da pista"><div id="clue-inspection-back-fallback" class="clue-inspection-fallback">🔎</div></div>
+            </div>
+            <div id="clue-inspection-book" class="clue-inspection-shell clue-inspection-book-shell">
+                <div class="inspection-book-closed">
+                    <div class="inspection-book-cover-face front"><img id="inspection-book-cover" alt="Capa do livro"><div class="clue-inspection-fallback">📖</div></div>
+                    <div class="inspection-book-cover-face back"><img id="inspection-book-back" alt="Contracapa do livro"><div class="clue-inspection-fallback">📖</div></div>
+                </div>
+                <div class="inspection-book-open">
+                    <div class="inspection-book-cover-under left"><img id="inspection-book-under-left" alt="Parte interna da capa"></div>
+                    <div class="inspection-book-cover-under right"><img id="inspection-book-under-right" alt="Parte interna da contracapa"></div>
+                    <div id="inspection-book-left-page" class="inspection-book-page left"><img alt="Página esquerda"><span class="inspection-book-page-placeholder">Página em branco</span></div>
+                    <div id="inspection-book-right-page" class="inspection-book-page right"><img alt="Página direita"><span class="inspection-book-page-placeholder">Fim do livro</span></div>
+                    <div class="inspection-book-spine" aria-hidden="true"></div>
+                </div>
+            </div>
+        </div>
+        <div class="clue-inspection-caption"><strong id="clue-inspection-title">PISTA</strong><span id="clue-inspection-player">INSPEÇÃO AO VIVO</span></div>
+    </section>
     <main id="overlay-grid" class="overlay-grid" aria-live="polite"></main>
     <div id="connection-state" class="connection-state visible" role="status">Conectando ao servidor...</div>
 
@@ -545,6 +677,10 @@
         const overlayTableCode = document.getElementById('overlay-table-code');
         const players = new Map();
         const previousVitals = new Map();
+        const clueInspectionLayer = document.getElementById('clue-inspection-layer');
+        const clueInspectionObject = document.getElementById('clue-inspection-object');
+        const clueInspectionBook = document.getElementById('clue-inspection-book');
+        let activeClueInspection = null;
         let initiativeState = { entries: [], activeId: null, round: 0, started: false };
         const overlayUrlParams = new URLSearchParams(window.location.search);
         const overlayTableFromUrl = overlayUrlParams.get('mesa');
@@ -562,6 +698,214 @@
         function normalizeTableCode(value) {
             const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
             return normalized || 'PADRAO';
+        }
+
+        function clampInspectionNumber(value, minimum, maximum, fallback = 0) {
+            const number = Number(value);
+            return Math.max(minimum, Math.min(maximum, Number.isFinite(number) ? number : fallback));
+        }
+
+        function setInspectionImage(image, source, onLoad) {
+            if (!image) return;
+            const fallback = image.parentElement && image.parentElement.querySelector('.clue-inspection-fallback');
+            const safeSource = String(source || '');
+            if (!safeSource) {
+                image.removeAttribute('src');
+                image.style.display = 'none';
+                if (fallback) fallback.style.display = 'grid';
+                return;
+            }
+            image.style.display = 'block';
+            if (fallback) fallback.style.display = 'none';
+            image.onload = () => {
+                image.style.display = 'block';
+                if (fallback) fallback.style.display = 'none';
+                if (typeof onLoad === 'function') onLoad(image);
+            };
+            image.onerror = () => {
+                image.style.display = 'none';
+                if (fallback) fallback.style.display = 'grid';
+            };
+            if (image.getAttribute('src') !== safeSource) image.src = safeSource;
+            else if (image.complete && image.naturalWidth && typeof onLoad === 'function') onLoad(image);
+        }
+
+        function setInspectionPage(element, page, emptyLabel) {
+            if (!element) return;
+            const image = element.querySelector('img');
+            const source = String(page && (page.img || page.src) || '');
+            element.classList.toggle('empty', !source);
+            const placeholder = element.querySelector('.inspection-book-page-placeholder');
+            if (placeholder) placeholder.textContent = emptyLabel;
+            if (!source) {
+                image.removeAttribute('src');
+                image.style.display = 'none';
+                return;
+            }
+            image.style.display = 'block';
+            image.onerror = () => {
+                element.classList.add('empty');
+                image.style.display = 'none';
+                if (placeholder) placeholder.textContent = 'Imagem indisponível';
+            };
+            if (image.getAttribute('src') !== source) image.src = source;
+        }
+
+        function fitClueInspectionShell() {
+            if (!activeClueInspection) return;
+            const state = activeClueInspection.state || {};
+            const isBook = activeClueInspection.clue && activeClueInspection.clue.type === 'book';
+            const shell = isBook ? clueInspectionBook : clueInspectionObject;
+            const defaultAspect = isBook ? 1.55 : 1.5;
+            const rawAspect = Number(state.aspect);
+            const aspect = Number.isFinite(rawAspect) && rawAspect > 0 ? clampInspectionNumber(rawAspect, 0.25, 8, defaultAspect) : defaultAspect;
+            const maximumWidth = window.innerWidth * (isBook ? 0.82 : 0.72);
+            const maximumHeight = window.innerHeight * 0.78;
+            let width = maximumWidth;
+            let height = width / aspect;
+            if (height > maximumHeight) {
+                height = maximumHeight;
+                width = height * aspect;
+            }
+            shell.style.width = `${Math.max(100, width)}px`;
+            shell.style.height = `${Math.max(100, height)}px`;
+        }
+
+        function applyClueInspectionTransform() {
+            if (!activeClueInspection) return;
+            const clue = activeClueInspection.clue || {};
+            const state = activeClueInspection.state || {};
+            const shell = clue.type === 'book' ? clueInspectionBook : clueInspectionObject;
+            const rotationX = clampInspectionNumber(state.rotationX, -90, 90, -8);
+            const rotationY = clampInspectionNumber(state.rotationY, -100000, 100000, 0);
+            const zoom = clampInspectionNumber(state.zoom, 0.5, 4, 1);
+            const panX = clampInspectionNumber(state.panXRatio, -1.5, 1.5, 0) * window.innerWidth;
+            const panY = clampInspectionNumber(state.panYRatio, -1.5, 1.5, 0) * window.innerHeight;
+            shell.style.transform = `translate(${panX}px, ${panY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) scale(${zoom})`;
+            if (clue.type === 'book') clueInspectionBook.classList.toggle('open', Boolean(state.open));
+        }
+
+        function buildInspectionObjectDepth(source, thickness) {
+            const container = document.getElementById('clue-inspection-object-depth');
+            const safeThickness = Math.max(4, Math.min(40, Math.round(Number(thickness) || 18)));
+            const half = safeThickness / 2;
+            clueInspectionObject.style.setProperty('--inspection-half-depth', `${half}px`);
+            clueInspectionObject.style.setProperty('--inspection-back-depth', `${-half}px`);
+            container.replaceChildren();
+            if (!source) return;
+            const fragment = document.createDocumentFragment();
+            for (let depth = -half; depth <= half; depth += 1) {
+                const layer = document.createElement('span');
+                layer.style.setProperty('--inspection-layer-depth', `${depth}px`);
+                layer.style.webkitMaskImage = `url(${JSON.stringify(source)})`;
+                layer.style.maskImage = `url(${JSON.stringify(source)})`;
+                layer.style.filter = `brightness(${0.58 + (1 - Math.abs(depth) / Math.max(1, half)) * 0.38})`;
+                fragment.appendChild(layer);
+            }
+            container.appendChild(fragment);
+        }
+
+        function renderInspectionObject(clue) {
+            clueInspectionBook.classList.remove('visible', 'open', 'page-changing');
+            clueInspectionObject.classList.add('visible');
+            const frontSource = String(clue.img || '');
+            const backSource = String(clue.backImg || frontSource);
+            const updateNaturalAspect = image => {
+                if (!activeClueInspection || Number(activeClueInspection.state && activeClueInspection.state.aspect) > 0) return;
+                activeClueInspection.state.aspect = image.naturalWidth / Math.max(1, image.naturalHeight);
+                fitClueInspectionShell();
+                applyClueInspectionTransform();
+            };
+            setInspectionImage(document.getElementById('clue-inspection-front-image'), frontSource, updateNaturalAspect);
+            setInspectionImage(document.getElementById('clue-inspection-back-image'), backSource);
+            buildInspectionObjectDepth(frontSource, clue.thickness);
+        }
+
+        function renderInspectionBookPages(animate = false) {
+            if (!activeClueInspection || activeClueInspection.clue.type !== 'book') return;
+            const pages = Array.isArray(activeClueInspection.clue.pages) ? activeClueInspection.clue.pages : [];
+            const spread = Math.max(0, Math.floor(Number(activeClueInspection.state && activeClueInspection.state.spread) || 0));
+            setInspectionPage(document.getElementById('inspection-book-left-page'), pages[spread], 'Livro vazio');
+            setInspectionPage(document.getElementById('inspection-book-right-page'), pages[spread + 1], 'Fim do livro');
+            if (animate) {
+                clueInspectionBook.classList.remove('page-changing');
+                void clueInspectionBook.offsetWidth;
+                clueInspectionBook.classList.add('page-changing');
+                clearTimeout(clueInspectionBook._pageTimer);
+                clueInspectionBook._pageTimer = setTimeout(() => clueInspectionBook.classList.remove('page-changing'), 520);
+            }
+        }
+
+        function renderInspectionBook(clue) {
+            clueInspectionObject.classList.remove('visible');
+            clueInspectionBook.classList.add('visible');
+            const coverSource = String(clue.coverImg || ((clue.pages || [])[0] || {}).img || '');
+            const backSource = String(clue.coverBackImg || coverSource);
+            const setPlainImage = (id, source) => {
+                const image = document.getElementById(id);
+                if (!image) return;
+                if (source) {
+                    image.style.display = 'block';
+                    image.src = source;
+                    image.onerror = () => { image.style.display = 'none'; };
+                } else {
+                    image.removeAttribute('src');
+                    image.style.display = 'none';
+                }
+            };
+            setInspectionImage(document.getElementById('inspection-book-cover'), coverSource);
+            setInspectionImage(document.getElementById('inspection-book-back'), backSource);
+            setPlainImage('inspection-book-under-left', coverSource);
+            setPlainImage('inspection-book-under-right', backSource);
+            const thickness = Math.max(4, Math.min(40, Number(clue.thickness) || 18));
+            clueInspectionBook.style.setProperty('--inspection-half-depth', `${thickness / 2}px`);
+            clueInspectionBook.style.setProperty('--inspection-back-depth', `${-thickness / 2}px`);
+            renderInspectionBookPages(false);
+        }
+
+        function showClueInspection(data) {
+            if (!data || normalizeTableCode(data.mesa) !== tableCode || !data.clue) return;
+            activeClueInspection = {
+                ...data,
+                clue: data.clue,
+                state: data.state && typeof data.state === 'object' ? { ...data.state } : {}
+            };
+            document.getElementById('clue-inspection-title').textContent = String(data.clue.title || 'Pista');
+            document.getElementById('clue-inspection-player').textContent = `INSPEÇÃO DE ${String(data.jogador || 'JOGADOR')}`;
+            document.body.classList.add('clue-inspection-active');
+            clueInspectionLayer.classList.add('active');
+            clueInspectionLayer.setAttribute('aria-hidden', 'false');
+            if (data.clue.type === 'book') renderInspectionBook(data.clue);
+            else renderInspectionObject(data.clue);
+            fitClueInspectionShell();
+            applyClueInspectionTransform();
+        }
+
+        function updateClueInspection(data) {
+            if (!activeClueInspection || !data || normalizeTableCode(data.mesa) !== tableCode) return;
+            if (String(data.codigo || '') !== String(activeClueInspection.codigo || '')) return;
+            if (data.clueId && String(data.clueId) !== String(activeClueInspection.clue.id)) return;
+            const previousSpread = Number(activeClueInspection.state && activeClueInspection.state.spread) || 0;
+            const previousOpen = Boolean(activeClueInspection.state && activeClueInspection.state.open);
+            activeClueInspection.state = data.state && typeof data.state === 'object' ? { ...data.state } : activeClueInspection.state;
+            const nextSpread = Number(activeClueInspection.state && activeClueInspection.state.spread) || 0;
+            const nextOpen = Boolean(activeClueInspection.state && activeClueInspection.state.open);
+            if (activeClueInspection.clue.type === 'book' && (nextSpread !== previousSpread || nextOpen !== previousOpen)) {
+                renderInspectionBookPages(nextSpread !== previousSpread);
+            }
+            fitClueInspectionShell();
+            applyClueInspectionTransform();
+        }
+
+        function hideClueInspection(data) {
+            if (data && normalizeTableCode(data.mesa) !== tableCode) return;
+            if (data && data.codigo && activeClueInspection && String(data.codigo) !== String(activeClueInspection.codigo)) return;
+            activeClueInspection = null;
+            document.body.classList.remove('clue-inspection-active');
+            clueInspectionLayer.classList.remove('active');
+            clueInspectionLayer.setAttribute('aria-hidden', 'true');
+            clueInspectionObject.classList.remove('visible');
+            clueInspectionBook.classList.remove('visible', 'open', 'page-changing');
         }
 
         function playerOrderStorageKey(table) {
@@ -663,6 +1007,7 @@
                 localStorage.setItem('overlay_table_code', nextTable);
                 return;
             }
+            hideClueInspection();
             tableCode = nextTable;
             localStorage.setItem('overlay_table_code', tableCode);
             stablePlayerOrder = loadPlayerOrder(tableCode);
@@ -983,6 +1328,15 @@
                 ? state
                 : { entries: [], activeId: null, round: 0, started: false };
             updateTurnHighlight();
+        });
+        socket.on('clue_inspection_started', showClueInspection);
+        socket.on('clue_inspection_updated', updateClueInspection);
+        socket.on('clue_inspection_stopped', hideClueInspection);
+
+        window.addEventListener('resize', () => {
+            if (!activeClueInspection) return;
+            fitClueInspectionShell();
+            applyClueInspectionTransform();
         });
 
         if (!overlayTableFromUrl) {
