@@ -53,8 +53,9 @@
         .screen-shell { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
         .stage { position: relative; display: grid; place-items: center; width: 100%; min-height: min(74vh, 880px); overflow: hidden; background: radial-gradient(circle at center, rgba(21,39,54,0.52), rgba(1,4,8,0.96) 64%); }
         .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(139,204,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(139,204,246,0.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at center, black, transparent 78%); }
-        video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; opacity: 0; transition: opacity 0.35s ease; }
-        video.visible { opacity: 1; }
+        video, .fallback-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; opacity: 0; transition: opacity 0.35s ease; }
+        video.visible, .fallback-frame.visible { opacity: 1; }
+        .fallback-frame { z-index: 1; pointer-events: none; }
         .empty-state { position: relative; z-index: 1; width: min(480px, calc(100% - 40px)); text-align: center; transition: opacity 0.25s ease; }
         .empty-state.hidden { opacity: 0; pointer-events: none; }
         .empty-icon { display: grid; place-items: center; width: 78px; height: 78px; margin: 0 auto 18px; border: 1px solid rgba(139,204,246,0.34); border-radius: 20px; background: rgba(57,174,232,0.07); color: var(--blue); box-shadow: 0 0 30px rgba(57,174,232,0.08); font-size: 2.1rem; }
@@ -111,6 +112,7 @@
                 <div id="live-badge" class="stage-badge live-badge">Aguardando</div>
                 <div id="viewer-badge" class="stage-badge viewer-badge">0 espectadores</div>
                 <video id="screen-video" autoplay playsinline controls></video>
+                <img id="fallback-frame" class="fallback-frame" alt="Tela transmitida">
                 <div id="empty-state" class="empty-state">
                     <div class="empty-icon" aria-hidden="true">▣</div>
                     <h1 id="empty-title">Nenhuma tela sendo transmitida</h1>
@@ -147,6 +149,7 @@
             { urls: 'stun:stun1.l.google.com:19302' }
         ] };
         const video = document.getElementById('screen-video');
+        const fallbackImage = document.getElementById('fallback-frame');
         const emptyState = document.getElementById('empty-state');
         const emptyTitle = document.getElementById('empty-title');
         const emptyCopy = document.getElementById('empty-copy');
@@ -165,8 +168,15 @@
         let viewerHostId = null;
         let viewerPeer = null;
         let reconnectTimer = null;
+        let peerConnectTimer = null;
+        let fallbackCaptureTimer = null;
+        let fallbackCaptureBusy = false;
+        let fallbackViewerCount = 0;
+        let fallbackObjectUrl = '';
         const hostPeers = new Map();
         const pendingIce = new Map();
+        const fallbackCanvas = document.createElement('canvas');
+        const fallbackContext = fallbackCanvas.getContext('2d', { alpha: false });
 
         function setStatus(message) {
             statusLine.innerHTML = `<strong>Status:</strong> ${message}`;
@@ -177,14 +187,31 @@
             emptyCopy.textContent = copy;
             emptyState.classList.remove('hidden');
             video.classList.remove('visible');
+            fallbackImage.classList.remove('visible');
         }
 
         function showVideo(stream, local = false) {
             video.srcObject = stream;
             video.muted = local;
             video.classList.add('visible');
+            fallbackImage.classList.remove('visible');
             emptyState.classList.add('hidden');
             video.play().catch(() => setStatus('transmissão pronta; pressione reproduzir para iniciar.'));
+        }
+
+        function showFallbackFrame(frame, mimeType) {
+            const blob = frame instanceof Blob ? frame : new Blob([frame], { type: mimeType || 'image/jpeg' });
+            const nextUrl = URL.createObjectURL(blob);
+            const previousUrl = fallbackObjectUrl;
+            fallbackObjectUrl = nextUrl;
+            fallbackImage.onload = () => { if (previousUrl) URL.revokeObjectURL(previousUrl); };
+            fallbackImage.src = nextUrl;
+            fallbackImage.classList.add('visible');
+            video.classList.remove('visible');
+            emptyState.classList.add('hidden');
+            liveBadge.textContent = 'Ao vivo';
+            liveBadge.classList.add('live');
+            setStatus('assistindo pela conexão compatível; o áudio pode não estar disponível.');
         }
 
         function closePeer(peer) {
@@ -201,6 +228,8 @@
             viewerHostId = null;
             if (reconnectTimer) clearTimeout(reconnectTimer);
             reconnectTimer = null;
+            if (peerConnectTimer) clearTimeout(peerConnectTimer);
+            peerConnectTimer = null;
         }
 
         function closeHostPeers() {
@@ -221,6 +250,55 @@
             }
         }
 
+        function requestFallback() {
+            if (!isBroadcasting && broadcastAvailable && socket.connected) {
+                socket.emit('screen_share_fallback_request', { mesa: tableCode });
+                setStatus('a ligação direta demorou; ativando o modo compatível...');
+            }
+        }
+
+        function armFallbackTimer() {
+            if (peerConnectTimer) clearTimeout(peerConnectTimer);
+            peerConnectTimer = setTimeout(requestFallback, 6000);
+        }
+
+        function updateFallbackCapture() {
+            const shouldCapture = isBroadcasting && localStream && fallbackViewerCount > 0;
+            if (!shouldCapture && fallbackCaptureTimer) {
+                clearInterval(fallbackCaptureTimer);
+                fallbackCaptureTimer = null;
+            }
+            if (shouldCapture && !fallbackCaptureTimer) {
+                sendFallbackFrame();
+                fallbackCaptureTimer = setInterval(sendFallbackFrame, 140);
+            }
+        }
+
+        function sendFallbackFrame() {
+            if (fallbackCaptureBusy || !isBroadcasting || !localStream || fallbackViewerCount < 1 || video.readyState < 2 || !fallbackContext) return;
+            const sourceWidth = video.videoWidth || 1280;
+            const sourceHeight = video.videoHeight || 720;
+            const scale = Math.min(1, 1440 / sourceWidth, 900 / sourceHeight);
+            const width = Math.max(2, Math.round(sourceWidth * scale / 2) * 2);
+            const height = Math.max(2, Math.round(sourceHeight * scale / 2) * 2);
+            if (fallbackCanvas.width !== width || fallbackCanvas.height !== height) {
+                fallbackCanvas.width = width;
+                fallbackCanvas.height = height;
+            }
+            fallbackContext.drawImage(video, 0, 0, width, height);
+            fallbackCaptureBusy = true;
+            fallbackCanvas.toBlob(async blob => {
+                try {
+                    if (blob && isBroadcasting && fallbackViewerCount > 0 && socket.connected) {
+                        const frame = await blob.arrayBuffer();
+                        socket.volatile.emit('screen_share_frame', { frame, mimeType: blob.type || 'image/jpeg' });
+                    }
+                } finally {
+                    fallbackCaptureBusy = false;
+                }
+            }, 'image/jpeg', 0.76);
+        }
+
         function createPeer(peerId, viewerSide) {
             const peer = new RTCPeerConnection(rtcConfig);
             peer.onicecandidate = event => {
@@ -230,6 +308,9 @@
                 peer.ontrack = event => {
                     const stream = event.streams && event.streams[0];
                     if (stream) showVideo(stream, false);
+                    if (peerConnectTimer) clearTimeout(peerConnectTimer);
+                    peerConnectTimer = null;
+                    socket.emit('screen_share_peer_connected', { mesa: tableCode });
                     liveBadge.textContent = 'Ao vivo';
                     liveBadge.classList.add('live');
                     setStatus('assistindo à transmissão da mesa.');
@@ -238,6 +319,7 @@
             peer.onconnectionstatechange = () => {
                 if (!['failed', 'closed'].includes(peer.connectionState)) return;
                 if (viewerSide && broadcastAvailable && !isBroadcasting) {
+                    requestFallback();
                     closeViewerPeer();
                     setStatus('reconectando à transmissão...');
                     reconnectTimer = setTimeout(() => socket.emit('screen_share_watch', { mesa: tableCode }), 1200);
@@ -275,6 +357,7 @@
                 localStream = stream;
                 isBroadcasting = true;
                 broadcastAvailable = true;
+                fallbackViewerCount = 0;
                 const screenTrack = stream.getVideoTracks()[0];
                 if (screenTrack) {
                     try { await screenTrack.applyConstraints({ cursor: 'never' }); } catch (error) { console.info('O navegador controla a captura do cursor.'); }
@@ -299,12 +382,15 @@
             const wasBroadcasting = isBroadcasting;
             isBroadcasting = false;
             broadcastAvailable = false;
+            fallbackViewerCount = 0;
+            updateFallbackCapture();
             closeHostPeers();
             if (localStream) {
                 localStream.getTracks().forEach(track => { track.onended = null; track.stop(); });
                 localStream = null;
             }
             video.srcObject = null;
+            fallbackImage.classList.remove('visible');
             video.muted = false;
             shareButton.textContent = 'Compartilhar minha tela';
             shareButton.classList.remove('danger');
@@ -370,6 +456,7 @@
             if (!state.active && !isBroadcasting) {
                 closeViewerPeer();
                 video.srcObject = null;
+                fallbackImage.classList.remove('visible');
                 liveBadge.textContent = 'Aguardando';
                 liveBadge.classList.remove('live');
                 setEmpty('Nenhuma tela sendo transmitida', 'Quando alguém desta mesa iniciar o compartilhamento, a transmissão aparecerá aqui automaticamente.');
@@ -385,6 +472,7 @@
             setEmpty('Conectando à transmissão', 'A tela será exibida assim que a conexão direta estiver pronta.');
             setStatus('conectando à tela compartilhada...');
             socket.emit('screen_share_watch', { mesa: tableCode });
+            armFallbackTimer();
         });
 
         socket.on('screen_share_viewer_joined', data => {
@@ -404,6 +492,7 @@
             closeViewerPeer();
             viewerHostId = data.broadcasterId;
             viewerPeer = createPeer(viewerHostId, true);
+            armFallbackTimer();
             try {
                 await viewerPeer.setRemoteDescription(data.sdp);
                 await flushIce(viewerHostId, viewerPeer);
@@ -439,11 +528,25 @@
             try { await peer.addIceCandidate(data.candidate); } catch (error) { console.warn('ICE ignorado:', error); }
         });
 
+        socket.on('screen_share_fallback_count', data => {
+            if (!isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode) return;
+            fallbackViewerCount = Math.max(0, Number(data.count) || 0);
+            updateFallbackCapture();
+        });
+
+        socket.on('screen_share_frame', data => {
+            if (isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode || !data.frame) return;
+            if (peerConnectTimer) clearTimeout(peerConnectTimer);
+            peerConnectTimer = null;
+            showFallbackFrame(data.frame, data.mimeType);
+        });
+
         socket.on('screen_share_ended', data => {
             if (normalizeTableCode(data && data.mesa) !== tableCode || isBroadcasting) return;
             broadcastAvailable = false;
             closeViewerPeer();
             video.srcObject = null;
+            fallbackImage.classList.remove('visible');
             liveBadge.textContent = 'Encerrada';
             liveBadge.classList.remove('live');
             setEmpty('Transmissão encerrada', 'A página continuará aguardando a próxima tela compartilhada nesta mesa.');
@@ -458,6 +561,8 @@
         });
 
         window.addEventListener('beforeunload', () => {
+            if (fallbackCaptureTimer) clearInterval(fallbackCaptureTimer);
+            if (fallbackObjectUrl) URL.revokeObjectURL(fallbackObjectUrl);
             if (localStream) localStream.getTracks().forEach(track => track.stop());
         });
     </script>
