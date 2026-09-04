@@ -53,7 +53,7 @@
         .screen-shell { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
         .stage { position: relative; display: grid; place-items: center; width: 100%; min-height: min(74vh, 880px); overflow: hidden; background: radial-gradient(circle at center, rgba(21,39,54,0.52), rgba(1,4,8,0.96) 64%); }
         .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(139,204,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(139,204,246,0.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at center, black, transparent 78%); }
-        video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; opacity: 0; transition: opacity 0.35s ease; }
+        video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; cursor: none; opacity: 0; transition: opacity 0.35s ease; }
         video.visible { opacity: 1; }
         .empty-state { position: relative; z-index: 1; width: min(480px, calc(100% - 40px)); text-align: center; transition: opacity 0.25s ease; }
         .empty-state.hidden { opacity: 0; pointer-events: none; }
@@ -268,7 +268,7 @@
             }
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 60 } },
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 60 }, cursor: 'never' },
                     audio: audioOption.checked
                 });
                 closeViewerPeer();
@@ -276,7 +276,10 @@
                 isBroadcasting = true;
                 broadcastAvailable = true;
                 const screenTrack = stream.getVideoTracks()[0];
-                if (screenTrack) screenTrack.onended = () => stopSharing(true);
+                if (screenTrack) {
+                    try { await screenTrack.applyConstraints({ cursor: 'never' }); } catch (error) { console.info('O navegador controla a captura do cursor.'); }
+                    screenTrack.onended = () => stopSharing(true);
+                }
                 showVideo(stream, true);
                 shareButton.textContent = 'Parar transmissão';
                 shareButton.classList.remove('primary');
