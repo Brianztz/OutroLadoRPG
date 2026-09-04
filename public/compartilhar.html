@@ -176,6 +176,7 @@
         let fallbackCaptureBusy = false;
         let fallbackViewerCount = 0;
         let fallbackObjectUrl = '';
+        let remotePlaybackConfirmed = false;
         const hostPeers = new Map();
         const pendingIce = new Map();
         const fallbackCanvas = document.createElement('canvas');
@@ -198,12 +199,29 @@
             video.srcObject = stream;
             video.muted = true;
             video.classList.add('visible');
-            fallbackImage.classList.remove('visible');
             emptyState.classList.add('hidden');
             const hasAudio = stream.getAudioTracks().length > 0;
             soundButton.hidden = local || !hasAudio;
             soundButton.textContent = 'Ativar áudio';
-            video.play().catch(() => setStatus('pressione reproduzir para abrir a transmissão.'));
+            if (local) fallbackImage.classList.remove('visible');
+            video.play().then(() => {
+                if (!local) confirmRemotePlayback();
+            }).catch(() => {
+                if (!local) setStatus('preparando o modo compatível da transmissão...');
+            });
+        }
+
+        function confirmRemotePlayback() {
+            if (isBroadcasting || remotePlaybackConfirmed || !viewerPeer || !video.srcObject || video.readyState < 2 || video.paused) return;
+            remotePlaybackConfirmed = true;
+            if (peerConnectTimer) clearTimeout(peerConnectTimer);
+            peerConnectTimer = null;
+            fallbackImage.classList.remove('visible');
+            soundButton.hidden = video.srcObject.getAudioTracks().length < 1;
+            socket.emit('screen_share_peer_connected', { mesa: tableCode });
+            liveBadge.textContent = 'Ao vivo';
+            liveBadge.classList.add('live');
+            setStatus('assistindo à transmissão da mesa.');
         }
 
         function showFallbackFrame(frame, mimeType) {
@@ -234,6 +252,7 @@
             closePeer(viewerPeer);
             viewerPeer = null;
             viewerHostId = null;
+            remotePlaybackConfirmed = false;
             if (reconnectTimer) clearTimeout(reconnectTimer);
             reconnectTimer = null;
             if (peerConnectTimer) clearTimeout(peerConnectTimer);
@@ -316,12 +335,7 @@
                 peer.ontrack = event => {
                     const stream = event.streams && event.streams[0];
                     if (stream) showVideo(stream, false);
-                    if (peerConnectTimer) clearTimeout(peerConnectTimer);
-                    peerConnectTimer = null;
-                    socket.emit('screen_share_peer_connected', { mesa: tableCode });
-                    liveBadge.textContent = 'Ao vivo';
-                    liveBadge.classList.add('live');
-                    setStatus('assistindo à transmissão da mesa.');
+                    setStatus('recebendo o vídeo; aguardando o primeiro quadro...');
                 };
             }
             peer.onconnectionstatechange = () => {
@@ -450,6 +464,11 @@
             if (document.fullscreenElement) document.exitFullscreen();
             else stage.requestFullscreen().catch(() => setStatus('não foi possível abrir em tela cheia.'));
         }
+
+        video.addEventListener('playing', confirmRemotePlayback);
+        video.addEventListener('loadeddata', () => {
+            if (!isBroadcasting && video.srcObject) video.play().then(confirmRemotePlayback).catch(() => requestFallback());
+        });
 
         socket.on('connect', () => {
             connection.classList.add('online');
