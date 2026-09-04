@@ -22,6 +22,7 @@
         }
 
         * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
         html, body { min-height: 100%; }
         body {
             margin: 0;
@@ -124,6 +125,7 @@
                 <div class="control-group">
                     <button id="share-button" class="control-button primary" type="button" onclick="toggleSharing()">Compartilhar minha tela</button>
                     <label class="audio-option"><input id="share-audio" type="checkbox" checked> Compartilhar áudio</label>
+                    <button id="sound-button" class="control-button" type="button" onclick="toggleSound()" hidden>Ativar áudio</button>
                     <button class="control-button" type="button" onclick="toggleFullscreen()">Tela cheia</button>
                     <button class="control-button" type="button" onclick="copyViewerLink()">Copiar link</button>
                 </div>
@@ -155,6 +157,7 @@
         const emptyCopy = document.getElementById('empty-copy');
         const shareButton = document.getElementById('share-button');
         const audioOption = document.getElementById('share-audio');
+        const soundButton = document.getElementById('sound-button');
         const liveBadge = document.getElementById('live-badge');
         const viewerBadge = document.getElementById('viewer-badge');
         const statusLine = document.getElementById('status-line');
@@ -188,15 +191,19 @@
             emptyState.classList.remove('hidden');
             video.classList.remove('visible');
             fallbackImage.classList.remove('visible');
+            soundButton.hidden = true;
         }
 
         function showVideo(stream, local = false) {
             video.srcObject = stream;
-            video.muted = local;
+            video.muted = true;
             video.classList.add('visible');
             fallbackImage.classList.remove('visible');
             emptyState.classList.add('hidden');
-            video.play().catch(() => setStatus('transmissão pronta; pressione reproduzir para iniciar.'));
+            const hasAudio = stream.getAudioTracks().length > 0;
+            soundButton.hidden = local || !hasAudio;
+            soundButton.textContent = 'Ativar áudio';
+            video.play().catch(() => setStatus('pressione reproduzir para abrir a transmissão.'));
         }
 
         function showFallbackFrame(frame, mimeType) {
@@ -209,6 +216,7 @@
             fallbackImage.classList.add('visible');
             video.classList.remove('visible');
             emptyState.classList.add('hidden');
+            soundButton.hidden = true;
             liveBadge.textContent = 'Ao vivo';
             liveBadge.classList.add('live');
             setStatus('assistindo pela conexão compatível; o áudio pode não estar disponível.');
@@ -406,6 +414,13 @@
         function toggleSharing() {
             if (isBroadcasting) stopSharing(true);
             else startSharing();
+        }
+
+        function toggleSound() {
+            if (!video.srcObject || !video.srcObject.getAudioTracks().length) return;
+            video.muted = !video.muted;
+            soundButton.textContent = video.muted ? 'Ativar áudio' : 'Silenciar áudio';
+            video.play().catch(() => setStatus('clique em reproduzir para ativar o áudio.'));
         }
 
         function chooseTable() {
