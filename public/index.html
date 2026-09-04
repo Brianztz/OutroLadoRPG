@@ -38,6 +38,9 @@
         
         .main-container { width: 100%; max-width: 1300px; display: none; }
         .main-container.active { display: block; }
+        .lumina-container { max-width: 1500px; }
+        .lumina-browser-frame { width: 100%; height: max(700px,calc(100vh - 145px)); overflow: hidden; border: 1px solid rgba(93,196,255,0.42); border-radius: 14px; background: #fff; box-shadow: 0 20px 55px rgba(0,0,0,0.52),0 0 24px rgba(45,153,218,0.12); }
+        .lumina-browser-frame iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
         
         .columns-wrapper { display: flex; gap: 20px; align-items: flex-start; }
         .panel { background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; box-shadow: var(--shadow-card); margin-bottom: 20px; backdrop-filter: blur(8px); }
@@ -378,6 +381,7 @@
         <button class="tab-btn active" onclick="openTab('tab-personagem', this)">Personagem</button>
         <button class="tab-btn" onclick="openTab('tab-inventario', this)">Inventário</button>
         <button class="tab-btn" onclick="openTab('tab-pistas', this)">Pistas</button>
+        <button class="tab-btn" onclick="openTab('tab-lumina', this)">Lumina</button>
     </div>
     <div class="top-buttons" id="main-top-buttons">
         <button id="player-table-button" class="table-selector-button" type="button" onclick="choosePlayerTable()">MESA: <span id="display-table-code">PADRAO</span></button>
@@ -898,6 +902,12 @@
     </div>
 </div>
 
+<div id="tab-lumina" class="main-container lumina-container">
+    <div class="lumina-browser-frame">
+        <iframe id="lumina-frame" title="Navegador Lumina" loading="lazy"></iframe>
+    </div>
+</div>
+
 <div id="tab-rituais" class="main-container">
     <div class="panel">
         <div class="panel-title">Grimório e Conhecimento</div>
@@ -951,6 +961,7 @@
         tableCode = nextTable;
         localStorage.setItem('player_table_code', tableCode);
         document.getElementById('display-table-code').textContent = tableCode;
+        refreshLuminaFrameTable();
         if (playerDataReady) save();
     }
 
@@ -1305,7 +1316,30 @@
         currentOccupation = newOcc;
     }
 
-    function openTab(id, btn) { document.querySelectorAll('.main-container, .tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(id).classList.add('active'); btn.classList.add('active'); if(id === 'tab-inventario') updateWeight(); }
+    function luminaFrameUrl() {
+        const url = new URL('./lumina/index.html', window.location.href);
+        url.searchParams.set('mesa', tableCode);
+        if (playerCode) url.searchParams.set('codigo', playerCode);
+        return url.href;
+    }
+
+    function ensureLuminaFrame() {
+        const frame = document.getElementById('lumina-frame');
+        if (frame && !frame.getAttribute('src')) frame.src = luminaFrameUrl();
+    }
+
+    function refreshLuminaFrameTable() {
+        const frame = document.getElementById('lumina-frame');
+        if (frame && frame.getAttribute('src')) frame.src = luminaFrameUrl();
+    }
+
+    function openTab(id, btn) {
+        document.querySelectorAll('.main-container, .tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+        if (id === 'tab-inventario') updateWeight();
+        if (id === 'tab-lumina') ensureLuminaFrame();
+    }
     
     function changeStatus(type, amount) { let el = document.getElementById(type + '_atual'); if(el) { let val = parseInt(el.value) || 0; el.value = val + amount; updateStatusBars(); save(); } }
     function updateStatusBars() {
