@@ -14,6 +14,7 @@ const playersData = new Map();
 const playerSockets = new Map();
 const initiativeStates = new Map();
 const clueInspections = new Map();
+const luminaStates = new Map();
 
 function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
@@ -47,6 +48,14 @@ function getInitiativeState(table) {
     const normalizedTable = normalizeTableCode(table);
     if (!initiativeStates.has(normalizedTable)) initiativeStates.set(normalizedTable, emptyInitiativeState());
     return initiativeStates.get(normalizedTable);
+}
+
+function getLuminaState(table) {
+    const normalizedTable = normalizeTableCode(table);
+    if (!luminaStates.has(normalizedTable)) {
+        luminaStates.set(normalizedTable, { mesa: normalizedTable, enabled: false, caseId: 'aurora-adelanio' });
+    }
+    return luminaStates.get(normalizedTable);
 }
 
 function playersSnapshot(table, includeOffline = false) {
@@ -198,6 +207,24 @@ io.on('connection', socket => {
         const table = setAudienceTable(socket, 'master', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
         socket.emit('players_snapshot', playersSnapshot(table));
         socket.emit('initiative_state_updated', getInitiativeState(table));
+        socket.emit('lumina_state_updated', getLuminaState(table));
+    });
+
+    socket.on('lumina_ready', rawData => {
+        const table = normalizeTableCode(rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
+        const previousTable = socket.data.luminaTable;
+        if (previousTable && previousTable !== table) socket.leave(tableRoom(previousTable));
+        socket.join(tableRoom(table));
+        socket.data.luminaTable = table;
+        socket.emit('lumina_state_updated', getLuminaState(table));
+    });
+
+    socket.on('lumina_master_set', rawData => {
+        if (!socket.data.isMaster || !rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.masterTable);
+        const state = { mesa: table, enabled: Boolean(rawData.enabled), caseId: 'aurora-adelanio' };
+        luminaStates.set(table, state);
+        io.to(tableRoom(table)).emit('lumina_state_updated', state);
     });
 
     socket.on('overlay_ready', rawData => {
