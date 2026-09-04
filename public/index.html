@@ -974,6 +974,8 @@
     let pendingClueBookPages = [];
     let currentBookSpread = 0;
     let bookFlipAnimating = false;
+    let clueBookPendingSpread = null;
+    let clueBookTurnDirection = 0;
     let clueBookOpen = false;
     let clueBookRotationX = -8;
     let clueBookRotationY = 0;
@@ -2068,7 +2070,8 @@
             panYRatio: (isBook ? clueBookPanY : cluePanY) / stageHeight,
             aspect: baseWidth > 0 && baseHeight > 0 ? baseWidth / baseHeight : 0,
             open: isBook && clueBookOpen,
-            spread: isBook ? currentBookSpread : 0
+            spread: isBook ? (clueBookPendingSpread ?? currentBookSpread) : 0,
+            turnDirection: isBook ? clueBookTurnDirection : 0
         };
     }
 
@@ -2076,6 +2079,11 @@
         const element = document.getElementById(elementId);
         const source = element && element.style.display !== 'none' ? element.getAttribute('src') : '';
         return String(source || fallback || '');
+    }
+
+    function getClueStyleProperty(elementId, property, fallback) {
+        const element = document.getElementById(elementId);
+        return String(element && element.style.getPropertyValue(property) || fallback || '').trim();
     }
 
     function getClueInspectionPayload(clue) {
@@ -2090,6 +2098,9 @@
                 type: 'book',
                 coverImg: getRenderedClueSource('clue-book-cover-image', coverFallback),
                 coverBackImg: getRenderedClueSource('clue-book-back-cover-image', backFallback),
+                hasCustomBack: Boolean(clue.coverBackImg),
+                edgeColor: getClueStyleProperty('clue-book-cover', '--clue-book-edge-color', '#4a2d18'),
+                backEdgeColor: getClueStyleProperty('clue-book-back-cover', '--clue-book-back-edge-color', '#4a2d18'),
                 pages,
                 thickness: normalizeClueThickness(clue.thickness)
             };
@@ -2101,6 +2112,7 @@
             type: 'object',
             img: getRenderedClueSource('clue-3d-image', clue.img),
             backImg: getRenderedClueSource('clue-3d-back-image', clue.backImg || clue.img),
+            edgeColor: getClueStyleProperty('clue-3d-object', '--clue-edge-color', '#68686f'),
             thickness: normalizeClueThickness(clue.thickness)
         };
     }
@@ -2933,6 +2945,9 @@
         const flipBack = document.getElementById('clue-book-flip-back');
         const turningClueId = currentClueId;
         bookFlipAnimating = true;
+        clueBookPendingSpread = targetSpread;
+        clueBookTurnDirection = direction > 0 ? 1 : -1;
+        queueClueInspectionUpdate();
         updateClueBookControls(pages, true);
 
         if (direction > 0) {
@@ -2950,6 +2965,8 @@
         setTimeout(() => {
             if (currentClueId !== turningClueId) return;
             currentBookSpread = targetSpread;
+            clueBookPendingSpread = null;
+            clueBookTurnDirection = 0;
             renderClueBookSpread();
         }, 780);
     }
@@ -3067,6 +3084,8 @@
             bookViewer.style.display = 'block';
             currentBookSpread = 0;
             bookFlipAnimating = false;
+            clueBookPendingSpread = null;
+            clueBookTurnDirection = 0;
             clueBookOpen = false;
             initializeClueBook3DControls();
             resetClueBook3D();
@@ -3189,6 +3208,8 @@
         clue3DImageRequestToken++;
         clueBookFitToken++;
         bookFlipAnimating = false;
+        clueBookPendingSpread = null;
+        clueBookTurnDirection = 0;
         clueBookOpen = false;
         clueBookDragging = false;
         const bookFlip = document.getElementById('clue-book-flip');
