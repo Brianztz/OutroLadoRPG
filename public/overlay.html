@@ -182,6 +182,7 @@
         }
 
         .overlay-table-button span { color: #fff; }
+        .overlay-clue-button { right: 178px; color: #9edfff; }
 
         .player-widget {
             --player-color: #00b8f5;
@@ -634,6 +635,7 @@
             .name { font-size: 2rem; }
             .combat-number { font-size: 1.75rem; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
+            .overlay-clue-button { right: 138px; }
         }
 
         @media (hover: none) {
@@ -643,6 +645,7 @@
 </head>
 <body>
     <button id="overlay-table-button" class="overlay-table-button" type="button" onclick="chooseOverlayTable()" title="Escolher a mesa exibida no overlay">MESA: <span id="overlay-table-code">PADRAO</span></button>
+    <button class="overlay-table-button overlay-clue-button" type="button" onclick="openClueOverlayTab()" title="Abrir o overlay dedicado às pistas">PISTAS ↗</button>
     <section id="clue-inspection-layer" class="clue-inspection-layer" aria-hidden="true">
         <div id="clue-inspection-stage" class="clue-inspection-stage">
             <div id="clue-inspection-object" class="clue-inspection-shell clue-inspection-object-shell">
@@ -1000,6 +1003,12 @@
             switchOverlayTable(nextTable);
         }
 
+        function openClueOverlayTab() {
+            const clueOverlayUrl = new URL('./overlay-pistas.html', window.location.href);
+            clueOverlayUrl.searchParams.set('mesa', tableCode);
+            window.open(clueOverlayUrl.href, '_blank', 'noopener');
+        }
+
         function switchOverlayTable(value) {
             const nextTable = normalizeTableCode(value);
             overlayTableCode.textContent = nextTable;
@@ -1329,16 +1338,6 @@
                 : { entries: [], activeId: null, round: 0, started: false };
             updateTurnHighlight();
         });
-        socket.on('clue_inspection_started', showClueInspection);
-        socket.on('clue_inspection_updated', updateClueInspection);
-        socket.on('clue_inspection_stopped', hideClueInspection);
-
-        window.addEventListener('resize', () => {
-            if (!activeClueInspection) return;
-            fitClueInspectionShell();
-            applyClueInspectionTransform();
-        });
-
         if (!overlayTableFromUrl) {
             window.addEventListener('storage', event => {
                 if (!overlayTablePinned && event.key === 'master_table_code' && event.newValue) switchOverlayTable(event.newValue);
