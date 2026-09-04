@@ -51,7 +51,8 @@
         .table-button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(139,204,246,0.48); border-radius: 8px; background: rgba(5,16,26,0.9); color: var(--blue); cursor: pointer; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
         .table-button span { color: #fff; }
 
-        .screen-shell { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
+        .broadcast-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 340px); gap: 16px; align-items: stretch; }
+        .screen-shell { min-width: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
         .stage { position: relative; display: grid; place-items: center; width: 100%; min-height: min(74vh, 880px); overflow: hidden; background: radial-gradient(circle at center, rgba(21,39,54,0.52), rgba(1,4,8,0.96) 64%); }
         .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(139,204,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(139,204,246,0.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at center, black, transparent 78%); }
         video, .fallback-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; opacity: 0; transition: opacity 0.35s ease; }
@@ -84,6 +85,32 @@
         .status-line { padding: 10px 17px; border-top: 1px solid rgba(255,255,255,0.055); background: rgba(1,5,9,0.96); color: var(--muted); font-size: 0.8rem; }
         .status-line strong { color: var(--blue); }
         .secure-note { color: #738895; font-size: 0.75rem; }
+        .chat-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: rgba(2,8,14,0.96); box-shadow: 0 28px 80px rgba(0,0,0,0.42), inset 0 0 36px rgba(57,174,232,0.025); }
+        .chat-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 16px; border-bottom: 1px solid rgba(139,204,246,0.15); }
+        .chat-header strong { font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        .chat-header span { color: var(--blue); font-size: 0.72rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
+        .chat-messages { display: flex; flex-direction: column; gap: 10px; min-height: 280px; max-height: calc(74vh + 82px); padding: 14px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(139,204,246,0.35) transparent; }
+        .chat-empty { margin: auto; padding: 22px; color: var(--muted); font-size: 0.85rem; line-height: 1.5; text-align: center; }
+        .chat-message { align-self: flex-start; max-width: 92%; padding: 9px 11px; border: 1px solid rgba(139,204,246,0.14); border-radius: 5px 13px 13px 13px; background: rgba(139,204,246,0.07); }
+        .chat-message.mine { align-self: flex-end; border-color: rgba(57,174,232,0.32); border-radius: 13px 5px 13px 13px; background: rgba(57,174,232,0.14); }
+        .chat-message-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+        .chat-message-name { overflow: hidden; color: var(--blue); font-size: 0.72rem; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+        .chat-message-time { flex: 0 0 auto; color: #627887; font-size: 0.65rem; }
+        .chat-message-text { color: #e9f4fa; font-size: 0.88rem; line-height: 1.42; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .chat-form { display: grid; gap: 9px; padding: 13px; border-top: 1px solid rgba(139,204,246,0.15); background: rgba(1,5,9,0.92); }
+        .chat-name, .chat-input { width: 100%; min-height: 39px; border: 1px solid rgba(139,204,246,0.22); border-radius: 8px; outline: none; background: rgba(7,16,25,0.95); color: var(--text); padding: 9px 11px; }
+        .chat-name:focus, .chat-input:focus { border-color: var(--blue-strong); box-shadow: 0 0 0 3px rgba(57,174,232,0.09); }
+        .chat-name { font-size: 0.78rem; }
+        .chat-compose { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+        .chat-send { min-width: 74px; border: 1px solid var(--blue-strong); border-radius: 8px; background: linear-gradient(135deg, #126a9a, #164b6b); color: #fff; cursor: pointer; font-weight: 900; }
+        body.spectator-mode #share-button,
+        body.spectator-mode #streamlabs-button,
+        body.spectator-mode .audio-option { display: none !important; }
+
+        @media (max-width: 1080px) {
+            .broadcast-layout { grid-template-columns: 1fr; }
+            .chat-messages { max-height: 390px; }
+        }
 
         @media (max-width: 760px) {
             body { padding: 10px; }
@@ -111,6 +138,7 @@
             </div>
         </header>
 
+        <div class="broadcast-layout">
         <main class="screen-shell">
             <section id="stage" class="stage">
                 <div id="live-badge" class="stage-badge live-badge">Aguardando</div>
@@ -137,6 +165,20 @@
             </div>
             <div id="status-line" class="status-line"><strong>Status:</strong> entrando na mesa...</div>
         </main>
+        <aside class="chat-panel" aria-label="Chat da mesa">
+            <div class="chat-header"><strong>Chat da mesa</strong><span id="chat-state">Conectando</span></div>
+            <div id="chat-messages" class="chat-messages" aria-live="polite">
+                <div id="chat-empty" class="chat-empty">As mensagens desta mesa aparecerão aqui.</div>
+            </div>
+            <form id="chat-form" class="chat-form" onsubmit="sendChatMessage(event)">
+                <input id="chat-name" class="chat-name" type="text" maxlength="30" autocomplete="nickname" aria-label="Seu nome no chat" placeholder="Seu nome">
+                <div class="chat-compose">
+                    <input id="chat-input" class="chat-input" type="text" maxlength="400" autocomplete="off" aria-label="Mensagem" placeholder="Escreva uma mensagem...">
+                    <button class="chat-send" type="submit">Enviar</button>
+                </div>
+            </form>
+        </aside>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -147,9 +189,15 @@
             return normalized || 'PADRAO';
         };
         const tableCode = normalizeTableCode(params.get('mesa') || localStorage.getItem('screen_share_table') || 'PADRAO');
+        const spectatorMode = params.get('espectador') === '1';
         localStorage.setItem('screen_share_table', tableCode);
+        document.body.classList.toggle('spectator-mode', spectatorMode);
 
-        const socket = io({ transports: ['websocket', 'polling'], tryAllTransports: true });
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            tryAllTransports: true,
+            auth: { screenShareMode: spectatorMode ? 'spectator' : 'host' }
+        });
         const rtcConfig = { iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' }
@@ -168,7 +216,14 @@
         const statusLine = document.getElementById('status-line');
         const connection = document.getElementById('connection');
         const connectionLabel = document.getElementById('connection-label');
+        const chatState = document.getElementById('chat-state');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatName = document.getElementById('chat-name');
+        const chatInput = document.getElementById('chat-input');
+        const secureNote = document.querySelector('.secure-note');
         document.getElementById('table-code').textContent = tableCode;
+        chatName.value = localStorage.getItem('screen_share_chat_name') || (spectatorMode ? 'Espectador' : 'Transmissor');
+        if (spectatorMode) secureNote.textContent = 'Modo espectador: assista à transmissão e converse com a mesa.';
 
         let localStream = null;
         let isBroadcasting = false;
@@ -611,6 +666,10 @@
         }
 
         function ensureReadyToBroadcast() {
+            if (spectatorMode) {
+                setStatus('este link é somente para espectadores.');
+                return false;
+            }
             if (!socket.connected) {
                 setStatus('sem conexão com o servidor. Aguarde alguns segundos.');
                 return false;
@@ -841,12 +900,78 @@
             const url = new URL(window.location.href);
             url.search = '';
             url.searchParams.set('mesa', tableCode);
+            url.searchParams.set('espectador', '1');
             try {
                 await navigator.clipboard.writeText(url.href);
-                setStatus('link da mesa copiado.');
+                setStatus('link de espectador copiado.');
             } catch (error) {
-                prompt('Copie o link da transmissão:', url.href);
+                prompt('Copie o link para os espectadores:', url.href);
             }
+        }
+
+        function formatChatTime(value) {
+            const date = new Date(Number(value) || Date.now());
+            return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(date);
+        }
+
+        function showEmptyChat() {
+            chatMessages.textContent = '';
+            const empty = document.createElement('div');
+            empty.id = 'chat-empty';
+            empty.className = 'chat-empty';
+            empty.textContent = 'As mensagens desta mesa aparecerão aqui.';
+            chatMessages.appendChild(empty);
+        }
+
+        function renderChatMessage(message) {
+            if (!message || !message.text) return;
+            const empty = document.getElementById('chat-empty');
+            if (empty) empty.remove();
+
+            const item = document.createElement('article');
+            item.className = `chat-message${message.senderId === socket.id ? ' mine' : ''}`;
+
+            const header = document.createElement('div');
+            header.className = 'chat-message-head';
+            const author = document.createElement('strong');
+            author.className = 'chat-message-name';
+            author.textContent = String(message.name || 'Espectador');
+            const time = document.createElement('time');
+            time.className = 'chat-message-time';
+            time.dateTime = new Date(Number(message.createdAt) || Date.now()).toISOString();
+            time.textContent = formatChatTime(message.createdAt);
+            header.append(author, time);
+
+            const text = document.createElement('div');
+            text.className = 'chat-message-text';
+            text.textContent = String(message.text);
+            item.append(header, text);
+            chatMessages.appendChild(item);
+
+            while (chatMessages.children.length > 120) chatMessages.firstElementChild.remove();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function renderChatHistory(messages) {
+            chatMessages.textContent = '';
+            if (!Array.isArray(messages) || messages.length === 0) {
+                showEmptyChat();
+                return;
+            }
+            messages.forEach(renderChatMessage);
+        }
+
+        function sendChatMessage(event) {
+            event.preventDefault();
+            const text = chatInput.value.trim();
+            if (!text || !socket.connected) return;
+            const fallbackName = spectatorMode ? 'Espectador' : 'Transmissor';
+            const name = (chatName.value.trim() || fallbackName).slice(0, 30);
+            chatName.value = name;
+            localStorage.setItem('screen_share_chat_name', name);
+            socket.emit('screen_share_chat_send', { mesa: tableCode, name, text: text.slice(0, 400) });
+            chatInput.value = '';
+            chatInput.focus();
         }
 
         function toggleFullscreen() {
@@ -863,14 +988,32 @@
         socket.on('connect', () => {
             connection.classList.add('online');
             connectionLabel.textContent = 'Conectado';
+            chatState.textContent = 'Online';
             socket.emit('screen_share_join', { mesa: tableCode });
-            setStatus('conectado à mesa; aguardando transmissão.');
+            setStatus(spectatorMode ? 'modo espectador conectado; aguardando transmissão.' : 'conectado à mesa; aguardando transmissão.');
         });
 
         socket.on('disconnect', () => {
             connection.classList.remove('online');
             connectionLabel.textContent = 'Desconectado';
+            chatState.textContent = 'Reconectando';
             if (!isBroadcasting) setStatus('conexão perdida; tentando reconectar...');
+        });
+
+        socket.on('screen_share_chat_history', data => {
+            if (normalizeTableCode(data && data.mesa) !== tableCode) return;
+            renderChatHistory(data.messages);
+        });
+
+        socket.on('screen_share_chat_message', message => {
+            if (normalizeTableCode(message && message.mesa) !== tableCode) return;
+            renderChatMessage(message);
+        });
+
+        socket.on('screen_share_start_denied', data => {
+            if (normalizeTableCode(data && data.mesa) !== tableCode) return;
+            if (isBroadcasting) stopSharing(false);
+            setStatus('este acesso é somente para espectadores.');
         });
 
         socket.on('screen_share_state', state => {
