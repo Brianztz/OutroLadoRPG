@@ -151,7 +151,8 @@ function normalizeClueInspectionState(rawState) {
         panYRatio: clamp(source.panYRatio, -1.5, 1.5, 0),
         aspect: clamp(source.aspect, 0, 8, 0),
         open: Boolean(source.open),
-        spread: Math.max(0, Math.min(198, Math.floor(Number(source.spread) || 0)))
+        spread: Math.max(0, Math.min(198, Math.floor(Number(source.spread) || 0))),
+        turnDirection: Math.sign(Math.max(-1, Math.min(1, Number(source.turnDirection) || 0)))
     };
 }
 
@@ -165,6 +166,7 @@ function normalizeClueForInspection(rawClue) {
         return image;
     };
     const type = source.type === 'book' ? 'book' : 'object';
+    const safeColor = (value, fallback) => /^#[0-9a-f]{3,8}$/i.test(String(value || '').trim()) ? String(value).trim() : fallback;
     const clue = {
         id: String(source.id || `clue_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100),
         title: String(source.title || 'Pista').slice(0, 160),
@@ -175,12 +177,16 @@ function normalizeClueForInspection(rawClue) {
     if (type === 'book') {
         clue.coverImg = takeImage(source.coverImg || source.img);
         clue.coverBackImg = takeImage(source.coverBackImg || clue.coverImg);
+        clue.hasCustomBack = Boolean(source.hasCustomBack);
+        clue.edgeColor = safeColor(source.edgeColor, '#4a2d18');
+        clue.backEdgeColor = safeColor(source.backEdgeColor, '#4a2d18');
         clue.pages = (Array.isArray(source.pages) ? source.pages : []).slice(0, 100).map(page => ({
             img: takeImage(typeof page === 'string' ? page : page && (page.img || page.src))
         }));
     } else {
         clue.img = takeImage(source.img);
         clue.backImg = takeImage(source.backImg || clue.img);
+        clue.edgeColor = safeColor(source.edgeColor, '#68686f');
     }
     return clue;
 }
@@ -198,6 +204,12 @@ io.on('connection', socket => {
         const table = setAudienceTable(socket, 'overlay', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
         socket.emit('players_snapshot', playersSnapshot(table, true));
         socket.emit('initiative_state_updated', getInitiativeState(table));
+        const inspection = clueInspections.get(table);
+        if (inspection) socket.emit('clue_inspection_started', inspection);
+    });
+
+    socket.on('clue_overlay_ready', rawData => {
+        const table = setAudienceTable(socket, 'overlay', rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
         const inspection = clueInspections.get(table);
         if (inspection) socket.emit('clue_inspection_started', inspection);
     });
