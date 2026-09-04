@@ -705,6 +705,53 @@
             return camera || null;
         }
 
+        async function openStreamlabsCamera(camera) {
+            const attempts = [
+                {
+                    deviceId: { exact: camera.deviceId },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    frameRate: { ideal: 60, max: 60 }
+                },
+                {
+                    deviceId: { exact: camera.deviceId },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                { deviceId: { exact: camera.deviceId } }
+            ];
+            let lastError = null;
+            for (const video of attempts) {
+                try {
+                    return await navigator.mediaDevices.getUserMedia({ video, audio: false });
+                } catch (error) {
+                    lastError = error;
+                    if (error && error.name === 'NotAllowedError') throw error;
+                }
+            }
+            throw lastError || new Error('Streamlabs camera unavailable');
+        }
+
+        function streamlabsErrorMessage(error) {
+            const name = String(error && error.name || '');
+            if (name === 'NotAllowedError' || name === 'SecurityError') {
+                return 'permita o acesso à câmera no Chrome para usar o Streamlabs.';
+            }
+            if (name === 'NotReadableError' || name === 'TrackStartError') {
+                return 'a câmera do Streamlabs está instalada, mas não está entregando imagem. Clique em Start Virtual Webcam no Streamlabs e feche outros programas que estejam usando essa câmera.';
+            }
+            if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+                return 'a câmera virtual desapareceu. Instale ou reinicie a Virtual Webcam nas configurações do Streamlabs.';
+            }
+            if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+                return 'a câmera virtual não aceitou a resolução atual. Ajuste a saída do Streamlabs para 1920×1080 e tente novamente.';
+            }
+            if (name === 'AbortError') {
+                return 'o Streamlabs interrompeu a abertura da câmera. Reinicie a Virtual Webcam e tente novamente.';
+            }
+            return 'não foi possível abrir a câmera virtual. Confirme que Start Virtual Webcam está ativo no Streamlabs.';
+        }
+
         async function startStreamlabsSharing() {
             if (!ensureReadyToBroadcast()) return;
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !navigator.mediaDevices.enumerateDevices) {
@@ -719,19 +766,12 @@
                     setStatus('câmera virtual não encontrada. Inicie a Virtual Webcam no Streamlabs e tente novamente.');
                     return;
                 }
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        deviceId: { exact: camera.deviceId },
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        frameRate: { ideal: 60, max: 60 }
-                    },
-                    audio: false
-                });
+                setStatus(`abrindo ${camera.label || 'a câmera virtual do Streamlabs'}...`);
+                const stream = await openStreamlabsCamera(camera);
                 await activateBroadcastStream(stream, 'streamlabs', 'A cena do Streamlabs');
             } catch (error) {
-                if (error && error.name === 'NotAllowedError') setStatus('permita o acesso à câmera para usar o Streamlabs.');
-                else setStatus('não foi possível abrir a câmera virtual do Streamlabs.');
+                console.warn('Falha ao abrir a câmera virtual:', error);
+                setStatus(streamlabsErrorMessage(error));
             } finally {
                 if (!isBroadcasting) streamlabsButton.disabled = false;
             }
