@@ -208,6 +208,9 @@
         .clue-book-page-editor-controls button { min-width: 0; border: 0; border-radius: 4px; padding: 5px 2px; background: #303037; color: white; cursor: pointer; font-weight: 900; }
         .clue-book-page-editor-controls button:last-child { background: #8f2424; }
         .clue-card-type { display: inline-flex; margin-top: 9px; padding: 3px 7px; border: 1px solid rgba(210,232,248,0.32); border-radius: 999px; color: var(--accent-yellow); font-size: 0.62em; font-weight: 900; text-transform: uppercase; }
+        .clue-overlay-inspect-button { width: 100%; margin-top: 16px; padding: 12px 16px; border: 1px solid rgba(56,189,248,0.72); border-radius: 8px; background: linear-gradient(135deg, rgba(5,30,52,0.96), rgba(8,14,24,0.98)); color: #9edfff; box-shadow: inset 0 0 18px rgba(14,165,233,0.08), 0 0 0 rgba(14,165,233,0); font-weight: 1000; letter-spacing: 0.8px; cursor: pointer; transition: 0.22s ease; }
+        .clue-overlay-inspect-button:hover { border-color: #5fd4ff; color: #dff7ff; box-shadow: inset 0 0 22px rgba(14,165,233,0.15), 0 0 16px rgba(14,165,233,0.2); transform: translateY(-1px); }
+        .clue-overlay-inspect-button.active { border-color: #ff5368; background: linear-gradient(135deg, rgba(75,12,24,0.96), rgba(20,8,13,0.98)); color: #ffd8de; box-shadow: inset 0 0 20px rgba(236,51,77,0.14), 0 0 15px rgba(236,51,77,0.18); }
         #popup-clue-info .popup-box { width: min(850px, 95vw); box-sizing: border-box; }
         .clue-book-viewer { display: none; margin-bottom: 13px; }
         .clue-book-stage { position: relative; height: 430px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center, rgba(36,75,109,0.28), rgba(1,5,11,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
@@ -699,6 +702,7 @@
             <button type="button" class="btn-roll" onclick="rotateClue3D(45)">↷</button>
         </div>
         <div id="clue-info-description" class="clue-info-description"></div>
+        <button id="clue-overlay-inspect-button" type="button" class="clue-overlay-inspect-button" onclick="toggleClueOverlayInspection()">◉ INSPECIONAR NO OVERLAY</button>
 <div style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
     <button class="btn-del" style="flex:1; min-width:100px; padding:10px;" onclick="removeCurrentClue()">REMOVER</button>
     <button class="btn-roll" style="flex:1; min-width:100px; padding:10px;" onclick="closeClueInfo()">FECHAR</button>
@@ -943,6 +947,7 @@
         if (requestedTable === null) return;
         const nextTable = normalizeTableCode(requestedTable);
         if (nextTable === tableCode) return;
+        stopClueOverlayInspection();
         tableCode = nextTable;
         localStorage.setItem('player_table_code', tableCode);
         document.getElementById('display-table-code').textContent = tableCode;
@@ -953,6 +958,7 @@
     if (socket && !viewCode) {
         socket.on('connect', () => {
             if (playerDataReady) save();
+            if (clueOverlayInspectionId) emitClueInspectionStart();
         }); 
     }
 
@@ -994,6 +1000,8 @@
     let clue3DControlsInitialized = false;
     let clue3DImageRequestToken = 0;
     const clue3DCutoutCache = new Map();
+    let clueOverlayInspectionId = null;
+    let clueInspectionEmitTimer = null;
 
     const tabelaD20 = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
 
@@ -2041,6 +2049,144 @@
         return Math.max(4, Math.min(40, Math.round(safe / 2) * 2));
     }
 
+    function getClueInspectionState() {
+        const clue = cluesData.find(item => item.id === currentClueId);
+        if (!clue) return null;
+        const isBook = clue.type === 'book';
+        const stage = document.getElementById(isBook ? 'clue-book-stage' : 'clue-3d-stage');
+        const object = document.getElementById(isBook ? 'clue-book-3d-object' : 'clue-3d-object');
+        const stageWidth = Math.max(1, stage ? stage.clientWidth : 1);
+        const stageHeight = Math.max(1, stage ? stage.clientHeight : 1);
+        const baseWidth = Number(object && object.dataset.baseWidth) || 0;
+        const baseHeight = Number(object && object.dataset.baseHeight) || 0;
+        return {
+            type: isBook ? 'book' : 'object',
+            rotationX: isBook ? clueBookRotationX : clueRotationX,
+            rotationY: isBook ? clueBookRotationY : clueRotationY,
+            zoom: isBook ? clueBookZoom : clueZoom,
+            panXRatio: (isBook ? clueBookPanX : cluePanX) / stageWidth,
+            panYRatio: (isBook ? clueBookPanY : cluePanY) / stageHeight,
+            aspect: baseWidth > 0 && baseHeight > 0 ? baseWidth / baseHeight : 0,
+            open: isBook && clueBookOpen,
+            spread: isBook ? currentBookSpread : 0
+        };
+    }
+
+    function getRenderedClueSource(elementId, fallback = '') {
+        const element = document.getElementById(elementId);
+        const source = element && element.style.display !== 'none' ? element.getAttribute('src') : '';
+        return String(source || fallback || '');
+    }
+
+    function getClueInspectionPayload(clue) {
+        const pages = clue.type === 'book' ? normalizeClueBookPages(clue.pages).slice(0, 100) : [];
+        if (clue.type === 'book') {
+            const coverFallback = clue.coverImg || clue.img || ((pages[0] || {}).img || '');
+            const backFallback = clue.coverBackImg || coverFallback;
+            return {
+                id: normalizeClueId(clue.id),
+                title: String(clue.title || 'Pista'),
+                desc: String(clue.desc || ''),
+                type: 'book',
+                coverImg: getRenderedClueSource('clue-book-cover-image', coverFallback),
+                coverBackImg: getRenderedClueSource('clue-book-back-cover-image', backFallback),
+                pages,
+                thickness: normalizeClueThickness(clue.thickness)
+            };
+        }
+        return {
+            id: normalizeClueId(clue.id),
+            title: String(clue.title || 'Pista'),
+            desc: String(clue.desc || ''),
+            type: 'object',
+            img: getRenderedClueSource('clue-3d-image', clue.img),
+            backImg: getRenderedClueSource('clue-3d-back-image', clue.backImg || clue.img),
+            thickness: normalizeClueThickness(clue.thickness)
+        };
+    }
+
+    function updateClueOverlayInspectButton() {
+        const button = document.getElementById('clue-overlay-inspect-button');
+        if (!button) return;
+        const active = Boolean(currentClueId && clueOverlayInspectionId === currentClueId);
+        button.classList.toggle('active', active);
+        button.textContent = active ? '■ ENCERRAR INSPEÇÃO NO OVERLAY' : '◉ INSPECIONAR NO OVERLAY';
+        button.setAttribute('aria-pressed', String(active));
+    }
+
+    function emitClueInspectionStart() {
+        const clue = cluesData.find(item => item.id === clueOverlayInspectionId);
+        if (!clue || !socket || !socket.connected) return;
+        socket.emit('clue_inspection_start', {
+            mesa: tableCode,
+            codigo: playerCode,
+            jogador: document.getElementById('char_nome')?.value || 'Jogador',
+            clue: getClueInspectionPayload(clue),
+            state: getClueInspectionState()
+        });
+    }
+
+    function startClueOverlayInspection() {
+        if (!currentClueId) return;
+        if (!socket) {
+            alert('A inspeção no overlay fica disponível quando a ficha está conectada ao servidor.');
+            return;
+        }
+        clueOverlayInspectionId = currentClueId;
+        updateClueOverlayInspectButton();
+        emitClueInspectionStart();
+    }
+
+    function clearClueInspectionLocally() {
+        clueOverlayInspectionId = null;
+        if (clueInspectionEmitTimer) clearTimeout(clueInspectionEmitTimer);
+        clueInspectionEmitTimer = null;
+        updateClueOverlayInspectButton();
+    }
+
+    function stopClueOverlayInspection() {
+        if (!clueOverlayInspectionId) return;
+        const clueId = clueOverlayInspectionId;
+        clearClueInspectionLocally();
+        if (socket && socket.connected) {
+            socket.emit('clue_inspection_stop', { mesa: tableCode, codigo: playerCode, clueId });
+        }
+    }
+
+    function toggleClueOverlayInspection() {
+        if (clueOverlayInspectionId === currentClueId) stopClueOverlayInspection();
+        else startClueOverlayInspection();
+    }
+
+    function queueClueInspectionUpdate() {
+        if (!currentClueId || clueOverlayInspectionId !== currentClueId || !socket || !socket.connected || clueInspectionEmitTimer) return;
+        clueInspectionEmitTimer = setTimeout(() => {
+            clueInspectionEmitTimer = null;
+            if (!currentClueId || clueOverlayInspectionId !== currentClueId || !socket || !socket.connected) return;
+            socket.emit('clue_inspection_update', {
+                mesa: tableCode,
+                codigo: playerCode,
+                clueId: currentClueId,
+                state: getClueInspectionState()
+            });
+        }, 35);
+    }
+
+    if (socket) {
+        socket.on('clue_inspection_started', data => {
+            if (!clueOverlayInspectionId) return;
+            if (normalizeTableCode(data && data.mesa) !== tableCode) return;
+            const samePlayer = String(data && data.codigo || '').toUpperCase() === String(playerCode || '').toUpperCase();
+            const sameClue = String(data && data.clue && data.clue.id || '') === String(clueOverlayInspectionId);
+            if (!samePlayer || !sameClue) clearClueInspectionLocally();
+        });
+        socket.on('clue_inspection_stopped', data => {
+            if (!clueOverlayInspectionId) return;
+            if (normalizeTableCode(data && data.mesa) !== tableCode) return;
+            if (!data || !data.codigo || String(data.codigo).toUpperCase() === String(playerCode || '').toUpperCase()) clearClueInspectionLocally();
+        });
+    }
+
     function setClueFormType(type) {
         const normalizedType = type === 'book' ? 'book' : 'object';
         document.getElementById('clue-type').value = normalizedType;
@@ -2254,6 +2400,7 @@
     function updateClue3DTransform() {
         const object = document.getElementById('clue-3d-object');
         if (object) object.style.transform = `translate(${cluePanX}px, ${cluePanY}px) rotateX(${clueRotationX}deg) rotateY(${clueRotationY}deg)`;
+        queueClueInspectionUpdate();
     }
 
     function setClue3DShapeSource(source = '', edgeColor = '') {
@@ -2530,6 +2677,7 @@
         const object = document.getElementById('clue-book-3d-object');
         const closedOffset = clueBookOpen ? 0 : -25 * Math.cos(clueBookRotationY * Math.PI / 180);
         if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) translateX(${closedOffset}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg)`;
+        queueClueInspectionUpdate();
     }
 
     function resetClueBook3D() {
@@ -2768,6 +2916,7 @@
         bookFlipAnimating = false;
         updateClueBookControls(pages);
         updateClueBook3DFit();
+        queueClueInspectionUpdate();
     }
 
     function turnClueBookPage(direction) {
@@ -2896,7 +3045,9 @@
     function openClueInfo(id) {
         const clue = cluesData.find(item => item.id === id);
         if (!clue) return;
+        if (clueOverlayInspectionId && clueOverlayInspectionId !== id) stopClueOverlayInspection();
         currentClueId = id;
+        updateClueOverlayInspectButton();
         document.getElementById('clue-info-title').textContent = clue.title;
         document.getElementById('clue-info-description').textContent = clue.desc || 'Sem descrição.';
         const stage = document.getElementById('clue-3d-stage');
@@ -3033,6 +3184,7 @@
     }
 
     function closeClueInfo() {
+        stopClueOverlayInspection();
         document.getElementById('popup-clue-info').style.display = 'none';
         clue3DImageRequestToken++;
         clueBookFitToken++;
