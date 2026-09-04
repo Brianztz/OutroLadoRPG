@@ -56,6 +56,9 @@
         .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(139,204,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(139,204,246,0.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at center, black, transparent 78%); }
         video, .fallback-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; opacity: 0; transition: opacity 0.35s ease; }
         video.visible, .fallback-frame.visible { opacity: 1; }
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
         .fallback-frame { z-index: 1; pointer-events: none; }
         .empty-state { position: relative; z-index: 1; width: min(480px, calc(100% - 40px)); text-align: center; transition: opacity 0.25s ease; }
         .empty-state.hidden { opacity: 0; pointer-events: none; }
@@ -112,7 +115,7 @@
             <section id="stage" class="stage">
                 <div id="live-badge" class="stage-badge live-badge">Aguardando</div>
                 <div id="viewer-badge" class="stage-badge viewer-badge">0 espectadores</div>
-                <video id="screen-video" autoplay playsinline controls></video>
+                <video id="screen-video" autoplay playsinline disablepictureinpicture></video>
                 <img id="fallback-frame" class="fallback-frame" alt="Tela transmitida" decoding="async">
                 <div id="empty-state" class="empty-state">
                     <div class="empty-icon" aria-hidden="true">▣</div>
@@ -633,10 +636,16 @@
                         await screenTrack.applyConstraints({
                             width: { ideal: 1920, max: 1920 },
                             height: { ideal: 1080, max: 1080 },
-                            frameRate: { ideal: 60, max: 60 },
-                            cursor: 'never'
+                            frameRate: { ideal: 60, max: 60 }
                         });
                     } catch (error) { console.info('O navegador ajustou automaticamente a captura da tela.'); }
+                    try {
+                        await screenTrack.applyConstraints({ cursor: { exact: 'never' } });
+                    } catch (error) {
+                        try { await screenTrack.applyConstraints({ cursor: 'never' }); } catch (cursorError) {
+                            console.info('O navegador não confirmou a remoção do cursor na captura.');
+                        }
+                    }
                     const settings = screenTrack.getSettings();
                     if (settings.width && settings.height) {
                         const fps = Math.round(Number(settings.frameRate) || 60);
@@ -696,7 +705,7 @@
             if (!usingRelay && (!video.srcObject || !video.srcObject.getAudioTracks().length)) return;
             video.muted = !video.muted;
             soundButton.textContent = video.muted ? 'Ativar áudio' : 'Silenciar áudio';
-            video.play().catch(() => setStatus('clique em reproduzir para ativar o áudio.'));
+            video.play().catch(() => setStatus('clique novamente em Ativar áudio.'));
         }
 
         function chooseTable() {
@@ -875,7 +884,7 @@
                     liveBadge.textContent = 'Ao vivo';
                     liveBadge.classList.add('live');
                     setStatus('assistindo em alta qualidade 1080p60.');
-                }).catch(() => setStatus('pressione reproduzir para iniciar a transmissão.'))
+                }).catch(() => setStatus('clique em Ativar áudio para iniciar a transmissão.'))
                     .finally(() => { relayPlayPending = false; });
             }
         });
