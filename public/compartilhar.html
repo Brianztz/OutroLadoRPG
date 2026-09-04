@@ -113,7 +113,7 @@
                 <div id="live-badge" class="stage-badge live-badge">Aguardando</div>
                 <div id="viewer-badge" class="stage-badge viewer-badge">0 espectadores</div>
                 <video id="screen-video" autoplay playsinline controls></video>
-                <img id="fallback-frame" class="fallback-frame" alt="Tela transmitida">
+                <img id="fallback-frame" class="fallback-frame" alt="Tela transmitida" decoding="async">
                 <div id="empty-state" class="empty-state">
                     <div class="empty-icon" aria-hidden="true">▣</div>
                     <h1 id="empty-title">Nenhuma tela sendo transmitida</h1>
@@ -297,7 +297,7 @@
             }
             if (shouldCapture && !fallbackCaptureTimer) {
                 sendFallbackFrame();
-                fallbackCaptureTimer = setInterval(sendFallbackFrame, 140);
+                fallbackCaptureTimer = setInterval(sendFallbackFrame, 34);
             }
         }
 
@@ -305,7 +305,7 @@
             if (fallbackCaptureBusy || !isBroadcasting || !localStream || fallbackViewerCount < 1 || video.readyState < 2 || !fallbackContext) return;
             const sourceWidth = video.videoWidth || 1280;
             const sourceHeight = video.videoHeight || 720;
-            const scale = Math.min(1, 1440 / sourceWidth, 900 / sourceHeight);
+            const scale = Math.min(1, 1600 / sourceWidth, 900 / sourceHeight);
             const width = Math.max(2, Math.round(sourceWidth * scale / 2) * 2);
             const height = Math.max(2, Math.round(sourceHeight * scale / 2) * 2);
             if (fallbackCanvas.width !== width || fallbackCanvas.height !== height) {
@@ -323,7 +323,22 @@
                 } finally {
                     fallbackCaptureBusy = false;
                 }
-            }, 'image/jpeg', 0.76);
+            }, 'image/webp', 0.84);
+        }
+
+        async function configureVideoSender(sender) {
+            if (!sender || !sender.track || sender.track.kind !== 'video') return;
+            try {
+                const parameters = sender.getParameters();
+                if (!parameters.encodings || !parameters.encodings.length) return;
+                parameters.encodings[0].maxBitrate = 8000000;
+                parameters.encodings[0].maxFramerate = 60;
+                parameters.encodings[0].scaleResolutionDownBy = 1;
+                if ('degradationPreference' in parameters) parameters.degradationPreference = 'maintain-framerate';
+                await sender.setParameters(parameters);
+            } catch (error) {
+                console.info('O navegador ajustará automaticamente a qualidade da transmissão.');
+            }
         }
 
         function createPeer(peerId, viewerSide) {
@@ -355,7 +370,8 @@
             closePeer(hostPeers.get(viewerId));
             const peer = createPeer(viewerId, false);
             hostPeers.set(viewerId, peer);
-            localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+            const senders = localStream.getTracks().map(track => peer.addTrack(track, localStream));
+            await Promise.all(senders.map(configureVideoSender));
             const offer = await peer.createOffer();
             await peer.setLocalDescription(offer);
             socket.emit('screen_share_offer', { target: viewerId, sdp: peer.localDescription });
@@ -382,6 +398,7 @@
                 fallbackViewerCount = 0;
                 const screenTrack = stream.getVideoTracks()[0];
                 if (screenTrack) {
+                    screenTrack.contentHint = 'motion';
                     try { await screenTrack.applyConstraints({ cursor: 'never' }); } catch (error) { console.info('O navegador controla a captura do cursor.'); }
                     screenTrack.onended = () => stopSharing(true);
                 }
