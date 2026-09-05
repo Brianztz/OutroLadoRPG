@@ -250,9 +250,13 @@
         let relayPlayPending = false;
         let relayLoadTimer = null;
         let relayWatchdogTimer = null;
+        let relayStallTimer = null;
         let relayChunkProduced = false;
         let relayDisabledForShare = false;
         let relayFailureReported = false;
+        let relayLastPlaybackTime = 0;
+        let relayNoProgressSince = 0;
+        let viewerDisconnectTimer = null;
         let viewerCount = 0;
         let fallbackRequested = false;
         const hostPeers = new Map();
@@ -299,6 +303,7 @@
         function confirmRemotePlayback() {
             if (isBroadcasting || remotePlaybackConfirmed || !viewerPeer || !video.srcObject || video.readyState < 2 || video.paused) return;
             remotePlaybackConfirmed = true;
+            fallbackRequested = false;
             if (peerConnectTimer) clearTimeout(peerConnectTimer);
             peerConnectTimer = null;
             fallbackImage.classList.remove('visible');
@@ -310,6 +315,10 @@
         }
 
         function showFallbackFrame(frame, mimeType) {
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+            if (relayStallTimer) clearTimeout(relayStallTimer);
+            relayStallTimer = null;
             if (relayLoadTimer) clearTimeout(relayLoadTimer);
             relayLoadTimer = null;
             if (relayObjectUrl) {
@@ -346,6 +355,8 @@
             viewerPeer = null;
             viewerHostId = null;
             remotePlaybackConfirmed = false;
+            if (viewerDisconnectTimer) clearTimeout(viewerDisconnectTimer);
+            viewerDisconnectTimer = null;
             if (reconnectTimer) clearTimeout(reconnectTimer);
             reconnectTimer = null;
             if (peerConnectTimer) clearTimeout(peerConnectTimer);
@@ -407,6 +418,7 @@
         }
 
         function startRelayRecorder() {
+            if (relayRecorder && relayRecorder.state === 'recording') return;
             stopRelayRecorder();
             if (!isBroadcasting || !localStream || fallbackViewerCount < 1 || relayDisabledForShare) {
                 updateFallbackCapture();
@@ -421,7 +433,7 @@
                 relayChunkProduced = false;
                 relayRecorder = new MediaRecorder(localStream, {
                     mimeType: requestedMimeType,
-                    videoBitsPerSecond: 20000000,
+                    videoBitsPerSecond: 12000000,
                     audioBitsPerSecond: 192000
                 });
                 relayMimeType = relayRecorder.mimeType || requestedMimeType;
@@ -442,7 +454,7 @@
                     stopRelayRecorder();
                     updateFallbackCapture();
                 };
-                relayRecorder.start(100);
+                relayRecorder.start(250);
                 relayWatchdogTimer = setTimeout(() => {
                     if (relayChunkProduced || !isBroadcasting) return;
                     relayDisabledForShare = true;
@@ -459,6 +471,7 @@
         }
 
         function scheduleRelayRecorder() {
+            if (relayRecorder && relayRecorder.state === 'recording') return;
             if (relayRestartTimer) clearTimeout(relayRestartTimer);
             relayRestartTimer = setTimeout(startRelayRecorder, 220);
         }
@@ -466,10 +479,14 @@
         function cleanupRelayPlayback() {
             if (relayLoadTimer) clearTimeout(relayLoadTimer);
             relayLoadTimer = null;
+            if (relayStallTimer) clearTimeout(relayStallTimer);
+            relayStallTimer = null;
             relayQueue = [];
             relayPlaybackStarted = false;
             relayPlayPending = false;
             relayFailureReported = false;
+            relayLastPlaybackTime = 0;
+            relayNoProgressSince = 0;
             try {
                 if (relaySourceBuffer && relaySourceBuffer.updating) relaySourceBuffer.abort();
             } catch (error) {}
@@ -505,6 +522,8 @@
         function reportRelayPlaybackFailure() {
             if (relayFailureReported || isBroadcasting || !broadcastAvailable) return;
             relayFailureReported = true;
+            if (relayStallTimer) clearTimeout(relayStallTimer);
+            relayStallTimer = null;
             if (relayLoadTimer) clearTimeout(relayLoadTimer);
             relayLoadTimer = null;
             socket.emit('screen_share_relay_failed', { mesa: tableCode });
@@ -542,8 +561,8 @@
                         if (relaySourceBuffer && relaySourceBuffer.buffered.length) {
                             const liveEdge = relaySourceBuffer.buffered.end(relaySourceBuffer.buffered.length - 1);
                             const delay = liveEdge - video.currentTime;
-                            if (delay > 0.65) video.currentTime = Math.max(0, liveEdge - 0.08);
-                            video.playbackRate = delay > 0.25 ? 1.08 : 1;
+                            if (delay > 1.5) video.currentTime = Math.max(0, liveEdge - 0.22);
+                            video.playbackRate = delay > 0.55 ? 1.04 : 1;
                         }
                     });
                     pumpRelayQueue();
@@ -568,7 +587,7 @@
             }
             if (shouldCapture && !fallbackCaptureTimer) {
                 sendFallbackFrame();
-                fallbackCaptureTimer = setInterval(sendFallbackFrame, 17);
+                fallbackCaptureTimer = setInterval(sendFallbackFrame, 67);
             }
         }
 
@@ -576,7 +595,7 @@
             if (fallbackCaptureBusy || !isBroadcasting || !localStream || fallbackViewerCount < 1 || video.readyState < 2 || !fallbackContext) return;
             const sourceWidth = video.videoWidth || 1280;
             const sourceHeight = video.videoHeight || 720;
-            const scale = Math.min(1, 1920 / sourceWidth, 1080 / sourceHeight);
+            const scale = Math.min(1, 1280 / sourceWidth, 720 / sourceHeight);
             const width = Math.max(2, Math.round(sourceWidth * scale / 2) * 2);
             const height = Math.max(2, Math.round(sourceHeight * scale / 2) * 2);
             if (fallbackCanvas.width !== width || fallbackCanvas.height !== height) {
@@ -594,7 +613,7 @@
                 } finally {
                     fallbackCaptureBusy = false;
                 }
-            }, 'image/webp', 0.98);
+            }, 'image/webp', 0.82);
         }
 
         function targetPeerBitrate() {
@@ -610,7 +629,7 @@
                 parameters.encodings[0].maxBitrate = bitrate;
                 parameters.encodings[0].maxFramerate = 60;
                 parameters.encodings[0].scaleResolutionDownBy = 1;
-                if ('degradationPreference' in parameters) parameters.degradationPreference = 'maintain-resolution';
+                if ('degradationPreference' in parameters) parameters.degradationPreference = activeSourceMode === 'streamlabs' ? 'maintain-framerate' : 'balanced';
                 await sender.setParameters(parameters);
             } catch (error) {
                 console.info('O navegador ajustará automaticamente a qualidade da transmissão.');
@@ -641,12 +660,38 @@
                 };
             }
             peer.onconnectionstatechange = () => {
-                if (!['failed', 'closed'].includes(peer.connectionState)) return;
-                if (viewerSide && broadcastAvailable && !isBroadcasting) {
+                if (!viewerSide || isBroadcasting) return;
+                if (peer.connectionState === 'connected') {
+                    if (viewerDisconnectTimer) clearTimeout(viewerDisconnectTimer);
+                    viewerDisconnectTimer = null;
+                    return;
+                }
+                if (peer.connectionState === 'disconnected') {
+                    if (viewerDisconnectTimer) clearTimeout(viewerDisconnectTimer);
+                    viewerDisconnectTimer = setTimeout(() => {
+                        if (peer.connectionState !== 'disconnected' || !broadcastAvailable || isBroadcasting) return;
+                        requestFallback();
+                        closeViewerPeer();
+                        setStatus('recuperando a transmissão...');
+                        reconnectTimer = setTimeout(() => {
+                            if (!relayObjectUrl && !fallbackImage.classList.contains('visible') && broadcastAvailable) {
+                                fallbackRequested = false;
+                                socket.emit('screen_share_watch', { mesa: tableCode, retry: true });
+                            }
+                        }, 7000);
+                    }, 3500);
+                    return;
+                }
+                if (['failed', 'closed'].includes(peer.connectionState) && broadcastAvailable) {
                     requestFallback();
                     closeViewerPeer();
-                    setStatus('reconectando à transmissão...');
-                    reconnectTimer = setTimeout(() => socket.emit('screen_share_watch', { mesa: tableCode }), 1200);
+                    setStatus('recuperando a transmissão...');
+                    reconnectTimer = setTimeout(() => {
+                        if (!relayObjectUrl && !fallbackImage.classList.contains('visible') && broadcastAvailable) {
+                            fallbackRequested = false;
+                            socket.emit('screen_share_watch', { mesa: tableCode, retry: true });
+                        }
+                    }, 7000);
                 }
             };
             return peer;
@@ -1128,6 +1173,11 @@
 
         socket.on('screen_share_relay_chunk', async data => {
             if (isBroadcasting || normalizeTableCode(data && data.mesa) !== tableCode || !data.chunk || !relayMediaSource) return;
+            if (relayFailureReported) return;
+            if (relayStallTimer) clearTimeout(relayStallTimer);
+            relayStallTimer = setTimeout(() => {
+                if (relayPlaybackStarted && !isBroadcasting && broadcastAvailable) reportRelayPlaybackFailure();
+            }, 5000);
             let chunk = null;
             if (data.chunk instanceof ArrayBuffer) chunk = data.chunk;
             else if (ArrayBuffer.isView(data.chunk)) chunk = data.chunk.buffer.slice(data.chunk.byteOffset, data.chunk.byteOffset + data.chunk.byteLength);
@@ -1135,7 +1185,10 @@
             else if (data.chunk.data && Array.isArray(data.chunk.data)) chunk = Uint8Array.from(data.chunk.data).buffer;
             if (!chunk) return;
             relayQueue.push(chunk);
-            if (relayQueue.length > 80) relayQueue.splice(0, relayQueue.length - 80);
+            if (relayQueue.length > 24) {
+                reportRelayPlaybackFailure();
+                return;
+            }
             pumpRelayQueue();
             if (!relayPlaybackStarted && !relayPlayPending) {
                 relayPlayPending = true;
@@ -1148,6 +1201,17 @@
                     setStatus('assistindo em alta qualidade 1080p60.');
                 }).catch(() => setStatus('clique em Ativar áudio para iniciar a transmissão.'))
                     .finally(() => { relayPlayPending = false; });
+            }
+            if (relayPlaybackStarted) {
+                const currentPlaybackTime = Number(video.currentTime) || 0;
+                if (currentPlaybackTime > relayLastPlaybackTime + 0.02) {
+                    relayLastPlaybackTime = currentPlaybackTime;
+                    relayNoProgressSince = Date.now();
+                } else if (!relayNoProgressSince) {
+                    relayNoProgressSince = Date.now();
+                } else if (Date.now() - relayNoProgressSince > 5000) {
+                    reportRelayPlaybackFailure();
+                }
             }
         });
 
