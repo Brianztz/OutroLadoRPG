@@ -433,8 +433,8 @@
                 relayChunkProduced = false;
                 relayRecorder = new MediaRecorder(localStream, {
                     mimeType: requestedMimeType,
-                    videoBitsPerSecond: 12000000,
-                    audioBitsPerSecond: 192000
+                    videoBitsPerSecond: 8000000,
+                    audioBitsPerSecond: 128000
                 });
                 relayMimeType = relayRecorder.mimeType || requestedMimeType;
                 socket.emit('screen_share_relay_reset', { mimeType: relayMimeType });
@@ -561,8 +561,8 @@
                         if (relaySourceBuffer && relaySourceBuffer.buffered.length) {
                             const liveEdge = relaySourceBuffer.buffered.end(relaySourceBuffer.buffered.length - 1);
                             const delay = liveEdge - video.currentTime;
-                            if (delay > 1.5) video.currentTime = Math.max(0, liveEdge - 0.22);
-                            video.playbackRate = delay > 0.55 ? 1.04 : 1;
+                            if (delay > 3) video.currentTime = Math.max(0, liveEdge - 0.45);
+                            video.playbackRate = delay > 1 ? 1.02 : 1;
                         }
                     });
                     pumpRelayQueue();
@@ -618,7 +618,8 @@
 
         function targetPeerBitrate() {
             const peerCount = Math.max(1, hostPeers.size);
-            return Math.max(5000000, Math.min(20000000, Math.floor(30000000 / peerCount)));
+            const sharedUploadBudget = 14000000;
+            return Math.max(2000000, Math.min(8000000, Math.floor(sharedUploadBudget / peerCount)));
         }
 
         async function configureVideoSender(sender, bitrate = targetPeerBitrate()) {
@@ -629,7 +630,9 @@
                 parameters.encodings[0].maxBitrate = bitrate;
                 parameters.encodings[0].maxFramerate = 60;
                 parameters.encodings[0].scaleResolutionDownBy = 1;
-                if ('degradationPreference' in parameters) parameters.degradationPreference = activeSourceMode === 'streamlabs' ? 'maintain-framerate' : 'balanced';
+                if ('priority' in parameters.encodings[0]) parameters.encodings[0].priority = 'high';
+                if ('networkPriority' in parameters.encodings[0]) parameters.encodings[0].networkPriority = 'high';
+                if ('degradationPreference' in parameters) parameters.degradationPreference = 'maintain-framerate';
                 await sender.setParameters(parameters);
             } catch (error) {
                 console.info('O navegador ajustará automaticamente a qualidade da transmissão.');
@@ -651,8 +654,8 @@
             if (viewerSide) {
                 peer.ontrack = event => {
                     try {
-                        if ('playoutDelayHint' in event.receiver) event.receiver.playoutDelayHint = 0;
-                        if ('jitterBufferTarget' in event.receiver) event.receiver.jitterBufferTarget = 0;
+                        if ('playoutDelayHint' in event.receiver) event.receiver.playoutDelayHint = 0.15;
+                        if ('jitterBufferTarget' in event.receiver) event.receiver.jitterBufferTarget = 150;
                     } catch (error) {}
                     const stream = event.streams && event.streams[0];
                     if (stream) showVideo(stream, false);
