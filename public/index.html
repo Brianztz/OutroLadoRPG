@@ -27,6 +27,8 @@
         .table-selector-button { min-height: 42px; padding: 8px 14px; border: 2px solid var(--accent-green); border-radius: 7px; background: rgba(74,153,218,0.08); color: var(--accent-green); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
         .table-selector-button:hover { transform: translateY(-1px); background: rgba(74,153,218,0.16); box-shadow: 0 0 12px rgba(74,153,218,0.28); }
         .table-selector-button span { color: #fff; letter-spacing: 1px; }
+        .screen-share-link-button { min-height: 42px; padding: 9px 15px; border: 1px solid rgba(139,204,246,0.55); border-radius: 7px; background: rgba(57,174,232,0.09); color: var(--accent-blue); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
+        .screen-share-link-button:hover { transform: translateY(-1px); background: rgba(57,174,232,0.17); box-shadow: 0 0 12px rgba(57,174,232,0.22); }
         .combat-mode-button { min-height: 42px; padding: 9px 16px; border: 2px solid var(--accent-yellow); border-radius: 7px; background: rgba(210,232,248,0.08); color: var(--accent-yellow); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: transform 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s; }
         .combat-mode-button:hover { transform: translateY(-1px); background: rgba(210,232,248,0.16); box-shadow: 0 0 12px rgba(210,232,248,0.22); }
         .combat-mode-button.active { border-color: #ff5b5b; background: linear-gradient(135deg, rgba(139,0,0,0.94), rgba(229,57,53,0.92)); color: #fff; box-shadow: 0 0 15px rgba(229,57,53,0.5); animation: combatButtonPulse 1.8s ease-in-out infinite; }
@@ -135,7 +137,9 @@
         .skill-card:hover { border-color: var(--accent-blue); background: rgba(74, 153, 218, 0.075); }
         .skill-card.trained { border-color: var(--accent-yellow); background: rgba(210, 232, 248, 0.07); }
         .skill-card.trained:hover { border-color: var(--accent-yellow); filter: brightness(1.2); }
-        .skill-header { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .skill-header { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; }
+        .skill-name { min-width: 0; overflow: hidden; color: var(--text-primary); font-size: 0.7em; font-weight: bold; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; pointer-events: none; }
+        .skill-attr-badge { flex: 0 0 auto; padding: 2px 5px; border: 1px solid rgba(74,153,218,0.52); border-radius: 4px; background: rgba(74,153,218,0.12); color: var(--accent-blue); font-family: 'Consolas', monospace; font-size: 0.55em; font-weight: 900; letter-spacing: 0.04em; line-height: 1.35; pointer-events: none; }
         .skill-targets { display: flex; justify-content: center; gap: 10px; font-size: 0.68em; background: rgba(10, 10, 11, 0.7); padding: 5px; border-radius: 4px; font-family: 'Consolas', monospace; font-weight: bold; margin-top: 8px; pointer-events: none; }
         .target-n { color: var(--accent-green); } .target-b { color: var(--accent-blue); } .target-e { color: var(--accent-yellow); }
 
@@ -381,6 +385,7 @@
 <div class="top-bar">
     <div class="top-buttons" id="main-top-buttons">
         <button id="player-table-button" class="table-selector-button" type="button" onclick="choosePlayerTable()">MESA: <span id="display-table-code">PADRAO</span></button>
+        <button class="screen-share-link-button" type="button" onclick="openScreenSharePage()">▣ Compartilhar tela</button>
         <div hidden style="display: none !important;">
             CÓDIGO: <span id="display-player-code" style="color: white; letter-spacing: 2px; font-size: 1.1em;">----</span>
         </div>
@@ -971,6 +976,12 @@
         if (playerDataReady) save();
     }
 
+    function openScreenSharePage() {
+        const url = new URL('./compartilhar.html', window.location.href);
+        url.searchParams.set('mesa', tableCode);
+        window.open(url.href, '_blank', 'noopener');
+    }
+
     let playerDataReady = false;
     if (socket && !viewCode) {
         socket.on('connect', () => {
@@ -1146,6 +1157,7 @@
         const indice = Math.max(1, Math.min(20, Math.floor(Number(valorRelevante) || 0)));
         return tabelaD20[indice];
     }
+    const nomesAtributos = { FOR: 'Força', AGI: 'Agilidade', VIG: 'Vigor', INT: 'Intelecto', PRE: 'Presença' };
     const periciasBase = [{nome:"Acrobacia",attr:"AGI",mod:0.20},{nome:"Adestramento",attr:"PRE",mod:0.20},{nome:"Artes",attr:"PRE",mod:0.30},{nome:"Atletismo",attr:"FOR",mod:0.35},{nome:"Atualidades",attr:"INT",mod:0.35},{nome:"Ciências",attr:"INT",mod:0.25},{nome:"Crime",attr:"AGI",mod:0.35},{nome:"Diplomacia",attr:"PRE",mod:0.30},{nome:"Enganação",attr:"PRE",mod:0.25},{nome:"Fortitude",attr:"VIG",mod:0.40},{nome:"Furtividade",attr:"AGI",mod:0.39},{nome:"Iniciativa",attr:"AGI",mod:0.50},{nome:"Intimidação",attr:"PRE",mod:0.30},{nome:"Intuição",attr:"PRE",mod:0.35},{nome:"Investigação",attr:"INT",mod:0.50},{nome:"Luta",attr:"FOR",mod:0.25},{nome:"Medicina",attr:"INT",mod:0.15},{nome:"Ocultismo",attr:"INT",mod:0.08},{nome:"Percepção",attr:"PRE",mod:0.50},{nome:"Pilotagem",attr:"AGI",mod:0.15},{nome:"Pontaria",attr:"AGI",mod:0.45},{nome:"Profissão",attr:"INT",mod:0.50},{nome:"Reflexos",attr:"AGI",mod:0.35},{nome:"Religião",attr:"PRE",mod:0.50},{nome:"Sobrevivência",attr:"INT",mod:0.35},{nome:"Tática",attr:"INT",mod:0.45},{nome:"Tecnologia",attr:"INT",mod:0.25}];
     let equippedWeaponsData = [];
     let activeWeaponId = "";
@@ -3764,7 +3776,8 @@ function removeCurrentClue() {
             document.getElementById('pericias-container').innerHTML += `
             <div class="skill-card" id="card_${sn}" onclick="openSkillPopup('${sn}', '${p.nome}', '${p.attr}', ${p.mod})" style="cursor:pointer; display:flex; flex-direction:column; justify-content:space-between;">
                 <div class="skill-header" style="margin-bottom: 8px;">
-                    <span style="font-size: 0.7em; font-weight: bold; text-transform: uppercase; color: var(--text-primary); pointer-events: none;">${p.nome}</span>
+                    <span class="skill-name">${p.nome}</span>
+                    <span class="skill-attr-badge" title="Atributo: ${nomesAtributos[p.attr] || p.attr}" aria-label="Atributo: ${nomesAtributos[p.attr] || p.attr}">${p.attr}</span>
                 </div>
                 <div id="skill_${sn}_dice_bonus" class="skill-dice-bonus-tag" style="display:none;"></div>
                 <div style="display:flex; justify-content:center; align-items:center; margin-bottom:8px;">
