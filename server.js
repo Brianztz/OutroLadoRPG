@@ -45,7 +45,13 @@ function screenRoom(table) {
 function getScreenShareRoom(table) {
     const normalizedTable = normalizeTableCode(table);
     if (!screenShareRooms.has(normalizedTable)) {
-        screenShareRooms.set(normalizedTable, { broadcasterId: null, viewers: new Set(), fallbackViewers: new Set() });
+        screenShareRooms.set(normalizedTable, {
+            broadcasterId: null,
+            viewers: new Set(),
+            fallbackViewers: new Set(),
+            relayMimeType: '',
+            relayBootstrapChunk: null
+        });
     }
     return screenShareRooms.get(normalizedTable);
 }
@@ -65,6 +71,10 @@ function normalizeScreenChatText(value) {
 }
 
 function emitScreenShareFallbackCount(table, room = getScreenShareRoom(table)) {
+    if (!room.fallbackViewers.size) {
+        room.relayMimeType = '';
+        room.relayBootstrapChunk = null;
+    }
     if (room.broadcasterId) {
         io.to(room.broadcasterId).emit('screen_share_fallback_count', {
             mesa: normalizeTableCode(table),
@@ -92,6 +102,8 @@ function leaveScreenShare(socket, announce = true) {
         room.broadcasterId = null;
         room.viewers.clear();
         room.fallbackViewers.clear();
+        room.relayMimeType = '';
+        room.relayBootstrapChunk = null;
         if (announce) io.to(screenRoom(table)).emit('screen_share_ended', { mesa: table });
     } else if (room.viewers.delete(socket.id)) {
         room.fallbackViewers.delete(socket.id);
@@ -355,6 +367,8 @@ io.on('connection', socket => {
             if (previousBroadcaster) previousBroadcaster.data.screenShareRole = null;
             room.viewers.clear();
             room.fallbackViewers.clear();
+            room.relayMimeType = '';
+            room.relayBootstrapChunk = null;
         }
         room.broadcasterId = socket.id;
         socket.data.screenShareRole = 'broadcaster';
@@ -367,11 +381,18 @@ io.on('connection', socket => {
         if (socket.data.screenShareTable !== table) return;
         const room = getScreenShareRoom(table);
         if (!room.broadcasterId || room.broadcasterId === socket.id) return;
+        const alreadyWatching = room.viewers.has(socket.id);
+        const retryRequested = Boolean(rawData && typeof rawData === 'object' && rawData.retry === true);
         room.viewers.add(socket.id);
-        room.fallbackViewers.delete(socket.id);
+        if (!alreadyWatching) room.fallbackViewers.delete(socket.id);
         socket.data.screenShareRole = 'viewer';
-        io.to(room.broadcasterId).emit('screen_share_viewer_joined', { mesa: table, viewerId: socket.id });
-        emitScreenShareState(table);
+        const now = Date.now();
+        const retryAllowed = retryRequested && now - Number(socket.data.lastScreenShareRetryAt || 0) >= 4000;
+        if (!alreadyWatching || retryAllowed) {
+            if (retryAllowed) socket.data.lastScreenShareRetryAt = now;
+            io.to(room.broadcasterId).emit('screen_share_viewer_joined', { mesa: table, viewerId: socket.id });
+            if (!alreadyWatching) emitScreenShareState(table);
+        }
     });
 
     socket.on('screen_share_offer', rawData => {
@@ -409,8 +430,17 @@ io.on('connection', socket => {
         if (socket.data.screenShareTable !== table) return;
         const room = getScreenShareRoom(table);
         if (!room.broadcasterId || !room.viewers.has(socket.id)) return;
+        const alreadyUsingFallback = room.fallbackViewers.has(socket.id);
         room.fallbackViewers.add(socket.id);
-        emitScreenShareFallbackCount(table, room);
+        if (!alreadyUsingFallback) {
+            if (room.relayMimeType) {
+                socket.emit('screen_share_relay_reset', { mesa: table, mimeType: room.relayMimeType });
+                if (room.relayBootstrapChunk) {
+                    socket.emit('screen_share_relay_chunk', { mesa: table, chunk: room.relayBootstrapChunk });
+                }
+            }
+            emitScreenShareFallbackCount(table, room);
+        }
     });
 
     socket.on('screen_share_peer_connected', rawData => {
@@ -450,6 +480,8 @@ io.on('connection', socket => {
         if (room.broadcasterId !== socket.id) return;
         const mimeType = String(rawData.mimeType || '').slice(0, 100);
         if (!/^video\/webm/i.test(mimeType)) return;
+        room.relayMimeType = mimeType;
+        room.relayBootstrapChunk = null;
         room.fallbackViewers.forEach(viewerId => {
             io.to(viewerId).emit('screen_share_relay_reset', { mesa: table, mimeType });
         });
@@ -462,6 +494,7 @@ io.on('connection', socket => {
         if (room.broadcasterId !== socket.id) return;
         const byteLength = Number(rawData.chunk.byteLength || rawData.chunk.length || 0);
         if (!byteLength || byteLength > 10 * 1024 * 1024) return;
+        if (!room.relayBootstrapChunk) room.relayBootstrapChunk = rawData.chunk;
         room.fallbackViewers.forEach(viewerId => {
             const viewerSocket = io.sockets.sockets.get(viewerId);
             if (viewerSocket && viewerSocket.data.screenShareTable === table) {
@@ -486,6 +519,8 @@ io.on('connection', socket => {
         room.broadcasterId = null;
         room.viewers.clear();
         room.fallbackViewers.clear();
+        room.relayMimeType = '';
+        room.relayBootstrapChunk = null;
         socket.data.screenShareRole = null;
         io.to(screenRoom(table)).emit('screen_share_ended', { mesa: table });
         emitScreenShareState(table);
