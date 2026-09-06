@@ -3814,6 +3814,10 @@ function removeCurrentClue() {
                         populateData(dados.fullData);
                     }
                 });
+                socket.on('sync_requested', (dados) => {
+                    if (!dados || normalizeTableCode(dados.mesa) !== tableCode || String(dados.codigo || '') !== playerCode) return;
+                    save();
+                });
                 socket.on('catalog_item_granted', (dados) => {
                     const item = dados && dados.item;
                     if (!item || !item.n) return;
