@@ -185,6 +185,8 @@ export class TableRoom extends DurableObject {
         this.chat = [];
         this.relayMimeType = '';
         this.relayBootstrapChunk = null;
+        this.relayRecentChunks = [];
+        this.relayRecentBytes = 0;
 
         ctx.blockConcurrencyWhile(async () => {
             this.table = normalizeTableCode(await ctx.storage.get('table'));
@@ -248,15 +250,27 @@ export class TableRoom extends DurableObject {
         try { ws.send(encodePacket(event, data)); } catch (error) {}
     }
 
+    sendMany(ids, event, data) {
+        const targets = ids instanceof Set ? ids : new Set(ids || []);
+        if (!targets.size) return;
+        const packet = encodePacket(event, data);
+        for (const ws of this.sockets()) {
+            if (ws.readyState !== 1 || !targets.has(this.meta(ws).id)) continue;
+            try { ws.send(packet); } catch (error) {}
+        }
+    }
+
     sendToId(id, event, data) {
         const target = this.sockets().find(ws => this.meta(ws).id === id);
         if (target) this.send(target, event, data);
     }
 
     broadcast(event, data, predicate = null) {
+        const packet = encodePacket(event, data);
         for (const ws of this.sockets()) {
             const meta = this.meta(ws);
-            if (!predicate || predicate(meta, ws)) this.send(ws, event, data);
+            if (ws.readyState !== 1 || (predicate && !predicate(meta, ws))) continue;
+            try { ws.send(packet); } catch (error) {}
         }
     }
 
@@ -269,13 +283,15 @@ export class TableRoom extends DurableObject {
         let broadcasterId = null;
         const viewers = new Set();
         const fallbackViewers = new Set();
+        const frameViewers = new Set();
         for (const ws of this.sockets()) {
             const meta = this.meta(ws);
             if (meta.screenShareRole === 'broadcaster') broadcasterId = meta.id;
-            if (meta.screenShareRole === 'viewer' || meta.screenShareRole === 'fallback') viewers.add(meta.id);
+            if (['viewer', 'fallback', 'frame'].includes(meta.screenShareRole)) viewers.add(meta.id);
             if (meta.screenShareRole === 'fallback') fallbackViewers.add(meta.id);
+            if (meta.screenShareRole === 'frame') frameViewers.add(meta.id);
         }
-        return { broadcasterId, viewers, fallbackViewers };
+        return { broadcasterId, viewers, fallbackViewers, frameViewers };
     }
 
     broadcastScreen(event, data) {
@@ -296,11 +312,14 @@ export class TableRoom extends DurableObject {
         if (!room.fallbackViewers.size) {
             this.relayMimeType = '';
             this.relayBootstrapChunk = null;
+            this.relayRecentChunks = [];
+            this.relayRecentBytes = 0;
         }
         if (room.broadcasterId) {
             this.sendToId(room.broadcasterId, 'screen_share_fallback_count', {
                 mesa: this.table,
-                count: room.fallbackViewers.size
+                count: room.fallbackViewers.size,
+                frameCount: room.frameViewers.size
             });
         }
     }
@@ -427,15 +446,32 @@ export class TableRoom extends DurableObject {
             if (!room.broadcasterId || room.broadcasterId === meta.id) return;
             const wasViewer = room.viewers.has(meta.id);
             const retryRequested = Boolean(data && data.retry === true);
+            const relayRequested = Boolean(data && data.mode === 'relay');
             const now = Date.now();
             const retryAllowed = retryRequested && now - Number(meta.lastScreenShareRetryAt || 0) >= 4000;
             this.updateMeta(ws, {
-                screenShareRole: 'viewer',
+                screenShareRole: relayRequested ? 'fallback' : 'viewer',
                 lastScreenShareRetryAt: retryAllowed ? now : meta.lastScreenShareRetryAt
             });
             if (!wasViewer || retryAllowed) {
-                this.sendToId(room.broadcasterId, 'screen_share_viewer_joined', { mesa: this.table, viewerId: meta.id });
+                this.sendToId(room.broadcasterId, 'screen_share_viewer_joined', {
+                    mesa: this.table,
+                    viewerId: meta.id,
+                    relay: relayRequested
+                });
                 if (!wasViewer) this.emitScreenState();
+            }
+            if (relayRequested) {
+                if (this.relayMimeType) {
+                    this.send(ws, 'screen_share_relay_reset', { mesa: this.table, mimeType: this.relayMimeType });
+                    if (this.relayBootstrapChunk) {
+                        this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk: this.relayBootstrapChunk });
+                    }
+                    this.relayRecentChunks.forEach(chunk => {
+                        this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk });
+                    });
+                }
+                this.emitFallbackCount();
             }
             return;
         }
@@ -481,6 +517,9 @@ export class TableRoom extends DurableObject {
                     if (this.relayBootstrapChunk) {
                         this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk: this.relayBootstrapChunk });
                     }
+                    this.relayRecentChunks.forEach(chunk => {
+                        this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk });
+                    });
                 }
                 this.emitFallbackCount();
             }
@@ -488,7 +527,7 @@ export class TableRoom extends DurableObject {
         }
 
         if (event === 'screen_share_peer_connected') {
-            if (meta.screenShareRole === 'fallback') {
+            if (meta.screenShareRole === 'fallback' || meta.screenShareRole === 'frame') {
                 this.updateMeta(ws, { screenShareRole: 'viewer' });
                 this.emitFallbackCount();
             }
@@ -507,13 +546,14 @@ export class TableRoom extends DurableObject {
             const room = this.screenState();
             const byteLength = Number(data.frame.byteLength || 0);
             if (room.broadcasterId !== meta.id || !byteLength || byteLength > 2 * 1024 * 1024) return;
-            for (const targetId of room.fallbackViewers) {
-                this.sendToId(targetId, 'screen_share_frame', {
-                    mesa: this.table,
-                    frame: data.frame,
-                    mimeType: String(data.mimeType || 'image/webp').slice(0, 40)
-                });
-            }
+            const frameTargets = data.allFallback
+                ? new Set([...room.frameViewers, ...room.fallbackViewers])
+                : room.frameViewers;
+            this.sendMany(frameTargets, 'screen_share_frame', {
+                mesa: this.table,
+                frame: data.frame,
+                mimeType: String(data.mimeType || 'image/webp').slice(0, 40)
+            });
             return;
         }
 
@@ -525,9 +565,9 @@ export class TableRoom extends DurableObject {
             if (!/^video\/webm/i.test(mimeType)) return;
             this.relayMimeType = mimeType;
             this.relayBootstrapChunk = null;
-            for (const targetId of room.fallbackViewers) {
-                this.sendToId(targetId, 'screen_share_relay_reset', { mesa: this.table, mimeType });
-            }
+            this.relayRecentChunks = [];
+            this.relayRecentBytes = 0;
+            this.sendMany(room.fallbackViewers, 'screen_share_relay_reset', { mesa: this.table, mimeType });
             return;
         }
 
@@ -536,16 +576,25 @@ export class TableRoom extends DurableObject {
             const room = this.screenState();
             const byteLength = Number(data.chunk.byteLength || 0);
             if (room.broadcasterId !== meta.id || !byteLength || byteLength > 10 * 1024 * 1024) return;
-            if (!this.relayBootstrapChunk) this.relayBootstrapChunk = data.chunk;
-            for (const targetId of room.fallbackViewers) {
-                this.sendToId(targetId, 'screen_share_relay_chunk', { mesa: this.table, chunk: data.chunk });
+            if (!this.relayBootstrapChunk) {
+                this.relayBootstrapChunk = data.chunk;
+            } else {
+                this.relayRecentChunks.push(data.chunk);
+                this.relayRecentBytes += byteLength;
+                while (this.relayRecentChunks.length > 12 || this.relayRecentBytes > 12 * 1024 * 1024) {
+                    const removed = this.relayRecentChunks.shift();
+                    this.relayRecentBytes -= Number(removed && removed.byteLength || 0);
+                }
             }
+            this.sendMany(room.fallbackViewers, 'screen_share_relay_chunk', { mesa: this.table, chunk: data.chunk });
             return;
         }
 
         if (event === 'screen_share_relay_failed') {
             const room = this.screenState();
             if (!room.broadcasterId || meta.screenShareRole !== 'fallback') return;
+            this.updateMeta(ws, { screenShareRole: 'frame' });
+            this.emitFallbackCount();
             this.sendToId(room.broadcasterId, 'screen_share_relay_failed', { mesa: this.table, viewerId: meta.id });
             return;
         }
@@ -559,6 +608,8 @@ export class TableRoom extends DurableObject {
             }
             this.relayMimeType = '';
             this.relayBootstrapChunk = null;
+            this.relayRecentChunks = [];
+            this.relayRecentBytes = 0;
             this.broadcastScreen('screen_share_ended', { mesa: this.table });
             this.emitScreenState();
             return;
@@ -706,9 +757,11 @@ export class TableRoom extends DurableObject {
             }
             this.relayMimeType = '';
             this.relayBootstrapChunk = null;
+            this.relayRecentChunks = [];
+            this.relayRecentBytes = 0;
             this.broadcastScreen('screen_share_ended', { mesa: this.table });
             this.emitScreenState();
-        } else if (meta.screenShareRole === 'viewer' || meta.screenShareRole === 'fallback') {
+        } else if (['viewer', 'fallback', 'frame'].includes(meta.screenShareRole)) {
             const room = this.screenState();
             if (room.broadcasterId) this.sendToId(room.broadcasterId, 'screen_share_viewer_left', { viewerId: meta.id });
             this.emitFallbackCount();
