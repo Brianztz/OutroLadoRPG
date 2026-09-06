@@ -721,7 +721,8 @@
         const playersBoard = document.getElementById('players-board');
         const connectedPlayers = new Map();
         let playerRollHistory = [];
-        let masterTableCode = normalizeTableCode(localStorage.getItem('master_table_code') || 'PADRAO');
+        const masterUrlParams = new URLSearchParams(window.location.search);
+        let masterTableCode = normalizeTableCode(masterUrlParams.get('mesa') || localStorage.getItem('master_table_code') || 'PADRAO');
         let luminaEnabled = loadLuminaAccess(masterTableCode);
         let initiativeState = loadInitiativeState();
         let monstersState = loadMonstersState();
@@ -2400,7 +2401,7 @@
         }
 
         function abrirFicha(code) {
-            document.getElementById('iframe-ficha').src = `index.html?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
+            document.getElementById('iframe-ficha').src = `ficha.html?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
             document.getElementById('modal-ficha').style.display = 'flex';
         }
 
