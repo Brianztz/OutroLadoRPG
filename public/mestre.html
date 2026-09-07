@@ -1688,16 +1688,18 @@
             const baseWidth = Number(object.dataset.baseWidth);
             const baseHeight = Number(object.dataset.baseHeight);
             if (!baseWidth || !baseHeight) return;
-            object.style.width = `${baseWidth * masterBookZoom}px`;
-            object.style.height = `${baseHeight * masterBookZoom}px`;
+            object.style.width = `${baseWidth}px`;
+            object.style.height = `${baseHeight}px`;
         }
 
         function updateMasterClueBook3DTransform() {
             const object=document.getElementById('master-clue-book-3d-object');
             const stage=document.getElementById('master-clue-book-stage');
             const closedOffset=masterBookOpen?0:-25*Math.cos(masterBookRotationY*Math.PI/180);
+            const baseWidth=object?(Number(object.dataset.baseWidth)||object.offsetWidth||640):640;
+            const closedOffsetPixels=baseWidth*(closedOffset/100)*masterBookZoom;
             if(stage)stage.style.perspective=`${1500*Math.max(1,masterBookZoom)}px`;
-            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg)`;
+            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
         }
 
         function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;masterBookPanX=0;masterBookPanY=0;setMasterClueBookMoveMode(false);applyMasterClueBookZoomSize();updateMasterClueBook3DTransform();}
