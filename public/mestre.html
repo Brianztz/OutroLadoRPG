@@ -297,6 +297,7 @@
         .master-clue-3d-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; backface-visibility: hidden; }
         .master-clue-3d-front { transform: translateZ(var(--master-clue-face-depth,12px)); }
         .master-clue-3d-back { transform: rotateY(180deg) translateZ(var(--master-clue-face-depth,12px)); }
+        .master-clue-3d-back .master-clue-3d-image.mirrored { transform: scaleX(-1); }
         .master-clue-3d-image { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; pointer-events: none; filter: drop-shadow(0 14px 15px rgba(0,0,0,0.58)); }
         .master-clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
         .master-clue-3d-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; }
@@ -1565,7 +1566,8 @@
                         [[0,0],[canvas.width-size,0],[0,canvas.height-size],[canvas.width-size,canvas.height-size]].forEach(([sx,sy]) => { for (let y=sy;y<sy+size;y++) for (let x=sx;x<sx+size;x++) { const i=(y*canvas.width+x)*4; samples.push([pixels[i],pixels[i+1],pixels[i+2],pixels[i+3]]); } });
                         const background = [0,1,2].map(channel => samples.reduce((sum,sample) => sum + sample[channel], 0) / samples.length);
                         const spread = samples.reduce((max,sample) => Math.max(max,Math.hypot(sample[0]-background[0],sample[1]-background[1],sample[2]-background[2])),0);
-                        const removeBackground = samples.every(sample => sample[3] > 245) && spread < 48;
+                        // Fundos opacos fazem parte da pista. O molde só recorta transparência real.
+                        const removeBackground = false;
                         let minX=canvas.width,minY=canvas.height,maxX=-1,maxY=-1,red=0,green=0,blue=0,weight=0;
                         for (let y=0;y<canvas.height;y++) for (let x=0;x<canvas.width;x++) {
                             const i=(y*canvas.width+x)*4;
@@ -1813,9 +1815,9 @@
             }
             stage.style.display='flex';controls.style.display='flex';bookViewer.style.display='none';initializeMasterClue3D();resetMasterClue3D();
             const token=++masterClueImageToken,frontImage=document.getElementById('master-clue-3d-front-image'),backImage=document.getElementById('master-clue-3d-back-image'),frontFallback=document.getElementById('master-clue-3d-front-fallback'),backFallback=document.getElementById('master-clue-3d-back-fallback');
-            const fallback=()=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;frontImage.style.display='none';backImage.style.display='none';frontFallback.style.display='flex';backFallback.style.display='flex';setMasterClue3DShape('');fitMasterClue3D();};
+            const fallback=()=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;frontImage.style.display='none';backImage.style.display='none';backImage.classList.remove('mirrored');frontFallback.style.display='flex';backFallback.style.display='flex';setMasterClue3DShape('');fitMasterClue3D();};
             fallback();
-            prepareMasterClueCutout(clue.img).then(front=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;frontImage.src=front.src;frontImage.style.display='block';frontFallback.style.display='none';setMasterClue3DShape(front.src,front.edgeColor);fitMasterClue3D(front.width,front.height);const backSource=clue.backImg||clue.img;prepareMasterClueCutout(backSource).then(back=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backImage.src=back.src;backImage.style.display='block';backFallback.style.display='none';});});
+            prepareMasterClueCutout(clue.img).then(front=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;frontImage.src=front.src;frontImage.style.display='block';frontFallback.style.display='none';setMasterClue3DShape(front.src,front.edgeColor);fitMasterClue3D(front.width,front.height);const hasCustomBack=Boolean(clue.backImg&&clue.backImg!==clue.img),backSource=hasCustomBack?clue.backImg:clue.img;backImage.classList.toggle('mirrored',!hasCustomBack);prepareMasterClueCutout(backSource).then(back=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backImage.src=back.src;backImage.style.display='block';backFallback.style.display='none';});});
         }
 
         function closeMasterClueInfo() {
