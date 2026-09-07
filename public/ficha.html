@@ -197,6 +197,7 @@
         .clue-3d-face { position: absolute; inset: 0; overflow: visible; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; backface-visibility: hidden; }
         .clue-3d-front { transform: translateZ(var(--clue-face-depth,12px)); }
         .clue-3d-back { transform: rotateY(180deg) translateZ(var(--clue-face-depth,12px)); }
+        .clue-3d-back .clue-3d-image.mirrored { transform: scaleX(-1); }
         .clue-3d-image { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; pointer-events: none; filter: drop-shadow(0 14px 15px rgba(0,0,0,0.58)); }
         .clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
         .clue-3d-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -748,7 +749,7 @@
 
 <div id="popup-dice" class="popup-overlay" onclick="closeDice()">
     <div class="popup-box-dice">
-        <img id="popup-dice-animation" class="popup-dice-animation" src="./assets/dado-rolagem.gif" alt="Dado animado">
+        <img id="popup-dice-animation" class="popup-dice-animation" src="./assets/dado-rolagem-completo.gif" alt="Dado animado">
         <div id="popup-content" class="popup-content">
             <div id="popup-roll-name" class="popup-roll-name">ROLAGEM</div>
             <div id="popup-num" class="popup-number">00</div>
@@ -2157,6 +2158,7 @@
             type: 'object',
             img: getRenderedClueSource('clue-3d-image', clue.img),
             backImg: getRenderedClueSource('clue-3d-back-image', clue.backImg || clue.img),
+            hasCustomBack: Boolean(clue.backImg && clue.backImg !== clue.img),
             edgeColor: getClueStyleProperty('clue-3d-object', '--clue-edge-color', '#68686f'),
             thickness: normalizeClueThickness(clue.thickness)
         };
@@ -2517,7 +2519,8 @@
                         const distance = Math.hypot(sample[0] - background[0], sample[1] - background[1], sample[2] - background[2]);
                         return Math.max(largest, distance);
                     }, 0);
-                    const removeUniformBackground = opaqueCorners && cornerSpread < 48;
+                    // Fundos opacos fazem parte da pista. O molde só recorta transparência real.
+                    const removeUniformBackground = false;
 
                     let minX = canvas.width;
                     let minY = canvas.height;
@@ -3209,6 +3212,7 @@
             if (imageRequestToken !== clue3DImageRequestToken || currentClueId !== id) return;
             image.style.display = 'none';
             backImage.style.display = 'none';
+            backImage.classList.remove('mirrored');
             fallback.style.display = 'flex';
             backFallback.style.display = 'flex';
             setClue3DShapeSource('');
@@ -3224,7 +3228,9 @@
             fallback.style.display = 'none';
             setClue3DShapeSource(result.src, result.edgeColor);
             fitClue3DObjectToImage(result.width, result.height);
-            const backSource = clue.backImg || clue.img;
+            const hasCustomBack = Boolean(clue.backImg && clue.backImg !== clue.img);
+            const backSource = hasCustomBack ? clue.backImg : clue.img;
+            backImage.classList.toggle('mirrored', !hasCustomBack);
             prepareClue3DCutout(backSource).then(backResult => {
                 if (imageRequestToken !== clue3DImageRequestToken || currentClueId !== id) return;
                 backImage.onerror = () => {
@@ -3368,7 +3374,7 @@ function removeCurrentClue() {
     function closeDice() { document.getElementById('popup-dice').style.display='none'; }
     function showPopup(n, nome="ROLAGEM", tipo="TOTAL", st="color:white") {
         const diceAnimation = document.getElementById('popup-dice-animation');
-        if (diceAnimation) diceAnimation.src = `./assets/dado-rolagem.gif?t=${Date.now()}`;
+        if (diceAnimation) diceAnimation.src = `./assets/dado-rolagem-completo.gif?t=${Date.now()}`;
         document.getElementById('popup-roll-name').textContent = nome;
         let numEl = document.getElementById('popup-num'); numEl.innerHTML = n; 
         if(n.toString().includes('x') || n.toString().includes('<div')) numEl.style.fontSize = 'clamp(2em, 8vw, 4em)'; else numEl.style.fontSize = 'clamp(4em, 20vw, 10em)';
