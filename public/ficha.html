@@ -2452,15 +2452,15 @@
         const baseWidth = Number(object.dataset.baseWidth);
         const baseHeight = Number(object.dataset.baseHeight);
         if (!baseWidth || !baseHeight) return;
-        object.style.width = `${baseWidth}px`;
-        object.style.height = `${baseHeight}px`;
+        object.style.width = `${baseWidth * clueZoom}px`;
+        object.style.height = `${baseHeight * clueZoom}px`;
     }
 
     function updateClue3DTransform() {
         const object = document.getElementById('clue-3d-object');
         const stage = document.getElementById('clue-3d-stage');
         if (stage) stage.style.perspective = `${1000 * Math.max(1, clueZoom)}px`;
-        if (object) object.style.transform = `translate(${cluePanX}px, ${cluePanY}px) scale(${clueZoom}) rotateX(${clueRotationX}deg) rotateY(${clueRotationY}deg)`;
+        if (object) object.style.transform = `translate(${cluePanX}px, ${cluePanY}px) rotateX(${clueRotationX}deg) rotateY(${clueRotationY}deg)`;
         queueClueInspectionUpdate();
     }
 
@@ -2731,8 +2731,8 @@
         const baseWidth = Number(object.dataset.baseWidth);
         const baseHeight = Number(object.dataset.baseHeight);
         if (!baseWidth || !baseHeight) return;
-        object.style.width = `${baseWidth}px`;
-        object.style.height = `${baseHeight}px`;
+        object.style.width = `${baseWidth * clueBookZoom}px`;
+        object.style.height = `${baseHeight * clueBookZoom}px`;
     }
 
     function updateClueBook3DTransform() {
@@ -2740,7 +2740,7 @@
         const stage = document.getElementById('clue-book-stage');
         const closedOffset = clueBookOpen ? 0 : -25 * Math.cos(clueBookRotationY * Math.PI / 180);
         if (stage) stage.style.perspective = `${1500 * Math.max(1, clueBookZoom)}px`;
-        if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) scale(${clueBookZoom}) translateX(${closedOffset}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg)`;
+        if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) translateX(${closedOffset}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg)`;
         queueClueInspectionUpdate();
     }
 
