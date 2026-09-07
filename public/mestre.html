@@ -169,8 +169,9 @@
         .monster-presence-row .monster-info-line { min-width: 0; flex: 1; }
         .master-dice-popup { position: fixed; inset: 0; z-index: 11000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.86); }
         .master-dice-popup.open { display: flex; }
-        .master-dice-box { width: min(460px,90vw); min-height: 300px; padding: 28px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(139,204,246,0.22); border-radius: 16px; background: #040a13 center / cover no-repeat; box-shadow: 0 22px 70px rgba(0,0,0,0.9); text-align: center; }
-        .master-dice-content { opacity: 0; transform: scale(0.88); transition: opacity 0.22s, transform 0.22s; }
+        .master-dice-box { position: relative; width: min(460px,90vw); min-height: 300px; padding: 28px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(139,204,246,0.22); border-radius: 16px; background: #040a13 center / cover no-repeat; box-shadow: 0 22px 70px rgba(0,0,0,0.9); text-align: center; }
+        .master-dice-animation { position: absolute; z-index: 1; inset: 50% auto auto 50%; display: block; width: min(92%,390px); height: min(92%,280px); object-fit: contain; opacity: 0.98; transform: translate(-50%,-50%); filter: brightness(2.75) contrast(1.08) saturate(0.86) drop-shadow(0 0 12px rgba(139,204,246,0.34)); pointer-events: none; }
+        .master-dice-content { position: relative; z-index: 2; opacity: 0; transform: scale(0.88); transition: opacity 0.22s, transform 0.22s; }
         .master-dice-content.revealed { opacity: 1; transform: scale(1); }
         .master-dice-name { color: var(--text-primary); font-size: 0.85em; font-weight: 900; text-transform: uppercase; }
         .master-dice-number { margin: 8px 0; color: white; font-size: clamp(4em,18vw,8em); font-weight: 900; line-height: 1; text-shadow: 0 5px 20px black; }
@@ -623,6 +624,7 @@
 
     <div id="master-dice-popup" class="master-dice-popup" onclick="if(event.target===this) closeMasterDicePopup()">
         <div class="master-dice-box">
+            <img id="master-dice-animation" class="master-dice-animation" alt="Dado animado">
             <div id="master-dice-content" class="master-dice-content">
                 <div id="master-dice-name" class="master-dice-name">ROLAGEM</div>
                 <div id="master-dice-number" class="master-dice-number">0</div>
@@ -730,6 +732,13 @@
         let editingMonsterId = null;
         let editingMonsterActions = [];
         let monsterRollRevealTimer = null;
+        let masterDicePlaybackSequence = 0;
+        const masterRollAssetBase = window.location.protocol === 'file:' ? './assets/' : '/assets/';
+        const masterRollPrimaryAsset = `${masterRollAssetBase}dado-rolagem-completo.gif`;
+        const masterRollFallbackAsset = `${masterRollAssetBase}dado-rolagem.gif`;
+        const masterRollPreloader = new Image();
+        masterRollPreloader.onerror = () => { masterRollPreloader.src = masterRollFallbackAsset; };
+        masterRollPreloader.src = masterRollPrimaryAsset;
         let masterCatalogFilter = 'all';
         let customCatalogEntries = loadCustomCatalogEntries();
         let pendingCatalogItem = null;
@@ -1613,14 +1622,14 @@
             const baseWidth = Number(object.dataset.baseWidth);
             const baseHeight = Number(object.dataset.baseHeight);
             if (!baseWidth || !baseHeight) return;
-            object.style.width = `${baseWidth}px`;
-            object.style.height = `${baseHeight}px`;
+            object.style.width = `${baseWidth * masterClueZoom}px`;
+            object.style.height = `${baseHeight * masterClueZoom}px`;
         }
 
         function updateMasterClue3DTransform() {
             const stage = document.getElementById('master-clue-3d-stage');
             if(stage)stage.style.perspective=`${1000*Math.max(1,masterClueZoom)}px`;
-            document.getElementById('master-clue-3d-object').style.transform = `translate(${masterCluePanX}px, ${masterCluePanY}px) scale(${masterClueZoom}) rotateX(${masterClueRotationX}deg) rotateY(${masterClueRotationY}deg)`;
+            document.getElementById('master-clue-3d-object').style.transform = `translate(${masterCluePanX}px, ${masterCluePanY}px) rotateX(${masterClueRotationX}deg) rotateY(${masterClueRotationY}deg)`;
         }
 
         function resetMasterClue3D() { masterClueRotationX = -8; masterClueRotationY = 0; masterClueZoom = 1; masterCluePanX = 0; masterCluePanY = 0; setMasterClue3DMoveMode(false); applyMasterClue3DZoomSize(); updateMasterClue3DTransform(); }
@@ -1679,8 +1688,8 @@
             const baseWidth = Number(object.dataset.baseWidth);
             const baseHeight = Number(object.dataset.baseHeight);
             if (!baseWidth || !baseHeight) return;
-            object.style.width = `${baseWidth}px`;
-            object.style.height = `${baseHeight}px`;
+            object.style.width = `${baseWidth * masterBookZoom}px`;
+            object.style.height = `${baseHeight * masterBookZoom}px`;
         }
 
         function updateMasterClueBook3DTransform() {
@@ -1688,7 +1697,7 @@
             const stage=document.getElementById('master-clue-book-stage');
             const closedOffset=masterBookOpen?0:-25*Math.cos(masterBookRotationY*Math.PI/180);
             if(stage)stage.style.perspective=`${1500*Math.max(1,masterBookZoom)}px`;
-            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) scale(${masterBookZoom}) translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg)`;
+            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffset}%) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg)`;
         }
 
         function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;masterBookPanX=0;masterBookPanY=0;setMasterClueBookMoveMode(false);applyMasterClueBookZoomSize();updateMasterClueBook3DTransform();}
@@ -1913,10 +1922,39 @@
             return { roll, result: 'FALHA', color: 'var(--accent-red)' };
         }
 
+        function loadMasterDiceAnimation(image, playbackSequence, onReady) {
+            let ready = false;
+            const finish = () => {
+                if (ready || playbackSequence !== masterDicePlaybackSequence) return;
+                ready = true;
+                image.onload = null;
+                image.onerror = null;
+                onReady();
+            };
+            const load = (source, isFallback = false) => {
+                if (playbackSequence !== masterDicePlaybackSequence) return;
+                image.style.display = 'block';
+                image.onload = finish;
+                image.onerror = () => {
+                    if (!isFallback) load(masterRollFallbackAsset, true);
+                    else {
+                        image.style.display = 'none';
+                        finish();
+                    }
+                };
+                image.removeAttribute('src');
+                void image.offsetWidth;
+                image.src = `${source}#roll-${Date.now()}`;
+                if (image.complete && image.naturalWidth > 0) requestAnimationFrame(finish);
+            };
+            load(masterRollPrimaryAsset);
+        }
+
         function showMasterDicePopup(number, name, result, color) {
             const popup = document.getElementById('master-dice-popup');
             const content = document.getElementById('master-dice-content');
             const box = popup.querySelector('.master-dice-box');
+            const diceAnimation = document.getElementById('master-dice-animation');
             box.style.backgroundImage = `linear-gradient(rgba(10,10,12,0.65),rgba(10,10,12,0.82)),url('https://blogger.googleusercontent.com/img/a/AVvXsEjMOEuhQsyp9K02VzG4U6kXeEMQYu6efHg98n3yde59MTJ8bNLTvSq5WfWAyGfur8ACjUsjNWQfOp8k0-odkhXt1UpVqf4OqJQ_azqElAh044YPkLWQ0LekZZSwp4u8RNa9Aht1bKFLKkUxFfIz9NyAdJnf2Mo9dHgZ-pRlIf6iMbaPmh5o4hLd3eyYEDc9')`;
             document.getElementById('master-dice-name').textContent = name;
             document.getElementById('master-dice-number').textContent = number;
@@ -1926,10 +1964,20 @@
             content.classList.remove('revealed');
             popup.classList.add('open');
             clearTimeout(monsterRollRevealTimer);
-            monsterRollRevealTimer = setTimeout(() => content.classList.add('revealed'), 850);
+            const playbackSequence = ++masterDicePlaybackSequence;
+            if (diceAnimation) {
+                loadMasterDiceAnimation(diceAnimation, playbackSequence, () => {
+                    monsterRollRevealTimer = setTimeout(() => {
+                        if (playbackSequence === masterDicePlaybackSequence) content.classList.add('revealed');
+                    }, 1500);
+                });
+            } else {
+                monsterRollRevealTimer = setTimeout(() => content.classList.add('revealed'), 1500);
+            }
         }
 
         function closeMasterDicePopup() {
+            masterDicePlaybackSequence++;
             clearTimeout(monsterRollRevealTimer);
             document.getElementById('master-dice-popup').classList.remove('open');
             document.getElementById('master-dice-content').classList.remove('revealed');
