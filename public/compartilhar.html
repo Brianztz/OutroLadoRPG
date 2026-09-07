@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Transmissão de tela por mesa para Outro Lado RPG.">
     <title>Outro Lado RPG — Compartilhar Tela</title>
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <style>
         :root {
             color-scheme: dark;
@@ -573,7 +572,9 @@
                 reportRelayPlaybackFailure();
                 return;
             }
+            const relayBroadcasterId = viewerHostId;
             closeViewerPeer();
+            viewerHostId = relayBroadcasterId;
             video.pause();
             video.srcObject = null;
             video.removeAttribute('src');
@@ -1133,8 +1134,13 @@
         socket.on('screen_share_available', data => {
             if (normalizeTableCode(data && data.mesa) !== tableCode || isBroadcasting || !data.broadcasterId || data.broadcasterId === socket.id) return;
             broadcastAvailable = true;
+            const sameBroadcast = viewerHostId === data.broadcasterId;
+            const playbackAlreadyActive = remotePlaybackConfirmed
+                || Boolean(relayObjectUrl)
+                || fallbackImage.classList.contains('visible')
+                || fallbackRequested;
+            if (sameBroadcast && playbackAlreadyActive) return;
             fallbackRequested = false;
-            if (viewerHostId === data.broadcasterId && fallbackRequested) return;
             closeViewerPeer();
             viewerHostId = data.broadcasterId;
             fallbackRequested = true;
