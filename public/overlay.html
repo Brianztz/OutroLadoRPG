@@ -395,6 +395,9 @@
             text-align: center;
             text-overflow: ellipsis;
             white-space: nowrap;
+            opacity: 0;
+            transform: translateY(7px) scale(0.82);
+            transition: opacity 0.24s ease, transform 0.3s cubic-bezier(0.2, 0.9, 0.28, 1.18);
             text-shadow:
                 0 2px 3px #000,
                 0 0 3px #000,
@@ -418,8 +421,20 @@
             text-align: center;
             text-transform: uppercase;
             white-space: nowrap;
-            transform: translateX(-50%);
+            opacity: 0;
+            transform: translate(-50%, 7px) scale(0.88);
+            transition: opacity 0.24s ease 0.05s, transform 0.3s cubic-bezier(0.2, 0.9, 0.28, 1.18) 0.05s;
             text-shadow: 0 2px 3px #000, 0 0 6px #000, 0 0 9px var(--roll-result-color);
+        }
+
+        .portrait-roll-result.revealed .portrait-roll-number {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .portrait-roll-result.revealed .portrait-roll-label {
+            opacity: 1;
+            transform: translate(-50%, 0) scale(1);
         }
 
         .display-stack {
@@ -1228,15 +1243,17 @@
             const label = result && result.querySelector('.portrait-roll-label');
             if (!result || !die || !number || !label) return;
 
+            if (result._revealTimer) clearTimeout(result._revealTimer);
             if (result._hideTimer) clearTimeout(result._hideTimer);
             number.textContent = rollResultText(data.resultado);
             label.textContent = rollResultLabel(data);
             result.style.setProperty('--roll-result-color', rollResultColor(data));
             die.src = `./assets/dado-rolagem.gif?t=${Date.now()}`;
-            result.classList.remove('show');
+            result.classList.remove('show', 'revealed');
             void result.offsetWidth;
             result.classList.add('show');
-            result._hideTimer = setTimeout(() => result.classList.remove('show'), 3400);
+            result._revealTimer = setTimeout(() => result.classList.add('revealed'), 1450);
+            result._hideTimer = setTimeout(() => result.classList.remove('show', 'revealed'), 3400);
         }
 
         function updatePlayerWidget(data) {
