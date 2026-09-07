@@ -678,7 +678,8 @@
         }
 
         function targetPeerBitrate() {
-            return 12000000;
+            const activePeers = Math.max(1, hostPeers.size);
+            return Math.max(1800000, Math.floor(10000000 / activePeers));
         }
 
         async function configureVideoSender(sender, bitrate = targetPeerBitrate()) {
@@ -1185,15 +1186,18 @@
             const playbackAlreadyActive = remotePlaybackConfirmed
                 || Boolean(relayObjectUrl)
                 || fallbackImage.classList.contains('visible')
-                || fallbackRequested;
+                || fallbackRequested
+                || Boolean(viewerPeer)
+                || Boolean(peerConnectTimer);
             if (sameBroadcast && playbackAlreadyActive) return;
             fallbackRequested = false;
             closeViewerPeer();
             viewerHostId = data.broadcasterId;
-            fallbackRequested = true;
             setEmpty('Conectando à transmissão', 'Preparando a transmissão estável da mesa.');
-            setStatus('conectando ao fluxo compartilhado da mesa...');
-            socket.emit('screen_share_watch', { mesa: tableCode, mode: 'relay' });
+            setStatus('conectando ao vídeo em tempo real...');
+            fallbackRequested = false;
+            socket.emit('screen_share_watch', { mesa: tableCode });
+            armFallbackTimer();
         });
 
         socket.on('screen_share_viewer_joined', data => {
