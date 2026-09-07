@@ -2739,8 +2739,9 @@
         const baseWidth = Number(object.dataset.baseWidth);
         const baseHeight = Number(object.dataset.baseHeight);
         if (!baseWidth || !baseHeight) return;
-        object.style.width = `${baseWidth}px`;
-        object.style.height = `${baseHeight}px`;
+        object.style.width = `${baseWidth * clueBookZoom}px`;
+        object.style.height = 'auto';
+        object.style.aspectRatio = `${baseWidth} / ${baseHeight}`;
     }
 
     function updateClueBook3DTransform() {
@@ -2750,7 +2751,7 @@
         const baseWidth = object ? (Number(object.dataset.baseWidth) || object.offsetWidth || 640) : 640;
         const closedOffsetPixels = baseWidth * (closedOffset / 100) * clueBookZoom;
         if (stage) stage.style.perspective = `${1500 * Math.max(1, clueBookZoom)}px`;
-        if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg) scale(${clueBookZoom})`;
+        if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg)`;
         queueClueInspectionUpdate();
     }
 
@@ -2831,6 +2832,11 @@
         applyClueBookZoomSize();
     }
 
+    function getClueBookSpreadAspect(width, height) {
+        const imageAspect = Math.max(0.28, Number(width) / Math.max(1, Number(height)) || 0.75);
+        return imageAspect >= 1.18 ? imageAspect : imageAspect * 2;
+    }
+
     function updateClueBook3DFit() {
         const clue = cluesData.find(item => item.id === currentClueId);
         if (!clue || clue.type !== 'book') return;
@@ -2840,7 +2846,7 @@
         if (!source) return fitClueBook3DToAspect(1.5);
         prepareClue3DCutout(source).then(result => {
             if (token !== clueBookFitToken || currentClueId !== clue.id) return;
-            fitClueBook3DToAspect(2 * (result.width / Math.max(1, result.height)));
+            fitClueBook3DToAspect(getClueBookSpreadAspect(result.width, result.height));
         });
     }
 
@@ -3191,7 +3197,7 @@
                     coverImage.src = result.src;
                     coverBackImage.src = result.src;
                     setClueBookCoverShape(result.src, result.edgeColor);
-                    if (!clueBookOpen) fitClueBook3DToAspect(2 * (result.width / Math.max(1, result.height)));
+                    if (!clueBookOpen) fitClueBook3DToAspect(getClueBookSpreadAspect(result.width, result.height));
                 });
                 prepareClue3DCutout(backCoverSource).then(result => {
                     if (coverToken !== clue3DImageRequestToken || currentClueId !== id) return;
