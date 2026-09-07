@@ -327,7 +327,7 @@
         .character-details-field textarea.inv-input { min-height: 105px; resize: vertical; line-height: 1.45; }
         #char_historia_popup { min-height: 170px; }
         .character-details-actions { display: flex; gap: 9px; margin-top: 18px; }
-        .popup-box-dice { position: relative; width: 600px; height: 400px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: #000; border: 4px solid var(--accent-yellow); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
+        .popup-box-dice { position: relative; width: 600px; height: 400px; background-size: contain; background-repeat: no-repeat; background-position: center; background-color: #07111d; border: 4px solid var(--accent-yellow); border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; box-shadow: 0 22px 70px rgba(0,0,0,0.88), inset 0 0 42px rgba(74,153,218,0.13), 0 0 18px rgba(139,204,246,0.12); }
         .popup-box-dice::after { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.3); z-index: 1; }
         .popup-content { position: relative; z-index: 10; display: none; width: 90%; animation: fadeInResult 0.5s forwards; text-align: center; }
         .popup-roll-name { margin-bottom: 4px; color: white; font-size: clamp(1.1em, 4vw, 1.7em); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 2px 2px 4px #000; overflow-wrap: anywhere; }
@@ -3365,7 +3365,7 @@ function removeCurrentClue() {
     // --- DADOS E COMBATE ---
     function closeDice() { document.getElementById('popup-dice').style.display='none'; }
     function showPopup(n, nome="ROLAGEM", tipo="TOTAL", st="color:white") {
-        const box = document.querySelector('.popup-box-dice'); box.style.backgroundImage = `url('https://blogger.googleusercontent.com/img/a/AVvXsEjMOEuhQsyp9K02VzG4U6kXeEMQYu6efHg98n3yde59MTJ8bNLTvSq5WfWAyGfur8ACjUsjNWQfOp8k0-odkhXt1UpVqf4OqJQ_azqElAh044YPkLWQ0LekZZSwp4u8RNa9Aht1bKFLKkUxFfIz9NyAdJnf2Mo9dHgZ-pRlIf6iMbaPmh5o4hLd3eyYEDc9?t=${new Date().getTime()}')`;
+        const box = document.querySelector('.popup-box-dice'); box.style.backgroundImage = `url('./assets/dado-rolagem.gif?t=${new Date().getTime()}')`;
         document.getElementById('popup-roll-name').textContent = nome;
         let numEl = document.getElementById('popup-num'); numEl.innerHTML = n; 
         if(n.toString().includes('x') || n.toString().includes('<div')) numEl.style.fontSize = 'clamp(2em, 8vw, 4em)'; else numEl.style.fontSize = 'clamp(4em, 20vw, 10em)';
