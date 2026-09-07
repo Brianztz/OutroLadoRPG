@@ -402,6 +402,26 @@
                 0 0 13px var(--roll-result-color);
         }
 
+        .portrait-roll-label {
+            position: absolute;
+            z-index: 2;
+            top: calc(100% - 7px);
+            left: 50%;
+            display: block;
+            min-width: 84px;
+            color: var(--roll-result-color);
+            font-family: "ITC Krist", sans-serif;
+            font-size: 0.82rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: 0.8px;
+            text-align: center;
+            text-transform: uppercase;
+            white-space: nowrap;
+            transform: translateX(-50%);
+            text-shadow: 0 2px 3px #000, 0 0 6px #000, 0 0 9px var(--roll-result-color);
+        }
+
         .display-stack {
             position: relative;
             z-index: 2;
@@ -1117,6 +1137,7 @@
                     <div class="portrait-roll-result" aria-hidden="true">
                         <img class="portrait-roll-die" alt="">
                         <span class="portrait-roll-number">0</span>
+                        <span class="portrait-roll-label">RESULTADO</span>
                     </div>
                     <button class="portrait-remove" type="button" title="Remover do overlay até o jogador reconectar" aria-label="Remover jogador do overlay">×</button>
                 </div>
@@ -1181,6 +1202,19 @@
             return '#8bdcff';
         }
 
+        function rollResultLabel(data) {
+            const description = String(data && data.acao || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+            if (description.includes('CRITIC')) return 'CRÍTICO';
+            if (description.includes('FRACASSO')) return 'FRACASSO';
+            if (description.includes('FALHA')) return 'FALHA';
+            if (description.includes('EXTREMO')) return 'EXTREMO';
+            if (description.includes('BOM')) return 'BOM';
+            if (description.includes('NORMAL')) return 'NORMAL';
+            if (description.includes('SUCESSO')) return 'SUCESSO';
+            if (description.includes('DANO')) return 'DANO';
+            return 'RESULTADO';
+        }
+
         function showRollAbovePortrait(data) {
             if (!data || normalizeTableCode(data.mesa) !== tableCode) return;
             const code = playerCode(data);
@@ -1191,10 +1225,12 @@
             const result = article.querySelector('.portrait-roll-result');
             const die = result && result.querySelector('.portrait-roll-die');
             const number = result && result.querySelector('.portrait-roll-number');
-            if (!result || !die || !number) return;
+            const label = result && result.querySelector('.portrait-roll-label');
+            if (!result || !die || !number || !label) return;
 
             if (result._hideTimer) clearTimeout(result._hideTimer);
             number.textContent = rollResultText(data.resultado);
+            label.textContent = rollResultLabel(data);
             result.style.setProperty('--roll-result-color', rollResultColor(data));
             die.src = `./assets/dado-rolagem.gif?t=${Date.now()}`;
             result.classList.remove('show');
