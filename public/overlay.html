@@ -780,6 +780,12 @@
         const overlayTableCode = document.getElementById('overlay-table-code');
         const players = new Map();
         const previousVitals = new Map();
+        const rollDieAssetBase = window.location.protocol === 'file:' ? './assets/' : '/assets/';
+        const rollDiePrimaryAsset = `${rollDieAssetBase}dado-rolagem-completo.gif`;
+        const rollDieFallbackAsset = `${rollDieAssetBase}dado-rolagem.gif`;
+        const rollDiePreloader = new Image();
+        rollDiePreloader.onerror = () => { rollDiePreloader.src = rollDieFallbackAsset; };
+        rollDiePreloader.src = rollDiePrimaryAsset;
         const clueInspectionLayer = document.getElementById('clue-inspection-layer');
         const clueInspectionObject = document.getElementById('clue-inspection-object');
         const clueInspectionBook = document.getElementById('clue-inspection-book');
@@ -1248,15 +1254,43 @@
 
             if (result._revealTimer) clearTimeout(result._revealTimer);
             if (result._hideTimer) clearTimeout(result._hideTimer);
+            result._rollSequence = (Number(result._rollSequence) || 0) + 1;
+            const rollSequence = result._rollSequence;
             number.textContent = rollResultText(data.resultado);
             label.textContent = rollResultLabel(data);
             result.style.setProperty('--roll-result-color', rollResultColor(data));
-            die.src = `./assets/dado-rolagem-completo.gif?t=${Date.now()}`;
             result.classList.remove('show', 'revealed');
-            void result.offsetWidth;
-            result.classList.add('show');
-            result._revealTimer = setTimeout(() => result.classList.add('revealed'), 1450);
-            result._hideTimer = setTimeout(() => result.classList.remove('show', 'revealed'), 3400);
+
+            let animationStarted = false;
+            const startAnimation = () => {
+                if (animationStarted || rollSequence !== result._rollSequence) return;
+                animationStarted = true;
+                die.onload = null;
+                die.onerror = null;
+                void result.offsetWidth;
+                result.classList.add('show');
+                result._revealTimer = setTimeout(() => result.classList.add('revealed'), 1450);
+                result._hideTimer = setTimeout(() => result.classList.remove('show', 'revealed'), 3400);
+            };
+
+            const loadDie = (source, isFallback = false) => {
+                if (rollSequence !== result._rollSequence) return;
+                die.style.display = 'block';
+                die.onload = startAnimation;
+                die.onerror = () => {
+                    if (!isFallback) loadDie(rollDieFallbackAsset, true);
+                    else {
+                        die.style.display = 'none';
+                        startAnimation();
+                    }
+                };
+                die.removeAttribute('src');
+                void die.offsetWidth;
+                die.src = `${source}#roll-${Date.now()}`;
+                if (die.complete && die.naturalWidth > 0) requestAnimationFrame(startAnimation);
+            };
+
+            loadDie(rollDiePrimaryAsset);
         }
 
         function updatePlayerWidget(data) {
