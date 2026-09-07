@@ -45,7 +45,7 @@
         .overlay-grid {
             display: grid;
             grid-template-columns: minmax(460px, 520px);
-            gap: 14px;
+            gap: 38px;
             width: min(520px, calc(100vw - 48px));
             align-items: center;
             transition: opacity 0.38s ease, filter 0.38s ease, transform 0.38s ease;
@@ -736,7 +736,7 @@
 
         @media (max-width: 560px) {
             body { padding: 12px; }
-            .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); }
+            .overlay-grid { width: calc(100vw - 24px); grid-template-columns: minmax(0, 1fr); gap: 30px; }
             .player-widget { min-height: 178px; }
             .portrait { flex-basis: 160px; width: 160px; height: 160px; }
             .display-stack { min-height: 65px; margin-left: 0; top: -7px; }
