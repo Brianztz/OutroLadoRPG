@@ -2739,16 +2739,18 @@
         const baseWidth = Number(object.dataset.baseWidth);
         const baseHeight = Number(object.dataset.baseHeight);
         if (!baseWidth || !baseHeight) return;
-        object.style.width = `${baseWidth * clueBookZoom}px`;
-        object.style.height = `${baseHeight * clueBookZoom}px`;
+        object.style.width = `${baseWidth}px`;
+        object.style.height = `${baseHeight}px`;
     }
 
     function updateClueBook3DTransform() {
         const object = document.getElementById('clue-book-3d-object');
         const stage = document.getElementById('clue-book-stage');
         const closedOffset = clueBookOpen ? 0 : -25 * Math.cos(clueBookRotationY * Math.PI / 180);
+        const baseWidth = object ? (Number(object.dataset.baseWidth) || object.offsetWidth || 640) : 640;
+        const closedOffsetPixels = baseWidth * (closedOffset / 100) * clueBookZoom;
         if (stage) stage.style.perspective = `${1500 * Math.max(1, clueBookZoom)}px`;
-        if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) translateX(${closedOffset}%) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg)`;
+        if (object) object.style.transform = `translate(${clueBookPanX}px, ${clueBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${clueBookRotationX}deg) rotateY(${clueBookRotationY}deg) scale(${clueBookZoom})`;
         queueClueInspectionUpdate();
     }
 
