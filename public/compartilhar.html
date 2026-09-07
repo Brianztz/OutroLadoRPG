@@ -477,8 +477,8 @@
                 relayChunkProduced = false;
                 relayRecorder = new MediaRecorder(localStream, {
                     mimeType: requestedMimeType,
-                    videoBitsPerSecond: 12000000,
-                    audioBitsPerSecond: 160000
+                    videoBitsPerSecond: 8000000,
+                    audioBitsPerSecond: 128000
                 });
                 relayMimeType = relayRecorder.mimeType || requestedMimeType;
                 socket.emit('screen_share_relay_reset', { mimeType: relayMimeType });
@@ -498,7 +498,7 @@
                     stopRelayRecorder();
                     updateFallbackCapture();
                 };
-                relayRecorder.start(250);
+                relayRecorder.start(160);
                 relayWatchdogTimer = setTimeout(() => {
                     if (relayChunkProduced || !isBroadcasting) return;
                     relayDisabledForShare = true;
@@ -563,6 +563,18 @@
             }
         }
 
+        function keepRelayNearLiveEdge() {
+            if (!relaySourceBuffer || !relaySourceBuffer.buffered.length) return;
+            const liveEdge = relaySourceBuffer.buffered.end(relaySourceBuffer.buffered.length - 1);
+            const delay = Math.max(0, liveEdge - video.currentTime);
+            if (delay > 0.85) {
+                video.currentTime = Math.max(0, liveEdge - 0.16);
+                video.playbackRate = 1;
+                return;
+            }
+            video.playbackRate = delay > 0.32 ? 1.06 : 1;
+        }
+
         function reportRelayPlaybackFailure() {
             if (relayFailureReported || isBroadcasting || !broadcastAvailable) return;
             relayFailureReported = true;
@@ -605,12 +617,7 @@
                     relaySourceBuffer.addEventListener('error', reportRelayPlaybackFailure);
                     relaySourceBuffer.addEventListener('updateend', () => {
                         pumpRelayQueue();
-                        if (relaySourceBuffer && relaySourceBuffer.buffered.length) {
-                            const liveEdge = relaySourceBuffer.buffered.end(relaySourceBuffer.buffered.length - 1);
-                            const delay = liveEdge - video.currentTime;
-                            if (delay > 3) video.currentTime = Math.max(0, liveEdge - 0.45);
-                            video.playbackRate = delay > 1 ? 1.02 : 1;
-                        }
+                        keepRelayNearLiveEdge();
                     });
                     pumpRelayQueue();
                 } catch (error) {
@@ -706,8 +713,8 @@
             if (viewerSide) {
                 peer.ontrack = event => {
                     try {
-                        if ('playoutDelayHint' in event.receiver) event.receiver.playoutDelayHint = 0.15;
-                        if ('jitterBufferTarget' in event.receiver) event.receiver.jitterBufferTarget = 150;
+                        if ('playoutDelayHint' in event.receiver) event.receiver.playoutDelayHint = 0.06;
+                        if ('jitterBufferTarget' in event.receiver) event.receiver.jitterBufferTarget = 60;
                     } catch (error) {}
                     const stream = event.streams && event.streams[0];
                     if (stream) showVideo(stream, false);
@@ -1292,6 +1299,7 @@
                 relayPlayPending = true;
                 video.play().then(() => {
                     relayPlaybackStarted = true;
+                    keepRelayNearLiveEdge();
                     if (relayLoadTimer) clearTimeout(relayLoadTimer);
                     relayLoadTimer = null;
                     liveBadge.textContent = 'Ao vivo';
