@@ -1690,6 +1690,9 @@
             if (!baseWidth || !baseHeight) return;
             object.style.width = `${baseWidth}px`;
             object.style.height = `${baseHeight}px`;
+            object.style.width = `${baseWidth * masterBookZoom}px`;
+            object.style.height = 'auto';
+            object.style.aspectRatio = `${baseWidth} / ${baseHeight}`;
         }
 
         function updateMasterClueBook3DTransform() {
@@ -1700,6 +1703,7 @@
             const closedOffsetPixels=baseWidth*(closedOffset/100)*masterBookZoom;
             if(stage)stage.style.perspective=`${1500*Math.max(1,masterBookZoom)}px`;
             if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
+            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg)`;
         }
 
         function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;masterBookPanX=0;masterBookPanY=0;setMasterClueBookMoveMode(false);applyMasterClueBookZoomSize();updateMasterClueBook3DTransform();}
@@ -1737,10 +1741,16 @@
             const safe=Math.max(0.55,Math.min(5,Number(aspect)||1.5)),maxWidth=Math.max(150,stage.clientWidth*0.87),maxHeight=Math.max(140,stage.clientHeight*0.73);let width=maxWidth,height=width/safe;if(height>maxHeight){height=maxHeight;width=height*safe;}object.dataset.baseWidth=String(width);object.dataset.baseHeight=String(height);applyMasterClueBookZoomSize();
         }
 
+        function getMasterBookSpreadAspect(width,height){
+            const imageAspect=Math.max(0.28,Number(width)/Math.max(1,Number(height))||0.75);
+            return imageAspect>=1.18?imageAspect:imageAspect*2;
+        }
+
         function updateMasterBook3DFit(){
             const clue=masterCluesState.find(item=>item.id===currentMasterClueId);if(!clue||clue.type!=='book')return;const token=++masterBookFitToken;
             const pages=normalizeMasterCluePages(clue.pages),source=clue.coverImg||clue.img||((pages[0]||{}).img||'');if(!source)return fitMasterBook3DToAspect(1.5);
             prepareMasterClueCutout(source).then(result=>{if(token!==masterBookFitToken||currentMasterClueId!==clue.id)return;fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});
+            prepareMasterClueCutout(source).then(result=>{if(token!==masterBookFitToken||currentMasterClueId!==clue.id)return;fitMasterBook3DToAspect(getMasterBookSpreadAspect(result.width,result.height));});
         }
 
         function applyMasterBookThickness(clue){
@@ -1826,6 +1836,7 @@
                 cover.classList.remove('open');document.getElementById('master-clue-book').classList.remove('open');coverImage.style.display=source?'block':'none';coverBackImage.style.display=source?'block':'none';coverFallback.style.display=source?'none':'flex';
                 backCover.style.display=source?'block':'none';backCoverInsideImage.style.display=source?'block':'none';backCoverImage.style.display=source?'block':'none';backCoverInsideImage.classList.toggle('mirrored',mirrorBackCover);backCoverImage.classList.toggle('mirrored',mirrorBackCover);
                 if(source){const useFrontAsBackCover=()=>{backCoverInsideImage.src=coverImage.src;backCoverImage.src=coverImage.src;backCoverInsideImage.classList.add('mirrored');backCoverImage.classList.add('mirrored');setMasterBookBackCoverShape(coverImage.src);};coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};coverBackImage.onerror=()=>{coverBackImage.src=coverImage.src;coverBackImage.onerror=null;};backCoverInsideImage.onerror=useFrontAsBackCover;backCoverImage.onerror=useFrontAsBackCover;prepareMasterClueCutout(source).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;coverImage.src=result.src;coverBackImage.src=result.src;setMasterBookCoverShape(result.src,result.edgeColor);if(!masterBookOpen)fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});prepareMasterClueCutout(backSource).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backCoverInsideImage.src=result.src;backCoverImage.src=result.src;setMasterBookBackCoverShape(result.src,result.edgeColor);});}else{coverImage.removeAttribute('src');coverBackImage.removeAttribute('src');backCoverInsideImage.removeAttribute('src');backCoverImage.removeAttribute('src');backCover.style.display='none';setMasterBookCoverShape('');setMasterBookBackCoverShape('');}
+                if(source){const useFrontAsBackCover=()=>{backCoverInsideImage.src=coverImage.src;backCoverImage.src=coverImage.src;backCoverInsideImage.classList.add('mirrored');backCoverImage.classList.add('mirrored');setMasterBookBackCoverShape(coverImage.src);};coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};coverBackImage.onerror=()=>{coverBackImage.src=coverImage.src;coverBackImage.onerror=null;};backCoverInsideImage.onerror=useFrontAsBackCover;backCoverImage.onerror=useFrontAsBackCover;prepareMasterClueCutout(source).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;coverImage.src=result.src;coverBackImage.src=result.src;setMasterBookCoverShape(result.src,result.edgeColor);if(!masterBookOpen)fitMasterBook3DToAspect(getMasterBookSpreadAspect(result.width,result.height));});prepareMasterClueCutout(backSource).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backCoverInsideImage.src=result.src;backCoverImage.src=result.src;setMasterBookBackCoverShape(result.src,result.edgeColor);});}else{coverImage.removeAttribute('src');coverBackImage.removeAttribute('src');backCoverInsideImage.removeAttribute('src');backCoverImage.removeAttribute('src');backCover.style.display='none';setMasterBookCoverShape('');setMasterBookBackCoverShape('');}
                 renderMasterBookSpread();return;
             }
             stage.style.display='flex';controls.style.display='flex';bookViewer.style.display='none';initializeMasterClue3D();resetMasterClue3D();
