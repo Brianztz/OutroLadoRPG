@@ -379,42 +379,48 @@
             object-fit: contain;
             opacity: 1;
             filter: brightness(3.15) contrast(1.08) saturate(0.82);
+            transition: opacity 0.28s ease, filter 0.28s ease;
         }
 
         .portrait-roll-number {
             position: relative;
             z-index: 1;
             display: block;
-            max-width: 102px;
+            max-width: 126px;
             overflow: hidden;
             color: #fff;
             font-family: "ITC Krist", sans-serif;
-            font-size: 2.75rem;
+            font-size: 3.35rem;
             font-weight: 900;
             line-height: 1;
             text-align: center;
             text-overflow: ellipsis;
             white-space: nowrap;
+            -webkit-text-stroke: 1px rgba(0, 0, 0, 0.92);
             opacity: 0;
             transform: translateY(7px) scale(0.82);
             transition: opacity 0.24s ease, transform 0.3s cubic-bezier(0.2, 0.9, 0.28, 1.18);
             text-shadow:
-                0 2px 3px #000,
-                0 0 3px #000,
-                0 0 7px var(--roll-result-color),
-                0 0 13px var(--roll-result-color);
+                0 3px 4px #000,
+                0 0 5px #000,
+                0 0 9px var(--roll-result-color),
+                0 0 17px var(--roll-result-color);
         }
 
         .portrait-roll-label {
             position: absolute;
             z-index: 2;
-            top: calc(100% - 7px);
+            top: calc(100% - 13px);
             left: 50%;
             display: block;
-            min-width: 84px;
+            min-width: 96px;
+            padding: 4px 11px 3px;
+            border: 1px solid var(--roll-result-color);
+            border-radius: 999px;
+            background: rgba(2, 6, 10, 0.88);
             color: var(--roll-result-color);
             font-family: "ITC Krist", sans-serif;
-            font-size: 0.82rem;
+            font-size: 1.02rem;
             font-weight: 900;
             line-height: 1;
             letter-spacing: 0.8px;
@@ -424,7 +430,12 @@
             opacity: 0;
             transform: translate(-50%, 7px) scale(0.88);
             transition: opacity 0.24s ease 0.05s, transform 0.3s cubic-bezier(0.2, 0.9, 0.28, 1.18) 0.05s;
-            text-shadow: 0 2px 3px #000, 0 0 6px #000, 0 0 9px var(--roll-result-color);
+            text-shadow: 0 2px 3px #000, 0 0 7px #000, 0 0 11px var(--roll-result-color);
+        }
+
+        .portrait-roll-result.revealed .portrait-roll-die {
+            opacity: 0.68;
+            filter: brightness(2.4) contrast(1.16) saturate(0.68);
         }
 
         .portrait-roll-result.revealed .portrait-roll-number {
@@ -732,7 +743,8 @@
             .name { font-size: 2rem; }
             .combat-number { font-size: 1.75rem; }
             .portrait-roll-result { top: 7px; left: 50%; width: 144px; height: 144px; }
-            .portrait-roll-number { font-size: 2.4rem; }
+            .portrait-roll-number { max-width: 112px; font-size: 2.9rem; }
+            .portrait-roll-label { font-size: 0.92rem; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
             .overlay-clue-button { right: 138px; }
         }
