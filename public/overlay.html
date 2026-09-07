@@ -351,12 +351,12 @@
         .portrait-roll-result {
             --roll-result-color: #8bdcff;
             position: absolute;
-            z-index: 18;
-            top: 4px;
-            left: 50%;
+            z-index: 30;
+            top: 18px;
+            left: 55%;
             display: grid;
-            width: 92px;
-            height: 92px;
+            width: 132px;
+            height: 132px;
             place-items: center;
             opacity: 0;
             visibility: hidden;
@@ -385,11 +385,11 @@
             position: relative;
             z-index: 1;
             display: block;
-            max-width: 72px;
+            max-width: 102px;
             overflow: hidden;
             color: #fff;
             font-family: "ITC Krist", sans-serif;
-            font-size: 2.05rem;
+            font-size: 2.75rem;
             font-weight: 900;
             line-height: 1;
             text-align: center;
@@ -731,8 +731,8 @@
             .display-stack { min-height: 65px; margin-left: 0; top: -7px; }
             .name { font-size: 2rem; }
             .combat-number { font-size: 1.75rem; }
-            .portrait-roll-result { width: 82px; height: 82px; }
-            .portrait-roll-number { font-size: 1.85rem; }
+            .portrait-roll-result { top: 16px; left: 55%; width: 116px; height: 116px; }
+            .portrait-roll-number { font-size: 2.4rem; }
             .overlay-table-button { top: 8px; right: 8px; padding: 6px 9px; font-size: 0.58rem; }
             .overlay-clue-button { right: 138px; }
         }
@@ -1248,7 +1248,7 @@
             number.textContent = rollResultText(data.resultado);
             label.textContent = rollResultLabel(data);
             result.style.setProperty('--roll-result-color', rollResultColor(data));
-            die.src = `./assets/dado-rolagem.gif?t=${Date.now()}`;
+            die.src = `./assets/dado-rolagem-completo.gif?t=${Date.now()}`;
             result.classList.remove('show', 'revealed');
             void result.offsetWidth;
             result.classList.add('show');
