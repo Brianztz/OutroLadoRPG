@@ -39,6 +39,7 @@
         .clue-3d-face { position: absolute; inset: 0; overflow: visible; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; backface-visibility: hidden; }
         .clue-3d-front { transform: translateZ(var(--clue-face-depth,12px)); }
         .clue-3d-back { transform: rotateY(180deg) translateZ(var(--clue-face-depth,12px)); }
+        .clue-3d-back .clue-3d-image.mirrored { transform: scaleX(-1); }
         .clue-3d-image { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; pointer-events: none; filter: drop-shadow(0 14px 15px rgba(0,0,0,.58)); }
         .clue-3d-fallback { width: 100%; height: 100%; display: none; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
 
@@ -306,6 +307,7 @@
             object3D.classList.add('visible');
             const front = String(clue.img || '');
             const back = String(clue.backImg || front);
+            const mirrorBack = clue.hasCustomBack === false || !clue.backImg || back === front;
             setShape(object3D,'--clue-shape-image',front,'--clue-edge-color',clue.edgeColor || '#68686f');
             object3D.classList.toggle('has-image-shape',Boolean(front));
             applyObjectThickness(clue);
@@ -316,6 +318,7 @@
             };
             setImage('clue-3d-image','clue-3d-fallback',front,fitNatural);
             setImage('clue-3d-back-image','clue-3d-back-fallback',back);
+            document.getElementById('clue-3d-back-image').classList.toggle('mirrored',mirrorBack);
             fitBaseSize(object3D,Number(state.aspect) > 0 ? state.aspect : 1.5,.82,.76);
         }
 
