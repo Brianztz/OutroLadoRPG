@@ -131,6 +131,7 @@
         let inspectionTransitionSequence = 0;
 
         const root = document.getElementById('inspection-root');
+        const inspectionStage = document.querySelector('.inspection-stage');
         const object3D = document.getElementById('clue-3d-object');
         const book3D = document.getElementById('clue-book-3d-object');
         document.getElementById('table-code').textContent = tableCode;
@@ -353,6 +354,8 @@
             const element = isBook ? book3D : object3D;
             fitBaseSize(element,Number(state.aspect) > 0 ? state.aspect : (isBook ? 1.55 : 1.5),isBook ? .87 : .82,isBook ? .73 : .76);
             const zoom = clamp(state.zoom,.5,4,1);
+            // Mantém o plano 3D atrás da câmera mesmo com zoom alto e rotações inclinadas.
+            inspectionStage.style.perspective = `${1500 * Math.max(1,zoom)}px`;
             element.style.width = `${Number(element.dataset.baseWidth) * zoom}px`;
             element.style.height = `${Number(element.dataset.baseHeight) * zoom}px`;
             const rotationX = clamp(state.rotationX,-90,90,-8);
