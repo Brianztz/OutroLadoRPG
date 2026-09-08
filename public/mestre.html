@@ -254,7 +254,6 @@
         .clue-modal { position: fixed; inset: 0; z-index: 10000; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
         .clue-modal.open { display: flex; }
         .clue-dialog { width: min(880px,96vw); max-height: 92vh; overflow-y: auto; border: 1px solid rgba(210,232,248,0.48); border-radius: 13px; background: #07101d; box-shadow: 0 22px 70px rgba(0,0,0,0.88); }
-        .clue-dialog.viewer { width: min(900px,96vw); }
         .clue-dialog.viewer { width: min(1180px,96vw); }
         .clue-modal-header { padding: 15px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 4; border-bottom: 1px solid #293b4b; background: #07101d; }
         .clue-modal-title { margin: 0; color: var(--accent-yellow); font-size: 1em; text-transform: uppercase; }
@@ -287,7 +286,6 @@
         .clue-button-send { border: 1px solid var(--accent-green); background: var(--accent-green); color: #000; }
         .clue-button-danger { border: 1px solid var(--accent-red); background: rgba(229,57,53,0.18); color: #ff7772; }
         .master-clue-description { padding: 14px; border: 1px solid rgba(210,232,248,0.28); border-radius: 8px; background: rgba(2,7,14,0.88); color: var(--text-primary); font-size: 0.8em; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
-        .master-clue-3d-stage { position: relative; width: 100%; height: 360px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(36,72,102,0.24),rgba(1,5,11,0.96)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-3d-stage { position: relative; width: 100%; height: clamp(440px,62vh,650px); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(36,72,102,0.24),rgba(1,5,11,0.96)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-3d-stage.dragging { cursor: grabbing; }
         .master-clue-3d-stage.move-mode, .master-clue-book-stage.move-mode { cursor: move; }
@@ -303,17 +301,18 @@
         .master-clue-3d-back .master-clue-3d-image.mirrored { transform: scaleX(-1); }
         .master-clue-3d-image { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; pointer-events: none; filter: drop-shadow(0 14px 15px rgba(0,0,0,0.58)); }
         .master-clue-3d-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #16130c; color: var(--accent-yellow); font-size: 4em; }
-        .master-clue-3d-hint { position: absolute; left: 10px; right: 10px; bottom: 8px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; }
-        .master-clue-view-controls { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
+        .master-clue-3d-hint { position: absolute; z-index: 25; left: 10px; right: 10px; bottom: 70px; color: rgba(255,255,255,0.58); font-size: 0.64em; font-weight: 700; text-align: center; pointer-events: none; text-shadow: 1px 1px 2px #000; }
+        .master-clue-view-controls { position: absolute; z-index: 40; left: 50%; bottom: 14px; width: max-content; max-width: calc(100% - 24px); padding: 8px; display: flex; justify-content: center; gap: 7px; flex-wrap: nowrap; overflow-x: auto; border: 1px solid rgba(91,190,255,0.52); border-radius: 14px; background: linear-gradient(180deg,rgba(6,20,32,0.9),rgba(1,7,14,0.84)); box-shadow: 0 10px 28px rgba(0,0,0,0.55),inset 0 0 18px rgba(66,174,239,0.09); backdrop-filter: blur(14px); transform: translateX(-50%); scrollbar-width: none; }
+        .master-clue-view-controls::-webkit-scrollbar { display: none; }
+        .master-clue-book-3d-controls { top: 14px; bottom: auto; }
         .master-clue-view-controls .master-clue-move-toggle.active { border-color: var(--accent-yellow); background: var(--accent-yellow); color: #000; box-shadow: 0 0 12px rgba(210,232,248,0.32); }
-        .master-clue-view-controls button { min-width: 42px; padding: 8px 11px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
+        .master-clue-view-controls button { min-width: 44px; min-height: 40px; margin: 0; padding: 8px 12px; border: 1px solid rgba(100,202,255,0.62); border-radius: 9px; background: linear-gradient(180deg,rgba(19,52,73,0.94),rgba(5,20,33,0.96)); color: #dff6ff; box-shadow: inset 0 1px rgba(255,255,255,0.08),0 4px 12px rgba(0,0,0,0.3); font-weight: 900; white-space: nowrap; cursor: pointer; transition: transform 0.16s ease,border-color 0.16s ease,box-shadow 0.16s ease,background 0.16s ease; }
+        .master-clue-view-controls button:hover { border-color: #72d9ff; background: linear-gradient(180deg,rgba(27,75,104,0.98),rgba(7,29,47,0.98)); box-shadow: inset 0 1px rgba(255,255,255,0.12),0 0 14px rgba(69,190,255,0.28); transform: translateY(-1px); }
         .master-clue-book-viewer { display: none; }
-        .master-clue-book-stage { position: relative; height: 440px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(36,75,109,0.28),rgba(1,5,11,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-book-stage { position: relative; height: clamp(500px,68vh,700px); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(36,75,109,0.28),rgba(1,5,11,0.96)); perspective: 1500px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-book-stage.dragging { cursor: grabbing; }
         .master-clue-book-3d-object { position: relative; width: 640px; height: 360px; max-width: none; transform: translateX(-25%) rotateX(-8deg) rotateY(0deg); transform-style: preserve-3d; transition: transform 0.3s ease-out,width 0.3s ease,height 0.3s ease; }
         .master-clue-book-stage.dragging .master-clue-book-3d-object { transition: width 0.3s ease,height 0.3s ease; }
-        .master-clue-book { position: absolute; inset: 3.4% 2.8%; z-index: 6; width: auto; height: auto; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(calc(var(--master-book-cover-half,8px) + 2px)); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
         .master-clue-book { position: absolute; inset: 1.4% 1.2%; z-index: 6; width: auto; height: auto; display: flex; opacity: 0; filter: drop-shadow(0 20px 20px rgba(0,0,0,0.58)); transform: translateZ(calc(var(--master-book-cover-half,8px) + 2px)); transform-style: preserve-3d; transition: opacity 0.35s 0.22s; }
         .master-clue-book.open { opacity: 1; }
         .master-clue-book::before { content: ''; position: absolute; left: 50%; top: -2%; bottom: -2%; width: 12px; z-index: 8; transform: translateX(-50%); border-radius: 50%; background: linear-gradient(90deg,rgba(60,39,20,0.8),rgba(20,12,8,0.9),rgba(93,62,31,0.74)); box-shadow: 0 0 12px rgba(0,0,0,0.8); pointer-events: none; }
@@ -321,7 +320,6 @@
         .master-clue-book-cover.open { z-index: 4; transform: rotateY(-180deg) translateZ(var(--master-book-front-center,7px)); opacity: 1; pointer-events: none; }
         .master-clue-book-cover-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
         .master-clue-book-cover-depth-layer { position: absolute; inset: 0; background: var(--master-book-edge-color,#4a2d18); transform: translateZ(var(--master-book-depth)); -webkit-mask-image: var(--master-book-cover-shape); mask-image: var(--master-book-cover-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
-        .master-clue-book-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: fill; image-rendering: auto; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.65)); backface-visibility: hidden; }
         .master-clue-book-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; image-rendering: auto; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.65)); backface-visibility: hidden; }
         .master-clue-book-cover-face.front { transform: translateZ(var(--master-book-cover-half,8px)); }
         .master-clue-book-cover-face.back { transform: rotateY(180deg) translateZ(var(--master-book-cover-half,8px)) scaleX(-1); }
@@ -329,7 +327,6 @@
         .master-clue-book-back-cover { position: absolute; left: 50%; top: 0; z-index: 2; width: 50%; height: 100%; transform: translateZ(var(--master-book-rear-center,-9px)); transform-style: preserve-3d; }
         .master-clue-book-back-cover-depth { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
         .master-clue-book-back-cover-depth-layer { position: absolute; inset: 0; background: var(--master-book-back-edge-color,#4a2d18); transform: translateZ(var(--master-book-back-depth)); -webkit-mask-image: var(--master-book-back-shape); mask-image: var(--master-book-back-shape); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
-        .master-clue-book-back-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: fill; image-rendering: auto; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.58)); backface-visibility: hidden; }
         .master-clue-book-back-cover img { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; image-rendering: auto; background: transparent; filter: drop-shadow(8px 12px 16px rgba(0,0,0,0.58)); backface-visibility: hidden; }
         .master-clue-book-back-cover-face.front { transform: translateZ(var(--master-book-cover-half,8px)); }
         .master-clue-book-back-cover-face.back { transform: rotateY(180deg) translateZ(var(--master-book-cover-half,8px)); }
@@ -339,7 +336,6 @@
         .master-clue-book-page.has-image-shape, .master-clue-book-flip-face.has-image-shape { -webkit-mask-image: none; mask-image: none; }
         .master-clue-book-page.left { border-radius: 10px 2px 2px 10px; box-shadow: inset -18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(2deg) translateZ(2px); transform-origin: right center; }
         .master-clue-book-page.right { border-radius: 2px 10px 10px 2px; box-shadow: inset 18px 0 24px rgba(49,31,12,0.22),inset 0 0 0 1px rgba(76,51,26,0.25); transform: rotateY(-2deg) translateZ(2px); transform-origin: left center; }
-        .master-clue-book-page img, .master-clue-book-flip-face img { width: 100%; height: 100%; display: block; object-fit: contain; image-rendering: auto; background: transparent; }
         .master-clue-book-page img, .master-clue-book-flip-face img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; image-rendering: auto; background: transparent; }
         .master-clue-book-page-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; color: rgba(49,35,20,0.48); font-family: Georgia,serif; font-size: 1.1em; font-style: italic; text-align: center; }
         .master-clue-book-page-index { position: absolute; left: 10px; right: 10px; bottom: 7px; color: rgba(44,31,18,0.7); font-family: Georgia,serif; font-size: 0.7em; font-weight: bold; text-align: center; }
@@ -348,10 +344,12 @@
         .master-clue-book-flip-face.back { transform: rotateY(180deg); }
         .master-clue-book-flip.next { left: 50%; display: block; transform-origin: left center; animation: master-clue-book-next 0.76s cubic-bezier(0.58,0.02,0.28,1) forwards; }
         .master-clue-book-flip.previous { left: 0; display: block; transform-origin: right center; animation: master-clue-book-previous 0.76s cubic-bezier(0.58,0.02,0.28,1) forwards; }
-        .master-clue-book-controls { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 9px; }
-        .master-clue-book-controls button { min-width: 105px; padding: 8px 10px; border: 1px solid var(--accent-blue); border-radius: 6px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-weight: 900; cursor: pointer; }
+        .master-clue-book-controls { position: absolute; z-index: 40; left: 50%; bottom: 14px; width: max-content; max-width: calc(100% - 24px); margin: 0; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; overflow-x: auto; border: 1px solid rgba(91,190,255,0.52); border-radius: 14px; background: linear-gradient(180deg,rgba(6,20,32,0.9),rgba(1,7,14,0.84)); box-shadow: 0 10px 28px rgba(0,0,0,0.55),inset 0 0 18px rgba(66,174,239,0.09); backdrop-filter: blur(14px); transform: translateX(-50%); scrollbar-width: none; }
+        .master-clue-book-controls::-webkit-scrollbar { display: none; }
+        .master-clue-book-controls button { min-width: 112px; min-height: 40px; margin: 0; padding: 8px 12px; border: 1px solid rgba(100,202,255,0.62); border-radius: 9px; background: linear-gradient(180deg,rgba(19,52,73,0.94),rgba(5,20,33,0.96)); color: #dff6ff; box-shadow: inset 0 1px rgba(255,255,255,0.08),0 4px 12px rgba(0,0,0,0.3); font-weight: 900; white-space: nowrap; cursor: pointer; transition: transform 0.16s ease,border-color 0.16s ease,box-shadow 0.16s ease,background 0.16s ease; }
+        .master-clue-book-controls button:hover { border-color: #72d9ff; background: linear-gradient(180deg,rgba(27,75,104,0.98),rgba(7,29,47,0.98)); box-shadow: inset 0 1px rgba(255,255,255,0.12),0 0 14px rgba(69,190,255,0.28); transform: translateY(-1px); }
         .master-clue-book-controls button:disabled { opacity: 0.35; cursor: not-allowed; }
-        .master-clue-book-indicator { min-width: 100px; color: var(--text-secondary); font-size: 0.7em; font-weight: 900; text-align: center; }
+        .master-clue-book-indicator { min-width: 104px; padding: 0 8px; color: #dff6ff; font-size: 0.7em; font-weight: 900; text-align: center; white-space: nowrap; }
         @keyframes master-clue-book-next { from { transform: rotateY(0deg); } to { transform: rotateY(-180deg); } }
         @keyframes master-clue-book-previous { from { transform: rotateY(0deg); } to { transform: rotateY(180deg); } }
         .catalog-recipient-modal { position: fixed; inset: 0; z-index: 10500; padding: 18px; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.88); }
@@ -402,7 +400,6 @@
         @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes roll-entry-in { from { opacity: 0; transform: translateX(12px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
-        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 480px; } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 285px; } .master-clue-book-stage { height: 300px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
         @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 480px; } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
     </style>
 </head>
@@ -418,6 +415,7 @@
             <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
         </div>
     </header>
+
     <nav class="master-tabs" aria-label="Seções do Escudo do Mestre">
         <button class="master-tab-button active" type="button" data-master-tab="combat" onclick="switchMasterTab('combat')">⚔️ COMBATE</button>
         <button class="master-tab-button" type="button" data-master-tab="monsters" onclick="switchMasterTab('monsters')">👹 MONSTROS</button>
@@ -425,6 +423,7 @@
         <button class="master-tab-button" type="button" data-master-tab="clues" onclick="switchMasterTab('clues')">🔎 PISTAS</button>
         <button class="master-tab-button" type="button" data-master-tab="lumina" onclick="switchMasterTab('lumina')">🌐 LUMINA</button>
     </nav>
+
     <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
         <section class="players-section">
             <div class="section-heading"><span>Jogadores conectados automaticamente</span><span id="players-count" class="players-count">0 ONLINE</span></div>
@@ -456,6 +455,7 @@
             </section>
         </div>
     </main>
+
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
         <div class="monsters-toolbar">
             <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
@@ -463,6 +463,7 @@
         </div>
         <div id="monsters-grid" class="monsters-grid"></div>
     </section>
+
     <section id="master-tab-catalog" class="catalog-workspace master-tab-panel">
         <div class="catalog-toolbar">
             <input id="catalog-search" class="catalog-search" type="search" placeholder="Pesquisar arma ou item..." oninput="renderMasterCatalog()">
@@ -475,6 +476,7 @@
         </div>
         <div id="catalog-grid" class="catalog-grid"></div>
     </section>
+
     <section id="master-tab-clues" class="clues-workspace master-tab-panel">
         <div class="clues-toolbar">
             <div><h2 class="clues-toolbar-title">Pistas do Mestre</h2><div class="clues-toolbar-info"><span id="master-clues-count" class="clues-count">0 PISTAS</span> cadastradas</div></div>
@@ -482,6 +484,7 @@
         </div>
         <div id="master-clues-grid" class="master-clues-grid"></div>
     </section>
+
     <section id="master-tab-lumina" class="lumina-workspace master-tab-panel">
         <div class="lumina-master-panel">
             <h2 class="lumina-master-brand">L<span>u</span>m<span>i</span>n<span>a</span></h2>
@@ -497,6 +500,7 @@
             <button class="lumina-preview-button" type="button" onclick="openLuminaPreview()">ABRIR LUMINA DESTA MESA ↗</button>
         </div>
     </section>
+
     <div id="monster-modal" class="monster-modal" onclick="if(event.target===this) closeMonsterPopup()">
         <div class="monster-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="monster-modal-title">
             <div class="monster-modal-header"><h2 id="monster-modal-title" class="monster-modal-title">Novo monstro</h2><button class="monster-modal-close" type="button" onclick="closeMonsterPopup()">×</button></div>
@@ -510,6 +514,7 @@
                         <div class="monster-form-field full"><label for="monster-form-vulnerabilities">Vulnerabilidades</label><textarea id="monster-form-vulnerabilities" class="monster-textarea" placeholder="Fraquezas e vulnerabilidades..."></textarea></div>
                     </div>
                 </section>
+
                 <section class="monster-form-section">
                     <h3 class="monster-form-section-title">Atributos</h3>
                     <div class="monster-form-grid five">
@@ -520,6 +525,7 @@
                         <div class="monster-form-field"><label for="monster-form-vig">VIG</label><input id="monster-form-vig" class="monster-input" type="number" value="0"></div>
                     </div>
                 </section>
+
                 <section class="monster-form-section">
                     <h3 class="monster-form-section-title">Perícias</h3>
                     <div class="monster-form-grid five">
@@ -530,6 +536,7 @@
                         <div class="monster-form-field"><label for="monster-form-iniciativa">Iniciativa</label><input id="monster-form-iniciativa" class="monster-input" type="number" value="0"></div>
                     </div>
                 </section>
+
                 <section class="monster-form-section">
                     <h3 class="monster-form-section-title">Presença Perturbadora</h3>
                     <div class="monster-form-grid">
@@ -537,6 +544,7 @@
                         <div class="monster-form-field"><label for="monster-form-damage">Dano</label><input id="monster-form-damage" class="monster-input" type="text" placeholder="Ex.: 2d6 mental"></div>
                     </div>
                 </section>
+
                 <section class="monster-form-section">
                     <div class="monster-actions-heading"><h3 class="monster-form-section-title">Ações</h3><button class="monster-add-action" type="button" onclick="addMonsterAction()">+ CRIAR AÇÃO</button></div>
                     <div id="monster-action-editors" class="monster-action-editors"></div>
@@ -545,6 +553,7 @@
             <div class="monster-modal-footer"><button class="monster-cancel-button" type="button" onclick="closeMonsterPopup()">CANCELAR</button><button class="monster-save-button" type="button" onclick="saveMonsterFromPopup()">SALVAR MONSTRO</button></div>
         </div>
     </div>
+
     <div id="master-clue-form-modal" class="clue-modal" onclick="if(event.target===this) closeMasterClueForm()">
         <div class="clue-dialog" role="dialog" aria-modal="true" aria-labelledby="master-clue-form-title">
             <div class="clue-modal-header"><h2 id="master-clue-form-title" class="clue-modal-title">Nova pista</h2><button class="clue-modal-close" type="button" onclick="closeMasterClueForm()">×</button></div>
@@ -587,6 +596,7 @@
             <div class="clue-modal-footer"><button class="clue-button-neutral" type="button" onclick="closeMasterClueForm()">CANCELAR</button><button id="master-clue-save" class="clue-button-primary" type="button" onclick="saveMasterClueForm()">ADICIONAR PISTA</button></div>
         </div>
     </div>
+
     <div id="master-clue-info-modal" class="clue-modal" onclick="if(event.target===this) closeMasterClueInfo()">
         <div class="clue-dialog viewer" role="dialog" aria-modal="true" aria-labelledby="master-clue-info-title">
             <div class="clue-modal-header"><h2 id="master-clue-info-title" class="clue-modal-title">Pista</h2><button class="clue-modal-close" type="button" onclick="closeMasterClueInfo()">×</button></div>
@@ -602,20 +612,21 @@
                             </div>
                         </div>
                         <div class="master-clue-3d-hint">Arraste para girar · Ative MOVER para deslocar · Roda para zoom até 4×</div>
+                        <div class="master-clue-view-controls master-clue-book-3d-controls" onpointerdown="event.stopPropagation()"><button type="button" title="Girar para a esquerda" aria-label="Girar para a esquerda" onclick="rotateMasterClueBook3D(-45)">↶</button><button type="button" title="Diminuir zoom" aria-label="Diminuir zoom" onclick="zoomMasterClueBook3D(-0.25)">−</button><button id="master-clue-book-move-toggle" type="button" class="master-clue-move-toggle" onclick="toggleMasterClueBookMoveMode()">✥ MOVER</button><button type="button" onclick="resetMasterClueBook3D()">CENTRALIZAR</button><button type="button" title="Aumentar zoom" aria-label="Aumentar zoom" onclick="zoomMasterClueBook3D(0.25)">+</button><button type="button" title="Girar para a direita" aria-label="Girar para a direita" onclick="rotateMasterClueBook3D(45)">↷</button></div>
+                        <div class="master-clue-book-controls" onpointerdown="event.stopPropagation()"><button id="master-clue-book-toggle" type="button" onclick="toggleMasterClueBook()">ABRIR LIVRO</button><button id="master-clue-book-previous" type="button" onclick="turnMasterClueBookPage(-1)">← ANTERIOR</button><span id="master-clue-book-indicator" class="master-clue-book-indicator">CAPA</span><button id="master-clue-book-next" type="button" onclick="turnMasterClueBookPage(1)">PRÓXIMA →</button></div>
                     </div>
-                    <div class="master-clue-view-controls master-clue-book-3d-controls"><button type="button" onclick="rotateMasterClueBook3D(-45)">↶</button><button type="button" onclick="zoomMasterClueBook3D(-0.25)">−</button><button id="master-clue-book-move-toggle" type="button" class="master-clue-move-toggle" onclick="toggleMasterClueBookMoveMode()">✥ MOVER</button><button type="button" onclick="resetMasterClueBook3D()">CENTRALIZAR</button><button type="button" onclick="zoomMasterClueBook3D(0.25)">+</button><button type="button" onclick="rotateMasterClueBook3D(45)">↷</button></div>
-                    <div class="master-clue-book-controls"><button id="master-clue-book-toggle" type="button" onclick="toggleMasterClueBook()">ABRIR LIVRO</button><button id="master-clue-book-previous" type="button" onclick="turnMasterClueBookPage(-1)">← ANTERIOR</button><span id="master-clue-book-indicator" class="master-clue-book-indicator">CAPA</span><button id="master-clue-book-next" type="button" onclick="turnMasterClueBookPage(1)">PRÓXIMA →</button></div>
                 </div>
                 <div id="master-clue-3d-stage" class="master-clue-3d-stage">
                     <div id="master-clue-3d-object" class="master-clue-3d-object"><div id="master-clue-3d-depth" class="master-clue-3d-depth"></div><div class="master-clue-3d-face master-clue-3d-front"><img id="master-clue-3d-front-image" class="master-clue-3d-image" src="" alt="Frente"><div id="master-clue-3d-front-fallback" class="master-clue-3d-fallback">🔎</div></div><div class="master-clue-3d-face master-clue-3d-back"><img id="master-clue-3d-back-image" class="master-clue-3d-image" src="" alt="Verso"><div id="master-clue-3d-back-fallback" class="master-clue-3d-fallback">🔎</div></div></div>
                     <div class="master-clue-3d-hint">Arraste para girar · Ative MOVER para deslocar · Roda para zoom até 4×</div>
+                    <div id="master-clue-3d-controls" class="master-clue-view-controls" onpointerdown="event.stopPropagation()"><button type="button" title="Girar para a esquerda" aria-label="Girar para a esquerda" onclick="rotateMasterClue3D(-45)">↶</button><button type="button" title="Diminuir zoom" aria-label="Diminuir zoom" onclick="zoomMasterClue3D(-0.25)">−</button><button id="master-clue-move-toggle" type="button" class="master-clue-move-toggle" onclick="toggleMasterClue3DMoveMode()">✥ MOVER</button><button type="button" onclick="resetMasterClue3D()">CENTRALIZAR</button><button type="button" title="Aumentar zoom" aria-label="Aumentar zoom" onclick="zoomMasterClue3D(0.25)">+</button><button type="button" title="Girar para a direita" aria-label="Girar para a direita" onclick="rotateMasterClue3D(45)">↷</button></div>
                 </div>
-                <div id="master-clue-3d-controls" class="master-clue-view-controls"><button type="button" onclick="rotateMasterClue3D(-45)">↶</button><button type="button" onclick="zoomMasterClue3D(-0.25)">−</button><button id="master-clue-move-toggle" type="button" class="master-clue-move-toggle" onclick="toggleMasterClue3DMoveMode()">✥ MOVER</button><button type="button" onclick="resetMasterClue3D()">CENTRALIZAR</button><button type="button" onclick="zoomMasterClue3D(0.25)">+</button><button type="button" onclick="rotateMasterClue3D(45)">↷</button></div>
                 <div id="master-clue-info-description" class="master-clue-description"></div>
             </div>
             <div class="clue-modal-footer"><button class="clue-button-danger" type="button" onclick="removeCurrentMasterClue()">REMOVER</button><button class="clue-button-neutral" type="button" onclick="editCurrentMasterClue()">EDITAR</button><button class="clue-button-send" type="button" onclick="sendCurrentMasterClue()">ENVIAR PARA JOGADOR</button><button class="clue-button-neutral" type="button" onclick="closeMasterClueInfo()">FECHAR</button></div>
         </div>
     </div>
+
     <div id="master-dice-popup" class="master-dice-popup" onclick="if(event.target===this) closeMasterDicePopup()">
         <div class="master-dice-box">
             <img id="master-dice-animation" class="master-dice-animation" alt="Dado animado">
@@ -626,6 +637,7 @@
             </div>
         </div>
     </div>
+
     <div id="catalog-creator-modal" class="catalog-creator-modal" onclick="if(event.target===this) closeCatalogCreator()">
         <div class="catalog-creator-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-creator-title">
             <div class="catalog-creator-header">
@@ -644,6 +656,7 @@
                         </select>
                     </div>
                 </section>
+
                 <section class="catalog-creator-section">
                     <h3 class="catalog-creator-section-title">Informações básicas</h3>
                     <div class="catalog-creator-grid">
@@ -652,6 +665,7 @@
                         <div class="catalog-creator-field full"><label for="catalog-creator-image">Imagem</label><input id="catalog-creator-image" class="monster-input" type="text" placeholder="Cole o link da imagem (opcional)"></div>
                     </div>
                 </section>
+
                 <section id="catalog-creator-item-fields" class="catalog-creator-section">
                     <h3 class="catalog-creator-section-title">Dados do item</h3>
                     <div class="catalog-creator-grid">
@@ -659,6 +673,7 @@
                         <div class="catalog-creator-field"><label for="catalog-creator-item-ammo">Tipo de munição</label><select id="catalog-creator-item-ammo" class="monster-input"><option value="Nenhuma">Não é munição</option><option value="Curta">Curta</option><option value="Longa">Longa</option><option value="Pesada">Pesada</option><option value="Especial">Especial</option></select></div>
                     </div>
                 </section>
+
                 <section id="catalog-creator-weapon-fields" class="catalog-creator-section" style="display:none">
                     <h3 class="catalog-creator-section-title">Dados da arma</h3>
                     <div class="catalog-creator-grid">
@@ -669,6 +684,7 @@
                         <div class="catalog-creator-field full"><label for="catalog-creator-skill">Perícia</label><input id="catalog-creator-skill" class="monster-input" type="text" value="Luta" placeholder="Ex.: Luta ou Pontaria"></div>
                     </div>
                 </section>
+
                 <section id="catalog-creator-ranged-fields" class="catalog-creator-section" style="display:none">
                     <h3 class="catalog-creator-section-title">Munição da arma</h3>
                     <div class="catalog-creator-grid">
@@ -683,6 +699,7 @@
             </div>
         </div>
     </div>
+
     <div id="catalog-recipient-modal" class="catalog-recipient-modal" onclick="if(event.target===this) closeCatalogRecipientPopup()">
         <div class="catalog-recipient-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-recipient-title">
             <div class="catalog-recipient-header">
@@ -699,10 +716,12 @@
             </div>
         </div>
     </div>
+
     <div id="modal-ficha" onclick="if(event.target===this) fecharFicha()">
         <div class="modal-toolbar"><button class="btn-close-modal" onclick="fecharFicha()">✕ FECHAR FICHA</button></div>
         <iframe id="iframe-ficha" src="" title="Ficha completa do jogador"></iframe>
     </div>
+
     <script src="catalog-data.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -766,19 +785,24 @@
         let masterBookFitToken = 0;
         const masterClueCutoutCache = new Map();
         const monsterD20Table = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
+
         function normalizeTableCode(value) {
             const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
             return normalized || 'PADRAO';
         }
+
         function updateMasterTableUI() {
             document.getElementById('master-table-code').textContent = masterTableCode;
         }
+
         function luminaStorageKey(table) {
             return `mestre_lumina_enabled_${normalizeTableCode(table)}`;
         }
+
         function loadLuminaAccess(table) {
             return localStorage.getItem(luminaStorageKey(table)) === 'true';
         }
+
         function renderLuminaControl() {
             const state = document.getElementById('lumina-master-state');
             const description = document.getElementById('lumina-master-description');
@@ -791,25 +815,30 @@
             button.classList.toggle('enabled',luminaEnabled);
             button.setAttribute('aria-pressed',String(luminaEnabled));
         }
+
         function publishLuminaAccess() {
             localStorage.setItem(luminaStorageKey(masterTableCode),String(luminaEnabled));
             renderLuminaControl();
             if (socket && socket.connected) socket.emit('lumina_master_set',{ mesa: masterTableCode,enabled: luminaEnabled });
         }
+
         function toggleLuminaAccess() {
             luminaEnabled = !luminaEnabled;
             publishLuminaAccess();
         }
+
         function openLuminaPreview() {
             const url = new URL('./lumina/index.html',window.location.href);
             url.searchParams.set('mesa',masterTableCode);
             window.open(url.href,'_blank','noopener');
         }
+
         function chooseMasterTable() {
             const requestedTable = prompt('Digite o codigo da mesa:', masterTableCode);
             if (requestedTable === null) return;
             const nextTable = normalizeTableCode(requestedTable);
             if (nextTable === masterTableCode) return;
+
             masterTableCode = nextTable;
             luminaEnabled = loadLuminaAccess(masterTableCode);
             localStorage.setItem('master_table_code', masterTableCode);
@@ -822,24 +851,29 @@
             renderPlayerRollResults();
             initiativeState = loadInitiativeState();
             renderInitiative();
+
             if (socket && socket.connected) {
                 socket.emit('master_ready', { mesa: masterTableCode });
                 socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
                 socket.emit('lumina_master_set',{ mesa: masterTableCode,enabled: luminaEnabled });
             }
         }
+
         function openScreenSharePage() {
             const url = new URL('./compartilhar.html',window.location.href);
             url.searchParams.set('mesa',masterTableCode);
             window.open(url.href,'_blank','noopener');
         }
+
         function escapeHtml(value) {
             return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
+
         function safeNumber(value, fallback = 0) {
             const number = Number(value);
             return Number.isFinite(number) ? number : fallback;
         }
+
         function playerRollColor(action) {
             const normalized = String(action || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
             if (/FALHA|FRACASSO|CRITICO/.test(normalized)) return 'var(--accent-red)';
@@ -847,10 +881,12 @@
             if (/NORMAL|SUCESSO/.test(normalized)) return 'var(--accent-green)';
             return 'var(--accent-blue)';
         }
+
         function renderPlayerRollResults() {
             const list = document.getElementById('player-rolls-list');
             if (!list) return;
             list.replaceChildren();
+
             if (!playerRollHistory.length) {
                 const empty = document.createElement('div');
                 empty.className = 'player-rolls-empty';
@@ -858,6 +894,7 @@
                 list.appendChild(empty);
                 return;
             }
+
             playerRollHistory.forEach(roll => {
                 const entry = document.createElement('article');
                 const info = document.createElement('div');
@@ -865,6 +902,7 @@
                 const action = document.createElement('div');
                 const time = document.createElement('div');
                 const value = document.createElement('div');
+
                 entry.className = 'player-roll-entry';
                 entry.style.setProperty('--roll-color', roll.color);
                 info.className = 'player-roll-info';
@@ -877,11 +915,13 @@
                 time.textContent = roll.time;
                 value.textContent = roll.result;
                 entry.setAttribute('aria-label', `${roll.player}: ${roll.action}. Resultado ${roll.result}`);
+
                 info.append(name, action, time);
                 entry.append(info, value);
                 list.appendChild(entry);
             });
         }
+
         function addPlayerRollResult(rawData) {
             if (!rawData || normalizeTableCode(rawData.mesa) !== masterTableCode) return;
             const code = String(rawData.codigo || '').trim().toUpperCase();
@@ -889,6 +929,7 @@
             const playerName = String(rawData.jogador || (player && player.nome) || 'Jogador').trim().slice(0, 120) || 'Jogador';
             const action = String(rawData.acao || 'Rolagem').trim().slice(0, 500) || 'Rolagem';
             const result = String(rawData.resultado ?? '—').trim().slice(0, 80) || '—';
+
             playerRollHistory.unshift({
                 id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
                 player: playerName,
@@ -900,10 +941,12 @@
             playerRollHistory = playerRollHistory.slice(0, 20);
             renderPlayerRollResults();
         }
+
         function clearPlayerRollResults() {
             playerRollHistory = [];
             renderPlayerRollResults();
         }
+
         function switchMasterTab(tab) {
             const selectedTab = ['monsters','catalog','clues','lumina'].includes(tab) ? tab : 'combat';
             document.querySelectorAll('.master-tab-button').forEach(button => button.classList.toggle('active', button.dataset.masterTab === selectedTab));
@@ -913,9 +956,11 @@
             if (selectedTab === 'clues') renderMasterClues();
             if (selectedTab === 'lumina') renderLuminaControl();
         }
+
         function normalizeCatalogText(value) {
             return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         }
+
         function normalizeCustomCatalogEntry(entry, index = 0) {
             const source = entry && typeof entry === 'object' ? entry : {};
             const catalogType = source.catalogType === 'Disparo' ? 'Disparo' : source.catalogType === 'Corpo a corpo' ? 'Corpo a corpo' : (source.ammo && source.ammo !== 'Nenhuma' ? 'Munição' : 'Item');
@@ -939,6 +984,7 @@
                 capacity: catalogType === 'Disparo' ? Math.max(0, safeNumber(source.capacity, 0)) : 0
             };
         }
+
         function loadCustomCatalogEntries() {
             try {
                 const saved = JSON.parse(localStorage.getItem('mestre_custom_catalog_state'));
@@ -947,9 +993,11 @@
                 return [];
             }
         }
+
         function saveCustomCatalogEntries() {
             localStorage.setItem('mestre_custom_catalog_state', JSON.stringify(customCatalogEntries));
         }
+
         function openCatalogCreator() {
             switchMasterTab('catalog');
             document.getElementById('catalog-creator-type').value = 'item';
@@ -970,10 +1018,12 @@
             document.body.style.overflow = 'hidden';
             setTimeout(() => document.getElementById('catalog-creator-name').focus(), 0);
         }
+
         function closeCatalogCreator() {
             document.getElementById('catalog-creator-modal').classList.remove('open');
             document.body.style.overflow = '';
         }
+
         function updateCatalogCreatorFields() {
             const type = document.getElementById('catalog-creator-type').value;
             const isWeapon = type === 'melee' || type === 'ranged';
@@ -982,11 +1032,13 @@
             document.getElementById('catalog-creator-ranged-fields').style.display = type === 'ranged' ? 'block' : 'none';
             document.getElementById('catalog-creator-skill').value = type === 'ranged' ? 'Pontaria' : 'Luta';
         }
+
         function saveCatalogCreatorEntry() {
             const type = document.getElementById('catalog-creator-type').value;
             const nameInput = document.getElementById('catalog-creator-name');
             const name = nameInput.value.trim();
             if (!name) return nameInput.focus();
+
             const isRanged = type === 'ranged';
             const isWeapon = type === 'melee' || isRanged;
             const itemAmmo = document.getElementById('catalog-creator-item-ammo').value;
@@ -1005,16 +1057,19 @@
                 ammo: isRanged ? document.getElementById('catalog-creator-weapon-ammo').value : itemAmmo,
                 capacity: isRanged ? document.getElementById('catalog-creator-capacity').value : 0
             });
+
             customCatalogEntries.push(entry);
             saveCustomCatalogEntries();
             closeCatalogCreator();
             renderMasterCatalog();
         }
+
         function setMasterCatalogFilter(filter) {
             masterCatalogFilter = ['weapons','items'].includes(filter) ? filter : 'all';
             document.querySelectorAll('.catalog-filter').forEach(button => button.classList.toggle('active', button.dataset.catalogFilter === masterCatalogFilter));
             renderMasterCatalog();
         }
+
         function renderMasterCatalog() {
             const grid = document.getElementById('catalog-grid');
             if (!grid) return;
@@ -1037,6 +1092,7 @@
                 grid.innerHTML = '<div class="catalog-empty">Nenhuma arma ou item encontrado.</div>';
                 return;
             }
+
             filtered.forEach(item => {
                 const isWeapon = item.catalogKind === 'weapons';
                 const imageHtml = item.img ? `<img class="catalog-image" src="${escapeHtml(item.img)}" alt="">` : `<div class="catalog-image-fallback">${isWeapon ? '⚔️' : '🎒'}</div>`;
@@ -1065,6 +1121,7 @@
                 grid.appendChild(card);
             });
         }
+
         function openCatalogRecipientPopup(item) {
             if (!item) return;
             pendingCatalogItem = item;
@@ -1074,6 +1131,7 @@
             renderCatalogRecipients();
             document.getElementById('catalog-recipient-modal').classList.add('open');
         }
+
         function openClueRecipientPopup(clue) {
             if (!clue) return;
             pendingCatalogItem = null;
@@ -1083,23 +1141,27 @@
             renderCatalogRecipients();
             document.getElementById('catalog-recipient-modal').classList.add('open');
         }
+
         function closeCatalogRecipientPopup() {
             document.getElementById('catalog-recipient-modal').classList.remove('open');
             pendingCatalogItem = null;
             pendingClueToSend = null;
         }
+
         function renderCatalogRecipients() {
             const list = document.getElementById('catalog-recipient-list');
             const selectAllRow = document.getElementById('catalog-recipient-all-row');
             const players = Array.from(connectedPlayers.entries()).filter(([, player]) => player && player.fullData);
             list.innerHTML = '';
             document.getElementById('catalog-recipient-all').checked = false;
+
             if (!players.length) {
                 selectAllRow.style.display = 'none';
                 list.innerHTML = '<div class="catalog-recipient-empty"><strong>Nenhum jogador disponível.</strong><br>Abra uma ficha de jogador e aguarde ela aparecer como conectada.</div>';
                 updateCatalogRecipientButton();
                 return;
             }
+
             selectAllRow.style.display = 'flex';
             players.forEach(([code, player]) => {
                 const option = document.createElement('label');
@@ -1112,10 +1174,12 @@
             });
             updateCatalogRecipientButton();
         }
+
         function toggleAllCatalogRecipients(checked) {
             document.querySelectorAll('.catalog-recipient-checkbox').forEach(input => { input.checked = checked; });
             updateCatalogRecipientButton();
         }
+
         function updateCatalogRecipientButton() {
             const checkboxes = Array.from(document.querySelectorAll('.catalog-recipient-checkbox'));
             const selectedCount = checkboxes.filter(input => input.checked).length;
@@ -1126,6 +1190,7 @@
             sendButton.disabled = selectedCount === 0;
             sendButton.textContent = selectedCount > 0 ? `ENVIAR PARA ${selectedCount}` : 'ENVIAR';
         }
+
         function confirmCatalogSend() {
             if (!pendingCatalogItem && !pendingClueToSend) return;
             const selectedCodes = Array.from(document.querySelectorAll('.catalog-recipient-checkbox:checked')).map(input => input.value);
@@ -1134,6 +1199,7 @@
             else sendCatalogEntryToPlayers(pendingCatalogItem, selectedCodes);
             closeCatalogRecipientPopup();
         }
+
         function sendCatalogEntryToPlayers(item, playerCodes) {
             if (!socket || !socket.connected || !item) return;
             const recipients = new Set((Array.isArray(playerCodes) ? playerCodes : []).map(String));
@@ -1159,6 +1225,7 @@
                 capacity: isRanged ? item.capacity : 0,
                 currentShots: isRanged ? item.capacity : 0
             };
+
             connectedPlayers.forEach((player, code) => {
                 if (!recipients.has(String(code)) || !player || !player.fullData) return;
                 const fullData = JSON.parse(JSON.stringify(player.fullData));
@@ -1167,16 +1234,19 @@
                     ...catalogItem,
                     id: `master_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
                 });
+
                 const updatedPlayer = { ...player, codigo: String(code), id: String(code), mesa: masterTableCode, fullData };
                 connectedPlayers.set(String(code), updatedPlayer);
                 socket.emit('master_update_player', updatedPlayer);
             });
         }
+
         function sendClueToPlayers(clue, playerCodes) {
             if (!socket || !socket.connected || !clue) return;
             const recipients = new Set((Array.isArray(playerCodes) ? playerCodes : []).map(String));
             if (!recipients.size) return;
             const clueCopy = normalizeMasterClue(clue);
+
             connectedPlayers.forEach((player, code) => {
                 if (!recipients.has(String(code)) || !player || !player.fullData) return;
                 const fullData = JSON.parse(JSON.stringify(player.fullData));
@@ -1187,15 +1257,18 @@
                 socket.emit('master_update_player', updatedPlayer);
             });
         }
+
         function normalizeMasterCluePages(pages) {
             if (!Array.isArray(pages)) return [];
             return pages.map(page => ({ img: String(typeof page === 'string' ? page : (page && (page.img || page.src)) || '') })).filter(page => page.img);
         }
+
         function normalizeMasterClueThickness(value, fallback = 18) {
             const parsed = Number(value);
             const safe = Number.isFinite(parsed) ? parsed : fallback;
             return Math.max(4, Math.min(40, Math.round(safe / 2) * 2));
         }
+
         function normalizeMasterClue(clue, index = 0) {
             const source = clue && typeof clue === 'object' ? clue : {};
             const type = source.type === 'book' ? 'book' : 'object';
@@ -1215,6 +1288,7 @@
                 pages
             };
         }
+
         function loadMasterCluesState() {
             try {
                 const saved = JSON.parse(localStorage.getItem('mestre_clues_state'));
@@ -1223,6 +1297,7 @@
                 return [];
             }
         }
+
         function saveMasterCluesState() {
             try {
                 localStorage.setItem('mestre_clues_state', JSON.stringify(masterCluesState));
@@ -1230,6 +1305,7 @@
                 alert('As imagens ficaram grandes demais para salvar neste navegador. Tente usar imagens menores.');
             }
         }
+
         function renderMasterClues() {
             const grid = document.getElementById('master-clues-grid');
             const count = document.getElementById('master-clues-count');
@@ -1239,6 +1315,7 @@
                 grid.innerHTML = '<div class="master-clues-empty"><strong>Nenhuma pista cadastrada</strong>Use “Nova Pista” para criar um objeto 3D ou um livro.</div>';
                 return;
             }
+
             grid.innerHTML = '';
             masterCluesState.forEach(clue => {
                 const card = document.createElement('article');
@@ -1257,6 +1334,7 @@
                 grid.appendChild(card);
             });
         }
+
         function setMasterClueFormType(type) {
             const normalized = type === 'book' ? 'book' : 'object';
             document.getElementById('master-clue-type').value = normalized;
@@ -1265,6 +1343,7 @@
             document.getElementById('master-clue-type-object').classList.toggle('active', normalized === 'object');
             document.getElementById('master-clue-type-book').classList.toggle('active', normalized === 'book');
         }
+
         function updateMasterClueThicknessLabel() {
             const input = document.getElementById('master-clue-thickness');
             const output = document.getElementById('master-clue-thickness-value');
@@ -1273,21 +1352,25 @@
             input.value = thickness;
             output.textContent = `${thickness} px`;
         }
+
         function getMasterCluePendingSource(kind) {
             const data = kind === 'front' ? pendingMasterClueFront : kind === 'back' ? pendingMasterClueBack : kind === 'cover-back' ? pendingMasterClueCoverBack : pendingMasterClueCover;
             const input = document.getElementById(`master-clue-${kind}-url`);
             return data || (input ? input.value.trim() : '');
         }
+
         function setMasterCluePendingSource(kind, value) {
             if (kind === 'front') pendingMasterClueFront = value;
             else if (kind === 'back') pendingMasterClueBack = value;
             else if (kind === 'cover-back') pendingMasterClueCoverBack = value;
             else pendingMasterClueCover = value;
         }
+
         function onMasterClueUrlInput(kind) {
             setMasterCluePendingSource(kind, '');
             updateMasterClueImagePreview(kind);
         }
+
         function updateMasterClueImagePreview(kind) {
             const preview = document.getElementById(`master-clue-${kind}-preview`);
             if (!preview) return;
@@ -1301,6 +1384,7 @@
             preview.style.display = 'block';
             preview.onerror = () => { preview.style.display = 'none'; };
         }
+
         function optimizeMasterClueImage(file, maxSide = 1100, quality = 0.78) {
             return new Promise((resolve, reject) => {
                 if (!file || !file.type.startsWith('image/')) return reject(new Error('Escolha um arquivo de imagem.'));
@@ -1324,6 +1408,7 @@
                 reader.readAsDataURL(file);
             });
         }
+
         async function loadMasterClueImageFile(event, kind) {
             const file = event.target.files && event.target.files[0];
             if (!file) return;
@@ -1336,12 +1421,14 @@
                 alert(error.message || 'Não foi possível carregar essa imagem.');
             }
         }
+
         function removeMasterClueImage(kind) {
             setMasterCluePendingSource(kind, '');
             document.getElementById(`master-clue-${kind}-url`).value = '';
             document.getElementById(`master-clue-${kind}-file`).value = '';
             updateMasterClueImagePreview(kind);
         }
+
         function renderMasterCluePageEditor() {
             const editor = document.getElementById('master-clue-pages-editor');
             const empty = document.getElementById('master-clue-pages-empty');
@@ -1358,6 +1445,7 @@
                 editor.appendChild(card);
             });
         }
+
         async function loadMasterCluePages(event) {
             const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
             try {
@@ -1370,6 +1458,7 @@
             }
             event.target.value = '';
         }
+
         function addMasterCluePageUrl() {
             const input = document.getElementById('master-clue-page-url');
             const img = input.value.trim();
@@ -1378,22 +1467,26 @@
             input.value = '';
             renderMasterCluePageEditor();
         }
+
         function moveMasterCluePage(index, direction) {
             const target = index + direction;
             if (target < 0 || target >= pendingMasterCluePages.length) return;
             [pendingMasterCluePages[index], pendingMasterCluePages[target]] = [pendingMasterCluePages[target], pendingMasterCluePages[index]];
             renderMasterCluePageEditor();
         }
+
         function removeMasterCluePage(index) {
             pendingMasterCluePages.splice(index, 1);
             renderMasterCluePageEditor();
         }
+
         function setMasterClueFormImage(kind, source) {
             setMasterCluePendingSource(kind, source && source.startsWith('data:') ? source : '');
             document.getElementById(`master-clue-${kind}-url`).value = source && !source.startsWith('data:') ? source : '';
             document.getElementById(`master-clue-${kind}-file`).value = '';
             updateMasterClueImagePreview(kind);
         }
+
         function openMasterClueForm(id = null) {
             editingMasterClueId = id;
             const clue = id ? masterCluesState.find(item => item.id === id) : null;
@@ -1416,6 +1509,7 @@
             document.getElementById('master-clue-form-modal').classList.add('open');
             setTimeout(() => document.getElementById('master-clue-title').focus(), 0);
         }
+
         function closeMasterClueForm() {
             document.getElementById('master-clue-form-modal').classList.remove('open');
             editingMasterClueId = null;
@@ -1425,6 +1519,7 @@
             pendingMasterClueCoverBack = '';
             pendingMasterCluePages = [];
         }
+
         function saveMasterClueForm() {
             const title = document.getElementById('master-clue-title').value.trim();
             if (!title) return alert('Dê um nome para a pista.');
@@ -1447,6 +1542,7 @@
             closeMasterClueForm();
             renderMasterClues();
         }
+
         function setMasterClue3DShape(source = '', edgeColor = '') {
             const object = document.getElementById('master-clue-3d-object');
             if (!source) {
@@ -1459,6 +1555,7 @@
             object.style.setProperty('--master-clue-edge-color', edgeColor || '#68686f');
             object.classList.add('has-image-shape');
         }
+
         function prepareMasterClueCutout(source) {
             if (masterClueCutoutCache.has(source)) return masterClueCutoutCache.get(source);
             const task = new Promise(resolve => {
@@ -1509,6 +1606,7 @@
             masterClueCutoutCache.set(source, task);
             return task;
         }
+
         function fitMasterClue3D(width = 3, height = 2) {
             const stage = document.getElementById('master-clue-3d-stage');
             const object = document.getElementById('master-clue-3d-object');
@@ -1522,6 +1620,7 @@
             object.dataset.baseHeight = String(objectHeight);
             applyMasterClue3DZoomSize();
         }
+
         function applyMasterClue3DZoomSize() {
             const object = document.getElementById('master-clue-3d-object');
             if (!object) return;
@@ -1531,14 +1630,17 @@
             object.style.width = `${baseWidth * masterClueZoom}px`;
             object.style.height = `${baseHeight * masterClueZoom}px`;
         }
+
         function updateMasterClue3DTransform() {
             const stage = document.getElementById('master-clue-3d-stage');
             if(stage)stage.style.perspective=`${1000*Math.max(1,masterClueZoom)}px`;
             document.getElementById('master-clue-3d-object').style.transform = `translate(${masterCluePanX}px, ${masterCluePanY}px) rotateX(${masterClueRotationX}deg) rotateY(${masterClueRotationY}deg)`;
         }
+
         function resetMasterClue3D() { masterClueRotationX = -8; masterClueRotationY = 0; masterClueZoom = 1; masterCluePanX = 0; masterCluePanY = 0; setMasterClue3DMoveMode(false); applyMasterClue3DZoomSize(); updateMasterClue3DTransform(); }
         function rotateMasterClue3D(amount) { masterClueRotationY += Number(amount) || 0; updateMasterClue3DTransform(); }
         function zoomMasterClue3D(amount) { masterClueZoom = Math.max(0.5, Math.min(4, masterClueZoom + (Number(amount) || 0))); applyMasterClue3DZoomSize(); updateMasterClue3DTransform(); }
+
         function setMasterClue3DMoveMode(enabled) {
             masterClueMoveMode = Boolean(enabled);
             const stage = document.getElementById('master-clue-3d-stage');
@@ -1550,7 +1652,9 @@
                 button.textContent = masterClueMoveMode ? '✥ MOVENDO' : '✥ MOVER';
             }
         }
+
         function toggleMasterClue3DMoveMode() { setMasterClue3DMoveMode(!masterClueMoveMode); }
+
         function applyMasterClue3DThickness(clue) {
             const thickness = normalizeMasterClueThickness(clue && clue.thickness);
             const half = thickness / 2;
@@ -1570,6 +1674,7 @@
             }
             depth.appendChild(fragment);
         }
+
         function initializeMasterClue3D() {
             applyMasterClue3DThickness(masterCluesState.find(item=>item.id===currentMasterClueId));
             if (masterClue3DInitialized) return;
@@ -1581,18 +1686,18 @@
             stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);
             stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClue3D(event.deltaY<0?0.15:-0.15);},{passive:false});
         }
+
         function applyMasterClueBookZoomSize() {
             const object = document.getElementById('master-clue-book-3d-object');
             if (!object) return;
             const baseWidth = Number(object.dataset.baseWidth);
             const baseHeight = Number(object.dataset.baseHeight);
             if (!baseWidth || !baseHeight) return;
-            object.style.width = `${baseWidth}px`;
-            object.style.height = `${baseHeight}px`;
             object.style.width = `${baseWidth * masterBookZoom}px`;
             object.style.height = 'auto';
             object.style.aspectRatio = `${baseWidth} / ${baseHeight}`;
         }
+
         function updateMasterClueBook3DTransform() {
             const object=document.getElementById('master-clue-book-3d-object');
             const stage=document.getElementById('master-clue-book-stage');
@@ -1600,12 +1705,13 @@
             const baseWidth=object?(Number(object.dataset.baseWidth)||object.offsetWidth||640):640;
             const closedOffsetPixels=baseWidth*(closedOffset/100)*masterBookZoom;
             if(stage)stage.style.perspective=`${1500*Math.max(1,masterBookZoom)}px`;
-            if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg) scale(${masterBookZoom})`;
             if(object)object.style.transform=`translate(${masterBookPanX}px, ${masterBookPanY}px) translateX(${closedOffsetPixels}px) rotateX(${masterBookRotationX}deg) rotateY(${masterBookRotationY}deg)`;
         }
+
         function resetMasterClueBook3D(){masterBookRotationX=-8;masterBookRotationY=0;masterBookZoom=1;masterBookPanX=0;masterBookPanY=0;setMasterClueBookMoveMode(false);applyMasterClueBookZoomSize();updateMasterClueBook3DTransform();}
         function rotateMasterClueBook3D(amount){masterBookRotationY+=Number(amount)||0;updateMasterClueBook3DTransform();}
         function zoomMasterClueBook3D(amount){masterBookZoom=Math.max(0.5,Math.min(4,masterBookZoom+(Number(amount)||0)));applyMasterClueBookZoomSize();updateMasterClueBook3DTransform();}
+
         function setMasterClueBookMoveMode(enabled) {
             masterBookMoveMode = Boolean(enabled);
             const stage = document.getElementById('master-clue-book-stage');
@@ -1617,37 +1723,44 @@
                 button.textContent = masterBookMoveMode ? '✥ MOVENDO' : '✥ MOVER';
             }
         }
+
         function toggleMasterClueBookMoveMode() { setMasterClueBookMoveMode(!masterBookMoveMode); }
+
         function setMasterBookCoverShape(source='',edgeColor=''){
             const cover=document.getElementById('master-clue-book-cover');if(!cover)return;
             if(!source){cover.style.removeProperty('--master-book-cover-shape');cover.style.removeProperty('--master-book-edge-color');return;}
             cover.style.setProperty('--master-book-cover-shape',`url(${JSON.stringify(source)})`);cover.style.setProperty('--master-book-edge-color',edgeColor||'#4a2d18');
         }
+
         function setMasterBookBackCoverShape(source='',edgeColor=''){
             const cover=document.getElementById('master-clue-book-back-cover');if(!cover)return;
             if(!source){cover.style.removeProperty('--master-book-back-shape');cover.style.removeProperty('--master-book-back-edge-color');return;}
             cover.style.setProperty('--master-book-back-shape',`url(${JSON.stringify(source)})`);cover.style.setProperty('--master-book-back-edge-color',edgeColor||'#4a2d18');
         }
+
         function fitMasterBook3DToAspect(aspect=1.5){
             const stage=document.getElementById('master-clue-book-stage'),object=document.getElementById('master-clue-book-3d-object');if(!stage||!object)return;
             const safe=Math.max(0.55,Math.min(5,Number(aspect)||1.5)),maxWidth=Math.max(150,stage.clientWidth*0.87),maxHeight=Math.max(140,stage.clientHeight*0.73);let width=maxWidth,height=width/safe;if(height>maxHeight){height=maxHeight;width=height*safe;}object.dataset.baseWidth=String(width);object.dataset.baseHeight=String(height);applyMasterClueBookZoomSize();
         }
+
         function getMasterBookSpreadAspect(width,height){
             const imageAspect=Math.max(0.28,Number(width)/Math.max(1,Number(height))||0.75);
             return imageAspect>=1.18?imageAspect:imageAspect*2;
         }
+
         function updateMasterBook3DFit(){
             const clue=masterCluesState.find(item=>item.id===currentMasterClueId);if(!clue||clue.type!=='book')return;const token=++masterBookFitToken;
             const pages=normalizeMasterCluePages(clue.pages),source=clue.coverImg||clue.img||((pages[0]||{}).img||'');if(!source)return fitMasterBook3DToAspect(1.5);
-            prepareMasterClueCutout(source).then(result=>{if(token!==masterBookFitToken||currentMasterClueId!==clue.id)return;fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});
             prepareMasterClueCutout(source).then(result=>{if(token!==masterBookFitToken||currentMasterClueId!==clue.id)return;fitMasterBook3DToAspect(getMasterBookSpreadAspect(result.width,result.height));});
         }
+
         function applyMasterBookThickness(clue){
             const thickness=normalizeMasterClueThickness(clue&&clue.thickness),half=thickness/2,object=document.getElementById('master-clue-book-3d-object');
             if(object){object.style.setProperty('--master-book-cover-half',`${half}px`);object.style.setProperty('--master-book-front-center',`${half-1}px`);object.style.setProperty('--master-book-rear-center',`${-(half+1)}px`);}
             const configurations=[['master-clue-book-cover-depth','master-clue-book-cover-depth-layer','--master-book-depth'],['master-clue-book-back-cover-depth','master-clue-book-back-cover-depth-layer','--master-book-back-depth']];
             configurations.forEach(([id,className,property])=>{const depth=document.getElementById(id);if(!depth||depth.dataset.thickness===String(thickness))return;depth.dataset.thickness=String(thickness);depth.innerHTML='';const fragment=document.createDocumentFragment();for(let value=-half;value<=half;value++){const layer=document.createElement('span');layer.className=className;layer.style.setProperty(property,`${value}px`);layer.style.filter=`brightness(${0.58+(1-Math.abs(value)/Math.max(1,half))*0.4})`;fragment.appendChild(layer);}depth.appendChild(fragment);});
         }
+
         function initializeMasterBook3D(){
             applyMasterBookThickness(masterCluesState.find(item=>item.id===currentMasterClueId));
             if(masterBook3DInitialized)return;const stage=document.getElementById('master-clue-book-stage');if(!stage)return;masterBook3DInitialized=true;
@@ -1655,6 +1768,7 @@
             stage.addEventListener('pointermove',event=>{if(!masterBookDragging)return;const deltaX=event.clientX-masterBookLastX,deltaY=event.clientY-masterBookLastY;if(masterBookPanning){const limitX=stage.clientWidth*1.5,limitY=stage.clientHeight*1.5;masterBookPanX=Math.max(-limitX,Math.min(limitX,masterBookPanX+deltaX));masterBookPanY=Math.max(-limitY,Math.min(limitY,masterBookPanY+deltaY));}else{masterBookRotationY+=deltaX*0.65;masterBookRotationX=Math.max(-75,Math.min(75,masterBookRotationX-deltaY*0.5));}masterBookLastX=event.clientX;masterBookLastY=event.clientY;updateMasterClueBook3DTransform();});
             const finish=event=>{masterBookDragging=false;masterBookPanning=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);};stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClueBook3D(event.deltaY<0?0.15:-0.15);},{passive:false});window.addEventListener('resize',updateMasterBook3DFit);
         }
+
         function setMasterBookPage(element, page, index, total, emptyText) {
             element.innerHTML = '';
             element.classList.remove('has-image-shape');element.style.removeProperty('--master-page-shape');
@@ -1663,16 +1777,19 @@
                 const number=document.createElement('div');number.className='master-clue-book-page-index';number.textContent=`${index+1} / ${total}`;element.appendChild(number);
             } else { delete element.dataset.pageSource;const empty=document.createElement('div');empty.className='master-clue-book-page-empty';empty.textContent=emptyText;element.appendChild(empty); }
         }
+
         function getCurrentMasterBookPages() {
             const clue = masterCluesState.find(item => item.id === currentMasterClueId);
             return clue && clue.type === 'book' ? normalizeMasterCluePages(clue.pages) : [];
         }
+
         function updateMasterBookControls(pages, locked = false) {
             document.getElementById('master-clue-book-previous').disabled = locked || !masterBookOpen || masterBookSpread <= 0;
             document.getElementById('master-clue-book-next').disabled = locked || !masterBookOpen || masterBookSpread + 2 >= pages.length;
             document.getElementById('master-clue-book-indicator').textContent = masterBookOpen ? (pages.length ? `${masterBookSpread+1}–${Math.min(masterBookSpread+2,pages.length)} DE ${pages.length}` : 'SEM PÁGINAS') : 'CAPA';
             document.getElementById('master-clue-book-toggle').textContent = masterBookOpen ? 'FECHAR LIVRO' : 'ABRIR LIVRO';
         }
+
         function renderMasterBookSpread() {
             const pages = getCurrentMasterBookPages();
             const maximum = Math.max(0,Math.floor((Math.max(1,pages.length)-1)/2)*2);
@@ -1684,6 +1801,7 @@
             updateMasterBookControls(pages);
             updateMasterBook3DFit();
         }
+
         function toggleMasterClueBook() {
             if (masterBookAnimating) return;
             masterBookOpen = !masterBookOpen;
@@ -1693,6 +1811,7 @@
             updateMasterBookControls(getCurrentMasterBookPages());
             updateMasterBook3DFit();
         }
+
         function turnMasterClueBookPage(direction) {
             if (!masterBookOpen || masterBookAnimating) return;
             const pages=getCurrentMasterBookPages();
@@ -1704,6 +1823,7 @@
             else{setMasterBookPage(left,pages[target],target,pages.length,'Página em branco');setMasterBookPage(front,pages[masterBookSpread],masterBookSpread,pages.length,'Página em branco');setMasterBookPage(back,pages[target+1],target+1,pages.length,'Página em branco');flip.className='master-clue-book-flip previous';}
             setTimeout(()=>{if(currentMasterClueId!==clueId)return;masterBookSpread=target;renderMasterBookSpread();},780);
         }
+
         function openMasterClueInfo(id) {
             const clue=masterCluesState.find(item=>item.id===id);if(!clue)return;
             currentMasterClueId=id;
@@ -1716,7 +1836,6 @@
                 const cover=document.getElementById('master-clue-book-cover'),coverImage=document.getElementById('master-clue-book-cover-image'),coverBackImage=document.getElementById('master-clue-book-cover-back-image'),coverFallback=document.getElementById('master-clue-book-cover-fallback'),backCover=document.getElementById('master-clue-book-back-cover'),backCoverInsideImage=document.getElementById('master-clue-book-back-cover-inside-image'),backCoverImage=document.getElementById('master-clue-book-back-cover-image'),source=clue.coverImg||clue.img,customBackSource=clue.coverBackImg||'',backSource=customBackSource||source,mirrorBackCover=!customBackSource;
                 cover.classList.remove('open');document.getElementById('master-clue-book').classList.remove('open');coverImage.style.display=source?'block':'none';coverBackImage.style.display=source?'block':'none';coverFallback.style.display=source?'none':'flex';
                 backCover.style.display=source?'block':'none';backCoverInsideImage.style.display=source?'block':'none';backCoverImage.style.display=source?'block':'none';backCoverInsideImage.classList.toggle('mirrored',mirrorBackCover);backCoverImage.classList.toggle('mirrored',mirrorBackCover);
-                if(source){const useFrontAsBackCover=()=>{backCoverInsideImage.src=coverImage.src;backCoverImage.src=coverImage.src;backCoverInsideImage.classList.add('mirrored');backCoverImage.classList.add('mirrored');setMasterBookBackCoverShape(coverImage.src);};coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};coverBackImage.onerror=()=>{coverBackImage.src=coverImage.src;coverBackImage.onerror=null;};backCoverInsideImage.onerror=useFrontAsBackCover;backCoverImage.onerror=useFrontAsBackCover;prepareMasterClueCutout(source).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;coverImage.src=result.src;coverBackImage.src=result.src;setMasterBookCoverShape(result.src,result.edgeColor);if(!masterBookOpen)fitMasterBook3DToAspect(2*(result.width/Math.max(1,result.height)));});prepareMasterClueCutout(backSource).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backCoverInsideImage.src=result.src;backCoverImage.src=result.src;setMasterBookBackCoverShape(result.src,result.edgeColor);});}else{coverImage.removeAttribute('src');coverBackImage.removeAttribute('src');backCoverInsideImage.removeAttribute('src');backCoverImage.removeAttribute('src');backCover.style.display='none';setMasterBookCoverShape('');setMasterBookBackCoverShape('');}
                 if(source){const useFrontAsBackCover=()=>{backCoverInsideImage.src=coverImage.src;backCoverImage.src=coverImage.src;backCoverInsideImage.classList.add('mirrored');backCoverImage.classList.add('mirrored');setMasterBookBackCoverShape(coverImage.src);};coverImage.onerror=()=>{coverImage.style.display='none';coverFallback.style.display='flex';};coverBackImage.onerror=()=>{coverBackImage.src=coverImage.src;coverBackImage.onerror=null;};backCoverInsideImage.onerror=useFrontAsBackCover;backCoverImage.onerror=useFrontAsBackCover;prepareMasterClueCutout(source).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;coverImage.src=result.src;coverBackImage.src=result.src;setMasterBookCoverShape(result.src,result.edgeColor);if(!masterBookOpen)fitMasterBook3DToAspect(getMasterBookSpreadAspect(result.width,result.height));});prepareMasterClueCutout(backSource).then(result=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backCoverInsideImage.src=result.src;backCoverImage.src=result.src;setMasterBookBackCoverShape(result.src,result.edgeColor);});}else{coverImage.removeAttribute('src');coverBackImage.removeAttribute('src');backCoverInsideImage.removeAttribute('src');backCoverImage.removeAttribute('src');backCover.style.display='none';setMasterBookCoverShape('');setMasterBookBackCoverShape('');}
                 renderMasterBookSpread();return;
             }
@@ -1726,12 +1845,15 @@
             fallback();
             prepareMasterClueCutout(clue.img).then(front=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;frontImage.src=front.src;frontImage.style.display='block';frontFallback.style.display='none';setMasterClue3DShape(front.src,front.edgeColor);fitMasterClue3D(front.width,front.height);const hasCustomBack=Boolean(clue.backImg&&clue.backImg!==clue.img),backSource=hasCustomBack?clue.backImg:clue.img;backImage.classList.toggle('mirrored',!hasCustomBack);prepareMasterClueCutout(backSource).then(back=>{if(token!==masterClueImageToken||currentMasterClueId!==id)return;backImage.src=back.src;backImage.style.display='block';backFallback.style.display='none';});});
         }
+
         function closeMasterClueInfo() {
             document.getElementById('master-clue-info-modal').classList.remove('open');masterClueImageToken++;masterBookFitToken++;masterClueDragging=false;masterBookDragging=false;masterBookAnimating=false;masterBookOpen=false;document.getElementById('master-clue-book-stage').classList.remove('dragging');currentMasterClueId=null;
         }
+
         function editCurrentMasterClue() { const id=currentMasterClueId;if(!id)return;closeMasterClueInfo();openMasterClueForm(id); }
         function removeCurrentMasterClue() { if(!currentMasterClueId)return;masterCluesState=masterCluesState.filter(item=>item.id!==currentMasterClueId);closeMasterClueInfo();saveMasterCluesState();renderMasterClues(); }
         function sendCurrentMasterClue() { const clue=masterCluesState.find(item=>item.id===currentMasterClueId);if(clue)openClueRecipientPopup(clue); }
+
         function loadMonstersState() {
             try {
                 const saved = JSON.parse(localStorage.getItem('mestre_monsters_state'));
@@ -1758,6 +1880,7 @@
                 return [];
             }
         }
+
         function normalizeMonsterAction(action, index = 0) {
             return {
                 id: String(action && action.id || `action_${Date.now()}_${index}_${Math.random().toString(36).slice(2,6)}`),
@@ -1767,18 +1890,22 @@
                 description: String(action && action.description || '')
             };
         }
+
         function saveMonstersState() {
             localStorage.setItem('mestre_monsters_state', JSON.stringify(monstersState));
         }
+
         function getMonsterRanges(value, isAttribute) {
             const relevantValue = isAttribute ? safeNumber(value) * 2 : safeNumber(value);
             const index = Math.max(1, Math.min(20, Math.floor(relevantValue)));
             return monsterD20Table[index];
         }
+
         function formatMonsterRanges(value, isAttribute) {
             const ranges = getMonsterRanges(value, isAttribute);
             return `N:${ranges.n} B:${ranges.b === 99 ? 'X' : ranges.b} E:${ranges.e === 99 ? 'X' : ranges.e}`;
         }
+
         const MONSTER_SKILL_RELATED_ATTRIBUTES = {
             fortitude: 'vig',
             reflexos: 'agi',
@@ -1786,6 +1913,7 @@
             percepcao: 'pre',
             iniciativa: 'agi'
         };
+
         function rollMonsterD20PoolByAttribute(attributeValue) {
             const attribute = Math.trunc(Number(attributeValue) || 0);
             const quantity = attribute === 0 ? 1 : Math.abs(attribute);
@@ -1793,6 +1921,7 @@
             const selectedRoll = attribute < 0 ? Math.min(...rolls) : Math.max(...rolls);
             return { attribute, quantity, rolls, selectedRoll, takesLowest: attribute < 0 };
         }
+
         function resolveMonsterD20(value, isAttribute, relatedAttributeValue = null) {
             const pool = relatedAttributeValue === null
                 ? { selectedRoll: Math.floor(Math.random() * 20) + 1 }
@@ -1805,6 +1934,7 @@
             if (roll >= ranges.n) return { roll, result: 'NORMAL', color: 'var(--accent-green)' };
             return { roll, result: 'FALHA', color: 'var(--accent-red)' };
         }
+
         function loadMasterDiceAnimation(image, playbackSequence, onReady) {
             let ready = false;
             const finish = () => {
@@ -1832,6 +1962,7 @@
             };
             load(masterRollPrimaryAsset);
         }
+
         function showMasterDicePopup(number, name, result, color) {
             const popup = document.getElementById('master-dice-popup');
             const content = document.getElementById('master-dice-content');
@@ -1857,18 +1988,21 @@
                 monsterRollRevealTimer = setTimeout(() => content.classList.add('revealed'), 1500);
             }
         }
+
         function closeMasterDicePopup() {
             masterDicePlaybackSequence++;
             clearTimeout(monsterRollRevealTimer);
             document.getElementById('master-dice-popup').classList.remove('open');
             document.getElementById('master-dice-content').classList.remove('revealed');
         }
+
         function rollMonsterAttribute(monsterId, attributeKey, label) {
             const monster = monstersState.find(item => item.id === monsterId);
             if (!monster) return;
             const result = resolveMonsterD20(monster.attrs[attributeKey], true);
             showMasterDicePopup(result.roll, `${monster.name} — ${label}`, result.result, result.color);
         }
+
         function rollMonsterSkill(monsterId, skillKey, label) {
             const monster = monstersState.find(item => item.id === monsterId);
             if (!monster) return;
@@ -1878,6 +2012,7 @@
             showMasterDicePopup(result.roll, `${monster.name} — ${label}`, result.result, result.color);
             if (skillKey === 'iniciativa') applyMonsterInitiativeRoll(monster, result.roll);
         }
+
         function applyMonsterInitiativeRoll(monster, roll) {
             const id = `monster_initiative_${monster.id}`;
             const existing = initiativeState.entries.find(entry => entry.id === id);
@@ -1890,11 +2025,13 @@
             saveInitiativeState();
             renderInitiative();
         }
+
         function extractMonsterTestValue(test) {
             const matches = String(test || '').match(/[+-]?\d+(?![^\d]*\d)/g);
             if (!matches || !matches.length) return null;
             return safeNumber(matches[matches.length - 1], null);
         }
+
         function rollMonsterActionAttack(monsterId, actionIndex) {
             const monster = monstersState.find(item => item.id === monsterId);
             const action = monster && monster.actions[actionIndex];
@@ -1904,12 +2041,14 @@
             const result = resolveMonsterD20(testValue, false);
             showMasterDicePopup(result.roll, `${monster.name} — ${action.name || 'Ação'}`, result.result, result.color);
         }
+
         function rollMonsterActionDamage(monsterId, actionIndex) {
             const monster = monstersState.find(item => item.id === monsterId);
             const action = monster && monster.actions[actionIndex];
             if (!action) return;
             rollMonsterDamage(monsterId, action.damage, action.name || 'Ação');
         }
+
         function rollMonsterDamage(monsterId, formula, label) {
             const monster = monstersState.find(item => item.id === monsterId);
             if (!monster) return;
@@ -1930,11 +2069,13 @@
             });
             showMasterDicePopup(total, `${monster.name} — ${label}`, 'DANO', 'var(--accent-red)');
         }
+
         function renderMonsters() {
             const grid = document.getElementById('monsters-grid');
             const count = monstersState.length;
             document.getElementById('monsters-count').textContent = `${count} ${count === 1 ? 'MONSTRO' : 'MONSTROS'}`;
             grid.innerHTML = '';
+
             if (!count) {
                 const empty = document.createElement('div');
                 empty.className = 'monsters-empty';
@@ -1942,6 +2083,7 @@
                 grid.appendChild(empty);
                 return;
             }
+
             monstersState.forEach(monster => {
                 const lifePercent = monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0;
                 const attributesHtml = [['for','FOR'],['agi','AGI'],['int','INT'],['pre','PRE'],['vig','VIG']].map(([key,label]) => `<button class="monster-attribute" type="button" data-attr-key="${key}" data-roll-label="${label}"><span>${label}</span><strong>${monster.attrs[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.attrs[key], true)}</small></button>`).join('');
@@ -1975,6 +2117,7 @@
                 grid.appendChild(card);
             });
         }
+
         function openMonsterPopup(id = null) {
             const monster = id ? monstersState.find(item => item.id === id) : null;
             editingMonsterId = monster ? monster.id : null;
@@ -1993,12 +2136,14 @@
             document.body.style.overflow = 'hidden';
             setTimeout(() => document.getElementById('monster-form-name').focus(), 0);
         }
+
         function closeMonsterPopup() {
             document.getElementById('monster-modal').classList.remove('open');
             document.body.style.overflow = '';
             editingMonsterId = null;
             editingMonsterActions = [];
         }
+
         function renderMonsterActionEditors() {
             const container = document.getElementById('monster-action-editors');
             container.innerHTML = '';
@@ -2006,6 +2151,7 @@
                 container.innerHTML = '<div class="monster-info-line">Nenhuma ação criada.</div>';
                 return;
             }
+
             editingMonsterActions.forEach((action, index) => {
                 const editor = document.createElement('div');
                 editor.className = 'monster-action-editor';
@@ -2018,14 +2164,17 @@
                 container.appendChild(editor);
             });
         }
+
         function addMonsterAction() {
             editingMonsterActions.push(normalizeMonsterAction({}, editingMonsterActions.length));
             renderMonsterActionEditors();
         }
+
         function removeMonsterAction(id) {
             editingMonsterActions = editingMonsterActions.filter(action => action.id !== id);
             renderMonsterActionEditors();
         }
+
         function saveMonsterFromPopup() {
             const nameInput = document.getElementById('monster-form-name');
             const name = nameInput.value.trim();
@@ -2053,6 +2202,7 @@
             renderMonsters();
             closeMonsterPopup();
         }
+
         function updateMonsterLife(id, rawValue) {
             const monster = monstersState.find(item => item.id === id);
             if (!monster) return;
@@ -2060,6 +2210,7 @@
             saveMonstersState();
             updateMonsterLifeCard(monster);
         }
+
         function changeMonsterLife(id, amount) {
             const monster = monstersState.find(item => item.id === id);
             if (!monster) return;
@@ -2067,6 +2218,7 @@
             saveMonstersState();
             updateMonsterLifeCard(monster);
         }
+
         function updateMonsterLifeCard(monster) {
             const card = Array.from(document.querySelectorAll('.monster-card')).find(element => element.dataset.monsterId === monster.id);
             if (!card) return;
@@ -2077,6 +2229,7 @@
             if (maximum) maximum.textContent = monster.maxLife;
             if (fill) fill.style.width = `${monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0}%`;
         }
+
         function removeMonster(id) {
             const monster = monstersState.find(item => item.id === id);
             if (!monster || !confirm(`Remover ${monster.name}?`)) return;
@@ -2084,6 +2237,7 @@
             saveMonstersState();
             renderMonsters();
         }
+
         function loadInitiativeState() {
             try {
                 const tableStorageKey = `mestre_initiative_state_${masterTableCode}`;
@@ -2101,13 +2255,16 @@
                 return { entries: [], activeId: null, round: 0, started: false };
             }
         }
+
         function saveInitiativeState() {
             localStorage.setItem(`mestre_initiative_state_${masterTableCode}`, JSON.stringify(initiativeState));
             if (socket && socket.connected) socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
         }
+
         function sortInitiativeEntries() {
             initiativeState.entries.sort((first, second) => second.value - first.value || first.name.localeCompare(second.name, 'pt-BR'));
         }
+
         function renderInitiative() {
             sortInitiativeEntries();
             if (initiativeState.activeId && !initiativeState.entries.some(entry => entry.id === initiativeState.activeId)) {
@@ -2115,6 +2272,7 @@
                 initiativeState.started = false;
                 initiativeState.round = 0;
             }
+
             const list = document.getElementById('initiative-list');
             list.innerHTML = '';
             if (!initiativeState.entries.length) {
@@ -2123,6 +2281,7 @@
                 empty.textContent = 'Os jogadores aparecerão aqui ao rolarem Iniciativa. Você também pode adicionar inimigos e NPCs acima.';
                 list.appendChild(empty);
             }
+
             initiativeState.entries.forEach((entry, index) => {
                 const row = document.createElement('div');
                 row.className = `initiative-entry${entry.id === initiativeState.activeId ? ' active' : ''}`;
@@ -2131,10 +2290,12 @@
                 row.querySelector('.initiative-remove').onclick = () => removeInitiativeEntry(entry.id);
                 list.appendChild(row);
             });
+
             document.getElementById('initiative-round').textContent = initiativeState.started ? `RODADA ${initiativeState.round}` : 'AGUARDANDO';
             document.getElementById('initiative-next').textContent = initiativeState.started ? 'PRÓXIMO TURNO →' : 'INICIAR COMBATE';
             document.getElementById('initiative-previous').disabled = !initiativeState.started || !initiativeState.entries.length;
         }
+
         function addInitiativeEntry(entry) {
             const existing = initiativeState.entries.find(item => item.id === entry.id);
             if (existing) {
@@ -2147,6 +2308,7 @@
             saveInitiativeState();
             renderInitiative();
         }
+
         function addManualInitiative() {
             const nameInput = document.getElementById('initiative-name-input');
             const valueInput = document.getElementById('initiative-value-input');
@@ -2157,11 +2319,13 @@
             valueInput.value = '0';
             nameInput.focus();
         }
+
         function applyPlayerInitiativeRoll(data) {
             if (normalizeTableCode(data && data.mesa) !== masterTableCode) return;
             const code = String(data && data.codigo || '');
             const value = Number(data && data.resultado);
             if (!code || !Number.isFinite(value)) return;
+
             const player = connectedPlayers.get(code);
             const name = String((player && player.nome) || data.jogador || 'Personagem sem nome');
             const id = `player_${code}`;
@@ -2177,6 +2341,7 @@
             saveInitiativeState();
             renderInitiative();
         }
+
         function updateInitiativeValue(id, value) {
             const entry = initiativeState.entries.find(item => item.id === id);
             if (!entry) return;
@@ -2184,11 +2349,13 @@
             saveInitiativeState();
             renderInitiative();
         }
+
         function removeInitiativeEntry(id) {
             initiativeState.entries = initiativeState.entries.filter(entry => entry.id !== id);
             saveInitiativeState();
             renderInitiative();
         }
+
         function nextInitiativeTurn() {
             sortInitiativeEntries();
             if (!initiativeState.entries.length) return;
@@ -2205,6 +2372,7 @@
             saveInitiativeState();
             renderInitiative();
         }
+
         function previousInitiativeTurn() {
             sortInitiativeEntries();
             if (!initiativeState.started || !initiativeState.entries.length) return;
@@ -2215,16 +2383,19 @@
             saveInitiativeState();
             renderInitiative();
         }
+
         function clearInitiative() {
             if (initiativeState.entries.length && !confirm('Limpar toda a iniciativa e encerrar o combate?')) return;
             initiativeState = { entries: [], activeId: null, round: 0, started: false };
             saveInitiativeState();
             renderInitiative();
         }
+
         function updateConnection(online) {
             document.getElementById('connection-dot').classList.toggle('online', online);
             document.getElementById('connection-text').textContent = online ? 'Conexão automática ativa' : 'Servidor desconectado — tentando reconectar';
         }
+
         function updatePlayersCount() {
             const count = playersBoard.querySelectorAll('.player-card').length;
             document.getElementById('players-count').textContent = `${count} ${count === 1 ? 'ONLINE' : 'ONLINE'}`;
@@ -2239,6 +2410,7 @@
                 empty.remove();
             }
         }
+
         function renderPlayer(rawData) {
             if (!rawData || !rawData.codigo) return;
             if (normalizeTableCode(rawData.mesa) !== masterTableCode) return;
@@ -2258,6 +2430,7 @@
                 card.id = `player-${code}`;
                 playersBoard.appendChild(card);
             }
+
             const lifeCurrent = safeNumber(data.vida_atual);
             const lifeMaximum = Math.max(0, safeNumber(data.vida_max));
             const sanityCurrent = safeNumber(data.sani_atual);
@@ -2271,6 +2444,7 @@
                 if (data.status.inconsciente) tags += '<span class="tag tag-lesionado">Inconsciente</span>';
                 if (data.status.enlouquecendo) tags += '<span class="tag tag-enlouquecendo">Enlouquecendo</span>';
             }
+
             card.innerHTML = `
                 <div class="player-header">
                     <img src="${escapeHtml(data.foto || '')}" class="player-img" alt="">
@@ -2283,6 +2457,7 @@
             card.querySelector('.btn-ver-ficha').onclick = () => abrirFicha(code);
             updatePlayersCount();
         }
+
         function removePlayer(code, table = masterTableCode) {
             if (normalizeTableCode(table) !== masterTableCode) return;
             code = String(code || '');
@@ -2291,16 +2466,20 @@
             if (card) card.remove();
             updatePlayersCount();
         }
+
         function abrirFicha(code) {
             document.getElementById('iframe-ficha').src = `ficha.html?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
             document.getElementById('modal-ficha').style.display = 'flex';
         }
+
         function fecharFicha() {
             document.getElementById('modal-ficha').style.display = 'none';
             document.getElementById('iframe-ficha').src = '';
         }
+
         localStorage.setItem('master_table_code', masterTableCode);
         updateMasterTableUI();
+
         socket.on('connect', () => {
             updateConnection(true);
             socket.emit('master_ready', { mesa: masterTableCode });
@@ -2324,6 +2503,7 @@
             localStorage.setItem(luminaStorageKey(masterTableCode),String(luminaEnabled));
             renderLuminaControl();
         });
+
         document.getElementById('initiative-name-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
         document.getElementById('initiative-value-input').addEventListener('keydown', event => { if (event.key === 'Enter') addManualInitiative(); });
         document.addEventListener('keydown', event => {
