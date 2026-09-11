@@ -402,6 +402,15 @@
         @keyframes roll-entry-in { from { opacity: 0; transform: translateX(12px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
         @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 480px; } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
+        .master-combat-mode-button { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(229,57,53,0.62); border-radius: 7px; background: rgba(229,57,53,0.10); color: #ff8a86; cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
+        .master-combat-mode-button:hover { transform: translateY(-1px); background: rgba(229,57,53,0.18); box-shadow: 0 0 12px rgba(229,57,53,0.22); }
+        .master-combat-mode-button.active { border-color: #ff5b5b; background: linear-gradient(135deg, rgba(139,0,0,0.94), rgba(229,57,53,0.92)); color: #fff; box-shadow: 0 0 15px rgba(229,57,53,0.45); }
+        #master-tab-combat { flex-wrap: wrap; }
+        .combat-initiative-host { width: 100%; flex: 0 0 100%; }
+        .combat-initiative-host:empty { display: none; }
+        .combat-mode-initiative { display: none; width: 100%; min-width: 0; min-height: 0 !important; max-height: 430px; flex: 0 0 auto; margin: 0 0 14px; box-shadow: 0 10px 34px rgba(0,0,0,0.48), 0 0 18px rgba(229,57,53,0.08); }
+        .combat-mode-initiative.visible { display: flex; }
+        .combat-mode-initiative .initiative-list { max-height: 230px; }
     </style>
 </head>
 <body>
@@ -412,6 +421,7 @@
         </div>
         <div class="master-top-actions">
             <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
+            <button id="master-combat-mode-button" class="master-combat-mode-button" type="button" aria-pressed="false" onclick="toggleMasterCombatMode()">⚔️ MODO DE COMBATE</button>
             <button class="master-screen-share-button" type="button" onclick="openScreenSharePage()">▣ Compartilhar tela</button>
             <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
         </div>
@@ -426,14 +436,8 @@
     </nav>
 
     <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
-        <section class="players-section">
-            <div class="section-heading"><span>Jogadores conectados automaticamente</span><span id="players-count" class="players-count">0 ONLINE</span></div>
-            <div id="players-board" class="players-container">
-                <div id="players-empty" class="players-empty"><strong>Aguardando jogadores</strong>Assim que uma ficha for aberta, ela aparecerá aqui automaticamente.</div>
-            </div>
-        </section>
-        <div class="combat-sidebar">
-            <aside class="initiative-container">
+        <div id="combat-initiative-host" class="combat-initiative-host">
+            <aside id="combat-mode-initiative" class="initiative-container combat-mode-initiative">
                 <div class="initiative-title"><span>⚔️ CONTROLE DE INICIATIVA</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
                 <div class="initiative-add">
                     <div class="initiative-add-row">
@@ -450,6 +454,14 @@
                     <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
                 </div>
             </aside>
+        </div>
+        <section class="players-section">
+            <div class="section-heading"><span>Jogadores conectados automaticamente</span><span id="players-count" class="players-count">0 ONLINE</span></div>
+            <div id="players-board" class="players-container">
+                <div id="players-empty" class="players-empty"><strong>Aguardando jogadores</strong>Assim que uma ficha for aberta, ela aparecerá aqui automaticamente.</div>
+            </div>
+        </section>
+        <div class="combat-sidebar">
             <section class="player-rolls-container" aria-label="Resultados das rolagens dos jogadores">
                 <div class="player-rolls-title"><span>🎲 ÚLTIMAS ROLAGENS</span><button class="player-rolls-clear" type="button" onclick="clearPlayerRollResults()">LIMPAR</button></div>
                 <div id="player-rolls-list" class="player-rolls-list" aria-live="polite"></div>
@@ -458,6 +470,7 @@
     </main>
 
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
+        <div id="monsters-initiative-host" class="combat-initiative-host"></div>
         <div class="monsters-toolbar">
             <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
             <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
@@ -730,6 +743,7 @@
         const playersBoard = document.getElementById('players-board');
         const connectedPlayers = new Map();
         let playerRollHistory = [];
+        let masterCombatModeEnabled = false;
         const masterUrlParams = new URLSearchParams(window.location.search);
         let masterTableCode = normalizeTableCode(masterUrlParams.get('mesa') || localStorage.getItem('master_table_code') || 'PADRAO');
         let luminaEnabled = loadLuminaAccess(masterTableCode);
@@ -948,11 +962,41 @@
             renderPlayerRollResults();
         }
 
+        function updateCombatInitiativePlacement(selectedTab = null) {
+            const initiative = document.getElementById('combat-mode-initiative');
+            if (!initiative) return;
+            const activeTab = selectedTab || document.querySelector('.master-tab-button.active')?.dataset.masterTab || 'combat';
+            const host = activeTab === 'combat'
+                ? document.getElementById('combat-initiative-host')
+                : activeTab === 'monsters'
+                    ? document.getElementById('monsters-initiative-host')
+                    : null;
+
+            if (host && initiative.parentElement !== host) host.appendChild(initiative);
+            initiative.classList.toggle('visible', masterCombatModeEnabled && Boolean(host));
+        }
+
+        function setMasterCombatMode(enabled) {
+            masterCombatModeEnabled = Boolean(enabled);
+            const button = document.getElementById('master-combat-mode-button');
+            if (button) {
+                button.classList.toggle('active', masterCombatModeEnabled);
+                button.setAttribute('aria-pressed', String(masterCombatModeEnabled));
+                button.textContent = masterCombatModeEnabled ? '⚔️ MODO DE COMBATE: ATIVO' : '⚔️ MODO DE COMBATE';
+            }
+            updateCombatInitiativePlacement();
+        }
+
+        function toggleMasterCombatMode() {
+            setMasterCombatMode(!masterCombatModeEnabled);
+        }
+
         function switchMasterTab(tab) {
             const selectedTab = ['monsters','catalog','clues','lumina'].includes(tab) ? tab : 'combat';
             document.querySelectorAll('.master-tab-button').forEach(button => button.classList.toggle('active', button.dataset.masterTab === selectedTab));
             document.querySelectorAll('.master-tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `master-tab-${selectedTab}`));
             localStorage.setItem('mestre_active_tab', selectedTab);
+            updateCombatInitiativePlacement(selectedTab);
             if (selectedTab === 'catalog') renderMasterCatalog();
             if (selectedTab === 'clues') renderMasterClues();
             if (selectedTab === 'lumina') renderLuminaControl();
@@ -2524,6 +2568,7 @@
         renderMonsters();
         renderMasterClues();
         renderLuminaControl();
+        setMasterCombatMode(false);
         switchMasterTab(localStorage.getItem('mestre_active_tab'));
     </script>
 </body>
