@@ -288,6 +288,7 @@
         .master-clue-description { padding: 14px; border: 1px solid rgba(210,232,248,0.28); border-radius: 8px; background: rgba(2,7,14,0.88); color: var(--text-primary); font-size: 0.8em; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
         .master-clue-3d-stage { position: relative; width: 100%; height: clamp(440px,62vh,650px); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center,rgba(36,72,102,0.24),rgba(1,5,11,0.96)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .master-clue-3d-stage.dragging { cursor: grabbing; }
+        .master-clue-3d-stage img, .master-clue-book-stage img { -webkit-user-drag: none; user-drag: none; user-select: none; -webkit-user-select: none; pointer-events: none; }
         .master-clue-3d-stage.move-mode, .master-clue-book-stage.move-mode { cursor: move; }
         .master-clue-3d-stage.move-mode.dragging, .master-clue-book-stage.move-mode.dragging { cursor: grabbing; }
         .master-clue-3d-object { position: relative; width: 300px; height: 200px; max-width: none; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg); transition: transform 0.14s ease-out,width 0.18s ease,height 0.18s ease; }
@@ -1680,7 +1681,8 @@
             if (masterClue3DInitialized) return;
             masterClue3DInitialized = true;
             const stage = document.getElementById('master-clue-3d-stage');
-            stage.addEventListener('pointerdown', event => { masterClueDragging=true;masterCluePanning=masterClueMoveMode||event.shiftKey;masterClueLastX=event.clientX;masterClueLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId); });
+            stage.addEventListener('dragstart', event => event.preventDefault());
+            stage.addEventListener('pointerdown', event => { if(event.pointerType==='mouse'&&event.button!==0)return;event.preventDefault();masterClueDragging=true;masterCluePanning=masterClueMoveMode||event.shiftKey;masterClueLastX=event.clientX;masterClueLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId); });
             stage.addEventListener('pointermove', event => { if(!masterClueDragging)return;const deltaX=event.clientX-masterClueLastX,deltaY=event.clientY-masterClueLastY;if(masterCluePanning){const limitX=stage.clientWidth*1.5,limitY=stage.clientHeight*1.5;masterCluePanX=Math.max(-limitX,Math.min(limitX,masterCluePanX+deltaX));masterCluePanY=Math.max(-limitY,Math.min(limitY,masterCluePanY+deltaY));}else{masterClueRotationY+=deltaX*0.65;masterClueRotationX=Math.max(-75,Math.min(75,masterClueRotationX-deltaY*0.5));}masterClueLastX=event.clientX;masterClueLastY=event.clientY;updateMasterClue3DTransform(); });
             const finish = event => { masterClueDragging=false;masterCluePanning=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId); };
             stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);
@@ -1764,7 +1766,8 @@
         function initializeMasterBook3D(){
             applyMasterBookThickness(masterCluesState.find(item=>item.id===currentMasterClueId));
             if(masterBook3DInitialized)return;const stage=document.getElementById('master-clue-book-stage');if(!stage)return;masterBook3DInitialized=true;
-            stage.addEventListener('pointerdown',event=>{masterBookDragging=true;masterBookPanning=masterBookMoveMode||event.shiftKey;masterBookLastX=event.clientX;masterBookLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId);});
+            stage.addEventListener('dragstart',event=>event.preventDefault());
+            stage.addEventListener('pointerdown',event=>{if(event.pointerType==='mouse'&&event.button!==0)return;event.preventDefault();masterBookDragging=true;masterBookPanning=masterBookMoveMode||event.shiftKey;masterBookLastX=event.clientX;masterBookLastY=event.clientY;stage.classList.add('dragging');stage.setPointerCapture(event.pointerId);});
             stage.addEventListener('pointermove',event=>{if(!masterBookDragging)return;const deltaX=event.clientX-masterBookLastX,deltaY=event.clientY-masterBookLastY;if(masterBookPanning){const limitX=stage.clientWidth*1.5,limitY=stage.clientHeight*1.5;masterBookPanX=Math.max(-limitX,Math.min(limitX,masterBookPanX+deltaX));masterBookPanY=Math.max(-limitY,Math.min(limitY,masterBookPanY+deltaY));}else{masterBookRotationY+=deltaX*0.65;masterBookRotationX=Math.max(-75,Math.min(75,masterBookRotationX-deltaY*0.5));}masterBookLastX=event.clientX;masterBookLastY=event.clientY;updateMasterClueBook3DTransform();});
             const finish=event=>{masterBookDragging=false;masterBookPanning=false;stage.classList.remove('dragging');if(event.pointerId!==undefined&&stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);};stage.addEventListener('pointerup',finish);stage.addEventListener('pointercancel',finish);stage.addEventListener('wheel',event=>{event.preventDefault();zoomMasterClueBook3D(event.deltaY<0?0.15:-0.15);},{passive:false});window.addEventListener('resize',updateMasterBook3DFit);
         }
