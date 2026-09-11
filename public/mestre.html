@@ -405,12 +405,70 @@
         .master-combat-mode-button { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(139,204,246,0.50); border-radius: 7px; background: rgba(57,174,232,0.07); color: var(--accent-blue); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
         .master-combat-mode-button:hover { transform: translateY(-1px); background: rgba(57,174,232,0.15); box-shadow: 0 0 12px rgba(57,174,232,0.18); }
         .master-combat-mode-button.active { border-color: #ff5b5b; background: linear-gradient(135deg, rgba(139,0,0,0.94), rgba(229,57,53,0.92)); color: #fff; box-shadow: 0 0 15px rgba(229,57,53,0.45); }
-        #master-tab-combat { flex-wrap: wrap; align-content: flex-start; align-items: flex-start; }
-        .combat-initiative-host { display: none; width: 100%; flex: 0 0 100%; }
-        .combat-initiative-host.has-initiative { display: block; }
-        .combat-mode-initiative { display: none; width: 100%; min-width: 0; min-height: 0 !important; max-height: 430px; flex: 0 0 auto; margin: 0 0 14px; box-shadow: 0 10px 34px rgba(0,0,0,0.48), 0 0 18px rgba(229,57,53,0.08); }
-        .combat-mode-initiative.visible { display: flex; }
-        .combat-mode-initiative .initiative-list { max-height: 230px; }
+        #master-tab-combat { align-content: flex-start; align-items: flex-start; }
+
+        /* JANELA LATERAL DO MODO DE COMBATE */
+        body { transition: padding-right 0.28s ease; }
+        body.combat-initiative-open { padding-right: 410px; }
+        .combat-mode-initiative {
+            position: fixed;
+            z-index: 9200;
+            top: 108px;
+            right: 20px;
+            bottom: 20px;
+            width: 370px;
+            min-width: 0;
+            min-height: 0 !important;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateX(calc(100% + 32px));
+            border-color: rgba(229,57,53,0.55);
+            background: linear-gradient(180deg, rgba(8,15,24,0.985), rgba(3,8,14,0.985));
+            box-shadow: -18px 0 48px rgba(0,0,0,0.62), 0 0 24px rgba(229,57,53,0.10);
+            transition: transform 0.28s ease, opacity 0.22s ease, visibility 0.28s;
+        }
+        .combat-mode-initiative.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+        .combat-mode-initiative .initiative-title { flex: 0 0 auto; }
+        .combat-mode-initiative .initiative-add { flex: 0 0 auto; }
+        .combat-mode-initiative .initiative-list { min-height: 120px; max-height: none; flex: 1 1 auto; }
+        .combat-mode-initiative .initiative-controls { flex: 0 0 auto; }
+        .combat-initiative-title-main { min-width: 0; display: flex; align-items: center; gap: 8px; }
+        .combat-initiative-title-main > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .combat-initiative-close {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            padding: 0;
+            border: 1px solid rgba(229,57,53,0.48);
+            border-radius: 6px;
+            background: rgba(229,57,53,0.12);
+            color: #ff8f8a;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 900;
+            line-height: 1;
+            transition: 0.2s;
+        }
+        .combat-initiative-close:hover { background: rgba(229,57,53,0.3); color: #fff; }
+
+        @media (max-width: 1200px) {
+            body.combat-initiative-open { padding-right: 20px; }
+            .combat-mode-initiative { top: 96px; right: 14px; bottom: 14px; width: min(390px, calc(100vw - 28px)); }
+        }
+        @media (max-width: 600px) {
+            body.combat-initiative-open { padding-right: 10px; }
+            .combat-mode-initiative { top: 10px; right: 10px; bottom: 10px; width: calc(100vw - 20px); }
+        }
     </style>
 </head>
 <body>
@@ -435,26 +493,28 @@
         <button class="master-tab-button" type="button" data-master-tab="lumina" onclick="switchMasterTab('lumina')">🌐 LUMINA</button>
     </nav>
 
-    <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
-        <div id="combat-initiative-host" class="combat-initiative-host">
-            <aside id="combat-mode-initiative" class="initiative-container combat-mode-initiative">
-                <div class="initiative-title"><span>⚔️ CONTROLE DE INICIATIVA</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
-                <div class="initiative-add">
-                    <div class="initiative-add-row">
-                        <input id="initiative-name-input" class="initiative-input" type="text" placeholder="Nome do inimigo ou NPC">
-                        <input id="initiative-value-input" class="initiative-input" type="number" value="0" aria-label="Iniciativa">
-                        <button class="initiative-add-button" type="button" onclick="addManualInitiative()">+</button>
-                    </div>
-                    <div class="initiative-auto-note">Jogadores entram automaticamente quando rolam Iniciativa na ficha.</div>
-                </div>
-                <div id="initiative-list" class="initiative-list"></div>
-                <div class="initiative-controls">
-                    <button id="initiative-previous" class="initiative-previous" type="button" onclick="previousInitiativeTurn()">← VOLTAR</button>
-                    <button id="initiative-next" class="initiative-next" type="button" onclick="nextInitiativeTurn()">INICIAR COMBATE</button>
-                    <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
-                </div>
-            </aside>
+    <aside id="combat-mode-initiative" class="initiative-container combat-mode-initiative" aria-hidden="true" aria-label="Controle de iniciativa">
+        <div class="initiative-title">
+            <div class="combat-initiative-title-main"><span>⚔️ CONTROLE DE INICIATIVA</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
+            <button class="combat-initiative-close" type="button" title="Fechar modo de combate" aria-label="Fechar modo de combate" onclick="setMasterCombatMode(false)">×</button>
         </div>
+        <div class="initiative-add">
+            <div class="initiative-add-row">
+                <input id="initiative-name-input" class="initiative-input" type="text" placeholder="Nome do inimigo ou NPC">
+                <input id="initiative-value-input" class="initiative-input" type="number" value="0" aria-label="Iniciativa">
+                <button class="initiative-add-button" type="button" onclick="addManualInitiative()">+</button>
+            </div>
+            <div class="initiative-auto-note">Jogadores entram automaticamente quando rolam Iniciativa na ficha.</div>
+        </div>
+        <div id="initiative-list" class="initiative-list"></div>
+        <div class="initiative-controls">
+            <button id="initiative-previous" class="initiative-previous" type="button" onclick="previousInitiativeTurn()">← VOLTAR</button>
+            <button id="initiative-next" class="initiative-next" type="button" onclick="nextInitiativeTurn()">INICIAR COMBATE</button>
+            <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
+        </div>
+    </aside>
+
+    <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
         <section class="players-section">
             <div class="section-heading"><span>Jogadores conectados automaticamente</span><span id="players-count" class="players-count">0 ONLINE</span></div>
             <div id="players-board" class="players-container">
@@ -470,7 +530,6 @@
     </main>
 
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
-        <div id="monsters-initiative-host" class="combat-initiative-host"></div>
         <div class="monsters-toolbar">
             <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
             <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
@@ -962,25 +1021,12 @@
             renderPlayerRollResults();
         }
 
-        function updateCombatInitiativePlacement(selectedTab = null) {
+        function updateCombatInitiativePlacement() {
             const initiative = document.getElementById('combat-mode-initiative');
             if (!initiative) return;
-
-            const combatHost = document.getElementById('combat-initiative-host');
-            const monstersHost = document.getElementById('monsters-initiative-host');
-            [combatHost, monstersHost].forEach(hostItem => hostItem && hostItem.classList.remove('has-initiative'));
-
-            const activeTab = selectedTab || document.querySelector('.master-tab-button.active')?.dataset.masterTab || 'combat';
-            const host = activeTab === 'combat'
-                ? combatHost
-                : activeTab === 'monsters'
-                    ? monstersHost
-                    : null;
-
-            const shouldShow = masterCombatModeEnabled && Boolean(host);
-            if (shouldShow && initiative.parentElement !== host) host.appendChild(initiative);
-            if (shouldShow) host.classList.add('has-initiative');
-            initiative.classList.toggle('visible', shouldShow);
+            initiative.classList.toggle('visible', masterCombatModeEnabled);
+            initiative.setAttribute('aria-hidden', String(!masterCombatModeEnabled));
+            document.body.classList.toggle('combat-initiative-open', masterCombatModeEnabled);
         }
 
         function setMasterCombatMode(enabled) {
@@ -1003,7 +1049,6 @@
             document.querySelectorAll('.master-tab-button').forEach(button => button.classList.toggle('active', button.dataset.masterTab === selectedTab));
             document.querySelectorAll('.master-tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `master-tab-${selectedTab}`));
             localStorage.setItem('mestre_active_tab', selectedTab);
-            updateCombatInitiativePlacement(selectedTab);
             if (selectedTab === 'catalog') renderMasterCatalog();
             if (selectedTab === 'clues') renderMasterClues();
             if (selectedTab === 'lumina') renderLuminaControl();
