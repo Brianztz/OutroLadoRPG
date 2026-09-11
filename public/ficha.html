@@ -187,6 +187,7 @@
         .clue-image-preview { display: none; width: 100%; max-height: 150px; object-fit: contain; border: 1px solid rgba(210,232,248,0.3); border-radius: 8px; background: rgba(0,0,0,0.58); }
         .clue-3d-stage { position: relative; width: 100%; height: clamp(440px, 62vh, 650px); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center, rgba(36,72,102,0.24), rgba(1,5,11,0.96)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .clue-3d-stage.dragging { cursor: grabbing; }
+        .clue-3d-stage img, .clue-book-stage img { -webkit-user-drag: none; user-drag: none; user-select: none; -webkit-user-select: none; pointer-events: none; }
         .clue-3d-stage.move-mode, .clue-book-stage.move-mode { cursor: move; }
         .clue-3d-stage.move-mode.dragging, .clue-book-stage.move-mode.dragging { cursor: grabbing; }
         .clue-3d-object { position: relative; width: 300px; height: 200px; max-width: none; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg); transition: transform 0.14s ease-out, width 0.18s ease, height 0.18s ease; }
@@ -2692,7 +2693,10 @@
         if (!stage) return;
         clue3DControlsInitialized = true;
 
+        stage.addEventListener('dragstart', event => event.preventDefault());
         stage.addEventListener('pointerdown', event => {
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            event.preventDefault();
             clue3DDragging = true;
             clue3DPanning = clue3DMoveMode || event.shiftKey;
             clue3DLastX = event.clientX;
@@ -2892,7 +2896,10 @@
         const stage = document.getElementById('clue-book-stage');
         if (!stage) return;
         clueBook3DControlsInitialized = true;
+        stage.addEventListener('dragstart', event => event.preventDefault());
         stage.addEventListener('pointerdown', event => {
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            event.preventDefault();
             clueBookDragging = true;
             clueBookPanning = clueBookMoveMode || event.shiftKey;
             clueBookLastX = event.clientX;
