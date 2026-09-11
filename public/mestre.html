@@ -402,12 +402,12 @@
         @keyframes roll-entry-in { from { opacity: 0; transform: translateX(12px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
         @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 480px; } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
-        .master-combat-mode-button { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(229,57,53,0.62); border-radius: 7px; background: rgba(229,57,53,0.10); color: #ff8a86; cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
-        .master-combat-mode-button:hover { transform: translateY(-1px); background: rgba(229,57,53,0.18); box-shadow: 0 0 12px rgba(229,57,53,0.22); }
+        .master-combat-mode-button { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(139,204,246,0.50); border-radius: 7px; background: rgba(57,174,232,0.07); color: var(--accent-blue); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
+        .master-combat-mode-button:hover { transform: translateY(-1px); background: rgba(57,174,232,0.15); box-shadow: 0 0 12px rgba(57,174,232,0.18); }
         .master-combat-mode-button.active { border-color: #ff5b5b; background: linear-gradient(135deg, rgba(139,0,0,0.94), rgba(229,57,53,0.92)); color: #fff; box-shadow: 0 0 15px rgba(229,57,53,0.45); }
-        #master-tab-combat { flex-wrap: wrap; }
-        .combat-initiative-host { width: 100%; flex: 0 0 100%; }
-        .combat-initiative-host:empty { display: none; }
+        #master-tab-combat { flex-wrap: wrap; align-content: flex-start; align-items: flex-start; }
+        .combat-initiative-host { display: none; width: 100%; flex: 0 0 100%; }
+        .combat-initiative-host.has-initiative { display: block; }
         .combat-mode-initiative { display: none; width: 100%; min-width: 0; min-height: 0 !important; max-height: 430px; flex: 0 0 auto; margin: 0 0 14px; box-shadow: 0 10px 34px rgba(0,0,0,0.48), 0 0 18px rgba(229,57,53,0.08); }
         .combat-mode-initiative.visible { display: flex; }
         .combat-mode-initiative .initiative-list { max-height: 230px; }
@@ -965,15 +965,22 @@
         function updateCombatInitiativePlacement(selectedTab = null) {
             const initiative = document.getElementById('combat-mode-initiative');
             if (!initiative) return;
+
+            const combatHost = document.getElementById('combat-initiative-host');
+            const monstersHost = document.getElementById('monsters-initiative-host');
+            [combatHost, monstersHost].forEach(hostItem => hostItem && hostItem.classList.remove('has-initiative'));
+
             const activeTab = selectedTab || document.querySelector('.master-tab-button.active')?.dataset.masterTab || 'combat';
             const host = activeTab === 'combat'
-                ? document.getElementById('combat-initiative-host')
+                ? combatHost
                 : activeTab === 'monsters'
-                    ? document.getElementById('monsters-initiative-host')
+                    ? monstersHost
                     : null;
 
-            if (host && initiative.parentElement !== host) host.appendChild(initiative);
-            initiative.classList.toggle('visible', masterCombatModeEnabled && Boolean(host));
+            const shouldShow = masterCombatModeEnabled && Boolean(host);
+            if (shouldShow && initiative.parentElement !== host) host.appendChild(initiative);
+            if (shouldShow) host.classList.add('has-initiative');
+            initiative.classList.toggle('visible', shouldShow);
         }
 
         function setMasterCombatMode(enabled) {
