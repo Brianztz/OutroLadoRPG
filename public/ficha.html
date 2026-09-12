@@ -187,7 +187,6 @@
         .clue-image-preview { display: none; width: 100%; max-height: 150px; object-fit: contain; border: 1px solid rgba(210,232,248,0.3); border-radius: 8px; background: rgba(0,0,0,0.58); }
         .clue-3d-stage { position: relative; width: 100%; height: clamp(440px, 62vh, 650px); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(210,232,248,0.28); border-radius: 12px; background: radial-gradient(circle at center, rgba(36,72,102,0.24), rgba(1,5,11,0.96)); perspective: 1000px; cursor: grab; touch-action: none; user-select: none; }
         .clue-3d-stage.dragging { cursor: grabbing; }
-        .clue-3d-stage img, .clue-book-stage img { -webkit-user-drag: none; user-drag: none; user-select: none; -webkit-user-select: none; pointer-events: none; }
         .clue-3d-stage.move-mode, .clue-book-stage.move-mode { cursor: move; }
         .clue-3d-stage.move-mode.dragging, .clue-book-stage.move-mode.dragging { cursor: grabbing; }
         .clue-3d-object { position: relative; width: 300px; height: 200px; max-width: none; transform-style: preserve-3d; transform: rotateX(-8deg) rotateY(0deg); transition: transform 0.14s ease-out, width 0.18s ease, height 0.18s ease; }
@@ -219,6 +218,11 @@
         .clue-book-page-editor-controls button { min-width: 0; border: 0; border-radius: 4px; padding: 5px 2px; background: #303037; color: white; cursor: pointer; font-weight: 900; }
         .clue-book-page-editor-controls button:last-child { background: #8f2424; }
         .clue-card-type { display: inline-flex; margin-top: 9px; padding: 3px 7px; border: 1px solid rgba(210,232,248,0.32); border-radius: 999px; color: var(--accent-yellow); font-size: 0.62em; font-weight: 900; text-transform: uppercase; }
+        .clue-audio-viewer { display: none; width: min(760px,100%); margin: 0 auto 13px; padding: clamp(18px,4vw,34px); box-sizing: border-box; flex-direction: column; align-items: center; gap: 22px; border: 1px solid rgba(210,232,248,0.28); border-radius: 18px; background: radial-gradient(circle at 50% 22%,rgba(45,99,139,0.32),rgba(1,6,12,0.97) 68%); box-shadow: inset 0 0 50px rgba(79,178,238,0.06); }
+        .clue-audio-art { width: min(390px,78vw); aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(210,232,248,0.35); border-radius: 18px; background: radial-gradient(circle,rgba(38,83,116,0.55),rgba(2,8,15,0.98)); box-shadow: 0 22px 45px rgba(0,0,0,0.48); }
+        .clue-audio-art img { width: 100%; height: 100%; display: block; object-fit: cover; }
+        .clue-audio-fallback { color: var(--accent-yellow); font-size: 6em; filter: drop-shadow(0 0 18px rgba(92,197,255,0.3)); }
+        .clue-audio-player { width: min(620px,100%); accent-color: var(--accent-yellow); }
         .clue-overlay-inspect-button { width: 100%; margin-top: 16px; padding: 12px 16px; border: 1px solid rgba(56,189,248,0.72); border-radius: 8px; background: linear-gradient(135deg, rgba(5,30,52,0.96), rgba(8,14,24,0.98)); color: #9edfff; box-shadow: inset 0 0 18px rgba(14,165,233,0.08), 0 0 0 rgba(14,165,233,0); font-weight: 1000; letter-spacing: 0.8px; cursor: pointer; transition: 0.22s ease; }
         .clue-overlay-inspect-button:hover { border-color: #5fd4ff; color: #dff7ff; box-shadow: inset 0 0 22px rgba(14,165,233,0.15), 0 0 16px rgba(14,165,233,0.2); transform: translateY(-1px); }
         .clue-overlay-inspect-button.active { border-color: #ff5368; background: linear-gradient(135deg, rgba(75,12,24,0.96), rgba(20,8,13,0.98)); color: #ffd8de; box-shadow: inset 0 0 20px rgba(236,51,77,0.14), 0 0 15px rgba(236,51,77,0.18); }
@@ -671,6 +675,7 @@
 <div id="popup-clue-info" class="popup-overlay" onclick="closeClueInfo()">
     <div class="popup-box" onclick="event.stopPropagation()">
         <h3 id="clue-info-title" style="color:var(--accent-yellow); margin-top:0; text-align:center; text-transform:uppercase;">Pista</h3>
+        <div id="clue-audio-viewer" class="clue-audio-viewer"><div class="clue-audio-art"><img id="clue-audio-image" src="" alt="Imagem do áudio"><div id="clue-audio-fallback" class="clue-audio-fallback">🎧</div></div><audio id="clue-audio-player" class="clue-audio-player" controls preload="metadata"></audio></div>
         <div id="clue-book-viewer" class="clue-book-viewer">
             <div id="clue-book-stage" class="clue-book-stage" aria-label="Livro 3D. Arraste para girar, ative Mover para deslocar e use a roda do mouse para aproximar.">
                 <div id="clue-book-3d-object" class="clue-book-3d-object">
@@ -2114,7 +2119,7 @@
 
     function getClueInspectionState() {
         const clue = cluesData.find(item => item.id === currentClueId);
-        if (!clue) return null;
+        if (!clue || clue.type === 'audio') return null;
         const isBook = clue.type === 'book';
         const stage = document.getElementById(isBook ? 'clue-book-stage' : 'clue-3d-stage');
         const object = document.getElementById(isBook ? 'clue-book-3d-object' : 'clue-3d-object');
@@ -2148,6 +2153,7 @@
     }
 
     function getClueInspectionPayload(clue) {
+        if (!clue || clue.type === 'audio') return null;
         const pages = clue.type === 'book' ? normalizeClueBookPages(clue.pages).slice(0, 100) : [];
         if (clue.type === 'book') {
             const coverFallback = clue.coverImg || clue.img || ((pages[0] || {}).img || '');
@@ -2182,6 +2188,8 @@
     function updateClueOverlayInspectButton() {
         const button = document.getElementById('clue-overlay-inspect-button');
         if (!button) return;
+        const clue = cluesData.find(item => item.id === currentClueId);
+        button.style.display = clue && clue.type === 'audio' ? 'none' : 'block';
         const active = Boolean(currentClueId && clueOverlayInspectionId === currentClueId);
         button.classList.toggle('active', active);
         button.textContent = active ? '■ ENCERRAR INSPEÇÃO NO OVERLAY' : '◉ INSPECIONAR NO OVERLAY';
@@ -2190,7 +2198,7 @@
 
     function emitClueInspectionStart() {
         const clue = cluesData.find(item => item.id === clueOverlayInspectionId);
-        if (!clue || !socket || !socket.connected) return;
+        if (!clue || clue.type === 'audio' || !socket || !socket.connected) return;
         socket.emit('clue_inspection_start', {
             mesa: tableCode,
             codigo: playerCode,
@@ -2202,6 +2210,8 @@
 
     function startClueOverlayInspection() {
         if (!currentClueId) return;
+        const clue = cluesData.find(item => item.id === currentClueId);
+        if (!clue || clue.type === 'audio') return;
         if (!socket) {
             alert('A inspeção no overlay fica disponível quando a ficha está conectada ao servidor.');
             return;
@@ -2693,10 +2703,7 @@
         if (!stage) return;
         clue3DControlsInitialized = true;
 
-        stage.addEventListener('dragstart', event => event.preventDefault());
         stage.addEventListener('pointerdown', event => {
-            if (event.pointerType === 'mouse' && event.button !== 0) return;
-            event.preventDefault();
             clue3DDragging = true;
             clue3DPanning = clue3DMoveMode || event.shiftKey;
             clue3DLastX = event.clientX;
@@ -2896,10 +2903,7 @@
         const stage = document.getElementById('clue-book-stage');
         if (!stage) return;
         clueBook3DControlsInitialized = true;
-        stage.addEventListener('dragstart', event => event.preventDefault());
         stage.addEventListener('pointerdown', event => {
-            if (event.pointerType === 'mouse' && event.button !== 0) return;
-            event.preventDefault();
             clueBookDragging = true;
             clueBookPanning = clueBookMoveMode || event.shiftKey;
             clueBookLastX = event.clientX;
@@ -3066,11 +3070,13 @@
             const safeDescription = escapeClueHtml(clue.desc || 'Sem descrição.');
             const bookPages = normalizeClueBookPages(clue.pages);
             const isBook = clue.type === 'book';
-            const safeImage = escapeClueHtml(isBook ? (clue.coverImg || clue.img || ((bookPages[0] && bookPages[0].img) || '')) : (clue.img || ''));
+            const isAudio = clue.type === 'audio';
+            const icon = isBook ? '📖' : isAudio ? '🎧' : '🔎';
+            const safeImage = escapeClueHtml(isBook ? (clue.coverImg || clue.img || ((bookPages[0] && bookPages[0].img) || '')) : isAudio ? (clue.audioImg || clue.img || '') : (clue.img || ''));
             const image = safeImage
-                ? `<img class="clue-card-image" src="${safeImage}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="clue-card-fallback" style="display:none;">${isBook ? '📖' : '🔎'}</div>`
-                : `<div class="clue-card-fallback">${isBook ? '📖' : '🔎'}</div>`;
-            const typeBadge = isBook ? `<div class="clue-card-type">📖 LIVRO · ${bookPages.length} ${bookPages.length === 1 ? 'PÁGINA' : 'PÁGINAS'}</div>` : '';
+                ? `<img class="clue-card-image" src="${safeImage}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="clue-card-fallback" style="display:none;">${icon}</div>`
+                : `<div class="clue-card-fallback">${icon}</div>`;
+            const typeBadge = isBook ? `<div class="clue-card-type">📖 LIVRO · ${bookPages.length} ${bookPages.length === 1 ? 'PÁGINA' : 'PÁGINAS'}</div>` : isAudio ? '<div class="clue-card-type">🎧 ÁUDIO</div>' : '';
             return `<article class="clue-card" data-clue-id="${safeId}" tabindex="0" role="button" aria-label="Abrir pista ${safeTitle}"><div class="clue-card-media">${image}</div><div class="clue-card-content"><div class="clue-card-title">${safeTitle}</div><div class="clue-card-description">${safeDescription}</div>${typeBadge}</div></article>`;
         }).join('');
 
@@ -3151,6 +3157,8 @@
         const stage = document.getElementById('clue-3d-stage');
         const threeDControls = document.querySelector('#popup-clue-info .clue-3d-controls:not(.clue-book-3d-controls)');
         const bookViewer = document.getElementById('clue-book-viewer');
+        const audioViewer = document.getElementById('clue-audio-viewer');
+        const audioPlayer = document.getElementById('clue-audio-player');
         const image = document.getElementById('clue-3d-image');
         const backImage = document.getElementById('clue-3d-back-image');
         const fallback = document.getElementById('clue-3d-fallback');
@@ -3158,6 +3166,31 @@
         const popup = document.getElementById('popup-clue-info');
 
         popup.style.display = 'flex';
+        if (clue.type === 'audio') {
+            clue3DImageRequestToken++;
+            stage.style.display = 'none';
+            threeDControls.style.display = 'none';
+            bookViewer.style.display = 'none';
+            audioViewer.style.display = 'flex';
+            const audioImage = document.getElementById('clue-audio-image');
+            const audioFallback = document.getElementById('clue-audio-fallback');
+            const audioImageSource = clue.audioImg || clue.img || '';
+            if (audioImageSource) {
+                audioImage.src = audioImageSource;
+                audioImage.style.display = 'block';
+                audioFallback.style.display = 'none';
+                audioImage.onerror = () => { audioImage.style.display = 'none'; audioFallback.style.display = 'block'; };
+            } else {
+                audioImage.removeAttribute('src');
+                audioImage.style.display = 'none';
+                audioFallback.style.display = 'block';
+            }
+            audioPlayer.src = clue.audioSrc || '';
+            audioPlayer.load();
+            return;
+        }
+        audioViewer.style.display = 'none';
+        audioPlayer.pause();
         if (clue.type === 'book') {
             const coverToken = ++clue3DImageRequestToken;
             stage.style.display = 'none';
@@ -3288,6 +3321,8 @@
 
     function closeClueInfo() {
         stopClueOverlayInspection();
+        const audioPlayer = document.getElementById('clue-audio-player');
+        if (audioPlayer) { audioPlayer.pause(); audioPlayer.removeAttribute('src'); audioPlayer.load(); }
         document.getElementById('popup-clue-info').style.display = 'none';
         clue3DImageRequestToken++;
         clueBookFitToken++;
@@ -3988,8 +4023,10 @@ function removeCurrentClue() {
             backImg: String(clue.backImg || clue.back || clue.img || ''),
             coverImg: String(clue.coverImg || (clue.type === 'book' ? clue.img : '') || ''),
             coverBackImg: String(clue.coverBackImg || clue.coverBack || ''),
+            audioSrc: String(clue.audioSrc || clue.audio || ''),
+            audioImg: String(clue.audioImg || clue.audioImage || (clue.type === 'audio' ? clue.img : '') || ''),
             thickness: normalizeClueThickness(clue.thickness),
-            type: clue.type === 'book' ? 'book' : 'object',
+            type: clue.type === 'book' ? 'book' : clue.type === 'audio' ? 'audio' : 'object',
             pages: clue.type === 'book' ? normalizeClueBookPages(clue.pages) : []
         })) : [];
         renderClues();
