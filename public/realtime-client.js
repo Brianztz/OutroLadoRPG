@@ -80,6 +80,7 @@
             this._queue = [];
             this._socket = null;
             this._manualClose = false;
+            this._volatileNext = false;
             this._reconnectTimer = null;
             this._reconnectAttempts = 0;
             this._generation = 0;
@@ -89,6 +90,7 @@
         }
 
         get volatile() {
+            this._volatileNext = true;
             return this;
         }
 
@@ -123,10 +125,12 @@
 
         emit(event, data) {
             if (typeof event !== 'string' || !event) return this;
+            const volatile = this._volatileNext;
+            this._volatileNext = false;
             const requestedTable = data && typeof data === 'object' && data.mesa
                 ? normalizeTableCode(data.mesa)
                 : this._table;
-            const packet = { event, data };
+            const packet = { event, data, volatile };
             if (requestedTable !== this._table) {
                 this._table = requestedTable;
                 this._queue.push(packet);
@@ -134,7 +138,7 @@
                 return this;
             }
             if (!this.connected || !this._socket || this._socket.readyState !== WebSocket.OPEN) {
-                this._queue.push(packet);
+                if (!volatile) this._queue.push(packet);
                 return this;
             }
             this._send(packet);
@@ -166,9 +170,10 @@
 
         _send(packet) {
             try {
+                if (packet.volatile && this._socket.bufferedAmount > 2 * 1024 * 1024) return;
                 this._socket.send(encodePacket(packet.event, packet.data));
             } catch (error) {
-                this._queue.unshift(packet);
+                if (!packet.volatile) this._queue.unshift(packet);
             }
         }
 
@@ -194,7 +199,10 @@
             url.searchParams.set('client', this.id);
             if (this.auth.screenShareMode) url.searchParams.set('screenShareMode', String(this.auth.screenShareMode));
 
-            const socket = new WebSocket(url.href);
+            let firebaseToken = '';
+            try { firebaseToken = String(global.sessionStorage.getItem('ol_firebase_id_token') || ''); } catch (error) {}
+            const protocols = firebaseToken ? ['ol-v1', `firebase.${firebaseToken}`] : [];
+            const socket = protocols.length ? new WebSocket(url.href, protocols) : new WebSocket(url.href);
             socket.binaryType = 'arraybuffer';
             this._socket = socket;
 

@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Outro Lado RPG - Ficha de Personagem</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script src="firebase-client.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const role = new URLSearchParams(window.location.search).has('view') ? 'master' : 'player';
+            OLFirebase.guardPage(role);
+        });
+    </script>
     <style>
         :root {
             --bg-body: #02050a; --bg-card: rgba(6, 12, 19, 0.92); --bg-input: rgba(2, 7, 14, 0.88);

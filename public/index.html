@@ -142,6 +142,18 @@
         .role-button.master .role-icon { border-color: rgba(210, 232, 248, 0.42); color: var(--master); }
 
         .hint { margin: 16px 0 0; color: #718797; font-size: 0.76rem; line-height: 1.45; text-align: center; }
+        .auth-panel { margin-bottom: 20px; padding: 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid rgba(139, 204, 246, 0.22); border-radius: 12px; background: rgba(1, 6, 12, 0.72); }
+        .auth-copy { min-width: 0; display: flex; align-items: center; gap: 11px; }
+        .auth-avatar { width: 40px; height: 40px; flex: 0 0 40px; border: 1px solid var(--line-strong); border-radius: 50%; object-fit: cover; background: rgba(57, 174, 232, 0.08); }
+        .auth-copy strong, .auth-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .auth-copy strong { font-size: 0.86rem; }
+        .auth-copy small { margin-top: 3px; color: var(--muted); font-size: 0.7rem; }
+        .auth-button { min-height: 40px; flex: 0 0 auto; padding: 9px 14px; border: 1px solid var(--line-strong); border-radius: 9px; background: rgba(57, 174, 232, 0.12); color: #fff; cursor: pointer; font-weight: 900; }
+        .auth-button:hover { background: rgba(57, 174, 232, 0.22); box-shadow: 0 0 18px rgba(57, 174, 232, 0.13); }
+        .auth-button.secondary { border-color: rgba(148, 169, 185, 0.34); background: rgba(148, 169, 185, 0.07); color: var(--muted); }
+        .auth-message { min-height: 20px; margin: -10px 0 14px; color: var(--muted); font-size: 0.78rem; text-align: center; }
+        .auth-message.error { color: #ff7a82; }
+        .role-button:disabled { cursor: not-allowed; opacity: 0.42; transform: none; box-shadow: none; }
 
         @media (max-width: 620px) {
             body { padding: 12px; }
@@ -162,6 +174,16 @@
         </header>
 
         <form class="entry-form" onsubmit="enterPortal('player'); return false;">
+            <section class="auth-panel" aria-live="polite">
+                <div class="auth-copy">
+                    <img id="auth-avatar" class="auth-avatar" alt="" hidden>
+                    <div><strong id="auth-name">Conta Google necessária</strong><small id="auth-email">Entre para acessar sua ficha ou o escudo.</small></div>
+                </div>
+                <button id="google-login" class="auth-button" type="button">ENTRAR COM GOOGLE</button>
+                <button id="google-logout" class="auth-button secondary" type="button" hidden>SAIR</button>
+            </section>
+            <p id="auth-message" class="auth-message"></p>
+
             <label class="table-field" for="table-input">
                 <span>Código da mesa</span>
                 <div class="input-wrap">
@@ -171,11 +193,11 @@
             </label>
 
             <div class="role-grid">
-                <button class="role-button player" type="submit">
+                <button class="role-button player" type="submit" disabled>
                     <span class="role-icon" aria-hidden="true">♟</span>
                     <span class="role-copy"><strong>Entrar como jogador</strong><span>Abrir sua ficha de personagem nesta mesa.</span></span>
                 </button>
-                <button class="role-button master" type="button" onclick="enterPortal('master')">
+                <button class="role-button master" type="button" onclick="enterPortal('master')" disabled>
                     <span class="role-icon" aria-hidden="true">♜</span>
                     <span class="role-copy"><strong>Entrar como mestre</strong><span>Abrir o escudo e controlar esta mesa.</span></span>
                 </button>
@@ -185,9 +207,17 @@
         </form>
     </main>
 
+    <script src="firebase-client.js"></script>
     <script>
         const tableInput = document.getElementById('table-input');
         const params = new URLSearchParams(window.location.search);
+        const authName = document.getElementById('auth-name');
+        const authEmail = document.getElementById('auth-email');
+        const authAvatar = document.getElementById('auth-avatar');
+        const authMessage = document.getElementById('auth-message');
+        const googleLogin = document.getElementById('google-login');
+        const googleLogout = document.getElementById('google-logout');
+        const roleButtons = [...document.querySelectorAll('.role-button')];
 
         function normalizeTableCode(value) {
             const normalized = String(value || 'PADRAO')
@@ -209,19 +239,76 @@
             tableInput.setSelectionRange(start, start);
         });
 
-        function enterPortal(role) {
+        function setPortalBusy(busy) {
+            googleLogin.disabled = busy;
+            googleLogout.disabled = busy;
+            roleButtons.forEach(button => { button.disabled = busy || !window.__portalUser; });
+        }
+
+        function showAuthMessage(message, error = false) {
+            authMessage.textContent = String(message || '');
+            authMessage.classList.toggle('error', Boolean(error));
+        }
+
+        function renderAuthUser(user) {
+            window.__portalUser = user || null;
+            const signedIn = Boolean(user);
+            authName.textContent = signedIn ? (user.displayName || 'Conta Google') : 'Conta Google necessária';
+            authEmail.textContent = signedIn ? (user.email || '') : 'Entre para acessar sua ficha ou o escudo.';
+            authAvatar.hidden = !signedIn || !user.photoURL;
+            if (signedIn && user.photoURL) authAvatar.src = user.photoURL;
+            googleLogin.hidden = signedIn;
+            googleLogout.hidden = !signedIn;
+            roleButtons.forEach(button => { button.disabled = !signedIn; });
+        }
+
+        async function enterPortal(role) {
             if (!tableInput.reportValidity()) return;
             const table = normalizeTableCode(tableInput.value);
             tableInput.value = table;
-            localStorage.setItem('portal_table_code', table);
-
-            const isMaster = role === 'master';
-            localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
-            const destination = new URL(isMaster ? './mestre.html' : './ficha.html', window.location.href);
-            destination.search = '';
-            destination.searchParams.set('mesa', table);
-            window.location.assign(destination.href);
+            showAuthMessage(role === 'master' ? 'Validando acesso do mestre...' : 'Entrando na mesa...');
+            setPortalBusy(true);
+            try {
+                await OLFirebase.preparePortal(role, table);
+                localStorage.setItem('portal_table_code', table);
+                const isMaster = role === 'master';
+                localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
+                const destination = new URL(isMaster ? './mestre.html' : './ficha.html', window.location.href);
+                destination.search = '';
+                destination.searchParams.set('mesa', table);
+                window.location.assign(destination.href);
+            } catch (error) {
+                showAuthMessage(error && error.message || 'Nao foi possivel entrar nessa mesa.', true);
+                setPortalBusy(false);
+            }
         }
+
+        googleLogin.addEventListener('click', async () => {
+            showAuthMessage('Abrindo o login do Google...');
+            setPortalBusy(true);
+            try {
+                const user = await OLFirebase.signInWithGoogle();
+                renderAuthUser(user);
+                showAuthMessage('Conta conectada. Agora escolha como deseja entrar.');
+            } catch (error) {
+                const cancelled = error && ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code);
+                showAuthMessage(cancelled ? 'Login cancelado.' : 'Nao foi possivel entrar com o Google.', !cancelled);
+            } finally {
+                setPortalBusy(false);
+            }
+        });
+
+        googleLogout.addEventListener('click', async () => {
+            setPortalBusy(true);
+            await OLFirebase.signOut();
+            renderAuthUser(null);
+            showAuthMessage('Conta desconectada.');
+            setPortalBusy(false);
+        });
+
+        const incomingNotice = params.get('aviso');
+        if (incomingNotice) showAuthMessage(incomingNotice, true);
+        OLFirebase.onUserChanged(user => renderAuthUser(user));
     </script>
 </body>
 </html>
