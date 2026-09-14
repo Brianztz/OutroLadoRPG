@@ -39,8 +39,35 @@ service cloud.firestore {
     //   playerCode: string (obrigatorio, 1..40)
     //   characterName: string (obrigatorio, 1..120)
     //   overlayColor: string (obrigatorio, #RGB ou #RRGGBB)
-    //   sheetJson: string (obrigatorio, JSON serializado, <= 800000 caracteres)
+    //   storageVersion: int (obrigatorio na versao atual: 2)
+    //   chunkCount: int (obrigatorio, 1..48)
+    //   sheetSize: int (obrigatorio, 2..8640000)
+    //   sheetHash: string (obrigatorio, hash hexadecimal de 8 caracteres)
     //   createdAt: timestamp (obrigatorio, imutavel)
+    //   updatedAt: timestamp (obrigatorio)
+    //
+    // tables/{tableId}/characters/{uid}/chunks/{chunkId}
+    //   uid: string (obrigatorio, imutavel, igual ao UID do personagem)
+    //   index: int (obrigatorio, imutavel, 0..47)
+    //   data: string (obrigatorio, 1..250000 caracteres)
+    //   updatedAt: timestamp (obrigatorio)
+    //
+    // A versao antiga com sheetJson no manifesto continua valida apenas para
+    // leitura/migracao de fichas que ja tenham sido salvas nesse formato.
+    //
+    // tables/{tableId}/masterContent/clues
+    //   contentId: string (obrigatorio, imutavel, valor clues)
+    //   storageVersion: int (obrigatorio, valor 2)
+    //   chunkCount: int (obrigatorio, 1..48)
+    //   payloadSize: int (obrigatorio, 2..8640000)
+    //   payloadHash: string (obrigatorio, hash hexadecimal de 8 caracteres)
+    //   createdAt: timestamp (obrigatorio, imutavel)
+    //   updatedAt: timestamp (obrigatorio)
+    //
+    // tables/{tableId}/masterContent/clues/chunks/{chunkId}
+    //   contentId: string (obrigatorio, imutavel, valor clues)
+    //   index: int (obrigatorio, imutavel, 0..47)
+    //   data: string (obrigatorio, 1..250000 caracteres)
     //   updatedAt: timestamp (obrigatorio)
 
     // ==============================================================
@@ -99,6 +126,15 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/tables/$(tableId)/members/$(request.auth.uid));
     }
 
+    function isTableMaster(tableId) {
+      return isTableOwner(tableId)
+        || (
+          isAuthenticated()
+          && exists(/databases/$(database)/documents/tables/$(tableId)/members/$(request.auth.uid))
+          && get(/databases/$(database)/documents/tables/$(tableId)/members/$(request.auth.uid)).data.role == 'master'
+        );
+    }
+
     function isValidPrivateUser(data) {
       return data.keys().hasOnly(['uid', 'email', 'createdAt', 'updatedAt'])
         && data.keys().hasAll(['uid', 'email', 'createdAt', 'updatedAt'])
@@ -142,17 +178,82 @@ service cloud.firestore {
         && isRecent(data.updatedAt);
     }
 
-    function isValidCharacter(data, uid) {
-      return data.keys().hasOnly(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'sheetJson', 'createdAt', 'updatedAt'])
-        && data.keys().hasAll(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'sheetJson', 'createdAt', 'updatedAt'])
-        && data.uid is string && data.uid == uid && data.uid.size() >= 1 && data.uid.size() <= 128
+    function isValidCharacterIdentity(data, uid) {
+      return data.uid is string && data.uid == uid && data.uid.size() >= 1 && data.uid.size() <= 128
         && data.ownerUid is string && data.ownerUid == uid && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128
         && data.playerCode is string && data.playerCode.size() >= 1 && data.playerCode.size() <= 40
         && data.characterName is string && data.characterName.size() >= 1 && data.characterName.size() <= 120
         && data.overlayColor is string && data.overlayColor.matches('^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$')
-        && data.sheetJson is string && data.sheetJson.size() <= 800000
         && data.createdAt is timestamp
         && isRecent(data.updatedAt);
+    }
+
+    function isValidLegacyCharacter(data, uid) {
+      return data.keys().hasOnly(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'sheetJson', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'sheetJson', 'createdAt', 'updatedAt'])
+        && isValidCharacterIdentity(data, uid)
+        && data.sheetJson is string && data.sheetJson.size() <= 800000
+        && data.sheetJson.size() >= 2;
+    }
+
+    function isValidChunkedCharacter(data, uid) {
+      return data.keys().hasOnly(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'storageVersion', 'chunkCount', 'sheetSize', 'sheetHash', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'storageVersion', 'chunkCount', 'sheetSize', 'sheetHash', 'createdAt', 'updatedAt'])
+        && isValidCharacterIdentity(data, uid)
+        && data.storageVersion is int && data.storageVersion == 2
+        && data.chunkCount is int && data.chunkCount >= 1 && data.chunkCount <= 48
+        && data.sheetSize is int && data.sheetSize >= 2 && data.sheetSize <= 8640000
+        && data.sheetHash is string && data.sheetHash.matches('^[0-9a-f]{8}$');
+    }
+
+    function isValidCharacter(data, uid) {
+      return isValidLegacyCharacter(data, uid) || isValidChunkedCharacter(data, uid);
+    }
+
+    function isValidCharacterChunk(data, uid, chunkId) {
+      return data.keys().hasOnly(['uid', 'index', 'data', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'index', 'data', 'updatedAt'])
+        && chunkId.matches('^00(0[0-9]|[1-3][0-9]|4[0-7])$')
+        && data.uid is string && data.uid == uid && data.uid.size() >= 1 && data.uid.size() <= 128
+        && data.index is int && data.index >= 0 && data.index <= 47
+        && data.data is string && data.data.size() >= 1 && data.data.size() <= 250000
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidCharacterParentAfter(tableId, uid, index) {
+      return existsAfter(/databases/$(database)/documents/tables/$(tableId)/characters/$(uid))
+        && getAfter(/databases/$(database)/documents/tables/$(tableId)/characters/$(uid)).data.storageVersion == 2
+        && index < getAfter(/databases/$(database)/documents/tables/$(tableId)/characters/$(uid)).data.chunkCount;
+    }
+
+    function isValidMasterContent(data, contentId) {
+      return contentId == 'clues'
+        && data.keys().hasOnly(['contentId', 'storageVersion', 'chunkCount', 'payloadSize', 'payloadHash', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['contentId', 'storageVersion', 'chunkCount', 'payloadSize', 'payloadHash', 'createdAt', 'updatedAt'])
+        && data.contentId is string && data.contentId == contentId
+        && data.storageVersion is int && data.storageVersion == 2
+        && data.chunkCount is int && data.chunkCount >= 1 && data.chunkCount <= 48
+        && data.payloadSize is int && data.payloadSize >= 2 && data.payloadSize <= 8640000
+        && data.payloadHash is string && data.payloadHash.matches('^[0-9a-f]{8}$')
+        && data.createdAt is timestamp
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidMasterContentChunk(data, contentId, chunkId) {
+      return contentId == 'clues'
+        && data.keys().hasOnly(['contentId', 'index', 'data', 'updatedAt'])
+        && data.keys().hasAll(['contentId', 'index', 'data', 'updatedAt'])
+        && chunkId.matches('^00(0[0-9]|[1-3][0-9]|4[0-7])$')
+        && data.contentId is string && data.contentId == contentId
+        && data.index is int && data.index >= 0 && data.index <= 47
+        && data.data is string && data.data.size() >= 1 && data.data.size() <= 250000
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidMasterContentParentAfter(tableId, contentId, index) {
+      return existsAfter(/databases/$(database)/documents/tables/$(tableId)/masterContent/$(contentId))
+        && getAfter(/databases/$(database)/documents/tables/$(tableId)/masterContent/$(contentId)).data.storageVersion == 2
+        && index < getAfter(/databases/$(database)/documents/tables/$(tableId)/masterContent/$(contentId)).data.chunkCount;
     }
 
     match /users_private/{uid} {
@@ -232,6 +333,50 @@ service cloud.firestore {
             || (isOwner(uid) && isTableMember(tableId))
           );
         allow delete: if isTableOwner(tableId) || isOwner(uid);
+
+        match /chunks/{chunkId} {
+          allow read: if isTableOwner(tableId) || isOwner(uid);
+          allow create: if isValidCharacterChunk(request.resource.data, uid, chunkId)
+            && isValidCharacterParentAfter(tableId, uid, request.resource.data.index)
+            && (
+              isTableOwner(tableId)
+              || (isOwner(uid) && isTableMember(tableId))
+            );
+          allow update: if isValidCharacterChunk(request.resource.data, uid, chunkId)
+            && isValidCharacterParentAfter(tableId, uid, request.resource.data.index)
+            && request.resource.data.uid == resource.data.uid
+            && request.resource.data.index == resource.data.index
+            && (
+              isTableOwner(tableId)
+              || (isOwner(uid) && isTableMember(tableId))
+            );
+          allow delete: if isTableOwner(tableId) || isOwner(uid);
+        }
+      }
+
+      match /masterContent/{contentId} {
+        allow read: if isTableMaster(tableId);
+        allow create: if isTableMaster(tableId)
+          && isValidMasterContent(request.resource.data, contentId)
+          && isRecent(request.resource.data.createdAt);
+        allow update: if isTableMaster(tableId)
+          && isValidMasterContent(request.resource.data, contentId)
+          && request.resource.data.contentId == resource.data.contentId
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isTableOwner(tableId);
+
+        match /chunks/{chunkId} {
+          allow read: if isTableMaster(tableId);
+          allow create: if isTableMaster(tableId)
+            && isValidMasterContentChunk(request.resource.data, contentId, chunkId)
+            && isValidMasterContentParentAfter(tableId, contentId, request.resource.data.index);
+          allow update: if isTableMaster(tableId)
+            && isValidMasterContentChunk(request.resource.data, contentId, chunkId)
+            && isValidMasterContentParentAfter(tableId, contentId, request.resource.data.index)
+            && request.resource.data.contentId == resource.data.contentId
+            && request.resource.data.index == resource.data.index;
+          allow delete: if isTableMaster(tableId);
+        }
       }
     }
 
