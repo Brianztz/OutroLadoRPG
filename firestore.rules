@@ -1,0 +1,242 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ==============================================================
+    // Modelo de dados assumido
+    // ==============================================================
+    // users_private/{uid}
+    //   uid: string (obrigatorio, imutavel, 1..128)
+    //   email: string (obrigatorio, deve ser o e-mail autenticado, <= 254)
+    //   createdAt: timestamp (obrigatorio, imutavel)
+    //   updatedAt: timestamp (obrigatorio)
+    //
+    // users_public/{uid}
+    //   uid: string (obrigatorio, imutavel, 1..128)
+    //   displayName: string (obrigatorio, 1..80)
+    //   photoURL: string (obrigatorio, vazio ou URL HTTPS, <= 2048)
+    //   createdAt: timestamp (obrigatorio, imutavel)
+    //   updatedAt: timestamp (obrigatorio)
+    //
+    // tables/{tableId}
+    //   tableId: string (obrigatorio, imutavel, igual ao ID do documento, 1..40)
+    //   displayName: string (obrigatorio, 1..80)
+    //   ownerUid: string (obrigatorio, imutavel, 1..128)
+    //   status: string (obrigatorio: active | archived)
+    //   createdAt: timestamp (obrigatorio, imutavel)
+    //   updatedAt: timestamp (obrigatorio)
+    //
+    // tables/{tableId}/members/{uid}
+    //   uid: string (obrigatorio, imutavel, igual ao ID, 1..128)
+    //   role: string (obrigatorio, imutavel para jogadores: master | player)
+    //   playerCode: string (obrigatorio, 0..40)
+    //   displayName: string (obrigatorio, 1..80)
+    //   photoURL: string (obrigatorio, vazio ou URL HTTPS, <= 2048)
+    //   joinedAt: timestamp (obrigatorio, imutavel)
+    //   updatedAt: timestamp (obrigatorio)
+    //
+    // tables/{tableId}/characters/{uid}
+    //   uid / ownerUid: string (obrigatorios, imutaveis, iguais ao UID autenticado)
+    //   playerCode: string (obrigatorio, 1..40)
+    //   characterName: string (obrigatorio, 1..120)
+    //   overlayColor: string (obrigatorio, #RGB ou #RRGGBB)
+    //   sheetJson: string (obrigatorio, JSON serializado, <= 800000 caracteres)
+    //   createdAt: timestamp (obrigatorio, imutavel)
+    //   updatedAt: timestamp (obrigatorio)
+
+    // ==============================================================
+    // Funcoes auxiliares
+    // ==============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function uidUnchanged() {
+      return isAuthenticated() && request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return request.resource.data.uid == resource.data.uid;
+    }
+
+    function isRecent(value) {
+      return value is timestamp
+        && value > request.time - duration.value(5, 'm')
+        && value <= request.time;
+    }
+
+    function validHttpsUrlOrEmpty(value) {
+      return value is string
+        && value.size() <= 2048
+        && (value == '' || value.matches('^https://[^\\s]+$'));
+    }
+
+    function isBootstrapMaster() {
+      return isAuthenticated()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'bryanferreira2909@gmail.com';
+    }
+
+    function tableExists(tableId) {
+      return exists(/databases/$(database)/documents/tables/$(tableId));
+    }
+
+    function isTableOwner(tableId) {
+      return isAuthenticated()
+        && tableExists(tableId)
+        && get(/databases/$(database)/documents/tables/$(tableId)).data.ownerUid == request.auth.uid;
+    }
+
+    function isTableMember(tableId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/tables/$(tableId)/members/$(request.auth.uid));
+    }
+
+    function isValidPrivateUser(data) {
+      return data.keys().hasOnly(['uid', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'email', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && data.email == request.auth.token.email
+        && data.createdAt is timestamp
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidPublicUser(data) {
+      return data.keys().hasOnly(['uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'displayName', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && validHttpsUrlOrEmpty(data.photoURL)
+        && data.createdAt is timestamp
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidTable(data, tableId) {
+      return data.keys().hasOnly(['tableId', 'displayName', 'ownerUid', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['tableId', 'displayName', 'ownerUid', 'status', 'createdAt', 'updatedAt'])
+        && data.tableId is string && data.tableId == tableId && data.tableId.size() >= 1 && data.tableId.size() <= 40
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidMember(data, uid) {
+      return data.keys().hasOnly(['uid', 'role', 'playerCode', 'displayName', 'photoURL', 'joinedAt', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'role', 'playerCode', 'displayName', 'photoURL', 'joinedAt', 'updatedAt'])
+        && data.uid is string && data.uid == uid && data.uid.size() >= 1 && data.uid.size() <= 128
+        && data.role in ['master', 'player']
+        && data.playerCode is string && data.playerCode.size() <= 40
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && validHttpsUrlOrEmpty(data.photoURL)
+        && data.joinedAt is timestamp
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidCharacter(data, uid) {
+      return data.keys().hasOnly(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'sheetJson', 'createdAt', 'updatedAt'])
+        && data.keys().hasAll(['uid', 'ownerUid', 'playerCode', 'characterName', 'overlayColor', 'sheetJson', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == uid && data.uid.size() >= 1 && data.uid.size() <= 128
+        && data.ownerUid is string && data.ownerUid == uid && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128
+        && data.playerCode is string && data.playerCode.size() >= 1 && data.playerCode.size() <= 40
+        && data.characterName is string && data.characterName.size() >= 1 && data.characterName.size() <= 120
+        && data.overlayColor is string && data.overlayColor.matches('^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$')
+        && data.sheetJson is string && data.sheetJson.size() <= 800000
+        && data.createdAt is timestamp
+        && isRecent(data.updatedAt);
+    }
+
+    match /users_private/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && uidUnchanged()
+        && isValidPrivateUser(request.resource.data)
+        && isRecent(request.resource.data.createdAt);
+      allow update: if isOwner(uid)
+        && isDocOwner()
+        && uidNotModified()
+        && isValidPrivateUser(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(uid);
+    }
+
+    match /users_public/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(uid)
+        && uidUnchanged()
+        && isValidPublicUser(request.resource.data)
+        && isRecent(request.resource.data.createdAt);
+      allow update: if isOwner(uid)
+        && isDocOwner()
+        && uidNotModified()
+        && isValidPublicUser(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(uid);
+    }
+
+    match /tables/{tableId} {
+      allow get: if isAuthenticated();
+      allow list: if false;
+      allow create: if isBootstrapMaster()
+        && request.auth.uid == request.resource.data.ownerUid
+        && isValidTable(request.resource.data, tableId)
+        && isRecent(request.resource.data.createdAt);
+      allow update: if isTableOwner(tableId)
+        && isValidTable(request.resource.data, tableId)
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.tableId == resource.data.tableId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isTableOwner(tableId);
+
+      match /members/{uid} {
+        allow read: if isTableOwner(tableId) || isOwner(uid);
+        allow create: if isValidMember(request.resource.data, uid)
+          && isRecent(request.resource.data.joinedAt)
+          && (
+            (isTableOwner(tableId))
+            || (isOwner(uid) && request.resource.data.role == 'player' && tableExists(tableId))
+          );
+        allow update: if isValidMember(request.resource.data, uid)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.joinedAt == resource.data.joinedAt
+          && (
+            isTableOwner(tableId)
+            || (isOwner(uid) && request.resource.data.role == resource.data.role)
+          );
+        allow delete: if isTableOwner(tableId) || isOwner(uid);
+      }
+
+      match /characters/{uid} {
+        allow read: if isTableOwner(tableId) || isOwner(uid);
+        allow create: if isValidCharacter(request.resource.data, uid)
+          && isRecent(request.resource.data.createdAt)
+          && (
+            isTableOwner(tableId)
+            || (isOwner(uid) && isTableMember(tableId))
+          );
+        allow update: if isValidCharacter(request.resource.data, uid)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && (
+            isTableOwner(tableId)
+            || (isOwner(uid) && isTableMember(tableId))
+          );
+        allow delete: if isTableOwner(tableId) || isOwner(uid);
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

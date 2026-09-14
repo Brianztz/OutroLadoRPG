@@ -2,7 +2,14 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "outroladorpg",
   "main": "./src/worker.js",
-  "compatibility_date": "2026-09-06",
+  "compatibility_date": "2026-09-14",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "FIREBASE_PROJECT_ID": "outro-lado-rpg-bryan",
+    "MASTER_EMAIL": "bryanferreira2909@gmail.com"
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",

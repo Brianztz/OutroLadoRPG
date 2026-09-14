@@ -1,0 +1,23 @@
+{
+  "firestore": {
+    "database": "outro-lado-rpg",
+    "location": "southamerica-east1",
+    "edition": "enterprise",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "outro-lado-rpg-bryan.firebaseapp.com",
+      "outro-lado-rpg-bryan.web.app",
+      "outroladorpg.bryanferreira2454.workers.dev"
+    ],
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Outro Lado RPG",
+        "supportEmail": "bryanferreira2909@gmail.com"
+      }
+    }
+  }
+}
