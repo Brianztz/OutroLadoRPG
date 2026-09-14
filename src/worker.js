@@ -3,6 +3,95 @@ import { DurableObject } from 'cloudflare:workers';
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+const FIREBASE_JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
+let firebaseJwksCache = { expiresAt: 0, keys: new Map() };
+
+function base64UrlBytes(value) {
+    const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+    const binary = atob(padded);
+    return Uint8Array.from(binary, character => character.charCodeAt(0));
+}
+
+function parseJwtPart(value) {
+    return JSON.parse(decoder.decode(base64UrlBytes(value)));
+}
+
+function requestProtocols(request) {
+    return String(request.headers.get('Sec-WebSocket-Protocol') || '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean);
+}
+
+function firebaseTokenFromProtocols(protocols) {
+    const protocol = protocols.find(value => value.startsWith('firebase.'));
+    if (!protocol) return '';
+    const token = protocol.slice('firebase.'.length);
+    return token.length <= 4096 ? token : '';
+}
+
+async function firebasePublicKey(kid) {
+    const now = Date.now();
+    if (firebaseJwksCache.expiresAt > now && firebaseJwksCache.keys.has(kid)) {
+        return firebaseJwksCache.keys.get(kid);
+    }
+
+    const response = await fetch(FIREBASE_JWKS_URL, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Firebase public keys unavailable (${response.status})`);
+    const payload = await response.json();
+    const keys = new Map((Array.isArray(payload && payload.keys) ? payload.keys : [])
+        .filter(key => key && typeof key.kid === 'string')
+        .map(key => [key.kid, key]));
+    const cacheControl = String(response.headers.get('Cache-Control') || '');
+    const maxAge = Number(/max-age=(\d+)/i.exec(cacheControl)?.[1] || 3600);
+    firebaseJwksCache = {
+        expiresAt: now + Math.max(300, Math.min(maxAge, 21600)) * 1000,
+        keys
+    };
+    return keys.get(kid) || null;
+}
+
+async function verifyFirebaseIdToken(token, projectId) {
+    const parts = String(token || '').split('.');
+    if (parts.length !== 3 || !projectId) throw new Error('Invalid Firebase token');
+    const header = parseJwtPart(parts[0]);
+    const claims = parseJwtPart(parts[1]);
+    if (header.alg !== 'RS256' || typeof header.kid !== 'string') throw new Error('Invalid Firebase token header');
+    const jwk = await firebasePublicKey(header.kid);
+    if (!jwk) throw new Error('Unknown Firebase signing key');
+    const key = await crypto.subtle.importKey(
+        'jwk',
+        jwk,
+        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+        false,
+        ['verify']
+    );
+    const validSignature = await crypto.subtle.verify(
+        'RSASSA-PKCS1-v1_5',
+        key,
+        base64UrlBytes(parts[2]),
+        encoder.encode(`${parts[0]}.${parts[1]}`)
+    );
+    const now = Math.floor(Date.now() / 1000);
+    const validClaims = validSignature
+        && claims.aud === projectId
+        && claims.iss === `https://securetoken.google.com/${projectId}`
+        && typeof claims.sub === 'string'
+        && claims.sub.length > 0
+        && claims.sub.length <= 128
+        && Number.isFinite(claims.exp)
+        && claims.exp > now
+        && Number.isFinite(claims.iat)
+        && claims.iat <= now + 60;
+    if (!validClaims) throw new Error('Invalid or expired Firebase token');
+    return {
+        uid: claims.sub,
+        email: String(claims.email || '').toLowerCase(),
+        emailVerified: claims.email_verified === true,
+        name: String(claims.name || '').slice(0, 120)
+    };
+}
 
 function normalizeTableCode(value) {
     const normalized = String(value || DEFAULT_TABLE)
@@ -206,6 +295,18 @@ export class TableRoom extends DurableObject {
             return new Response('Expected WebSocket', { status: 426 });
         }
         const url = new URL(request.url);
+        const protocols = requestProtocols(request);
+        const suppliedToken = firebaseTokenFromProtocols(protocols);
+        let authenticatedUser = null;
+        if (protocols.some(value => value.startsWith('firebase.'))) {
+            if (!suppliedToken) return new Response('Invalid authentication token', { status: 401 });
+            try {
+                authenticatedUser = await verifyFirebaseIdToken(suppliedToken, this.env.FIREBASE_PROJECT_ID);
+            } catch (error) {
+                console.warn(JSON.stringify({ event: 'firebase_auth_rejected', reason: error && error.message || 'invalid_token' }));
+                return new Response('Invalid authentication token', { status: 401 });
+            }
+        }
         const requestedTable = normalizeTableCode(url.searchParams.get('mesa'));
         if (this.table === DEFAULT_TABLE && requestedTable !== this.table) {
             this.table = requestedTable;
@@ -218,7 +319,12 @@ export class TableRoom extends DurableObject {
         this.ctx.acceptWebSocket(server);
         server.serializeAttachment({
             id,
-            isMaster: false,
+            authenticated: Boolean(authenticatedUser),
+            userId: authenticatedUser ? authenticatedUser.uid : '',
+            userEmail: authenticatedUser ? authenticatedUser.email : '',
+            isMaster: Boolean(authenticatedUser
+                && authenticatedUser.emailVerified
+                && authenticatedUser.email === String(this.env.MASTER_EMAIL || '').toLowerCase()),
             isOverlay: false,
             isLumina: false,
             playerCode: '',
@@ -228,7 +334,8 @@ export class TableRoom extends DurableObject {
             lastScreenChatAt: 0,
             lastScreenShareRetryAt: 0
         });
-        return new Response(null, { status: 101, webSocket: client });
+        const headers = protocols.includes('ol-v1') ? { 'Sec-WebSocket-Protocol': 'ol-v1' } : undefined;
+        return new Response(null, { status: 101, webSocket: client, headers });
     }
 
     meta(ws) {
@@ -355,7 +462,10 @@ export class TableRoom extends DurableObject {
         let meta = this.meta(ws);
 
         if (event === 'master_ready') {
-            meta = this.updateMeta(ws, { isMaster: true });
+            if (!meta.isMaster) {
+                this.send(ws, 'auth_error', { reason: 'master_required' });
+                return;
+            }
             this.send(ws, 'players_snapshot', [...this.players.values()].filter(player => player && player.online !== false));
             this.send(ws, 'initiative_state_updated', this.initiative);
             this.send(ws, 'lumina_state_updated', this.lumina);
@@ -616,7 +726,7 @@ export class TableRoom extends DurableObject {
         }
 
         if (event === 'clue_inspection_start') {
-            if (!data || typeof data !== 'object' || !data.clue) return;
+            if (!meta.authenticated || !data || typeof data !== 'object' || !data.clue) return;
             const code = normalizePlayerCode(data.codigo || meta.playerCode);
             const registeredCode = normalizePlayerCode(meta.playerCode);
             if (!code || (registeredCode && registeredCode !== code)) return;
@@ -634,7 +744,7 @@ export class TableRoom extends DurableObject {
         }
 
         if (event === 'clue_inspection_update') {
-            if (!data || typeof data !== 'object') return;
+            if (!meta.authenticated || !data || typeof data !== 'object') return;
             const code = normalizePlayerCode(data.codigo || meta.playerCode);
             if (!this.inspection || this.inspection.codigo !== code) return;
             if (data.clueId && String(data.clueId) !== this.inspection.clue.id) return;
@@ -649,6 +759,7 @@ export class TableRoom extends DurableObject {
         }
 
         if (event === 'clue_inspection_stop') {
+            if (!meta.authenticated) return;
             const source = data && typeof data === 'object' ? data : {};
             const code = normalizePlayerCode(source.codigo || meta.playerCode);
             if (!this.inspection || this.inspection.codigo !== code) return;
@@ -667,9 +778,11 @@ export class TableRoom extends DurableObject {
         }
 
         if (event === 'status_change') {
-            if (!data || typeof data !== 'object') return;
+            if (!meta.authenticated || !data || typeof data !== 'object') return;
             const code = normalizePlayerCode(data.codigo || data.id);
             if (!code) return;
+            const registeredCode = normalizePlayerCode(meta.playerCode);
+            if (registeredCode && registeredCode !== code) return;
             meta = this.updateMeta(ws, { playerCode: code });
             const player = { ...data, codigo: code, id: code, mesa: this.table, online: true };
             this.players.set(code, player);
@@ -726,8 +839,11 @@ export class TableRoom extends DurableObject {
         }
 
         if (event === 'rolagem_feita') {
-            if (!data || typeof data !== 'object') return;
+            if (!meta.authenticated || !data || typeof data !== 'object') return;
             const code = normalizePlayerCode(data.codigo || meta.playerCode);
+            const registeredCode = normalizePlayerCode(meta.playerCode);
+            if (!code || (registeredCode && registeredCode !== code)) return;
+            if (!registeredCode) meta = this.updateMeta(ws, { playerCode: code });
             const rollData = { ...data, codigo: code, mesa: this.table };
             this.broadcast('novo_log', rollData);
             if (code && /^iniciativa\b/i.test(String(data.acao || '').trim())) {
@@ -737,6 +853,7 @@ export class TableRoom extends DurableObject {
         }
 
         if (event === 'request_player') {
+            if (!meta.isMaster) return;
             const source = data && typeof data === 'object' ? data : { codigo: data };
             const code = normalizePlayerCode(source.codigo || source.id);
             const player = this.players.get(code);
