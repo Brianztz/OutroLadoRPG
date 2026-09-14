@@ -12,6 +12,8 @@
     const DATABASE_ID = 'outro-lado-rpg';
     const MASTER_EMAIL = 'bryanferreira2909@gmail.com';
     const TOKEN_KEY = 'ol_firebase_id_token';
+    const CHARACTER_CHUNK_SIZE = 180000;
+    const CHARACTER_MAX_CHUNKS = 48;
     const guardedPage = /\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
     if (guardedPage) document.documentElement.classList.add('firebase-auth-pending');
 
@@ -99,6 +101,290 @@
         const token = await user.getIdToken(true);
         sessionStorage.setItem(TOKEN_KEY, token);
         return token;
+    }
+
+    function normalizePlayerCode(value) {
+        return String(value || '')
+            .toUpperCase()
+            .replace(/[^A-Z0-9_-]/g, '')
+            .slice(0, 40);
+    }
+
+    function createPlayerCode() {
+        const cryptoValues = new Uint32Array(2);
+        if (global.crypto && typeof global.crypto.getRandomValues === 'function') {
+            global.crypto.getRandomValues(cryptoValues);
+            return Array.from(cryptoValues, value => value.toString(36)).join('').slice(0, 8).toUpperCase();
+        }
+        return Math.random().toString(36).slice(2, 10).toUpperCase();
+    }
+
+    function hashCharacterSheet(value) {
+        const text = String(value || '');
+        let hash = 0x811c9dc5;
+        for (let index = 0; index < text.length; index++) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 0x01000193);
+        }
+        return (hash >>> 0).toString(16).padStart(8, '0');
+    }
+
+    function characterSyncEvent(detail) {
+        global.dispatchEvent(new CustomEvent('ol:character-sync', { detail }));
+    }
+
+    async function readCharacterSnapshot(snapshot, user, tableId, sdkContext) {
+        if (!snapshot.exists()) return null;
+        const manifest = snapshot.data() || {};
+        let sheetJson = typeof manifest.sheetJson === 'string' ? manifest.sheetJson : '';
+
+        if (!sheetJson && manifest.storageVersion === 2) {
+            const chunkCount = Number(manifest.chunkCount);
+            if (!Number.isInteger(chunkCount) || chunkCount < 1 || chunkCount > CHARACTER_MAX_CHUNKS) {
+                throw new Error('A ficha salva na nuvem possui uma quantidade inválida de blocos.');
+            }
+            const chunkSnapshots = await Promise.all(Array.from({ length: chunkCount }, (_, index) => {
+                const chunkId = String(index).padStart(4, '0');
+                return sdkContext.firestoreSdk.getDoc(sdkContext.firestoreSdk.doc(
+                    sdkContext.db,
+                    'tables', tableId,
+                    'characters', user.uid,
+                    'chunks', chunkId
+                ));
+            }));
+            sheetJson = chunkSnapshots.map((chunkSnapshot, index) => {
+                if (!chunkSnapshot.exists()) throw new Error(`O bloco ${index + 1} da ficha não foi encontrado.`);
+                const chunkData = chunkSnapshot.data();
+                if (chunkData.uid !== user.uid || chunkData.index !== index || typeof chunkData.data !== 'string') {
+                    throw new Error(`O bloco ${index + 1} da ficha está inválido.`);
+                }
+                return chunkData.data;
+            }).join('');
+            if (Number(manifest.sheetSize) !== sheetJson.length || manifest.sheetHash !== hashCharacterSheet(sheetJson)) {
+                throw new Error('A ficha salva na nuvem está incompleta.');
+            }
+        }
+
+        if (!sheetJson) return null;
+        return {
+            sheetJson,
+            sheetHash: String(manifest.sheetHash || hashCharacterSheet(sheetJson)),
+            playerCode: normalizePlayerCode(manifest.playerCode),
+            characterName: String(manifest.characterName || ''),
+            updatedAt: manifest.updatedAt || null
+        };
+    }
+
+    async function loadCharacter(requestedTable) {
+        const user = await getCurrentUser();
+        if (!user) throw new Error('Entre com sua conta Google para carregar a ficha.');
+        const sdkContext = await sdkPromise;
+        const tableId = normalizeTableCode(requestedTable);
+        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'characters', user.uid);
+        const snapshot = await sdkContext.firestoreSdk.getDoc(reference);
+        return readCharacterSnapshot(snapshot, user, tableId, sdkContext);
+    }
+
+    async function saveCharacter(requestedTable, sheetData, metadata = {}) {
+        const user = await getCurrentUser();
+        if (!user) throw new Error('Entre com sua conta Google para salvar a ficha.');
+        const sdkContext = await sdkPromise;
+        const { db, firestoreSdk } = sdkContext;
+        const tableId = normalizeTableCode(requestedTable);
+        const sheetJson = typeof sheetData === 'string' ? sheetData : JSON.stringify(sheetData || {});
+        const chunks = [];
+        for (let offset = 0; offset < sheetJson.length; offset += CHARACTER_CHUNK_SIZE) {
+            chunks.push(sheetJson.slice(offset, offset + CHARACTER_CHUNK_SIZE));
+        }
+        if (!chunks.length) chunks.push('{}');
+        if (chunks.length > CHARACTER_MAX_CHUNKS) {
+            throw new Error('A ficha ficou grande demais para sincronizar. Remova arquivos de áudio muito grandes e tente novamente.');
+        }
+
+        let playerCode = normalizePlayerCode(metadata.playerCode || global.localStorage.getItem('player_sync_code'));
+        if (!playerCode) playerCode = createPlayerCode();
+        global.localStorage.setItem('player_sync_code', playerCode);
+        const characterName = String(metadata.characterName || 'Personagem').trim().slice(0, 120) || 'Personagem';
+        const requestedColor = String(metadata.overlayColor || '#8bccf6').trim();
+        const overlayColor = /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(requestedColor) ? requestedColor : '#8bccf6';
+        const sheetHash = hashCharacterSheet(sheetJson);
+        const reference = firestoreSdk.doc(db, 'tables', tableId, 'characters', user.uid);
+        const currentSnapshot = await firestoreSdk.getDoc(reference);
+        const currentData = currentSnapshot.exists() ? currentSnapshot.data() : {};
+        if (currentData.sheetHash === sheetHash && currentData.playerCode === playerCode) {
+            return { sheetHash, playerCode, skipped: true };
+        }
+
+        const previousChunkCount = currentData.storageVersion === 2 && Number.isInteger(currentData.chunkCount)
+            ? Math.min(CHARACTER_MAX_CHUNKS, Math.max(0, currentData.chunkCount))
+            : 0;
+        const now = firestoreSdk.serverTimestamp();
+        const batch = firestoreSdk.writeBatch(db);
+        batch.set(reference, {
+            uid: user.uid,
+            ownerUid: user.uid,
+            playerCode,
+            characterName,
+            overlayColor,
+            storageVersion: 2,
+            chunkCount: chunks.length,
+            sheetSize: sheetJson.length,
+            sheetHash,
+            createdAt: currentSnapshot.exists() && currentData.createdAt ? currentData.createdAt : now,
+            updatedAt: now
+        });
+        chunks.forEach((data, index) => {
+            const chunkId = String(index).padStart(4, '0');
+            batch.set(firestoreSdk.doc(db, 'tables', tableId, 'characters', user.uid, 'chunks', chunkId), {
+                uid: user.uid,
+                index,
+                data,
+                updatedAt: now
+            });
+        });
+        for (let index = chunks.length; index < previousChunkCount; index++) {
+            batch.delete(firestoreSdk.doc(
+                db,
+                'tables', tableId,
+                'characters', user.uid,
+                'chunks', String(index).padStart(4, '0')
+            ));
+        }
+        await batch.commit();
+        characterSyncEvent({ state: 'saved', tableId, sheetHash });
+        return { sheetHash, playerCode, skipped: false };
+    }
+
+    async function watchCharacter(requestedTable, listener) {
+        if (typeof listener !== 'function') throw new Error('Informe uma função para acompanhar a ficha.');
+        const user = await getCurrentUser();
+        if (!user) throw new Error('Entre com sua conta Google para acompanhar a ficha.');
+        const sdkContext = await sdkPromise;
+        const tableId = normalizeTableCode(requestedTable);
+        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'characters', user.uid);
+        return sdkContext.firestoreSdk.onSnapshot(reference, snapshot => {
+            readCharacterSnapshot(snapshot, user, tableId, sdkContext)
+                .then(value => listener(value, null))
+                .catch(error => listener(null, error));
+        }, error => listener(null, error));
+    }
+
+    async function readMasterCluesSnapshot(snapshot, tableId, sdkContext) {
+        if (!snapshot.exists()) return null;
+        const manifest = snapshot.data() || {};
+        if (manifest.contentId !== 'clues' || manifest.storageVersion !== 2) {
+            throw new Error('O catálogo de pistas salvo na nuvem está inválido.');
+        }
+        const chunkCount = Number(manifest.chunkCount);
+        if (!Number.isInteger(chunkCount) || chunkCount < 1 || chunkCount > CHARACTER_MAX_CHUNKS) {
+            throw new Error('O catálogo de pistas possui uma quantidade inválida de blocos.');
+        }
+        const chunkSnapshots = await Promise.all(Array.from({ length: chunkCount }, (_, index) => {
+            const chunkId = String(index).padStart(4, '0');
+            return sdkContext.firestoreSdk.getDoc(sdkContext.firestoreSdk.doc(
+                sdkContext.db,
+                'tables', tableId,
+                'masterContent', 'clues',
+                'chunks', chunkId
+            ));
+        }));
+        const cluesJson = chunkSnapshots.map((chunkSnapshot, index) => {
+            if (!chunkSnapshot.exists()) throw new Error(`O bloco ${index + 1} das pistas não foi encontrado.`);
+            const chunkData = chunkSnapshot.data();
+            if (chunkData.contentId !== 'clues' || chunkData.index !== index || typeof chunkData.data !== 'string') {
+                throw new Error(`O bloco ${index + 1} das pistas está inválido.`);
+            }
+            return chunkData.data;
+        }).join('');
+        if (Number(manifest.payloadSize) !== cluesJson.length || manifest.payloadHash !== hashCharacterSheet(cluesJson)) {
+            throw new Error('O catálogo de pistas salvo na nuvem está incompleto.');
+        }
+        return {
+            cluesJson,
+            cluesHash: manifest.payloadHash,
+            updatedAt: manifest.updatedAt || null
+        };
+    }
+
+    async function loadMasterClues(requestedTable) {
+        const user = await getCurrentUser();
+        if (!user) throw new Error('Entre com sua conta Google para carregar as pistas do mestre.');
+        const sdkContext = await sdkPromise;
+        const tableId = normalizeTableCode(requestedTable);
+        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'masterContent', 'clues');
+        const snapshot = await sdkContext.firestoreSdk.getDoc(reference);
+        return readMasterCluesSnapshot(snapshot, tableId, sdkContext);
+    }
+
+    async function saveMasterClues(requestedTable, cluesData) {
+        const user = await getCurrentUser();
+        if (!user) throw new Error('Entre com sua conta Google para salvar as pistas do mestre.');
+        const sdkContext = await sdkPromise;
+        const { db, firestoreSdk } = sdkContext;
+        const tableId = normalizeTableCode(requestedTable);
+        const cluesJson = typeof cluesData === 'string' ? cluesData : JSON.stringify(Array.isArray(cluesData) ? cluesData : []);
+        const chunks = [];
+        for (let offset = 0; offset < cluesJson.length; offset += CHARACTER_CHUNK_SIZE) {
+            chunks.push(cluesJson.slice(offset, offset + CHARACTER_CHUNK_SIZE));
+        }
+        if (!chunks.length) chunks.push('[]');
+        if (chunks.length > CHARACTER_MAX_CHUNKS) {
+            throw new Error('As pistas ficaram grandes demais para sincronizar. Use links para áudios grandes ou imagens menores.');
+        }
+
+        const cluesHash = hashCharacterSheet(cluesJson);
+        const reference = firestoreSdk.doc(db, 'tables', tableId, 'masterContent', 'clues');
+        const currentSnapshot = await firestoreSdk.getDoc(reference);
+        const currentData = currentSnapshot.exists() ? currentSnapshot.data() : {};
+        if (currentData.payloadHash === cluesHash) return { cluesHash, skipped: true };
+
+        const previousChunkCount = currentData.storageVersion === 2 && Number.isInteger(currentData.chunkCount)
+            ? Math.min(CHARACTER_MAX_CHUNKS, Math.max(0, currentData.chunkCount))
+            : 0;
+        const now = firestoreSdk.serverTimestamp();
+        const batch = firestoreSdk.writeBatch(db);
+        batch.set(reference, {
+            contentId: 'clues',
+            storageVersion: 2,
+            chunkCount: chunks.length,
+            payloadSize: cluesJson.length,
+            payloadHash: cluesHash,
+            createdAt: currentSnapshot.exists() && currentData.createdAt ? currentData.createdAt : now,
+            updatedAt: now
+        });
+        chunks.forEach((data, index) => {
+            const chunkId = String(index).padStart(4, '0');
+            batch.set(firestoreSdk.doc(db, 'tables', tableId, 'masterContent', 'clues', 'chunks', chunkId), {
+                contentId: 'clues',
+                index,
+                data,
+                updatedAt: now
+            });
+        });
+        for (let index = chunks.length; index < previousChunkCount; index++) {
+            batch.delete(firestoreSdk.doc(
+                db,
+                'tables', tableId,
+                'masterContent', 'clues',
+                'chunks', String(index).padStart(4, '0')
+            ));
+        }
+        await batch.commit();
+        return { cluesHash, skipped: false };
+    }
+
+    async function watchMasterClues(requestedTable, listener) {
+        if (typeof listener !== 'function') throw new Error('Informe uma função para acompanhar as pistas do mestre.');
+        const user = await getCurrentUser();
+        if (!user) throw new Error('Entre com sua conta Google para acompanhar as pistas do mestre.');
+        const sdkContext = await sdkPromise;
+        const tableId = normalizeTableCode(requestedTable);
+        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'masterContent', 'clues');
+        return sdkContext.firestoreSdk.onSnapshot(reference, snapshot => {
+            readMasterCluesSnapshot(snapshot, tableId, sdkContext)
+                .then(value => listener(value, null))
+                .catch(error => listener(null, error));
+        }, error => listener(null, error));
     }
 
     async function ensureUserProfiles(user) {
@@ -194,7 +480,10 @@
             }
             const memberRef = doc(db, 'tables', tableId, 'members', user.uid);
             const memberSnapshot = await getDoc(memberRef);
-            const playerCode = String(localStorage.getItem('player_sync_code') || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
+            let playerCode = normalizePlayerCode(localStorage.getItem('player_sync_code'));
+            if (!playerCode && memberSnapshot.exists()) playerCode = normalizePlayerCode(memberSnapshot.data().playerCode);
+            if (!playerCode) playerCode = createPlayerCode();
+            localStorage.setItem('player_sync_code', playerCode);
             const memberData = {
                 uid: user.uid,
                 playerCode,
@@ -266,12 +555,19 @@
         masterEmail: MASTER_EMAIL,
         getCurrentUser,
         guardPage,
+        hashCharacterSheet,
         isBootstrapMaster,
+        loadCharacter,
+        loadMasterClues,
         normalizeTableCode,
         onUserChanged,
         preparePortal,
         refreshRealtimeToken,
+        saveCharacter,
+        saveMasterClues,
         signInWithGoogle,
-        signOut: signOutUser
+        signOut: signOutUser,
+        watchCharacter,
+        watchMasterClues
     });
 })(window);

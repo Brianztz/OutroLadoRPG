@@ -1004,6 +1004,12 @@
     }
 
     let isLoadingData = false;
+    let characterCloudReady = false;
+    let characterCloudApplying = false;
+    let characterCloudSaveTimer = null;
+    let characterCloudUnsubscribe = null;
+    let characterCloudLastHash = '';
+    let characterCloudQueuedData = null;
     let currentViewedItemId = null; 
     let editingItemId = null; 
     let cluesData = [];
@@ -3779,7 +3785,132 @@ function removeCurrentClue() {
     }
 
     // --- FUNÇÕES DE SALVAR, EXPORTAR E CARREGAR ---
-    function save() {
+    function characterCloudMarkerKey(uid) {
+        return `ol_character_cloud_${tableCode}_${uid}`;
+    }
+
+    function getCharacterCloudMetadata() {
+        return {
+            playerCode,
+            characterName: document.getElementById('char_nome') ? document.getElementById('char_nome').value : 'Personagem',
+            overlayColor: document.getElementById('char_cor_overlay') ? document.getElementById('char_cor_overlay').value : '#8bccf6'
+        };
+    }
+
+    function applyCloudCharacter(cloudCharacter, uid) {
+        if (!cloudCharacter || !cloudCharacter.sheetJson) return false;
+        const parsedData = JSON.parse(cloudCharacter.sheetJson);
+        characterCloudApplying = true;
+        isLoadingData = true;
+        try {
+            localStorage.setItem('ordem_save_local', cloudCharacter.sheetJson);
+            if (cloudCharacter.playerCode) {
+                playerCode = cloudCharacter.playerCode;
+                localStorage.setItem('player_sync_code', playerCode);
+                const codeElement = document.getElementById('display-player-code');
+                if (codeElement) codeElement.innerText = playerCode;
+            }
+            populateData(parsedData);
+            characterCloudLastHash = cloudCharacter.sheetHash || OLFirebase.hashCharacterSheet(cloudCharacter.sheetJson);
+            localStorage.setItem(characterCloudMarkerKey(uid), characterCloudLastHash);
+            return true;
+        } finally {
+            characterCloudApplying = false;
+            isLoadingData = false;
+        }
+    }
+
+    function queueCharacterCloudSave(data) {
+        if (viewCode || !characterCloudReady || characterCloudApplying || !window.OLFirebase) return;
+        characterCloudQueuedData = data;
+        clearTimeout(characterCloudSaveTimer);
+        characterCloudSaveTimer = setTimeout(async () => {
+            const queuedData = characterCloudQueuedData;
+            characterCloudQueuedData = null;
+            if (!queuedData) return;
+            const sheetJson = JSON.stringify(queuedData);
+            const sheetHash = OLFirebase.hashCharacterSheet(sheetJson);
+            if (sheetHash === characterCloudLastHash) return;
+            try {
+                const user = await OLFirebase.getCurrentUser();
+                if (!user) return;
+                const result = await OLFirebase.saveCharacter(tableCode, sheetJson, getCharacterCloudMetadata());
+                characterCloudLastHash = result.sheetHash;
+                if (result.playerCode && result.playerCode !== playerCode) {
+                    playerCode = result.playerCode;
+                    localStorage.setItem('player_sync_code', playerCode);
+                    const codeElement = document.getElementById('display-player-code');
+                    if (codeElement) codeElement.innerText = playerCode;
+                }
+                localStorage.setItem(characterCloudMarkerKey(user.uid), result.sheetHash);
+            } catch (error) {
+                console.error('Não foi possível salvar a ficha na nuvem:', error);
+            }
+        }, 900);
+    }
+
+    async function initializeCharacterCloudSync() {
+        if (viewCode || !window.OLFirebase) {
+            characterCloudReady = true;
+            return;
+        }
+
+        try {
+            const user = await OLFirebase.getCurrentUser();
+            if (!user) throw new Error('Usuário não autenticado.');
+            const localJson = localStorage.getItem('ordem_save_local');
+            const localHash = localJson ? OLFirebase.hashCharacterSheet(localJson) : '';
+            const markerKey = characterCloudMarkerKey(user.uid);
+            const knownCloudHash = localStorage.getItem(markerKey) || '';
+            let remoteCharacter = await OLFirebase.loadCharacter(tableCode);
+
+            if (remoteCharacter) {
+                const remoteHash = remoteCharacter.sheetHash || OLFirebase.hashCharacterSheet(remoteCharacter.sheetJson);
+                const localChangedAfterLastSync = Boolean(localJson && knownCloudHash && knownCloudHash === remoteHash && localHash !== knownCloudHash);
+                if (localChangedAfterLastSync) {
+                    const result = await OLFirebase.saveCharacter(tableCode, localJson, getCharacterCloudMetadata());
+                    characterCloudLastHash = result.sheetHash;
+                    localStorage.setItem(markerKey, result.sheetHash);
+                } else if (localHash !== remoteHash) {
+                    applyCloudCharacter(remoteCharacter, user.uid);
+                } else {
+                    characterCloudLastHash = remoteHash;
+                    localStorage.setItem(markerKey, remoteHash);
+                    if (remoteCharacter.playerCode && remoteCharacter.playerCode !== playerCode) {
+                        playerCode = remoteCharacter.playerCode;
+                        localStorage.setItem('player_sync_code', playerCode);
+                        const codeElement = document.getElementById('display-player-code');
+                        if (codeElement) codeElement.innerText = playerCode;
+                    }
+                }
+            } else if (localJson) {
+                const result = await OLFirebase.saveCharacter(tableCode, localJson, getCharacterCloudMetadata());
+                characterCloudLastHash = result.sheetHash;
+                localStorage.setItem(markerKey, result.sheetHash);
+            }
+
+            characterCloudReady = true;
+            characterCloudUnsubscribe = await OLFirebase.watchCharacter(tableCode, (nextCharacter, error) => {
+                if (error) {
+                    console.error('Não foi possível acompanhar a ficha na nuvem:', error);
+                    return;
+                }
+                if (!nextCharacter || !nextCharacter.sheetJson) return;
+                const nextHash = nextCharacter.sheetHash || OLFirebase.hashCharacterSheet(nextCharacter.sheetJson);
+                if (nextHash === characterCloudLastHash) return;
+                try {
+                    applyCloudCharacter(nextCharacter, user.uid);
+                } catch (parseError) {
+                    console.error('A ficha recebida da nuvem está inválida:', parseError);
+                }
+            });
+        } catch (error) {
+            characterCloudReady = true;
+            console.error('A sincronização da ficha com a nuvem não pôde ser iniciada:', error);
+        }
+    }
+
+    function save(options = {}) {
         if(isLoadingData) return; 
 
         if (!atributosBaseCorpo) capturarAtributosBaseCorpo();
@@ -3801,7 +3932,10 @@ function removeCurrentClue() {
             d.rituals.push({ n: hr.getAttribute('data-n'), el: hr.getAttribute('data-el'), circ: hr.getAttribute('data-circ'), ex: hr.getAttribute('data-ex'), alc: hr.getAttribute('data-alc'), alv: hr.getAttribute('data-alv'), dur: hr.getAttribute('data-dur'), res: hr.getAttribute('data-res'), descGeral: hr.getAttribute('data-desc-geral'), descDisc: hr.getAttribute('data-desc-disc'), descVerd: hr.getAttribute('data-desc-verd'), eq: eq, img: hr.getAttribute('data-img') }); 
         });
         
-        if (!viewCode) localStorage.setItem('ordem_save_local', JSON.stringify(d));
+        if (!viewCode) {
+            localStorage.setItem('ordem_save_local', JSON.stringify(d));
+            if (!options.skipCloud) queueCharacterCloudSave(d);
+        }
 
         if (socket) {
             const jogadorNome = document.getElementById('char_nome') ? document.getElementById('char_nome').value : 'Desconhecido';
@@ -3872,6 +4006,7 @@ function removeCurrentClue() {
                 // Recarrega os dados na interface
                 isLoadingData = true; 
                 populateData(importedData);
+                queueCharacterCloudSave(importedData);
                 
                 alert("Ficha carregada com sucesso!");
             } catch (error) {
@@ -3921,6 +4056,7 @@ function removeCurrentClue() {
                     if (dados.codigo === viewCode && normalizeTableCode(dados.mesa) === tableCode && dados.fullData) {
                         isLoadingData = true;
                         populateData(dados.fullData);
+                        queueCharacterCloudSave(dados.fullData);
                     }
                 });
                 socket.on('connect', () => socket.emit('request_player', { codigo: viewCode, mesa: tableCode }));
@@ -3963,9 +4099,11 @@ function removeCurrentClue() {
                     });
                 });
             }
-            load(); 
-            playerDataReady = true;
-            if (socket && socket.connected) save();
+            load();
+            initializeCharacterCloudSync().finally(() => {
+                playerDataReady = true;
+                if (socket && socket.connected) save({ skipCloud: true });
+            });
         }
 
         renderPremadeCatalogs(); 

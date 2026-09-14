@@ -770,6 +770,13 @@
         let pendingCatalogItem = null;
         let pendingClueToSend = null;
         let masterCluesState = loadMasterCluesState();
+        let masterCluesCloudReady = false;
+        let masterCluesCloudApplying = false;
+        let masterCluesCloudDirtyBeforeReady = false;
+        let masterCluesCloudLastHash = '';
+        let masterCluesCloudSaveTimer = null;
+        let masterCluesCloudQueuedJson = '';
+        let masterCluesCloudUnsubscribe = null;
         let editingMasterClueId = null;
         let currentMasterClueId = null;
         let pendingMasterClueFront = '';
@@ -874,6 +881,10 @@
             renderPlayerRollResults();
             initiativeState = loadInitiativeState();
             renderInitiative();
+            resetMasterCluesCloudSync();
+            masterCluesState = loadMasterCluesState();
+            renderMasterClues();
+            initializeMasterCluesCloudSync();
 
             if (socket && socket.connected) {
                 socket.emit('master_ready', { mesa: masterTableCode });
@@ -1316,9 +1327,23 @@
             };
         }
 
+        function masterCluesStorageKey(table = masterTableCode) {
+            return `mestre_clues_state_${normalizeTableCode(table)}`;
+        }
+
+        function getStoredMasterCluesJson(table = masterTableCode) {
+            const scopedValue = localStorage.getItem(masterCluesStorageKey(table));
+            if (scopedValue !== null) return scopedValue;
+            return normalizeTableCode(table) === 'PADRAO' ? localStorage.getItem('mestre_clues_state') : null;
+        }
+
+        function masterCluesCloudMarkerKey(uid) {
+            return `ol_master_clues_cloud_${masterTableCode}_${uid}`;
+        }
+
         function loadMasterCluesState() {
             try {
-                const saved = JSON.parse(localStorage.getItem('mestre_clues_state'));
+                const saved = JSON.parse(getStoredMasterCluesJson());
                 return Array.isArray(saved) ? saved.map(normalizeMasterClue) : [];
             } catch (error) {
                 return [];
@@ -1326,10 +1351,132 @@
         }
 
         function saveMasterCluesState() {
+            const cluesJson = JSON.stringify(masterCluesState);
             try {
-                localStorage.setItem('mestre_clues_state', JSON.stringify(masterCluesState));
+                localStorage.setItem(masterCluesStorageKey(), cluesJson);
             } catch (error) {
                 alert('Os arquivos da pista ficaram grandes demais para salvar neste navegador. Use imagens menores ou um link para o áudio.');
+            }
+            if (masterCluesCloudApplying) return;
+            if (!masterCluesCloudReady) {
+                masterCluesCloudDirtyBeforeReady = true;
+                return;
+            }
+            queueMasterCluesCloudSave(cluesJson);
+        }
+
+        function resetMasterCluesCloudSync() {
+            clearTimeout(masterCluesCloudSaveTimer);
+            masterCluesCloudSaveTimer = null;
+            masterCluesCloudQueuedJson = '';
+            if (typeof masterCluesCloudUnsubscribe === 'function') masterCluesCloudUnsubscribe();
+            masterCluesCloudUnsubscribe = null;
+            masterCluesCloudReady = false;
+            masterCluesCloudApplying = false;
+            masterCluesCloudDirtyBeforeReady = false;
+            masterCluesCloudLastHash = '';
+        }
+
+        function applyMasterCluesCloud(cloudClues, uid) {
+            if (!cloudClues || !cloudClues.cluesJson) return false;
+            const parsedClues = JSON.parse(cloudClues.cluesJson);
+            if (!Array.isArray(parsedClues)) throw new Error('O catálogo de pistas recebido não é válido.');
+            masterCluesCloudApplying = true;
+            try {
+                masterCluesState = parsedClues.map(normalizeMasterClue);
+                localStorage.setItem(masterCluesStorageKey(), cloudClues.cluesJson);
+                if (currentMasterClueId && !masterCluesState.some(clue => clue.id === currentMasterClueId)) closeMasterClueInfo();
+                renderMasterClues();
+                masterCluesCloudLastHash = cloudClues.cluesHash || OLFirebase.hashCharacterSheet(cloudClues.cluesJson);
+                localStorage.setItem(masterCluesCloudMarkerKey(uid), masterCluesCloudLastHash);
+                return true;
+            } finally {
+                masterCluesCloudApplying = false;
+            }
+        }
+
+        function queueMasterCluesCloudSave(cluesJson = JSON.stringify(masterCluesState)) {
+            if (!masterCluesCloudReady || masterCluesCloudApplying || !window.OLFirebase) return;
+            masterCluesCloudQueuedJson = cluesJson;
+            clearTimeout(masterCluesCloudSaveTimer);
+            masterCluesCloudSaveTimer = setTimeout(async () => {
+                const queuedJson = masterCluesCloudQueuedJson;
+                masterCluesCloudQueuedJson = '';
+                if (!queuedJson) return;
+                const queuedHash = OLFirebase.hashCharacterSheet(queuedJson);
+                if (queuedHash === masterCluesCloudLastHash) return;
+                try {
+                    const user = await OLFirebase.getCurrentUser();
+                    if (!user) return;
+                    const result = await OLFirebase.saveMasterClues(masterTableCode, queuedJson);
+                    masterCluesCloudLastHash = result.cluesHash;
+                    localStorage.setItem(masterCluesCloudMarkerKey(user.uid), result.cluesHash);
+                } catch (error) {
+                    console.error('Não foi possível salvar as pistas do mestre na nuvem:', error);
+                }
+            }, 600);
+        }
+
+        async function initializeMasterCluesCloudSync() {
+            if (!window.OLFirebase) {
+                masterCluesCloudReady = true;
+                return;
+            }
+            const syncingTable = masterTableCode;
+            try {
+                const user = await OLFirebase.getCurrentUser();
+                if (!user || syncingTable !== masterTableCode) return;
+                let localJson = getStoredMasterCluesJson(syncingTable);
+                let localHash = localJson ? OLFirebase.hashCharacterSheet(localJson) : '';
+                const markerKey = masterCluesCloudMarkerKey(user.uid);
+                const knownCloudHash = localStorage.getItem(markerKey) || '';
+                const remoteClues = await OLFirebase.loadMasterClues(syncingTable);
+                if (syncingTable !== masterTableCode) return;
+
+                if (masterCluesCloudDirtyBeforeReady) {
+                    localJson = JSON.stringify(masterCluesState);
+                    localHash = OLFirebase.hashCharacterSheet(localJson);
+                }
+
+                if (remoteClues) {
+                    const remoteHash = remoteClues.cluesHash || OLFirebase.hashCharacterSheet(remoteClues.cluesJson);
+                    const localChangedAfterLastSync = Boolean(localJson && knownCloudHash && knownCloudHash === remoteHash && localHash !== knownCloudHash);
+                    if (masterCluesCloudDirtyBeforeReady || localChangedAfterLastSync) {
+                        const result = await OLFirebase.saveMasterClues(syncingTable, localJson || '[]');
+                        masterCluesCloudLastHash = result.cluesHash;
+                        localStorage.setItem(markerKey, result.cluesHash);
+                    } else if (localHash !== remoteHash) {
+                        applyMasterCluesCloud(remoteClues, user.uid);
+                    } else {
+                        masterCluesCloudLastHash = remoteHash;
+                        localStorage.setItem(markerKey, remoteHash);
+                    }
+                } else if (localJson !== null) {
+                    const result = await OLFirebase.saveMasterClues(syncingTable, localJson);
+                    masterCluesCloudLastHash = result.cluesHash;
+                    localStorage.setItem(markerKey, result.cluesHash);
+                }
+
+                masterCluesCloudDirtyBeforeReady = false;
+                masterCluesCloudReady = true;
+                masterCluesCloudUnsubscribe = await OLFirebase.watchMasterClues(syncingTable, (nextClues, error) => {
+                    if (syncingTable !== masterTableCode) return;
+                    if (error) {
+                        console.error('Não foi possível acompanhar as pistas do mestre na nuvem:', error);
+                        return;
+                    }
+                    if (!nextClues || !nextClues.cluesJson) return;
+                    const nextHash = nextClues.cluesHash || OLFirebase.hashCharacterSheet(nextClues.cluesJson);
+                    if (nextHash === masterCluesCloudLastHash) return;
+                    try {
+                        applyMasterCluesCloud(nextClues, user.uid);
+                    } catch (parseError) {
+                        console.error('As pistas recebidas da nuvem estão inválidas:', parseError);
+                    }
+                });
+            } catch (error) {
+                if (syncingTable === masterTableCode) masterCluesCloudReady = true;
+                console.error('A sincronização das pistas do mestre não pôde ser iniciada:', error);
             }
         }
 
@@ -2675,6 +2822,7 @@
         renderPlayerRollResults();
         renderMonsters();
         renderMasterClues();
+        initializeMasterCluesCloudSync();
         renderLuminaControl();
         switchMasterTab(localStorage.getItem('mestre_active_tab'));
     </script>
