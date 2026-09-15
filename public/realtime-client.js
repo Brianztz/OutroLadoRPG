@@ -6,6 +6,8 @@
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const BINARY_FIELDS = ['frame', 'chunk'];
+    const PLAYER_DISCONNECT_GRACE_MS = 4500;
+    const GUARDED_PAGE = /\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
 
     function normalizeTableCode(value) {
         const normalized = String(value || 'PADRAO')
@@ -17,6 +19,14 @@
             .replace(/^-+|-+$/g, '')
             .slice(0, 40);
         return normalized || 'PADRAO';
+    }
+
+    function normalizePlayerCode(value) {
+        return String(value || '')
+            .trim()
+            .toUpperCase()
+            .replace(/[^A-Z0-9_-]/g, '')
+            .slice(0, 40);
     }
 
     function makeClientId() {
@@ -84,6 +94,7 @@
             this._reconnectTimer = null;
             this._reconnectAttempts = 0;
             this._generation = 0;
+            this._disconnectTimers = new Map();
             const urlTable = new URL(global.location.href).searchParams.get('mesa');
             this._table = normalizeTableCode(urlTable || 'PADRAO');
             this._open();
@@ -156,16 +167,50 @@
             this._manualClose = true;
             if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
+            this._disconnectTimers.forEach(timer => clearTimeout(timer));
+            this._disconnectTimers.clear();
             if (this._socket) this._socket.close(1000, 'client disconnect');
             return this;
         }
 
-        _dispatch(event, data) {
+        _playerEventKey(data) {
+            if (!data || typeof data !== 'object') return '';
+            const code = normalizePlayerCode(data.codigo || data.id);
+            if (!code) return '';
+            return `${normalizeTableCode(data.mesa || this._table)}::${code}`;
+        }
+
+        _dispatchNow(event, data) {
             const handlers = this._handlers.get(event);
             if (!handlers) return;
             [...handlers].forEach(handler => {
                 try { handler(data); } catch (error) { setTimeout(() => { throw error; }, 0); }
             });
+        }
+
+        _dispatch(event, data) {
+            const playerKey = this._playerEventKey(data);
+
+            if (event === 'player_disconnected' && playerKey) {
+                const previousTimer = this._disconnectTimers.get(playerKey);
+                if (previousTimer) clearTimeout(previousTimer);
+                const timer = setTimeout(() => {
+                    this._disconnectTimers.delete(playerKey);
+                    this._dispatchNow(event, data);
+                }, PLAYER_DISCONNECT_GRACE_MS);
+                this._disconnectTimers.set(playerKey, timer);
+                return;
+            }
+
+            if (playerKey && (event === 'update_mestre' || event === 'player_connected')) {
+                const pendingDisconnect = this._disconnectTimers.get(playerKey);
+                if (pendingDisconnect) {
+                    clearTimeout(pendingDisconnect);
+                    this._disconnectTimers.delete(playerKey);
+                }
+            }
+
+            this._dispatchNow(event, data);
         }
 
         _send(packet) {
@@ -189,9 +234,41 @@
             this._open();
         }
 
-        _open() {
+        async _firebaseToken() {
+            let token = '';
+
+            if (GUARDED_PAGE && global.OLFirebase && typeof global.OLFirebase.getCurrentUser === 'function') {
+                try {
+                    const user = await global.OLFirebase.getCurrentUser();
+                    if (!user) return '';
+                    if (typeof global.OLFirebase.refreshRealtimeToken === 'function') {
+                        token = String(await global.OLFirebase.refreshRealtimeToken(user, false) || '');
+                    }
+                } catch (error) {
+                    console.warn('Nao foi possivel preparar a autenticacao em tempo real:', error);
+                }
+            }
+
+            if (!token) {
+                try { token = String(global.sessionStorage.getItem('ol_firebase_id_token') || ''); } catch (error) {}
+            }
+            return token;
+        }
+
+        async _open() {
             if (this._manualClose) return;
             const generation = ++this._generation;
+            const firebaseToken = await this._firebaseToken();
+            if (generation !== this._generation || this._manualClose) return;
+
+            // Ficha e escudo dependem de uma sessao Firebase autenticada. Antes,
+            // o WebSocket podia abrir anonimo enquanto o Firebase ainda carregava,
+            // fazendo os eventos do jogador serem ignorados pelo Worker.
+            if (GUARDED_PAGE && global.OLFirebase && !firebaseToken) {
+                this._scheduleReconnect();
+                return;
+            }
+
             const protocol = global.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const url = new URL('/ws', global.location.href);
             url.protocol = protocol;
@@ -199,8 +276,6 @@
             url.searchParams.set('client', this.id);
             if (this.auth.screenShareMode) url.searchParams.set('screenShareMode', String(this.auth.screenShareMode));
 
-            let firebaseToken = '';
-            try { firebaseToken = String(global.sessionStorage.getItem('ol_firebase_id_token') || ''); } catch (error) {}
             const protocols = firebaseToken ? ['ol-v1', `firebase.${firebaseToken}`] : [];
             const socket = protocols.length ? new WebSocket(url.href, protocols) : new WebSocket(url.href);
             socket.binaryType = 'arraybuffer';
