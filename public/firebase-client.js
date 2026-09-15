@@ -12,6 +12,11 @@
     const DATABASE_ID = 'outro-lado-rpg';
     const MASTER_EMAIL = 'bryanferreira2909@gmail.com';
     const TOKEN_KEY = 'ol_firebase_id_token';
+    const PORTAL_ACCESS_KEY = 'ol_firebase_portal_access';
+    const SDK_TIMEOUT_MS = 15000;
+    const AUTH_TIMEOUT_MS = 12000;
+    const FIRESTORE_TIMEOUT_MS = 12000;
+    const PORTAL_ACCESS_TTL_MS = 2 * 60 * 1000;
     const CHARACTER_CHUNK_SIZE = 180000;
     const CHARACTER_MAX_CHUNKS = 48;
     const guardedPage = /\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
@@ -27,6 +32,58 @@
     let firstAuthResolved = false;
     const firstAuth = new Promise(resolve => { resolveFirstAuth = resolve; });
 
+    function withTimeout(promise, timeoutMs, message) {
+        let timeoutId;
+        const timeout = new Promise((resolve, reject) => {
+            timeoutId = global.setTimeout(() => reject(new Error(message)), timeoutMs);
+        });
+        return Promise.race([Promise.resolve(promise), timeout])
+            .finally(() => global.clearTimeout(timeoutId));
+    }
+
+    function portalNetworkError(action) {
+        return `O Firebase demorou para ${action}. Verifique sua internet e tente novamente.`;
+    }
+
+    function rememberPortalAccess(role, tableId, user) {
+        try {
+            sessionStorage.setItem(PORTAL_ACCESS_KEY, JSON.stringify({
+                role,
+                tableId,
+                uid: user.uid,
+                validatedAt: Date.now()
+            }));
+        } catch (error) {
+            console.warn('Nao foi possivel guardar a validacao da mesa:', error);
+        }
+    }
+
+    function hasRecentPortalAccess(role, tableId, user) {
+        try {
+            const access = JSON.parse(sessionStorage.getItem(PORTAL_ACCESS_KEY) || 'null');
+            return Boolean(access
+                && access.role === role
+                && access.tableId === tableId
+                && access.uid === user.uid
+                && Date.now() - Number(access.validatedAt || 0) <= PORTAL_ACCESS_TTL_MS);
+        } catch (error) {
+            sessionStorage.removeItem(PORTAL_ACCESS_KEY);
+            return false;
+        }
+    }
+
+    function updateProfilesInBackground(user) {
+        ensureUserProfiles(user).catch(error => {
+            console.warn('O perfil Firebase sera atualizado em outra tentativa:', error);
+        });
+    }
+
+    function updateRealtimeTokenInBackground(user) {
+        refreshRealtimeToken(user).catch(error => {
+            console.warn('O token em tempo real sera atualizado em outra tentativa:', error);
+        });
+    }
+
     const sdkPromise = Promise.all([
         import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
         import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'),
@@ -34,7 +91,11 @@
     ]).then(([appSdk, authSdk, firestoreSdk]) => {
         const app = appSdk.getApps().length ? appSdk.getApp() : appSdk.initializeApp(FIREBASE_CONFIG);
         const auth = authSdk.getAuth(app);
-        const db = firestoreSdk.getFirestore(app, DATABASE_ID);
+        // Long polling avoids requests being buffered forever by some proxies,
+        // antivirus tools and restricted browser networks.
+        const db = firestoreSdk.initializeFirestore(app, {
+            experimentalForceLongPolling: true
+        }, DATABASE_ID);
 
         authSdk.onAuthStateChanged(auth, async user => {
             currentUser = user || null;
@@ -88,17 +149,21 @@
     }
 
     async function getCurrentUser() {
-        await sdkPromise;
-        await firstAuth;
+        await withTimeout(sdkPromise, SDK_TIMEOUT_MS, 'Nao foi possivel carregar o Firebase. Recarregue a pagina.');
+        await withTimeout(firstAuth, AUTH_TIMEOUT_MS, 'O login do Google demorou para responder. Recarregue a pagina.');
         return currentUser;
     }
 
-    async function refreshRealtimeToken(user = currentUser) {
+    async function refreshRealtimeToken(user = currentUser, forceRefresh = false) {
         if (!user) {
             sessionStorage.removeItem(TOKEN_KEY);
             return '';
         }
-        const token = await user.getIdToken(true);
+        const token = await withTimeout(
+            user.getIdToken(Boolean(forceRefresh)),
+            AUTH_TIMEOUT_MS,
+            portalNetworkError('renovar o login')
+        );
         sessionStorage.setItem(TOKEN_KEY, token);
         return token;
     }
@@ -392,7 +457,11 @@
         const { doc, getDoc, serverTimestamp, setDoc } = firestoreSdk;
         const privateRef = doc(db, 'users_private', user.uid);
         const publicRef = doc(db, 'users_public', user.uid);
-        const [privateSnapshot, publicSnapshot] = await Promise.all([getDoc(privateRef), getDoc(publicRef)]);
+        const [privateSnapshot, publicSnapshot] = await withTimeout(
+            Promise.all([getDoc(privateRef), getDoc(publicRef)]),
+            FIRESTORE_TIMEOUT_MS,
+            portalNetworkError('carregar seu perfil')
+        );
         const now = serverTimestamp();
         const privateData = {
             uid: user.uid,
@@ -407,10 +476,14 @@
         };
         if (!privateSnapshot.exists()) privateData.createdAt = now;
         if (!publicSnapshot.exists()) publicData.createdAt = now;
-        await Promise.all([
-            setDoc(privateRef, privateData, { merge: privateSnapshot.exists() }),
-            setDoc(publicRef, publicData, { merge: publicSnapshot.exists() })
-        ]);
+        await withTimeout(
+            Promise.all([
+                setDoc(privateRef, privateData, { merge: privateSnapshot.exists() }),
+                setDoc(publicRef, publicData, { merge: publicSnapshot.exists() })
+            ]),
+            FIRESTORE_TIMEOUT_MS,
+            portalNetworkError('salvar seu perfil')
+        );
     }
 
     async function signInWithGoogle() {
@@ -432,14 +505,18 @@
     async function preparePortal(role, requestedTable) {
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google antes de escolher a mesa.');
-        await ensureUserProfiles(user);
-        await refreshRealtimeToken(user);
+        updateProfilesInBackground(user);
+        updateRealtimeTokenInBackground(user);
 
         const { db, firestoreSdk } = await sdkPromise;
         const { doc, getDoc, serverTimestamp, setDoc } = firestoreSdk;
         const tableId = normalizeTableCode(requestedTable);
         const tableRef = doc(db, 'tables', tableId);
-        let tableSnapshot = await getDoc(tableRef);
+        let tableSnapshot = await withTimeout(
+            getDoc(tableRef),
+            FIRESTORE_TIMEOUT_MS,
+            portalNetworkError('consultar a mesa')
+        );
         const now = serverTimestamp();
 
         if (role === 'master') {
@@ -447,39 +524,54 @@
                 if (!isBootstrapMaster(user)) {
                     throw new Error('Somente o mestre autorizado pode criar uma mesa nova.');
                 }
-                await setDoc(tableRef, {
-                    tableId,
-                    displayName: `Mesa ${tableId}`.slice(0, 80),
-                    ownerUid: user.uid,
-                    status: 'active',
-                    createdAt: now,
-                    updatedAt: now
-                });
-                tableSnapshot = await getDoc(tableRef);
+                await withTimeout(
+                    setDoc(tableRef, {
+                        tableId,
+                        displayName: `Mesa ${tableId}`.slice(0, 80),
+                        ownerUid: user.uid,
+                        status: 'active',
+                        createdAt: now,
+                        updatedAt: now
+                    }),
+                    FIRESTORE_TIMEOUT_MS,
+                    portalNetworkError('criar a mesa')
+                );
             }
 
             const memberRef = doc(db, 'tables', tableId, 'members', user.uid);
-            const memberSnapshot = await getDoc(memberRef);
-            const isOwner = tableSnapshot.data().ownerUid === user.uid;
+            const memberSnapshot = await withTimeout(
+                getDoc(memberRef),
+                FIRESTORE_TIMEOUT_MS,
+                portalNetworkError('validar o acesso do mestre')
+            );
+            const isOwner = !tableSnapshot.exists() || tableSnapshot.data().ownerUid === user.uid;
             const isMasterMember = memberSnapshot.exists() && memberSnapshot.data().role === 'master';
             if (!isOwner && !isMasterMember) throw new Error('Esta conta nao possui acesso de mestre nesta mesa.');
             if (isOwner && !isMasterMember) {
-                await setDoc(memberRef, {
-                    uid: user.uid,
-                    role: 'master',
-                    playerCode: '',
-                    displayName: safeDisplayName(user),
-                    photoURL: safePhotoURL(user),
-                    joinedAt: now,
-                    updatedAt: now
-                });
+                await withTimeout(
+                    setDoc(memberRef, {
+                        uid: user.uid,
+                        role: 'master',
+                        playerCode: '',
+                        displayName: safeDisplayName(user),
+                        photoURL: safePhotoURL(user),
+                        joinedAt: now,
+                        updatedAt: now
+                    }),
+                    FIRESTORE_TIMEOUT_MS,
+                    portalNetworkError('liberar o acesso do mestre')
+                );
             }
         } else {
             if (!tableSnapshot.exists() || tableSnapshot.data().status !== 'active') {
                 throw new Error('Essa mesa ainda nao existe. Peca ao mestre para entrar nela primeiro.');
             }
             const memberRef = doc(db, 'tables', tableId, 'members', user.uid);
-            const memberSnapshot = await getDoc(memberRef);
+            const memberSnapshot = await withTimeout(
+                getDoc(memberRef),
+                FIRESTORE_TIMEOUT_MS,
+                portalNetworkError('validar o jogador')
+            );
             let playerCode = normalizePlayerCode(localStorage.getItem('player_sync_code'));
             if (!playerCode && memberSnapshot.exists()) playerCode = normalizePlayerCode(memberSnapshot.data().playerCode);
             if (!playerCode) playerCode = createPlayerCode();
@@ -494,14 +586,15 @@
             if (memberSnapshot.exists()) {
                 memberData.role = memberSnapshot.data().role;
                 memberData.joinedAt = memberSnapshot.data().joinedAt;
-                await setDoc(memberRef, memberData);
+                await withTimeout(setDoc(memberRef, memberData), FIRESTORE_TIMEOUT_MS, portalNetworkError('atualizar o jogador'));
             } else {
                 memberData.role = 'player';
                 memberData.joinedAt = now;
-                await setDoc(memberRef, memberData);
+                await withTimeout(setDoc(memberRef, memberData), FIRESTORE_TIMEOUT_MS, portalNetworkError('adicionar o jogador'));
             }
         }
 
+        rememberPortalAccess(role, tableId, user);
         return { user, tableId, role };
     }
 
@@ -521,17 +614,30 @@
                 global.location.replace(portalURL(tableId, 'Entre com sua conta Google para continuar.'));
                 return false;
             }
-            await ensureUserProfiles(user);
-            await refreshRealtimeToken(user);
+            if (hasRecentPortalAccess(role, tableId, user)) {
+                document.documentElement.classList.remove('firebase-auth-pending');
+                updateProfilesInBackground(user);
+                updateRealtimeTokenInBackground(user);
+                return true;
+            }
+            updateProfilesInBackground(user);
+            updateRealtimeTokenInBackground(user);
             const { db, firestoreSdk } = await sdkPromise;
-            const tableSnapshot = await firestoreSdk.getDoc(firestoreSdk.doc(db, 'tables', tableId));
-            const memberSnapshot = await firestoreSdk.getDoc(firestoreSdk.doc(db, 'tables', tableId, 'members', user.uid));
+            const [tableSnapshot, memberSnapshot] = await withTimeout(
+                Promise.all([
+                    firestoreSdk.getDoc(firestoreSdk.doc(db, 'tables', tableId)),
+                    firestoreSdk.getDoc(firestoreSdk.doc(db, 'tables', tableId, 'members', user.uid))
+                ]),
+                FIRESTORE_TIMEOUT_MS,
+                portalNetworkError('validar o acesso')
+            );
             const allowed = tableSnapshot.exists() && memberSnapshot.exists()
                 && (role !== 'master' || tableSnapshot.data().ownerUid === user.uid || memberSnapshot.data().role === 'master');
             if (!allowed) {
                 global.location.replace(portalURL(tableId, 'Sua conta nao possui acesso a essa mesa.'));
                 return false;
             }
+            rememberPortalAccess(role, tableId, user);
             document.documentElement.classList.remove('firebase-auth-pending');
             return true;
         } catch (error) {
