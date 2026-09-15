@@ -39,6 +39,22 @@
         .master-table-button span { color: #fff; letter-spacing: 1px; }
         .btn-create-catalog-entry { padding: 10px 15px; border: 1px solid var(--accent-blue); border-radius: 7px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .btn-create-catalog-entry:hover { background: var(--accent-blue); color: #000; box-shadow: 0 0 12px rgba(139,204,246,0.25); }
+        .combat-mode-button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(229,57,53,0.55); border-radius: 7px; background: rgba(229,57,53,0.08); color: #ff9691; cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
+        .combat-mode-button:hover { transform: translateY(-1px); background: rgba(229,57,53,0.16); box-shadow: 0 0 12px rgba(229,57,53,0.2); }
+        .combat-mode-button.active { border-color: #ff6e68; background: linear-gradient(135deg,rgba(111,16,22,0.96),rgba(190,43,49,0.92)); color: #fff; box-shadow: 0 0 16px rgba(229,57,53,0.34); }
+
+        .initiative-drawer { position: fixed; z-index: 9500; top: 18px; right: 18px; width: min(390px,calc(100vw - 36px)); height: calc(100vh - 36px); display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(139,204,246,0.34); border-radius: 14px; background: rgba(3,9,17,0.985); box-shadow: -18px 0 52px rgba(0,0,0,0.72),0 0 24px rgba(74,153,218,0.08); backdrop-filter: blur(18px); transform: translateX(calc(100% + 40px)); opacity: 0; pointer-events: none; transition: transform 0.26s ease,opacity 0.2s ease; }
+        .initiative-drawer.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
+        .initiative-drawer-header { min-height: 58px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid rgba(139,204,246,0.2); background: linear-gradient(90deg,rgba(74,153,218,0.12),rgba(229,57,53,0.08)); }
+        .initiative-drawer-heading { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .initiative-drawer-heading strong { color: var(--accent-yellow); font-size: 0.82em; letter-spacing: 0.04em; text-transform: uppercase; }
+        .initiative-drawer-heading span { color: var(--text-secondary); font-size: 0.62em; font-weight: 800; }
+        .initiative-drawer-close { width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid rgba(229,57,53,0.46); border-radius: 7px; background: rgba(229,57,53,0.14); color: #ff8e89; cursor: pointer; font-size: 1.1em; font-weight: 900; }
+        .initiative-drawer-close:hover { background: rgba(229,57,53,0.28); color: #fff; }
+        .initiative-drawer .initiative-container { width: 100%; min-width: 0; min-height: 0; flex: 1 1 auto; border: 0; border-radius: 0; background: transparent; backdrop-filter: none; }
+        .initiative-drawer .initiative-list { min-height: 0; }
+        body.combat-mode-active { padding-right: 428px; transition: padding-right 0.26s ease; }
+        body:not(.combat-mode-active) { transition: padding-right 0.26s ease; }
         .master-tabs { margin: -8px 0 16px; padding: 5px; display: flex; gap: 6px; align-self: flex-start; border: 1px solid var(--border-color); border-radius: 9px; background: rgba(2,7,14,0.9); }
         .master-tab-button { padding: 9px 18px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-secondary); font-size: 0.73em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-tab-button:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
@@ -414,7 +430,7 @@
         @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes roll-entry-in { from { opacity: 0; transform: translateX(12px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
-        @media (max-width: 850px) { body { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 480px; } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields, .clue-audio-fields { grid-template-columns: 1fr; } .clue-type-switch { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
+        @media (max-width: 850px) { body, body.combat-mode-active { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 0; } .initiative-drawer { top: 10px; right: 10px; width: calc(100vw - 20px); height: calc(100vh - 20px); } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields, .clue-audio-fields { grid-template-columns: 1fr; } .clue-type-switch { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
     </style>
 </head>
 <body>
@@ -425,6 +441,7 @@
         </div>
         <div class="master-top-actions">
             <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
+            <button id="combat-mode-button" class="combat-mode-button" type="button" aria-pressed="false" onclick="toggleCombatMode()">⚔ MODO DE COMBATE</button>
             <button class="master-screen-share-button" type="button" onclick="openScreenSharePage()">▣ Compartilhar tela</button>
             <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
         </div>
@@ -438,6 +455,30 @@
         <button class="master-tab-button" type="button" data-master-tab="lumina" onclick="switchMasterTab('lumina')">🌐 LUMINA</button>
     </nav>
 
+    <aside id="initiative-drawer" class="initiative-drawer" aria-hidden="true">
+        <div class="initiative-drawer-header">
+            <div class="initiative-drawer-heading"><strong>⚔️ Controle de Iniciativa</strong><span>Modo de combate ativo</span></div>
+            <button class="initiative-drawer-close" type="button" title="Fechar modo de combate" onclick="setCombatMode(false)">×</button>
+        </div>
+        <div class="initiative-container">
+            <div class="initiative-title"><span>ORDEM DE COMBATE</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
+            <div class="initiative-add">
+                <div class="initiative-add-row">
+                    <input id="initiative-name-input" class="initiative-input" type="text" placeholder="Nome do inimigo ou NPC">
+                    <input id="initiative-value-input" class="initiative-input" type="number" value="0" aria-label="Iniciativa">
+                    <button class="initiative-add-button" type="button" onclick="addManualInitiative()">+</button>
+                </div>
+                <div class="initiative-auto-note">Jogadores entram automaticamente quando rolam Iniciativa na ficha.</div>
+            </div>
+            <div id="initiative-list" class="initiative-list"></div>
+            <div class="initiative-controls">
+                <button id="initiative-previous" class="initiative-previous" type="button" onclick="previousInitiativeTurn()">← VOLTAR</button>
+                <button id="initiative-next" class="initiative-next" type="button" onclick="nextInitiativeTurn()">INICIAR COMBATE</button>
+                <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
+            </div>
+        </div>
+    </aside>
+
     <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
         <section class="players-section">
             <div class="section-heading"><span>Jogadores conectados automaticamente</span><span id="players-count" class="players-count">0 ONLINE</span></div>
@@ -446,23 +487,6 @@
             </div>
         </section>
         <div class="combat-sidebar">
-            <aside class="initiative-container">
-                <div class="initiative-title"><span>⚔️ CONTROLE DE INICIATIVA</span><span id="initiative-round" class="initiative-round">AGUARDANDO</span></div>
-                <div class="initiative-add">
-                    <div class="initiative-add-row">
-                        <input id="initiative-name-input" class="initiative-input" type="text" placeholder="Nome do inimigo ou NPC">
-                        <input id="initiative-value-input" class="initiative-input" type="number" value="0" aria-label="Iniciativa">
-                        <button class="initiative-add-button" type="button" onclick="addManualInitiative()">+</button>
-                    </div>
-                    <div class="initiative-auto-note">Jogadores entram automaticamente quando rolam Iniciativa na ficha.</div>
-                </div>
-                <div id="initiative-list" class="initiative-list"></div>
-                <div class="initiative-controls">
-                    <button id="initiative-previous" class="initiative-previous" type="button" onclick="previousInitiativeTurn()">← VOLTAR</button>
-                    <button id="initiative-next" class="initiative-next" type="button" onclick="nextInitiativeTurn()">INICIAR COMBATE</button>
-                    <button class="initiative-clear" type="button" onclick="clearInitiative()">LIMPAR INICIATIVA</button>
-                </div>
-            </aside>
             <section class="player-rolls-container" aria-label="Resultados das rolagens dos jogadores">
                 <div class="player-rolls-title"><span>🎲 ÚLTIMAS ROLAGENS</span><button class="player-rolls-clear" type="button" onclick="clearPlayerRollResults()">LIMPAR</button></div>
                 <div id="player-rolls-list" class="player-rolls-list" aria-live="polite"></div>
@@ -979,6 +1003,30 @@
         function clearPlayerRollResults() {
             playerRollHistory = [];
             renderPlayerRollResults();
+        }
+
+        let combatModeEnabled = localStorage.getItem('mestre_combat_mode') === '1';
+
+        function setCombatMode(enabled) {
+            combatModeEnabled = Boolean(enabled);
+            localStorage.setItem('mestre_combat_mode', combatModeEnabled ? '1' : '0');
+            const drawer = document.getElementById('initiative-drawer');
+            const button = document.getElementById('combat-mode-button');
+            document.body.classList.toggle('combat-mode-active', combatModeEnabled);
+            if (drawer) {
+                drawer.classList.toggle('open', combatModeEnabled);
+                drawer.setAttribute('aria-hidden', String(!combatModeEnabled));
+            }
+            if (button) {
+                button.classList.toggle('active', combatModeEnabled);
+                button.setAttribute('aria-pressed', String(combatModeEnabled));
+                button.textContent = combatModeEnabled ? '⚔ MODO DE COMBATE ATIVO' : '⚔ MODO DE COMBATE';
+            }
+            if (combatModeEnabled) renderInitiative();
+        }
+
+        function toggleCombatMode() {
+            setCombatMode(!combatModeEnabled);
         }
 
         function switchMasterTab(tab) {
@@ -2816,6 +2864,7 @@
             else if (document.getElementById('master-clue-form-modal').classList.contains('open')) closeMasterClueForm();
             else if (document.getElementById('master-clue-info-modal').classList.contains('open')) closeMasterClueInfo();
             else if (document.getElementById('monster-modal').classList.contains('open')) closeMonsterPopup();
+            else if (combatModeEnabled) setCombatMode(false);
         });
         updatePlayersCount();
         renderInitiative();
@@ -2824,6 +2873,7 @@
         renderMasterClues();
         initializeMasterCluesCloudSync();
         renderLuminaControl();
+        setCombatMode(combatModeEnabled);
         switchMasterTab(localStorage.getItem('mestre_active_tab'));
     </script>
 </body>
