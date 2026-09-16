@@ -91,10 +91,10 @@
     ]).then(([appSdk, authSdk, firestoreSdk]) => {
         const app = appSdk.getApps().length ? appSdk.getApp() : appSdk.initializeApp(FIREBASE_CONFIG);
         const auth = authSdk.getAuth(app);
-        // Long polling avoids requests being buffered forever by some proxies,
-        // antivirus tools and restricted browser networks.
+        // Usa o transporte normal quando possivel e ativa long polling apenas
+        // quando a rede realmente exigir, evitando latencia extra na entrada.
         const db = firestoreSdk.initializeFirestore(app, {
-            experimentalForceLongPolling: true
+            experimentalAutoDetectLongPolling: true
         }, DATABASE_ID);
 
         authSdk.onAuthStateChanged(auth, async user => {
@@ -586,10 +586,20 @@
             if (memberSnapshot.exists()) {
                 memberData.role = memberSnapshot.data().role;
                 memberData.joinedAt = memberSnapshot.data().joinedAt;
-                await withTimeout(setDoc(memberRef, memberData), FIRESTORE_TIMEOUT_MS, portalNetworkError('atualizar o jogador'));
+                // O acesso ja foi confirmado pelo getDoc acima. Atualizar nome/foto/codigo
+                // nao deve bloquear a entrada do jogador caso o Firestore esteja lento.
+                withTimeout(
+                    setDoc(memberRef, memberData),
+                    FIRESTORE_TIMEOUT_MS,
+                    portalNetworkError('atualizar o jogador')
+                ).catch(error => {
+                    console.warn('Cadastro do jogador sera atualizado em outra tentativa:', error);
+                });
             } else {
                 memberData.role = 'player';
                 memberData.joinedAt = now;
+                // Para um membro novo a gravacao continua obrigatoria: a ficha so deve
+                // abrir depois que o acesso existir de fato no Firestore.
                 await withTimeout(setDoc(memberRef, memberData), FIRESTORE_TIMEOUT_MS, portalNetworkError('adicionar o jogador'));
             }
         }
