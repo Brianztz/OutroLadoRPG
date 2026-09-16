@@ -262,6 +262,32 @@
             roleButtons.forEach(button => { button.disabled = !signedIn; });
         }
 
+        function rememberValidatedPortalAccess(role, table) {
+            const user = window.__portalUser;
+            if (!user || !user.uid) return;
+            try {
+                sessionStorage.setItem('ol_firebase_portal_access', JSON.stringify({
+                    role,
+                    tableId: table,
+                    uid: user.uid,
+                    validatedAt: Date.now()
+                }));
+            } catch (error) {
+                console.warn('Nao foi possivel guardar a validacao local da mesa:', error);
+            }
+        }
+
+        function finishPortalEntry(role, table) {
+            rememberValidatedPortalAccess(role, table);
+            localStorage.setItem('portal_table_code', table);
+            const isMaster = role === 'master';
+            localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
+            const destination = new URL(isMaster ? './mestre.html' : './ficha.html', window.location.href);
+            destination.search = '';
+            destination.searchParams.set('mesa', table);
+            window.location.assign(destination.href);
+        }
+
         async function enterPortal(role) {
             if (!tableInput.reportValidity()) return;
             const table = normalizeTableCode(tableInput.value);
@@ -270,15 +296,19 @@
             setPortalBusy(true);
             try {
                 await OLFirebase.preparePortal(role, table);
-                localStorage.setItem('portal_table_code', table);
-                const isMaster = role === 'master';
-                localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
-                const destination = new URL(isMaster ? './mestre.html' : './ficha.html', window.location.href);
-                destination.search = '';
-                destination.searchParams.set('mesa', table);
-                window.location.assign(destination.href);
+                finishPortalEntry(role, table);
             } catch (error) {
-                showAuthMessage(error && error.message || 'Nao foi possivel entrar nessa mesa.', true);
+                const message = String(error && error.message || 'Nao foi possivel entrar nessa mesa.');
+                const harmlessExistingPlayerRefreshTimeout = role === 'player'
+                    && /Firebase demorou para atualizar o jogador/i.test(message);
+
+                if (harmlessExistingPlayerRefreshTimeout) {
+                    console.warn('A atualizacao do cadastro do jogador demorou, mas o acesso ja foi validado. Entrando na mesa.', error);
+                    finishPortalEntry(role, table);
+                    return;
+                }
+
+                showAuthMessage(message, true);
                 setPortalBusy(false);
             }
         }
