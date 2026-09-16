@@ -95,6 +95,8 @@
             this._reconnectAttempts = 0;
             this._generation = 0;
             this._disconnectTimers = new Map();
+            this._stickyPackets = new Map();
+            this._hasConnectedOnce = false;
             const urlTable = new URL(global.location.href).searchParams.get('mesa');
             this._table = normalizeTableCode(urlTable || 'PADRAO');
             this._open();
@@ -142,8 +144,21 @@
                 ? normalizeTableCode(data.mesa)
                 : this._table;
             const packet = { event, data, volatile };
+
+            // screen_share_start representa um estado, nao apenas um evento pontual.
+            // Se o WebSocket cair enquanto a captura continua aberta, o Durable Object
+            // perde o broadcaster antigo. Mantemos o ultimo start para reapresenta-lo
+            // automaticamente assim que a conexao voltar.
+            if (event === 'screen_share_start') {
+                this._stickyPackets.set('screen_share_start', { event, data, volatile: false, table: requestedTable });
+            } else if (event === 'screen_share_stop') {
+                this._stickyPackets.delete('screen_share_start');
+            }
+
             if (requestedTable !== this._table) {
                 this._table = requestedTable;
+                const stickyShare = this._stickyPackets.get('screen_share_start');
+                if (stickyShare && stickyShare.table !== requestedTable) this._stickyPackets.delete('screen_share_start');
                 this._queue.push(packet);
                 this._restart();
                 return this;
@@ -222,6 +237,12 @@
             }
         }
 
+        _replayStickyState() {
+            const share = this._stickyPackets.get('screen_share_start');
+            if (!share || share.table !== this._table || !this.connected || !this._socket || this._socket.readyState !== WebSocket.OPEN) return;
+            this._send({ event: share.event, data: share.data, volatile: false });
+        }
+
         _restart() {
             this._generation += 1;
             if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
@@ -283,11 +304,21 @@
 
             socket.addEventListener('open', () => {
                 if (generation !== this._generation) return;
+                const reconnecting = this._hasConnectedOnce;
                 this.connected = true;
                 this._reconnectAttempts = 0;
                 const queued = this._queue.splice(0);
                 queued.forEach(packet => this._send(packet));
                 this._dispatch('connect');
+                this._hasConnectedOnce = true;
+
+                // O handler de `connect` da pagina primeiro refaz o join da sala.
+                // Em seguida reapresentamos o broadcaster ativo no novo socket.
+                if (reconnecting && this._stickyPackets.has('screen_share_start')) {
+                    global.setTimeout(() => {
+                        if (generation === this._generation) this._replayStickyState();
+                    }, 0);
+                }
             });
 
             socket.addEventListener('message', message => {
