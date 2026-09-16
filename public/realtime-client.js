@@ -8,6 +8,7 @@
     const BINARY_FIELDS = ['frame', 'chunk'];
     const PLAYER_DISCONNECT_GRACE_MS = 4500;
     const GUARDED_PAGE = /\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
+    const SCREEN_SHARE_PAGE = /\/compartilhar(?:\.html)?\/?$/i.test(global.location.pathname);
 
     function normalizeTableCode(value) {
         const normalized = String(value || 'PADRAO')
@@ -97,8 +98,17 @@
             this._disconnectTimers = new Map();
             this._stickyPackets = new Map();
             this._hasConnectedOnce = false;
+            this._screenShareLocalActive = false;
+            this._screenShareRemoteActive = false;
+            this._screenWatchdogTimer = null;
+            this._screenLastVideo = null;
+            this._screenLastFrameCount = -1;
+            this._screenLastMediaTime = 0;
+            this._screenLastProgressAt = Date.now();
+            this._screenLastRecoveryAt = 0;
             const urlTable = new URL(global.location.href).searchParams.get('mesa');
             this._table = normalizeTableCode(urlTable || 'PADRAO');
+            if (SCREEN_SHARE_PAGE) this._startScreenShareWatchdog();
             this._open();
         }
 
@@ -145,13 +155,12 @@
                 : this._table;
             const packet = { event, data, volatile };
 
-            // screen_share_start representa um estado, nao apenas um evento pontual.
-            // Se o WebSocket cair enquanto a captura continua aberta, o Durable Object
-            // perde o broadcaster antigo. Mantemos o ultimo start para reapresenta-lo
-            // automaticamente assim que a conexao voltar.
             if (event === 'screen_share_start') {
+                this._screenShareLocalActive = true;
+                this._screenShareRemoteActive = false;
                 this._stickyPackets.set('screen_share_start', { event, data, volatile: false, table: requestedTable });
             } else if (event === 'screen_share_stop') {
+                this._screenShareLocalActive = false;
                 this._stickyPackets.delete('screen_share_start');
             }
 
@@ -184,6 +193,8 @@
             this._reconnectTimer = null;
             this._disconnectTimers.forEach(timer => clearTimeout(timer));
             this._disconnectTimers.clear();
+            if (this._screenWatchdogTimer) clearInterval(this._screenWatchdogTimer);
+            this._screenWatchdogTimer = null;
             if (this._socket) this._socket.close(1000, 'client disconnect');
             return this;
         }
@@ -195,6 +206,52 @@
             return `${normalizeTableCode(data.mesa || this._table)}::${code}`;
         }
 
+        _resetScreenProgress(video = null) {
+            this._screenLastVideo = video;
+            this._screenLastFrameCount = -1;
+            this._screenLastMediaTime = Number(video && video.currentTime) || 0;
+            this._screenLastProgressAt = Date.now();
+        }
+
+        _startScreenShareWatchdog() {
+            if (this._screenWatchdogTimer) return;
+            this._screenWatchdogTimer = global.setInterval(() => {
+                if (this._manualClose || !this.connected || this._screenShareLocalActive || !this._screenShareRemoteActive) return;
+                const video = global.document && global.document.querySelector('video');
+                if (!video || !video.srcObject || video.paused || video.readyState < 2) {
+                    this._resetScreenProgress(video || null);
+                    return;
+                }
+                if (video !== this._screenLastVideo) this._resetScreenProgress(video);
+
+                let frameCount = -1;
+                try {
+                    if (typeof video.getVideoPlaybackQuality === 'function') {
+                        const quality = video.getVideoPlaybackQuality();
+                        frameCount = Number(quality && quality.totalVideoFrames);
+                    } else if (Number.isFinite(video.webkitDecodedFrameCount)) {
+                        frameCount = Number(video.webkitDecodedFrameCount);
+                    }
+                } catch (error) {}
+
+                const mediaTime = Number(video.currentTime) || 0;
+                const framesMoved = Number.isFinite(frameCount) && frameCount >= 0 && frameCount > this._screenLastFrameCount;
+                const timeMoved = mediaTime > this._screenLastMediaTime + 0.08;
+                if (framesMoved || (frameCount < 0 && timeMoved)) {
+                    this._screenLastFrameCount = frameCount;
+                    this._screenLastMediaTime = mediaTime;
+                    this._screenLastProgressAt = Date.now();
+                    return;
+                }
+
+                const now = Date.now();
+                if (now - this._screenLastProgressAt < 6500 || now - this._screenLastRecoveryAt < 9000) return;
+                this._screenLastRecoveryAt = now;
+                this._screenLastProgressAt = now;
+                this.emit('screen_share_fallback_request', { mesa: this._table });
+            }, 2200);
+        }
+
         _dispatchNow(event, data) {
             const handlers = this._handlers.get(event);
             if (!handlers) return;
@@ -204,6 +261,22 @@
         }
 
         _dispatch(event, data) {
+            if (SCREEN_SHARE_PAGE) {
+                if (event === 'screen_share_available') {
+                    this._screenShareRemoteActive = true;
+                    this._screenLastProgressAt = Date.now();
+                } else if (event === 'screen_share_state') {
+                    const active = Boolean(data && data.active);
+                    this._screenShareRemoteActive = active && !this._screenShareLocalActive;
+                    if (!active) this._resetScreenProgress(null);
+                } else if (event === 'screen_share_ended') {
+                    this._screenShareRemoteActive = false;
+                    this._resetScreenProgress(null);
+                } else if (event === 'screen_share_frame' || event === 'screen_share_relay_chunk') {
+                    this._screenLastProgressAt = Date.now();
+                }
+            }
+
             const playerKey = this._playerEventKey(data);
 
             if (event === 'player_disconnected' && playerKey) {
@@ -282,9 +355,6 @@
             const firebaseToken = await this._firebaseToken();
             if (generation !== this._generation || this._manualClose) return;
 
-            // Ficha e escudo dependem de uma sessao Firebase autenticada. Antes,
-            // o WebSocket podia abrir anonimo enquanto o Firebase ainda carregava,
-            // fazendo os eventos do jogador serem ignorados pelo Worker.
             if (GUARDED_PAGE && global.OLFirebase && !firebaseToken) {
                 this._scheduleReconnect();
                 return;
@@ -312,8 +382,6 @@
                 this._dispatch('connect');
                 this._hasConnectedOnce = true;
 
-                // O handler de `connect` da pagina primeiro refaz o join da sala.
-                // Em seguida reapresentamos o broadcaster ativo no novo socket.
                 if (reconnecting && this._stickyPackets.has('screen_share_start')) {
                     global.setTimeout(() => {
                         if (generation === this._generation) this._replayStickyState();
