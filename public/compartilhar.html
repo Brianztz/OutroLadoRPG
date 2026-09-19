@@ -132,8 +132,9 @@
         .music-play { align-self: flex-start; margin-top: auto; padding: 5px 8px; border: 1px solid rgba(255,0,0,0.48); border-radius: 6px; background: rgba(170,0,0,0.16); color: #ffb8b8; cursor: pointer; font-size: 0.68rem; font-weight: 900; }
         .music-play:hover { background: rgba(190,0,0,0.42); color: #fff; }
         .music-now { display: grid; grid-template-columns: minmax(220px, 320px) minmax(0, 1fr); gap: 13px; margin-top: 12px; padding: 11px; border: 1px solid rgba(255,0,0,0.22); border-radius: 12px; background: rgba(255,255,255,0.025); }
-        .music-player-shell { min-width: 0; min-height: 200px; overflow: hidden; border-radius: 10px; background: #000; }
-        #music-player, #music-player iframe { display: block; width: 100% !important; height: 200px !important; border: 0; }
+        .music-player-shell { position: relative; min-width: 0; min-height: 200px; overflow: hidden; border-radius: 10px; background: #000; }
+        #music-player, #music-player iframe, #music-player-crossfade, #music-player-crossfade iframe { display: block; width: 100% !important; height: 200px !important; border: 0; }
+        #music-player-crossfade { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
         .music-now-copy { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; }
         .music-now-kicker { color: #ff8b8b; font-size: 0.65rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
         .music-now-title { width: 100%; overflow: hidden; color: #fff; font-size: 0.9rem; font-weight: 900; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
@@ -205,7 +206,7 @@
             .control-button { width: 100%; }
             .secure-note { text-align: center; }
             .music-now { grid-template-columns: 1fr; }
-            .music-player-shell, #music-player, #music-player iframe { min-height: 200px; height: 200px !important; }
+            .music-player-shell, #music-player, #music-player iframe, #music-player-crossfade, #music-player-crossfade iframe { min-height: 200px; height: 200px !important; }
         }
     </style>
 </head>
@@ -264,7 +265,10 @@
                     </div>
                 </div>
                 <div id="music-now" class="music-now" hidden>
-                    <div class="music-player-shell"><div id="music-player"></div></div>
+                    <div class="music-player-shell">
+                        <div id="music-player"></div>
+                        <div id="music-player-crossfade" aria-hidden="true"></div>
+                    </div>
                     <div class="music-now-copy">
                         <span class="music-now-kicker">Tocando na mesa</span>
                         <strong id="music-now-title" class="music-now-title">Nenhuma música</strong>
@@ -1594,6 +1598,8 @@
         try { youtubeAccessToken = sessionStorage.getItem('ol_youtube_music_access_token') || ''; } catch (error) {}
 
         let musicPlayer = null;
+        let musicCrossfadePlayer = null;
+        const musicReadyPlayers = new Set();
         let musicPlayerReady = false;
         let musicAudioUnlocked = !spectatorMode;
         let musicIgnoreEventsUntil = 0;
@@ -1626,10 +1632,7 @@
         let musicTransitionMode = '';
         let naturalEndFadeActive = false;
         let naturalEndFadeVideoId = '';
-        const MANUAL_FADE_OUT_MS = 700;
-        const MANUAL_FADE_IN_MS = 900;
-        const NATURAL_FADE_OUT_MS = 60 * 1000;
-        const NATURAL_FADE_IN_MS = 60 * 1000;
+        const MUSIC_CROSSFADE_MS = 1000;
 
         function safeMusicVideoId(value) {
             return String(value || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
@@ -1969,6 +1972,12 @@
             queuedMusicTransitionState = null;
             musicTransitionTargetId = '';
             cancelMusicFade();
+            try {
+                if (musicCrossfadePlayer) {
+                    musicCrossfadePlayer.setVolume(0);
+                    musicCrossfadePlayer.pauseVideo();
+                }
+            } catch (error) {}
         }
 
         function rampMusicVolume(target, duration = 350) {
@@ -2000,6 +2009,90 @@
             });
         }
 
+        function isMusicPlayerReady(player) {
+            return Boolean(player && musicReadyPlayers.has(player));
+        }
+
+        function waitForMusicPlayerReady(player, timeoutMs = 5000) {
+            if (isMusicPlayerReady(player)) return Promise.resolve(true);
+            const started = performance.now();
+            return new Promise(resolve => {
+                const check = () => {
+                    if (isMusicPlayerReady(player)) return resolve(true);
+                    if (performance.now() - started >= timeoutMs) return resolve(false);
+                    setTimeout(check, 50);
+                };
+                check();
+            });
+        }
+
+        function waitForMusicPlayback(player, timeoutMs = 2200) {
+            const started = performance.now();
+            return new Promise(resolve => {
+                const check = () => {
+                    try {
+                        if (player && player.getPlayerState() === 1) return resolve(true);
+                    } catch (error) {}
+                    if (performance.now() - started >= timeoutMs) return resolve(false);
+                    setTimeout(check, 45);
+                };
+                check();
+            });
+        }
+
+        function syncMusicPlayerVisuals() {
+            const active = musicPlayer && typeof musicPlayer.getIframe === 'function' ? musicPlayer.getIframe() : null;
+            const standby = musicCrossfadePlayer && typeof musicCrossfadePlayer.getIframe === 'function' ? musicCrossfadePlayer.getIframe() : null;
+            if (active) {
+                active.style.position = 'relative';
+                active.style.inset = 'auto';
+                active.style.opacity = '1';
+                active.style.pointerEvents = 'none';
+                active.style.zIndex = '2';
+            }
+            if (standby) {
+                standby.style.position = 'absolute';
+                standby.style.inset = '0';
+                standby.style.opacity = '0';
+                standby.style.pointerEvents = 'none';
+                standby.style.zIndex = '1';
+            }
+        }
+
+        function crossfadeMusicPlayers(outgoing, incoming, targetVolume, duration = MUSIC_CROSSFADE_MS) {
+            if (!outgoing || !incoming) return Promise.resolve();
+            const token = ++musicFadeToken;
+            let outgoingStart = Math.max(0, Math.min(100, Number(sharedMusicState.volume) || musicBaseVolume));
+            try { outgoingStart = Math.max(0, Math.min(100, Number(outgoing.getVolume()) || outgoingStart)); } catch (error) {}
+            let incomingStart = 0;
+            try { incomingStart = Math.max(0, Math.min(100, Number(incoming.getVolume()) || 0)); } catch (error) {}
+            const incomingEnd = Math.max(0, Math.min(100, Number(targetVolume) || 0));
+            const startedAt = performance.now();
+
+            return new Promise(resolve => {
+                const step = now => {
+                    if (token !== musicFadeToken) {
+                        musicFadeTimer = null;
+                        resolve();
+                        return;
+                    }
+                    const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+                    const eased = progress * progress * (3 - 2 * progress);
+                    try { outgoing.setVolume(Math.round(outgoingStart * (1 - eased))); } catch (error) {}
+                    try { incoming.setVolume(Math.round(incomingStart + (incomingEnd - incomingStart) * eased)); } catch (error) {}
+                    if (progress >= 1) {
+                        musicFadeTimer = null;
+                        try { outgoing.setVolume(0); outgoing.pauseVideo(); } catch (error) {}
+                        try { incoming.setVolume(incomingEnd); } catch (error) {}
+                        resolve();
+                        return;
+                    }
+                    musicFadeTimer = setTimeout(() => requestAnimationFrame(step), 28);
+                };
+                requestAnimationFrame(step);
+            });
+        }
+
         function cloneMusicTransitionState(state) {
             const transitionMode = String(state && state.transitionMode || 'manual') === 'auto' ? 'auto' : 'manual';
             return {
@@ -2016,45 +2109,34 @@
             };
         }
 
-        function resetNaturalEndFade(restoreVolume = false) {
-            const wasActive = naturalEndFadeActive;
+        function resetNaturalEndFade() {
             naturalEndFadeActive = false;
             naturalEndFadeVideoId = '';
-            if (!wasActive) return;
-            cancelMusicFade();
-            if (restoreVolume && musicPlayerReady && musicPlayer && !musicTransitionActive) {
-                const target = Math.max(0, Math.min(100, Number(sharedMusicState.volume) || (spectatorMode ? 75 : musicBaseVolume)));
-                rampMusicVolume(target, 450);
-            }
         }
 
         function updateNaturalEndFade(current, duration, playerState) {
-            if (!sharedMusicState.videoId || !duration || duration <= 0 || musicTransitionActive) return;
+            if (spectatorMode || !sharedMusicState.videoId || !duration || duration <= 0 || musicTransitionActive) return;
+            if (!musicPlaylistQueue.length || musicPlaylistIndex < 0 || musicPlaylistIndex >= musicPlaylistQueue.length - 1) return;
             const currentId = currentMusicVideoId();
             if (!currentId || currentId !== sharedMusicState.videoId) return;
 
             const remaining = Math.max(0, duration - current);
             if (playerState !== 1) {
-                if (naturalEndFadeActive && playerState !== 0) resetNaturalEndFade(true);
+                if (playerState !== 0) resetNaturalEndFade();
                 return;
             }
 
-            if (remaining > 60.5) {
-                if (naturalEndFadeActive) resetNaturalEndFade(true);
+            if (remaining > 1.25) {
+                if (naturalEndFadeActive) resetNaturalEndFade();
                 return;
             }
 
-            if (remaining > 0.2 && !naturalEndFadeActive) {
+            if (remaining > 0.08 && !naturalEndFadeActive) {
                 naturalEndFadeActive = true;
                 naturalEndFadeVideoId = currentId;
                 const sync = document.getElementById('music-sync-state');
-                if (sync) sync.textContent = 'Fade final • 1 minuto';
-                rampMusicVolume(0, Math.min(NATURAL_FADE_OUT_MS, Math.max(800, remaining * 1000))).then(() => {
-                    if (naturalEndFadeActive && naturalEndFadeVideoId === currentMusicVideoId()) {
-                        const syncNow = document.getElementById('music-sync-state');
-                        if (syncNow) syncNow.textContent = 'Finalizando faixa…';
-                    }
-                });
+                if (sync) sync.textContent = 'Crossfade para a próxima faixa…';
+                musicNextTrack(true);
             }
         }
 
@@ -2079,57 +2161,95 @@
             const epoch = musicTransitionEpoch;
             try {
                 while (queuedMusicTransitionState && epoch === musicTransitionEpoch) {
-                    let state = cloneMusicTransitionState(queuedMusicTransitionState);
+                    const state = cloneMusicTransitionState(queuedMusicTransitionState);
                     queuedMusicTransitionState = null;
                     if (!state.videoId) continue;
 
                     musicTransitionTargetId = state.videoId;
                     musicTransitionMode = state.transitionMode;
-                    const automatic = state.transitionMode === 'auto';
-                    const fadeOutMs = automatic ? 120 : MANUAL_FADE_OUT_MS;
-                    const fadeInMs = automatic ? NATURAL_FADE_IN_MS : MANUAL_FADE_IN_MS;
                     const currentId = currentMusicVideoId();
+                    const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
+                    const target = musicTargetPosition(state);
 
-                    if (currentId && currentId !== state.videoId) {
-                        const sync = document.getElementById('music-sync-state');
-                        if (sync) sync.textContent = automatic ? 'Trocando para a próxima faixa…' : 'Esmaecendo para trocar…';
-                        await rampMusicVolume(0, fadeOutMs);
-                        if (epoch !== musicTransitionEpoch) return;
+                    if (!currentId || currentId === state.videoId) {
+                        musicIgnoreEventsUntil = Date.now() + MUSIC_CROSSFADE_MS + 1800;
+                        try {
+                            if (!currentId) {
+                                musicPlayer.setVolume(0);
+                                if (state.playing) {
+                                    if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                                    else musicPlayer.unMute();
+                                    musicPlayer.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                                    await waitForMusicPlayback(musicPlayer, 1800);
+                                    if (!spectatorMode || musicAudioUnlocked) await rampMusicVolume(targetVolume, MUSIC_CROSSFADE_MS);
+                                } else {
+                                    musicPlayer.cueVideoById({ videoId: state.videoId, startSeconds: target });
+                                    musicPlayer.setVolume(targetVolume);
+                                }
+                            }
+                        } catch (error) {}
+                        resetNaturalEndFade();
+                        continue;
                     }
 
-                    resetNaturalEndFade(false);
-                    const target = musicTargetPosition(state);
-                    musicIgnoreEventsUntil = Date.now() + fadeOutMs + fadeInMs + 3000;
+                    const outgoing = musicPlayer;
+                    const incoming = musicCrossfadePlayer;
+                    const standbyReady = await waitForMusicPlayerReady(incoming, 4500);
+                    if (!standbyReady || epoch !== musicTransitionEpoch) {
+                        const sync = document.getElementById('music-sync-state');
+                        if (sync) sync.textContent = 'Trocando faixa…';
+                        await rampMusicVolume(0, MUSIC_CROSSFADE_MS);
+                        if (epoch !== musicTransitionEpoch) return;
+                        try {
+                            musicPlayer.setVolume(0);
+                            if (state.playing) {
+                                if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                                else musicPlayer.unMute();
+                                musicPlayer.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                                await waitForMusicPlayback(musicPlayer, 1800);
+                                if (!spectatorMode || musicAudioUnlocked) await rampMusicVolume(targetVolume, MUSIC_CROSSFADE_MS);
+                            } else {
+                                musicPlayer.cueVideoById({ videoId: state.videoId, startSeconds: target });
+                            }
+                        } catch (error) {}
+                        resetNaturalEndFade();
+                        continue;
+                    }
+
+                    const sync = document.getElementById('music-sync-state');
+                    if (sync) sync.textContent = 'Crossfade • nova faixa entrando…';
+                    musicIgnoreEventsUntil = Date.now() + MUSIC_CROSSFADE_MS + 2800;
+
                     try {
-                        musicPlayer.setVolume(0);
+                        incoming.setVolume(0);
                         if (state.playing) {
-                            if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
-                            else musicPlayer.unMute();
-                            musicPlayer.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                            if (spectatorMode && !musicAudioUnlocked) incoming.mute();
+                            else incoming.unMute();
+                            incoming.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                            await waitForMusicPlayback(incoming, 2200);
                         } else {
-                            musicPlayer.cueVideoById({ videoId: state.videoId, startSeconds: target });
-                            if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                            incoming.cueVideoById({ videoId: state.videoId, startSeconds: target });
                         }
                     } catch (error) {
                         continue;
                     }
-
-                    await new Promise(resolve => setTimeout(resolve, 120));
                     if (epoch !== musicTransitionEpoch) return;
 
                     if (state.playing && (!spectatorMode || musicAudioUnlocked)) {
-                        const sync = document.getElementById('music-sync-state');
-                        if (sync) sync.textContent = automatic ? 'Fade-in da nova faixa • 1 minuto' : 'Entrando nova faixa…';
-                        const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
-                        await rampMusicVolume(targetVolume, fadeInMs);
-                        if (epoch !== musicTransitionEpoch) return;
+                        await crossfadeMusicPlayers(outgoing, incoming, targetVolume, MUSIC_CROSSFADE_MS);
                     } else {
-                        try { musicPlayer.setVolume(Math.max(0, Math.min(100, Number(state.volume) || 0))); } catch (error) {}
+                        try { outgoing.pauseVideo(); outgoing.setVolume(0); incoming.setVolume(targetVolume); } catch (error) {}
                     }
+                    if (epoch !== musicTransitionEpoch) return;
 
-                    if (sharedMusicState.videoId === state.videoId) {
-                        const sync = document.getElementById('music-sync-state');
-                        if (sync) sync.textContent = state.playing ? 'Sincronizado • tocando' : 'Sincronizado • pausado';
+                    musicPlayer = incoming;
+                    musicCrossfadePlayer = outgoing;
+                    musicPlayerReady = isMusicPlayerReady(musicPlayer);
+                    syncMusicPlayerVisuals();
+                    resetNaturalEndFade();
+
+                    if (sharedMusicState.videoId === state.videoId && sync) {
+                        sync.textContent = state.playing ? 'Sincronizado • tocando' : 'Sincronizado • pausado';
                     }
                 }
             } finally {
@@ -2313,7 +2433,16 @@
             });
         }
 
-        function onSharedMusicPlayerReady() {
+        function onSharedMusicPlayerReady(event) {
+            const readyPlayer = event && event.target;
+            if (readyPlayer) musicReadyPlayers.add(readyPlayer);
+
+            if (readyPlayer && readyPlayer !== musicPlayer) {
+                try { readyPlayer.setVolume(0); readyPlayer.pauseVideo(); } catch (error) {}
+                syncMusicPlayerVisuals();
+                return;
+            }
+
             musicPlayerReady = true;
             if (!spectatorMode) {
                 try { musicPlayer.setVolume(musicBaseVolume); } catch (error) {}
@@ -2323,12 +2452,14 @@
             if (spectatorMode && !musicAudioUnlocked) {
                 try { musicPlayer.mute(); } catch (error) {}
             }
+            syncMusicPlayerVisuals();
             if (pendingMusicState || sharedMusicState.videoId) {
                 applySharedMusicState(pendingMusicState || sharedMusicState);
             }
         }
 
         function onSharedMusicPlayerStateChange(event) {
+            if (event && event.target && event.target !== musicPlayer) return;
             const playerState = Number(event && event.data);
             if (sharedMusicState.videoId) {
                 if (playerState === 1) document.getElementById('music-sync-state').textContent = 'Sincronizado • tocando';
@@ -2345,15 +2476,15 @@
         }
 
         function onSharedMusicPlayerError(event) {
+            if (event && event.target && event.target !== musicPlayer) return;
             const code = Number(event && event.data);
             document.getElementById('music-sync-state').textContent = [101, 150].includes(code)
                 ? 'Essa faixa não permite reprodução incorporada'
                 : 'Não foi possível reproduzir esta faixa';
         }
 
-        function initSharedMusicPlayer() {
-            if (musicPlayer || !window.YT || typeof YT.Player !== 'function') return;
-            musicPlayer = new YT.Player('music-player', {
+        function musicPlayerOptions() {
+            return {
                 width: '100%',
                 height: '200',
                 playerVars: {
@@ -2367,7 +2498,14 @@
                     onStateChange: onSharedMusicPlayerStateChange,
                     onError: onSharedMusicPlayerError
                 }
-            });
+            };
+        }
+
+        function initSharedMusicPlayer() {
+            if ((!musicPlayer || !musicCrossfadePlayer) && window.YT && typeof YT.Player === 'function') {
+                if (!musicPlayer) musicPlayer = new YT.Player('music-player', musicPlayerOptions());
+                if (!musicCrossfadePlayer) musicCrossfadePlayer = new YT.Player('music-player-crossfade', musicPlayerOptions());
+            }
         }
 
         function ensureYouTubeIframeApi() {
