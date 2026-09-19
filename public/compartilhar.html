@@ -61,9 +61,14 @@
         .thumbnail-overlay { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; overflow: hidden; background: #010204; opacity: 1; visibility: visible; transition: opacity 0.9s ease, visibility 0s linear 0s; pointer-events: none; }
         .thumbnail-overlay.hidden { opacity: 0; visibility: hidden; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
         .thumbnail-overlay img, .thumbnail-overlay video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .thumbnail-overlay video { opacity: 1 !important; visibility: visible !important; background: #010204; }
         .thumbnail-overlay img[hidden], .thumbnail-overlay video[hidden] { display: none; }
         .thumbnail-overlay::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.24) 100%); }
-        .thumbnail-countdown { position: relative; z-index: 2; min-width: 180px; padding: 15px 24px; border: 1px solid rgba(255,255,255,0.24); border-radius: 18px; background: rgba(0,0,0,0.52); backdrop-filter: blur(12px); color: #fff; box-shadow: 0 14px 46px rgba(0,0,0,0.35); font-size: clamp(3rem, 10vw, 7.5rem); font-weight: 950; line-height: 1; letter-spacing: -0.045em; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 3px 24px rgba(0,0,0,0.8); }
+        .thumbnail-countdown { position: absolute; z-index: 7; left: 50%; top: 50%; min-width: 180px; padding: 15px 24px; border: 1px solid rgba(255,255,255,0.24); border-radius: 18px; background: rgba(0,0,0,0.52); backdrop-filter: blur(12px); color: #fff; box-shadow: 0 14px 46px rgba(0,0,0,0.35); font-size: clamp(3rem, 10vw, 7.5rem); font-weight: 950; line-height: 1; letter-spacing: -0.045em; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 3px 24px rgba(0,0,0,0.8); transform: translate(-50%, -50%) scale(var(--counter-scale, 1)); transform-origin: center; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
+        .thumbnail-countdown.dragging { cursor: grabbing; }
+        .thumbnail-countdown-resize { position: absolute; right: -7px; bottom: -7px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.38); border-radius: 7px; background: rgba(5,14,22,0.94); color: #dff4ff; font-size: 0.72rem; line-height: 1; cursor: nwse-resize; box-shadow: 0 5px 16px rgba(0,0,0,0.4); }
+        body.spectator-mode .thumbnail-countdown { cursor: default; pointer-events: none; }
+        body.spectator-mode .thumbnail-countdown-resize { display: none; }
         .transmission-audio-gate { position: absolute; z-index: 8; left: 50%; bottom: 24px; transform: translateX(-50%); min-height: 46px; padding: 10px 18px; border: 1px solid rgba(86,221,167,0.58); border-radius: 10px; background: rgba(6,35,25,0.94); color: #c9f7e4; cursor: pointer; font-weight: 900; box-shadow: 0 12px 36px rgba(0,0,0,0.4); }
         .transmission-audio-gate[hidden] { display: none; }
         .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(139,204,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(139,204,246,0.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at center, black, transparent 78%); }
@@ -242,7 +247,10 @@
                 <div id="thumbnail-overlay" class="thumbnail-overlay hidden" aria-live="polite">
                     <img id="thumbnail-overlay-image" alt="Thumbnail da sessão">
                     <video id="thumbnail-overlay-video" autoplay muted loop playsinline preload="auto" hidden></video>
-                    <div id="thumbnail-countdown" class="thumbnail-countdown">00:00:10</div>
+                    <div id="thumbnail-countdown" class="thumbnail-countdown">
+                        <span id="thumbnail-countdown-value">00:10</span>
+                        <span id="thumbnail-countdown-resize" class="thumbnail-countdown-resize" title="Arraste para alterar o tamanho">↘</span>
+                    </div>
                 </div>
                 <button id="transmission-audio-gate" class="transmission-audio-gate" type="button" onclick="unlockTransmissionAudio()" hidden>Ativar áudio da transmissão</button>
                 <div id="empty-state" class="empty-state">
@@ -390,6 +398,8 @@
         const thumbnailOverlayImage = document.getElementById('thumbnail-overlay-image');
         const thumbnailOverlayVideo = document.getElementById('thumbnail-overlay-video');
         const thumbnailCountdown = document.getElementById('thumbnail-countdown');
+        const thumbnailCountdownValue = document.getElementById('thumbnail-countdown-value');
+        const thumbnailCountdownResize = document.getElementById('thumbnail-countdown-resize');
         const thumbnailFileInput = document.getElementById('thumbnail-file');
         const thumbnailFileName = document.getElementById('thumbnail-file-name');
         const thumbnailHoursInput = document.getElementById('thumbnail-hours');
@@ -470,8 +480,10 @@
         let thumbnailMediaRequestId = '';
         const thumbnailVideoUrls = new Map();
         const thumbnailIncomingTransfers = new Map();
-        const thumbnailVideoSending = new Set();
-        let sharedOverlayState = { mesa: tableCode, mediaType: 'image', mediaId: '', imageData: '', active: false, duration: 0, endAt: 0, revision: 0 };
+        const thumbnailVideoSendPromises = new Map();
+        let thumbnailVideoPreloadPromise = null;
+        let thumbnailVideoPreloadedMediaId = '';
+        let sharedOverlayState = { mesa: tableCode, mediaType: 'image', mediaId: '', imageData: '', active: false, duration: 0, endAt: 0, counterX: 0.5, counterY: 0.5, counterScale: 1, revision: 0 };
         const hostPeers = new Map();
         const pendingIce = new Map();
         const fallbackCanvas = document.createElement('canvas');
@@ -1570,12 +1582,18 @@
             }
         }
 
-        function formatCountdownValue(milliseconds) {
+        function formatCountdownValue(milliseconds, showHours = false) {
             const total = Math.max(0, Math.ceil(Number(milliseconds || 0) / 1000));
-            const hours = String(Math.floor(total / 3600)).padStart(2, '0');
-            const minutes = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+            const hoursValue = Math.floor(total / 3600);
+            const minutesValue = Math.floor((total % 3600) / 60);
             const seconds = String(total % 60).padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
+            if (showHours || hoursValue > 0) {
+                const hours = String(hoursValue).padStart(2, '0');
+                const minutes = String(minutesValue).padStart(2, '0');
+                return `${hours}:${minutes}:${seconds}`;
+            }
+            const minutes = String(Math.floor(total / 60)).padStart(2, '0');
+            return `${minutes}:${seconds}`;
         }
 
         function countdownDurationSeconds() {
@@ -1594,6 +1612,78 @@
             }
             return `thumb_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
         }
+
+        function applyThumbnailCounterLayout(state = sharedOverlayState) {
+            const counterX = Math.max(0.04, Math.min(0.96, Number(state && state.counterX) || 0.5));
+            const counterY = Math.max(0.06, Math.min(0.94, Number(state && state.counterY) || 0.5));
+            const counterScale = Math.max(0.35, Math.min(2.25, Number(state && state.counterScale) || 1));
+            thumbnailCountdown.style.left = `${counterX * 100}%`;
+            thumbnailCountdown.style.top = `${counterY * 100}%`;
+            thumbnailCountdown.style.setProperty('--counter-scale', String(counterScale));
+        }
+
+        function emitThumbnailCounterLayout() {
+            if (spectatorMode || !socket.connected || !sharedOverlayState.mediaType) return;
+            socket.emit('screen_share_overlay_control', {
+                mesa: tableCode,
+                mediaType: sharedOverlayState.mediaType,
+                mediaId: sharedOverlayState.mediaId,
+                imageData: sharedOverlayState.imageData,
+                active: sharedOverlayState.active,
+                duration: sharedOverlayState.duration || countdownDurationSeconds(),
+                endAt: sharedOverlayState.endAt || 0,
+                counterX: sharedOverlayState.counterX,
+                counterY: sharedOverlayState.counterY,
+                counterScale: sharedOverlayState.counterScale
+            });
+        }
+
+        function beginThumbnailCounterInteraction(event, resizing = false) {
+            if (spectatorMode || thumbnailOverlay.classList.contains('hidden')) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const rect = thumbnailOverlay.getBoundingClientRect();
+            const startX = event.clientX;
+            const startY = event.clientY;
+            const startCounterX = Number(sharedOverlayState.counterX) || 0.5;
+            const startCounterY = Number(sharedOverlayState.counterY) || 0.5;
+            const startScale = Number(sharedOverlayState.counterScale) || 1;
+            const pointerId = event.pointerId;
+            thumbnailCountdown.classList.add('dragging');
+            try { thumbnailCountdown.setPointerCapture(pointerId); } catch (error) {}
+
+            const move = moveEvent => {
+                if (moveEvent.pointerId !== pointerId) return;
+                if (resizing) {
+                    const delta = ((moveEvent.clientX - startX) + (moveEvent.clientY - startY)) / 260;
+                    sharedOverlayState.counterScale = Math.max(0.35, Math.min(2.25, startScale + delta));
+                } else {
+                    sharedOverlayState.counterX = Math.max(0.04, Math.min(0.96, startCounterX + (moveEvent.clientX - startX) / Math.max(1, rect.width)));
+                    sharedOverlayState.counterY = Math.max(0.06, Math.min(0.94, startCounterY + (moveEvent.clientY - startY) / Math.max(1, rect.height)));
+                }
+                applyThumbnailCounterLayout(sharedOverlayState);
+            };
+
+            const finish = finishEvent => {
+                if (finishEvent.pointerId !== pointerId) return;
+                thumbnailCountdown.classList.remove('dragging');
+                thumbnailCountdown.removeEventListener('pointermove', move);
+                thumbnailCountdown.removeEventListener('pointerup', finish);
+                thumbnailCountdown.removeEventListener('pointercancel', finish);
+                try { thumbnailCountdown.releasePointerCapture(pointerId); } catch (error) {}
+                emitThumbnailCounterLayout();
+            };
+
+            thumbnailCountdown.addEventListener('pointermove', move);
+            thumbnailCountdown.addEventListener('pointerup', finish);
+            thumbnailCountdown.addEventListener('pointercancel', finish);
+        }
+
+        thumbnailCountdown.addEventListener('pointerdown', event => {
+            if (event.target === thumbnailCountdownResize) return;
+            beginThumbnailCounterInteraction(event, false);
+        });
+        thumbnailCountdownResize.addEventListener('pointerdown', event => beginThumbnailCounterInteraction(event, true));
 
         function clearThumbnailTimers() {
             if (thumbnailTimer) clearInterval(thumbnailTimer);
@@ -1678,18 +1768,20 @@
             }
 
             applyThumbnailMedia(state);
+            applyThumbnailCounterLayout(state);
             thumbnailOverlay.classList.remove('hidden');
             if (!spectatorMode) {
                 thumbnailStartButton.textContent = 'Encerrar contador';
                 thumbnailStartButton.classList.add('danger');
             }
 
+            const showHours = Number(state.duration) >= 3600;
             const update = () => {
                 const remaining = endAt - Date.now();
-                thumbnailCountdown.textContent = formatCountdownValue(remaining);
+                thumbnailCountdownValue.textContent = formatCountdownValue(remaining, showHours);
                 if (remaining <= 0) {
                     clearThumbnailTimers();
-                    thumbnailCountdown.textContent = '0:00';
+                    thumbnailCountdownValue.textContent = formatCountdownValue(0, showHours);
                     thumbnailOverlay.classList.add('hidden');
                     thumbnailFadeTimer = setTimeout(() => {
                         thumbnailOverlayVideo.pause();
@@ -1714,8 +1806,17 @@
                 active: Boolean(rawState.active),
                 duration: Math.max(0, Number(rawState.duration) || 0),
                 endAt: Math.max(0, Number(rawState.endAt) || 0),
+                counterX: Math.max(0.04, Math.min(0.96, Number(rawState.counterX) || 0.5)),
+                counterY: Math.max(0.06, Math.min(0.94, Number(rawState.counterY) || 0.5)),
+                counterScale: Math.max(0.35, Math.min(2.25, Number(rawState.counterScale) || 1)),
                 revision: Math.max(0, Number(rawState.revision) || 0)
             };
+            applyThumbnailCounterLayout(sharedOverlayState);
+            if (sharedOverlayState.mediaType === 'video' && sharedOverlayState.mediaId
+                && sharedOverlayState.mediaId !== selectedThumbnailMediaId
+                && !thumbnailVideoUrls.has(sharedOverlayState.mediaId)) {
+                requestThumbnailVideo(sharedOverlayState.mediaId);
+            }
             if (sharedOverlayState.mediaType === 'image' && sharedOverlayState.imageData) {
                 selectedThumbnailData = sharedOverlayState.imageData;
                 if (!spectatorMode && thumbnailFileName.textContent === 'Nenhuma mídia') {
@@ -1782,36 +1883,47 @@
         }
 
         async function sendThumbnailVideo(target = '') {
-            if (!selectedThumbnailVideoFile || !selectedThumbnailMediaId || !socket.connected) return;
+            if (!selectedThumbnailVideoFile || !selectedThumbnailMediaId || !socket.connected) return false;
             const key = target || '*';
-            if (thumbnailVideoSending.has(key)) return;
-            thumbnailVideoSending.add(key);
-            try {
+            if (thumbnailVideoSendPromises.has(key)) return thumbnailVideoSendPromises.get(key);
+
+            const mediaId = selectedThumbnailMediaId;
+            const file = selectedThumbnailVideoFile;
+            const promise = (async () => {
                 const chunkSize = 192 * 1024;
-                const total = Math.ceil(selectedThumbnailVideoFile.size / chunkSize);
+                const total = Math.ceil(file.size / chunkSize);
                 if (total < 1 || total > 1024) throw new Error('O vídeo da thumbnail é grande demais.');
                 for (let index = 0; index < total; index += 1) {
+                    if (mediaId !== selectedThumbnailMediaId) return false;
                     const start = index * chunkSize;
-                    const chunk = await selectedThumbnailVideoFile.slice(start, Math.min(selectedThumbnailVideoFile.size, start + chunkSize)).arrayBuffer();
+                    const chunk = await file.slice(start, Math.min(file.size, start + chunkSize)).arrayBuffer();
                     socket.emit('screen_share_overlay_media_chunk', {
                         mesa: tableCode,
-                        mediaId: selectedThumbnailMediaId,
+                        mediaId,
                         index,
                         total,
-                        mimeType: selectedThumbnailVideoFile.type || 'video/mp4',
+                        mimeType: file.type || 'video/mp4',
                         target,
                         chunk
                     });
                     if (index % 4 === 3) {
                         const progress = Math.min(100, Math.round(((index + 1) / total) * 100));
-                        if (!target) setStatus(`enviando vídeo da thumbnail... ${progress}%`);
-                        await new Promise(resolve => setTimeout(resolve, selectedThumbnailVideoFile.size > 60 * 1024 * 1024 ? 14 : 8));
+                        if (!target) setStatus(`pré-enviando vídeo da thumbnail... ${progress}%`);
+                        await new Promise(resolve => setTimeout(resolve, file.size > 60 * 1024 * 1024 ? 10 : 4));
                     }
                 }
+                if (!target && mediaId === selectedThumbnailMediaId) thumbnailVideoPreloadedMediaId = mediaId;
+                return true;
+            })();
+
+            thumbnailVideoSendPromises.set(key, promise);
+            try {
+                return await promise;
             } catch (error) {
                 if (!target) setStatus(String(error && error.message || 'não foi possível enviar o vídeo da thumbnail.'));
+                return false;
             } finally {
-                thumbnailVideoSending.delete(key);
+                if (thumbnailVideoSendPromises.get(key) === promise) thumbnailVideoSendPromises.delete(key);
             }
         }
 
@@ -1871,9 +1983,36 @@
                     selectedThumbnailVideoFile = file;
                     selectedThumbnailVideoUrl = URL.createObjectURL(file);
                     thumbnailSelectionReady = true;
+                    thumbnailVideoPreloadedMediaId = '';
                     thumbnailVideoUrls.set(selectedThumbnailMediaId, selectedThumbnailVideoUrl);
                     thumbnailFileName.textContent = file.name;
-                    setStatus('vídeo de thumbnail pronto; ele ficará em loop durante o contador.');
+                    sharedOverlayState = {
+                        ...sharedOverlayState,
+                        mediaType: 'video',
+                        mediaId: selectedThumbnailMediaId,
+                        imageData: '',
+                        active: false,
+                        duration: countdownDurationSeconds(),
+                        endAt: 0
+                    };
+                    socket.emit('screen_share_overlay_control', {
+                        mesa: tableCode,
+                        mediaType: 'video',
+                        mediaId: selectedThumbnailMediaId,
+                        imageData: '',
+                        active: false,
+                        duration: sharedOverlayState.duration,
+                        counterX: sharedOverlayState.counterX,
+                        counterY: sharedOverlayState.counterY,
+                        counterScale: sharedOverlayState.counterScale
+                    });
+                    setStatus('pré-enviando vídeo da thumbnail para a mesa...');
+                    thumbnailVideoPreloadPromise = sendThumbnailVideo().then(ok => {
+                        if (ok && selectedThumbnailMediaId === sharedOverlayState.mediaId) {
+                            setStatus('vídeo da thumbnail pronto; escolha o tempo e inicie o contador.');
+                        }
+                        return ok;
+                    });
                     return;
                 }
 
@@ -1881,6 +2020,8 @@
                 selectedThumbnailMediaType = 'image';
                 selectedThumbnailMediaId = '';
                 selectedThumbnailVideoFile = null;
+                thumbnailVideoPreloadPromise = null;
+                thumbnailVideoPreloadedMediaId = '';
                 if (selectedThumbnailVideoUrl) {
                     URL.revokeObjectURL(selectedThumbnailVideoUrl);
                     selectedThumbnailVideoUrl = '';
@@ -1899,7 +2040,7 @@
             }
         });
 
-        function toggleThumbnailCountdown() {
+        async function toggleThumbnailCountdown() {
             if (spectatorMode || !socket.connected) return;
             const currentlyActive = sharedOverlayState.active && Number(sharedOverlayState.endAt) > Date.now();
             if (currentlyActive) {
@@ -1909,7 +2050,10 @@
                     mediaId: sharedOverlayState.mediaId,
                     imageData: sharedOverlayState.imageData,
                     active: false,
-                    duration: sharedOverlayState.duration || 10
+                    duration: sharedOverlayState.duration || 10,
+                    counterX: sharedOverlayState.counterX,
+                    counterY: sharedOverlayState.counterY,
+                    counterScale: sharedOverlayState.counterScale
                 });
                 return;
             }
@@ -1928,6 +2072,15 @@
             }
 
             const duration = countdownDurationSeconds();
+            if (mediaType === 'video' && thumbnailVideoPreloadedMediaId !== mediaId) {
+                thumbnailStartButton.disabled = true;
+                setStatus('finalizando o pré-envio do vídeo antes de iniciar o contador...');
+                try {
+                    await (thumbnailVideoPreloadPromise || sendThumbnailVideo());
+                } finally {
+                    thumbnailStartButton.disabled = false;
+                }
+            }
             socket.emit('screen_share_overlay_control', {
                 mesa: tableCode,
                 mediaType,
@@ -1935,10 +2088,12 @@
                 imageData,
                 active: true,
                 duration,
-                endAt: Date.now() + duration * 1000
+                endAt: Date.now() + duration * 1000,
+                counterX: sharedOverlayState.counterX,
+                counterY: sharedOverlayState.counterY,
+                counterScale: sharedOverlayState.counterScale
             });
-            if (mediaType === 'video') setTimeout(() => sendThumbnailVideo(), 80);
-            setStatus(`thumbnail ${mediaType === 'video' ? 'em vídeo ' : ''}iniciada por ${formatCountdownValue(duration * 1000)}; a transmissão aparecerá com fade ao final.`);
+            setStatus(`thumbnail ${mediaType === 'video' ? 'em vídeo ' : ''}iniciada por ${formatCountdownValue(duration * 1000, duration >= 3600)}; a transmissão aparecerá com fade ao final.`);
         }
 
         function chooseTable() {
@@ -3542,6 +3697,7 @@
             });
             thumbnailVideoUrls.clear();
             thumbnailIncomingTransfers.clear();
+            thumbnailVideoSendPromises.clear();
             cancelMusicFade();
             openingSource.pause();
             if (openingAudioContext) openingAudioContext.close().catch(() => {});
