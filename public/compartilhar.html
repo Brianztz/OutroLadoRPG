@@ -381,7 +381,7 @@
                                     <div id="cinematic-selected" class="cinematic-selected">Nenhuma cinematic selecionada</div>
                                     <button id="cinematic-button" class="control-button primary" type="button" onclick="toggleCinematic()">Iniciar cinematic</button>
                                     <input id="cinematic-files" type="file" accept="video/*" multiple hidden>
-                                    <video id="cinematic-source" preload="metadata" playsinline hidden></video>
+                                    <video id="cinematic-source" preload="auto" playsinline hidden></video>
                                     <div id="cinematic-menu" class="cinematic-menu" hidden></div>
                                 </div>
                             </article>
@@ -699,10 +699,11 @@
             cinematicSelected.textContent = item.name;
             cinematicChooseButton.textContent = 'Trocar cinematic';
             cinematicSource.pause();
+            cinematicSource.preload = 'auto';
             cinematicSource.src = item.url;
             cinematicSource.load();
             renderCinematicMenu();
-            setStatus(`cinematic selecionada: ${item.name}.`);
+            setStatus(`cinematic selecionada: ${item.name}. Preparando vídeo...`);
         }
 
         cinematicFilesInput.addEventListener('change', () => {
@@ -1561,25 +1562,53 @@
             return stream;
         }
 
-        function waitCinematicReady(timeoutMs = 8000) {
-            if (cinematicSource.readyState >= 2) return Promise.resolve();
+        function cinematicMediaErrorMessage() {
+            const error = cinematicSource.error;
+            const code = Number(error && error.code) || 0;
+            if (code === 3) return 'O navegador não conseguiu decodificar essa cinematic. Tente MP4 H.264/AAC ou WebM.';
+            if (code === 4) return 'O formato ou codec dessa cinematic não é compatível com o navegador.';
+            if (code === 2) return 'Houve um erro ao ler o arquivo da cinematic.';
+            return 'Não foi possível abrir o vídeo da cinematic.';
+        }
+
+        function waitCinematicReady(timeoutMs = 30000) {
+            if (cinematicSource.error) return Promise.reject(new Error(cinematicMediaErrorMessage()));
+            if (cinematicSource.readyState >= 1 && Number.isFinite(cinematicSource.duration)) return Promise.resolve();
+
             return new Promise((resolve, reject) => {
                 let settled = false;
-                const timer = setTimeout(() => cleanup(() => reject(new Error('A cinematic demorou para carregar.'))), timeoutMs);
-                const onReady = () => cleanup(resolve);
-                const onError = () => cleanup(() => reject(new Error('Não foi possível abrir o vídeo da cinematic.')));
+                const timer = setTimeout(() => {
+                    cleanup(() => reject(new Error('A cinematic ainda não ficou pronta. Verifique se o vídeo é MP4 H.264/AAC ou WebM e tente novamente.')));
+                }, timeoutMs);
+
+                const onReady = () => {
+                    if (cinematicSource.error) {
+                        cleanup(() => reject(new Error(cinematicMediaErrorMessage())));
+                        return;
+                    }
+                    cleanup(resolve);
+                };
+                const onError = () => cleanup(() => reject(new Error(cinematicMediaErrorMessage())));
                 const cleanup = callback => {
                     if (settled) return;
                     settled = true;
                     clearTimeout(timer);
+                    cinematicSource.removeEventListener('loadedmetadata', onReady);
                     cinematicSource.removeEventListener('loadeddata', onReady);
                     cinematicSource.removeEventListener('canplay', onReady);
                     cinematicSource.removeEventListener('error', onError);
                     callback();
                 };
+
+                cinematicSource.addEventListener('loadedmetadata', onReady, { once: true });
                 cinematicSource.addEventListener('loadeddata', onReady, { once: true });
                 cinematicSource.addEventListener('canplay', onReady, { once: true });
                 cinematicSource.addEventListener('error', onError, { once: true });
+
+                try {
+                    cinematicSource.preload = 'auto';
+                    cinematicSource.load();
+                } catch (error) {}
             });
         }
 
@@ -1651,20 +1680,39 @@
             cinematicButton.disabled = true;
             setStatus(`preparando cinematic: ${item.name}...`);
             try {
-                if (cinematicSource.src !== item.url) {
-                    cinematicSource.src = item.url;
-                    cinematicSource.load();
-                }
                 cinematicSource.pause();
+                cinematicSource.preload = 'auto';
+                if (cinematicSource.src !== item.url) cinematicSource.src = item.url;
+                await waitCinematicReady(30000);
                 try { cinematicSource.currentTime = 0; } catch (error) {}
                 cinematicSource.muted = false;
-                await waitCinematicReady();
                 await ensureCinematicAudioGraph();
                 rememberMusicForCinematic();
-                await withOpeningTimeout(cinematicSource.play(), 6000);
-                await new Promise(resolve => setTimeout(resolve, 90));
+
+                await withOpeningTimeout(cinematicSource.play(), 15000);
+                await new Promise((resolve, reject) => {
+                    if (cinematicSource.readyState >= 2 && !cinematicSource.paused) {
+                        requestAnimationFrame(() => requestAnimationFrame(resolve));
+                        return;
+                    }
+                    let settled = false;
+                    const timer = setTimeout(() => finish(() => reject(new Error('A cinematic iniciou, mas o primeiro quadro demorou para ficar pronto.'))), 12000);
+                    const onPlaying = () => finish(resolve);
+                    const onError = () => finish(() => reject(new Error(cinematicMediaErrorMessage())));
+                    const finish = callback => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        cinematicSource.removeEventListener('playing', onPlaying);
+                        cinematicSource.removeEventListener('error', onError);
+                        callback();
+                    };
+                    cinematicSource.addEventListener('playing', onPlaying, { once: true });
+                    cinematicSource.addEventListener('error', onError, { once: true });
+                });
+
                 const stream = captureCinematicStream();
-                await withOpeningTimeout(activateBroadcastStream(stream, 'cinematic', `Cinematic • ${item.name}`), 8000);
+                await withOpeningTimeout(activateBroadcastStream(stream, 'cinematic', `Cinematic • ${item.name}`), 10000);
             } catch (error) {
                 console.warn('Falha ao iniciar cinematic:', error);
                 cinematicSource.pause();
@@ -1706,6 +1754,19 @@
             startCinematic();
         }
 
+        cinematicSource.addEventListener('loadedmetadata', () => {
+            const item = cinematicLibrary.get(cinematicSelectedId);
+            if (!item || cinematicSource.src !== item.url || activeSourceMode === 'cinematic') return;
+            const duration = Number(cinematicSource.duration);
+            const durationText = Number.isFinite(duration) && duration > 0
+                ? ` • ${formatMusicTime(duration)}`
+                : '';
+            setStatus(`cinematic pronta: ${item.name}${durationText}.`);
+        });
+        cinematicSource.addEventListener('error', () => {
+            if (activeSourceMode === 'cinematic') return;
+            setStatus(cinematicMediaErrorMessage());
+        });
         cinematicSource.addEventListener('ended', () => finishCinematic(true));
 
         async function ensureOpeningAudioGraph() {
