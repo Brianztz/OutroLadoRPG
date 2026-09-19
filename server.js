@@ -96,6 +96,7 @@ function emptyScreenMusicState(table) {
         channel: '',
         playing: false,
         position: 0,
+        volume: 75,
         updatedAt: 0,
         revision: 0
     };
@@ -116,6 +117,8 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
     const videoId = String(rawVideoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
     const numericPosition = Number(Object.prototype.hasOwnProperty.call(source, 'position') ? source.position : previous.position);
     const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : 0));
+    const numericVolume = Number(Object.prototype.hasOwnProperty.call(source, 'volume') ? source.volume : previous.volume);
+    const volume = Math.max(0, Math.min(100, Number.isFinite(numericVolume) ? numericVolume : 75));
     return {
         mesa: normalizeTableCode(table),
         videoId,
@@ -123,6 +126,7 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
         channel: videoId ? String(Object.prototype.hasOwnProperty.call(source, 'channel') ? source.channel : previous.channel || '').trim().slice(0, 140) : '',
         playing: videoId ? Boolean(Object.prototype.hasOwnProperty.call(source, 'playing') ? source.playing : previous.playing) : false,
         position: videoId ? position : 0,
+        volume,
         updatedAt: Date.now(),
         revision: Math.max(0, Number(previous.revision) || 0) + 1
     };
