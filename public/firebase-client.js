@@ -515,6 +515,30 @@
         );
     }
 
+    async function connectYouTubeMusic() {
+        const { auth, authSdk } = await sdkPromise;
+        const provider = new authSdk.GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/youtube.readonly');
+        provider.setCustomParameters({ prompt: 'consent' });
+
+        const result = auth.currentUser
+            ? await authSdk.reauthenticateWithPopup(auth.currentUser, provider)
+            : await authSdk.signInWithPopup(auth, provider);
+        const googleCredential = authSdk.GoogleAuthProvider.credentialFromResult(result);
+        const accessToken = String(googleCredential && googleCredential.accessToken || '');
+        if (!accessToken) {
+            throw new Error('O Google não forneceu autorização para acessar o YouTube.');
+        }
+
+        currentUser = result.user || currentUser;
+        await refreshRealtimeToken(currentUser);
+        updateProfilesInBackground(currentUser);
+        return {
+            user: currentUser,
+            accessToken
+        };
+    }
+
     async function signInWithGoogle() {
         const { auth, authSdk } = await sdkPromise;
         const provider = new authSdk.GoogleAuthProvider();
@@ -696,6 +720,7 @@
 
     global.OLFirebase = Object.freeze({
         config: FIREBASE_CONFIG,
+        connectYouTubeMusic,
         databaseId: DATABASE_ID,
         masterEmail: MASTER_EMAIL,
         getCurrentUser,
