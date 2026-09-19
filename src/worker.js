@@ -279,6 +279,41 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
     };
 }
 
+function emptyScreenOverlayState(table) {
+    return {
+        mesa: normalizeTableCode(table),
+        imageData: '',
+        active: false,
+        duration: 0,
+        endAt: 0,
+        updatedAt: 0,
+        revision: 0
+    };
+}
+
+function normalizeScreenOverlayState(table, rawData, previousState = null) {
+    const previous = previousState || emptyScreenOverlayState(table);
+    const source = rawData && typeof rawData === 'object' ? rawData : {};
+    const hasImage = Object.prototype.hasOwnProperty.call(source, 'imageData');
+    const rawImage = hasImage ? String(source.imageData || '') : previous.imageData;
+    const imageData = /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 2_800_000 ? rawImage : (hasImage ? '' : previous.imageData);
+    const duration = Math.max(1, Math.min(3600, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
+    const active = Boolean(source.active) && Boolean(imageData);
+    const requestedEndAt = Number(source.endAt);
+    const endAt = active
+        ? (Number.isFinite(requestedEndAt) && requestedEndAt > Date.now() ? requestedEndAt : Date.now() + duration * 1000)
+        : 0;
+    return {
+        mesa: normalizeTableCode(table),
+        imageData,
+        active,
+        duration,
+        endAt,
+        updatedAt: Date.now(),
+        revision: Math.max(0, Number(previous.revision) || 0) + 1
+    };
+}
+
 function compactPlayer(data) {
     return {
         codigo: normalizePlayerCode(data && (data.codigo || data.id)),
@@ -312,6 +347,7 @@ export class TableRoom extends DurableObject {
         this.inspection = null;
         this.chat = [];
         this.music = emptyScreenMusicState(DEFAULT_TABLE);
+        this.screenOverlay = emptyScreenOverlayState(DEFAULT_TABLE);
         this.relayMimeType = '';
         this.relayBootstrapChunk = null;
         this.relayRecentChunks = [];
@@ -329,6 +365,8 @@ export class TableRoom extends DurableObject {
             this.chat = await ctx.storage.get('screen-chat') || [];
             this.music = await ctx.storage.get('screen-music') || emptyScreenMusicState(this.table);
             this.music.mesa = this.table;
+            this.screenOverlay = await ctx.storage.get('screen-overlay') || emptyScreenOverlayState(this.table);
+            this.screenOverlay.mesa = this.table;
         });
     }
 
@@ -375,6 +413,7 @@ export class TableRoom extends DurableObject {
             screenShareSpectator: url.searchParams.get('screenShareMode') === 'spectator',
             lastScreenChatAt: 0,
             lastScreenMusicAt: 0,
+            lastScreenOverlayAt: 0,
             lastScreenShareRetryAt: 0
         });
         const headers = protocols.includes('ol-v1') ? { 'Sec-WebSocket-Protocol': 'ol-v1' } : undefined;
@@ -568,6 +607,7 @@ export class TableRoom extends DurableObject {
             this.send(ws, 'screen_share_state', { mesa: this.table, active: Boolean(room.broadcasterId), viewers: room.viewers.size });
             this.send(ws, 'screen_share_chat_history', { mesa: this.table, messages: this.chat });
             this.send(ws, 'screen_share_music_state', this.music);
+            this.send(ws, 'screen_share_overlay_state', this.screenOverlay);
             if (room.broadcasterId && room.broadcasterId !== meta.id) {
                 this.send(ws, 'screen_share_available', { mesa: this.table, broadcasterId: room.broadcasterId });
             }
@@ -604,6 +644,17 @@ export class TableRoom extends DurableObject {
             this.music = normalizeScreenMusicState(this.table, data, this.music);
             await this.ctx.storage.put('screen-music', this.music);
             this.broadcastScreen('screen_share_music_state', this.music);
+            return;
+        }
+
+        if (event === 'screen_share_overlay_control') {
+            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
+            const now = Date.now();
+            if (now - Number(meta.lastScreenOverlayAt || 0) < 180) return;
+            meta = this.updateMeta(ws, { lastScreenOverlayAt: now });
+            this.screenOverlay = normalizeScreenOverlayState(this.table, data, this.screenOverlay);
+            await this.ctx.storage.put('screen-overlay', this.screenOverlay);
+            this.broadcastScreen('screen_share_overlay_state', this.screenOverlay);
             return;
         }
 
