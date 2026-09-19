@@ -595,6 +595,9 @@
         let cinematicAudioSourceNode = null;
         let cinematicGainNode = null;
         let cinematicAudioDestination = null;
+        let openingFadeController = null;
+        let cinematicFadeController = null;
+        const MEDIA_SCENE_FADE_MS = 1000;
         let cinematicSelectedId = '';
         let cinematicFinishing = false;
         let cinematicMusicResume = null;
@@ -1576,6 +1579,122 @@
             }
         }
 
+        function createMediaFadeController(mediaElement, audioTracks = []) {
+            if (!mediaElement || !mediaElement.videoWidth || !mediaElement.videoHeight) {
+                throw new Error('O vídeo ainda não tem dimensões válidas para o fade.');
+            }
+            if (!HTMLCanvasElement.prototype.captureStream) {
+                throw new Error('Este navegador não oferece o efeito de fade para vídeo.');
+            }
+
+            const sourceWidth = Math.max(2, Number(mediaElement.videoWidth) || 1920);
+            const sourceHeight = Math.max(2, Number(mediaElement.videoHeight) || 1080);
+            const scale = Math.min(1, 3840 / sourceWidth, 2160 / sourceHeight);
+            const width = Math.max(2, Math.round(sourceWidth * scale / 2) * 2);
+            const height = Math.max(2, Math.round(sourceHeight * scale / 2) * 2);
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext('2d', { alpha: false, desynchronized: true });
+            if (!context) throw new Error('Não foi possível preparar o efeito visual.');
+
+            let opacity = 0;
+            let stopped = false;
+            let frameId = 0;
+            let animationToken = 0;
+
+            const draw = () => {
+                if (stopped) return;
+                context.globalAlpha = 1;
+                context.fillStyle = '#000';
+                context.fillRect(0, 0, width, height);
+                if (mediaElement.readyState >= 2) {
+                    try {
+                        context.globalAlpha = Math.max(0, Math.min(1, opacity));
+                        context.drawImage(mediaElement, 0, 0, width, height);
+                    } catch (error) {}
+                }
+                context.globalAlpha = 1;
+                frameId = requestAnimationFrame(draw);
+            };
+            draw();
+
+            const canvasStream = canvas.captureStream(60);
+            const visualTrack = canvasStream.getVideoTracks()[0];
+            if (!visualTrack) {
+                stopped = true;
+                cancelAnimationFrame(frameId);
+                throw new Error('Não foi possível gerar o vídeo com fade.');
+            }
+            try { visualTrack.contentHint = 'motion'; } catch (error) {}
+
+            const stream = new MediaStream([visualTrack]);
+            audioTracks.forEach(track => {
+                if (!track || track.readyState !== 'live') return;
+                try { track.contentHint = 'music'; } catch (error) {}
+                stream.addTrack(track);
+            });
+
+            return {
+                stream,
+                animateTo(target, duration = MEDIA_SCENE_FADE_MS) {
+                    const endOpacity = Math.max(0, Math.min(1, Number(target) || 0));
+                    const startOpacity = opacity;
+                    const token = ++animationToken;
+                    const startedAt = performance.now();
+                    return new Promise(resolve => {
+                        const step = now => {
+                            if (stopped || token !== animationToken) return resolve();
+                            const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+                            const eased = progress * progress * (3 - 2 * progress);
+                            opacity = startOpacity + (endOpacity - startOpacity) * eased;
+                            if (progress >= 1) {
+                                opacity = endOpacity;
+                                resolve();
+                                return;
+                            }
+                            requestAnimationFrame(step);
+                        };
+                        requestAnimationFrame(step);
+                    });
+                },
+                stop() {
+                    if (stopped) return;
+                    stopped = true;
+                    animationToken += 1;
+                    if (frameId) cancelAnimationFrame(frameId);
+                    try { visualTrack.stop(); } catch (error) {}
+                }
+            };
+        }
+
+        function setGainImmediately(audioContext, gainNode, value) {
+            if (!audioContext || !gainNode) return;
+            const normalized = Math.max(0, Math.min(1, Number(value) || 0));
+            const now = audioContext.currentTime;
+            try {
+                gainNode.gain.cancelScheduledValues(now);
+                gainNode.gain.setValueAtTime(normalized, now);
+            } catch (error) {
+                gainNode.gain.value = normalized;
+            }
+        }
+
+        function fadeMediaGain(audioContext, gainNode, target, duration = MEDIA_SCENE_FADE_MS) {
+            if (!audioContext || !gainNode) return Promise.resolve();
+            const normalized = Math.max(0, Math.min(1, Number(target) || 0));
+            const now = audioContext.currentTime;
+            const current = Math.max(0, Math.min(1, Number(gainNode.gain.value) || 0));
+            try {
+                gainNode.gain.cancelScheduledValues(now);
+                gainNode.gain.setValueAtTime(current, now);
+                gainNode.gain.linearRampToValueAtTime(normalized, now + duration / 1000);
+            } catch (error) {
+                gainNode.gain.value = normalized;
+            }
+            return new Promise(resolve => setTimeout(resolve, Math.max(0, duration)));
+        }
+
         async function ensureCinematicAudioGraph() {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) throw new Error('Este navegador não oferece áudio de alta qualidade para a cinematic.');
@@ -1599,22 +1718,13 @@
         }
 
         function captureCinematicStream() {
-            const capture = cinematicSource.captureStream || cinematicSource.mozCaptureStream;
-            if (typeof capture !== 'function') throw new Error('Este navegador não consegue transmitir a cinematic diretamente.');
-            const mediaStream = capture.call(cinematicSource);
-            const videoTrack = mediaStream && mediaStream.getVideoTracks()[0];
-            if (!videoTrack) throw new Error('A cinematic não gerou uma faixa de vídeo.');
-
-            const stream = new MediaStream([videoTrack]);
             const audioTracks = cinematicAudioDestination && cinematicAudioDestination.stream
                 ? cinematicAudioDestination.stream.getAudioTracks()
                 : [];
-            audioTracks.forEach(track => {
-                try { track.contentHint = 'music'; } catch (error) {}
-                stream.addTrack(track);
-            });
-            if (!stream.getAudioTracks().length) throw new Error('Não foi possível preparar o áudio da cinematic.');
-            return stream;
+            if (!audioTracks.length) throw new Error('Não foi possível preparar o áudio da cinematic.');
+            if (cinematicFadeController) cinematicFadeController.stop();
+            cinematicFadeController = createMediaFadeController(cinematicSource, audioTracks);
+            return cinematicFadeController.stream;
         }
 
         async function loadCinematicTranscoder() {
@@ -1908,7 +2018,7 @@
                 return;
             }
             if (activeSourceMode === 'cinematic') return;
-            if (activeSourceMode === 'opening') finishOpening(true);
+            if (activeSourceMode === 'opening') await finishOpening(true);
             else if (isBroadcasting) stopSharing(true);
 
             cinematicButton.disabled = true;
@@ -1918,6 +2028,7 @@
                 try { cinematicSource.currentTime = 0; } catch (error) {}
                 cinematicSource.muted = false;
                 await ensureCinematicAudioGraph();
+                setGainImmediately(cinematicAudioContext, cinematicGainNode, 0);
                 rememberMusicForCinematic();
 
                 await withOpeningTimeout(cinematicSource.play(), 15000);
@@ -1944,9 +2055,18 @@
 
                 const stream = captureCinematicStream();
                 await withOpeningTimeout(activateBroadcastStream(stream, 'cinematic', `Cinematic • ${item.name}`), 10000);
+                await new Promise(resolve => setTimeout(resolve, 280));
+                await Promise.all([
+                    cinematicFadeController ? cinematicFadeController.animateTo(1, MEDIA_SCENE_FADE_MS) : Promise.resolve(),
+                    fadeMediaGain(cinematicAudioContext, cinematicGainNode, 1, MEDIA_SCENE_FADE_MS)
+                ]);
             } catch (error) {
                 console.warn('Falha ao iniciar cinematic:', error);
                 cinematicSource.pause();
+                if (cinematicFadeController) {
+                    cinematicFadeController.stop();
+                    cinematicFadeController = null;
+                }
                 if (cinematicAudioDestination) {
                     try { cinematicGainNode.disconnect(cinematicAudioDestination); } catch (disconnectError) {}
                     try { cinematicAudioDestination.stream.getTracks().forEach(track => track.stop()); } catch (trackError) {}
@@ -1958,10 +2078,18 @@
             }
         }
 
-        function finishCinematic(resumeMusic = true) {
+        async function finishCinematic(resumeMusic = true) {
             if (cinematicFinishing) return;
             cinematicFinishing = true;
+            cinematicButton.disabled = true;
             try {
+                if (activeSourceMode === 'cinematic') {
+                    setStatus('encerrando cinematic com fade...');
+                    await Promise.all([
+                        cinematicFadeController ? cinematicFadeController.animateTo(0, MEDIA_SCENE_FADE_MS) : Promise.resolve(),
+                        fadeMediaGain(cinematicAudioContext, cinematicGainNode, 0, MEDIA_SCENE_FADE_MS)
+                    ]);
+                }
                 cinematicSource.pause();
                 try { cinematicSource.currentTime = 0; } catch (error) {}
                 if (activeSourceMode === 'cinematic') stopSharing(true);
@@ -1974,6 +2102,7 @@
                 setStatus(resumeMusic ? 'cinematic encerrada; música da mesa restaurada.' : 'cinematic encerrada.');
             } finally {
                 cinematicFinishing = false;
+                cinematicButton.disabled = false;
             }
         }
 
@@ -2046,21 +2175,13 @@
         }
 
         function captureOpeningStream() {
-            const capture = openingSource.captureStream || openingSource.mozCaptureStream;
-            if (typeof capture !== 'function') throw new Error('Este navegador não consegue transmitir o vídeo da abertura diretamente.');
-            const mediaStream = capture.call(openingSource);
-            if (!mediaStream || !mediaStream.getVideoTracks().length) throw new Error('O vídeo da abertura não gerou uma faixa de vídeo.');
-            const stream = new MediaStream();
-            mediaStream.getVideoTracks().forEach(track => stream.addTrack(track));
             const audioTracks = openingAudioDestination && openingAudioDestination.stream
                 ? openingAudioDestination.stream.getAudioTracks()
                 : [];
-            audioTracks.forEach(track => {
-                try { track.contentHint = 'music'; } catch (error) {}
-                stream.addTrack(track);
-            });
-            if (!stream.getAudioTracks().length) throw new Error('Não foi possível preparar o áudio da abertura.');
-            return stream;
+            if (!audioTracks.length) throw new Error('Não foi possível preparar o áudio da abertura.');
+            if (openingFadeController) openingFadeController.stop();
+            openingFadeController = createMediaFadeController(openingSource, audioTracks);
+            return openingFadeController.stream;
         }
 
         function rememberMusicForOpening() {
@@ -2179,7 +2300,7 @@
                 openingFileInput.click();
                 return;
             }
-            if (activeSourceMode === 'cinematic') finishCinematic(true);
+            if (activeSourceMode === 'cinematic') await finishCinematic(true);
             else if (isBroadcasting && activeSourceMode !== 'opening') stopSharing(true);
 
             openingButton.disabled = true;
@@ -2193,7 +2314,8 @@
                 openingSource.muted = false;
                 await waitOpeningReady();
                 await ensureOpeningAudioGraph();
-                setOpeningVolume(openingVolume ? openingVolume.value : 85);
+                const openingTargetVolume = Math.max(0, Math.min(1, (Number(openingVolume ? openingVolume.value : 85) || 0) / 100));
+                setGainImmediately(openingAudioContext, openingGainNode, 0);
                 await withOpeningTimeout(openingSource.play(), 5000);
                 await new Promise(resolve => setTimeout(resolve, 90));
                 const stream = captureOpeningStream();
@@ -2202,9 +2324,18 @@
                     throw new Error('O áudio da abertura não ficou pronto. Tente iniciar novamente.');
                 }
                 await withOpeningTimeout(activateBroadcastStream(stream, 'opening', 'Abertura do RPG'), 7000);
+                await new Promise(resolve => setTimeout(resolve, 280));
+                await Promise.all([
+                    openingFadeController ? openingFadeController.animateTo(1, MEDIA_SCENE_FADE_MS) : Promise.resolve(),
+                    fadeMediaGain(openingAudioContext, openingGainNode, openingTargetVolume, MEDIA_SCENE_FADE_MS)
+                ]);
             } catch (error) {
                 console.warn('Falha ao iniciar a abertura:', error);
                 openingSource.pause();
+                if (openingFadeController) {
+                    openingFadeController.stop();
+                    openingFadeController = null;
+                }
                 if (openingAudioDestination) {
                     try { openingGainNode.disconnect(openingAudioDestination); } catch (disconnectError) {}
                     try { openingAudioDestination.stream.getTracks().forEach(track => track.stop()); } catch (trackError) {}
@@ -2216,10 +2347,18 @@
             }
         }
 
-        function finishOpening(resumeMusic = true) {
+        async function finishOpening(resumeMusic = true) {
             if (openingFinishing) return;
             openingFinishing = true;
+            openingButton.disabled = true;
             try {
+                if (activeSourceMode === 'opening') {
+                    setStatus('encerrando abertura com fade...');
+                    await Promise.all([
+                        openingFadeController ? openingFadeController.animateTo(0, MEDIA_SCENE_FADE_MS) : Promise.resolve(),
+                        fadeMediaGain(openingAudioContext, openingGainNode, 0, MEDIA_SCENE_FADE_MS)
+                    ]);
+                }
                 openingSource.pause();
                 try { openingSource.currentTime = 0; } catch (error) {}
                 if (activeSourceMode === 'opening') stopSharing(true);
@@ -2231,6 +2370,7 @@
                 setStatus(resumeMusic ? 'abertura encerrada; música da mesa restaurada.' : 'abertura encerrada.');
             } finally {
                 openingFinishing = false;
+                openingButton.disabled = false;
             }
         }
 
@@ -2279,6 +2419,15 @@
             }
             video.srcObject = null;
             if (stoppedMode === 'cinematic') cinematicSource.pause();
+            if (stoppedMode === 'opening') openingSource.pause();
+            if (stoppedMode === 'cinematic' && cinematicFadeController) {
+                cinematicFadeController.stop();
+                cinematicFadeController = null;
+            }
+            if (stoppedMode === 'opening' && openingFadeController) {
+                openingFadeController.stop();
+                openingFadeController = null;
+            }
             fallbackImage.classList.remove('visible');
             video.muted = false;
             pipButton.hidden = true;
@@ -2310,13 +2459,13 @@
             else startSharing();
         }
 
-        function toggleStreamlabs() {
+        async function toggleStreamlabs() {
             if (activeSourceMode === 'cinematic') {
-                finishCinematic(true);
+                await finishCinematic(true);
                 return;
             }
             if (activeSourceMode === 'opening') {
-                finishOpening(true);
+                await finishOpening(true);
                 return;
             }
             if (isBroadcasting) stopSharing(true);
@@ -4466,6 +4615,8 @@
             cancelMusicFade();
             openingSource.pause();
             cinematicSource.pause();
+            if (openingFadeController) openingFadeController.stop();
+            if (cinematicFadeController) cinematicFadeController.stop();
             if (openingAudioContext) openingAudioContext.close().catch(() => {});
             if (cinematicAudioContext) cinematicAudioContext.close().catch(() => {});
             if (openingObjectUrl) URL.revokeObjectURL(openingObjectUrl);
