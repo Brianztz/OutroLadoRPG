@@ -102,6 +102,32 @@
         .chat-name { font-size: 0.78rem; }
         .chat-compose { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
         .chat-send { min-width: 74px; border: 1px solid var(--blue-strong); border-radius: 8px; background: linear-gradient(135deg, #126a9a, #164b6b); color: #fff; cursor: pointer; font-weight: 900; }
+        .music-panel { margin: 0; padding: 14px 17px 16px; border-top: 1px solid rgba(139,204,246,0.13); background: linear-gradient(180deg, rgba(5,13,21,0.98), rgba(1,6,11,0.98)); }
+        .music-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .music-heading { min-width: 0; }
+        .music-heading strong { display: block; color: #fff; font-size: 0.86rem; letter-spacing: 0.07em; text-transform: uppercase; }
+        .music-heading span { display: block; margin-top: 3px; color: var(--muted); font-size: 0.72rem; }
+        .music-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .music-button { min-height: 38px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; background: rgba(255,255,255,0.05); color: #edf7fc; cursor: pointer; font-size: 0.76rem; font-weight: 900; transition: 0.2s ease; }
+        .music-button:hover { transform: translateY(-1px); border-color: var(--blue); background: rgba(139,204,246,0.12); }
+        .music-button.primary { border-color: rgba(255,0,0,0.72); background: linear-gradient(135deg, rgba(190,0,0,0.92), rgba(118,0,0,0.92)); color: #fff; }
+        .music-button:disabled { opacity: 0.55; cursor: wait; transform: none; }
+        .music-body { display: grid; gap: 11px; margin-top: 12px; }
+        .music-account { color: #9cb2c0; font-size: 0.75rem; }
+        .music-search-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
+        .music-search-input { width: 100%; min-height: 40px; padding: 9px 11px; border: 1px solid rgba(139,204,246,0.22); border-radius: 8px; outline: none; background: rgba(7,16,25,0.95); color: var(--text); }
+        .music-search-input:focus { border-color: var(--blue-strong); box-shadow: 0 0 0 3px rgba(57,174,232,0.09); }
+        .music-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; max-height: 280px; overflow-y: auto; }
+        .music-empty { grid-column: 1 / -1; padding: 16px 8px; color: #728896; font-size: 0.78rem; text-align: center; }
+        .music-result { min-width: 0; display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 9px; padding: 8px; border: 1px solid rgba(139,204,246,0.13); border-radius: 10px; background: rgba(139,204,246,0.045); }
+        .music-result img { width: 72px; height: 54px; border-radius: 7px; background: #05080b; object-fit: cover; }
+        .music-result-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+        .music-result-title { overflow: hidden; color: #eef8fd; font-size: 0.76rem; font-weight: 900; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .music-result-channel { overflow: hidden; color: #788f9e; font-size: 0.66rem; text-overflow: ellipsis; white-space: nowrap; }
+        .music-play { align-self: flex-start; margin-top: auto; padding: 5px 8px; border: 1px solid rgba(255,0,0,0.48); border-radius: 6px; background: rgba(170,0,0,0.16); color: #ffb8b8; cursor: pointer; font-size: 0.68rem; font-weight: 900; }
+        .music-play:hover { background: rgba(190,0,0,0.42); color: #fff; }
+
+        body.spectator-mode .music-panel,
         body.spectator-mode #share-button,
         body.spectator-mode #streamlabs-button,
         body.spectator-mode .audio-option { display: none !important; }
@@ -164,6 +190,27 @@
                 <span class="secure-note">O navegador sempre pedirá sua permissão antes de transmitir.</span>
             </div>
             <div id="status-line" class="status-line"><strong>Status:</strong> entrando na mesa...</div>
+            <section id="music-panel" class="music-panel" aria-label="YouTube Music">
+                <div class="music-header">
+                    <div class="music-heading">
+                        <strong>YouTube Music</strong>
+                        <span id="music-state">Conta não vinculada</span>
+                    </div>
+                    <div class="music-actions">
+                        <button id="music-connect" class="music-button primary" type="button" onclick="connectYouTubeMusic()">Vincular conta</button>
+                    </div>
+                </div>
+                <div id="music-body" class="music-body" hidden>
+                    <div id="music-account" class="music-account"></div>
+                    <form class="music-search-form" onsubmit="searchYouTubeMusic(event)">
+                        <input id="music-search-input" class="music-search-input" type="search" maxlength="120" autocomplete="off" placeholder="Buscar música ou artista no YouTube Music">
+                        <button id="music-search-button" class="music-button" type="submit">Buscar</button>
+                    </form>
+                    <div id="music-results" class="music-results" aria-live="polite">
+                        <div class="music-empty">Busque uma música para tocar no YouTube Music.</div>
+                    </div>
+                </div>
+            </section>
         </main>
         <aside class="chat-panel" aria-label="Chat da mesa">
             <div class="chat-header"><strong>Chat da mesa</strong><span id="chat-state">Conectando</span></div>
@@ -181,6 +228,7 @@
         </div>
     </div>
 
+    <script src="firebase-client.js?v=20260919-ytm-1"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
@@ -1109,6 +1157,180 @@
             chatInput.value = '';
             chatInput.focus();
         }
+
+        let youtubeAccessToken = '';
+        try { youtubeAccessToken = sessionStorage.getItem('ol_youtube_music_access_token') || ''; } catch (error) {}
+
+        function setYouTubeMusicLinked(linked, user = null) {
+            const body = document.getElementById('music-body');
+            const state = document.getElementById('music-state');
+            const account = document.getElementById('music-account');
+            const connectButton = document.getElementById('music-connect');
+            body.hidden = !linked;
+            connectButton.textContent = linked ? 'Reconectar conta' : 'Vincular conta';
+            state.textContent = linked ? 'Conta vinculada para esta sessão' : 'Conta não vinculada';
+            account.textContent = linked
+                ? `Vinculado como ${String(user && (user.displayName || user.email) || 'conta Google')}`
+                : '';
+        }
+
+        async function restoreYouTubeMusicConnection() {
+            if (!youtubeAccessToken) {
+                setYouTubeMusicLinked(false);
+                return;
+            }
+            try {
+                const user = window.OLFirebase ? await OLFirebase.getCurrentUser() : null;
+                setYouTubeMusicLinked(true, user);
+            } catch (error) {
+                setYouTubeMusicLinked(true);
+            }
+        }
+
+        async function connectYouTubeMusic() {
+            const button = document.getElementById('music-connect');
+            button.disabled = true;
+            document.getElementById('music-state').textContent = 'Abrindo autorização do Google...';
+            try {
+                if (!window.OLFirebase || typeof OLFirebase.connectYouTubeMusic !== 'function') {
+                    throw new Error('Integração do Google não carregou. Recarregue a página.');
+                }
+                const result = await OLFirebase.connectYouTubeMusic();
+                youtubeAccessToken = String(result && result.accessToken || '');
+                if (!youtubeAccessToken) throw new Error('Não foi possível obter autorização do YouTube.');
+                try { sessionStorage.setItem('ol_youtube_music_access_token', youtubeAccessToken); } catch (error) {}
+                setYouTubeMusicLinked(true, result.user);
+                document.getElementById('music-search-input').focus();
+            } catch (error) {
+                console.error('Falha ao vincular YouTube Music:', error);
+                youtubeAccessToken = '';
+                try { sessionStorage.removeItem('ol_youtube_music_access_token'); } catch (storageError) {}
+                setYouTubeMusicLinked(false);
+                const message = String(error && error.message || '');
+                document.getElementById('music-state').textContent = /popup-closed-by-user|cancelled-popup-request/i.test(message)
+                    ? 'Vínculo cancelado'
+                    : (message || 'Não foi possível vincular a conta');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function clearMusicResults(message) {
+            const results = document.getElementById('music-results');
+            results.textContent = '';
+            const empty = document.createElement('div');
+            empty.className = 'music-empty';
+            empty.textContent = message;
+            results.appendChild(empty);
+        }
+
+        function renderYouTubeMusicResults(items) {
+            const results = document.getElementById('music-results');
+            results.textContent = '';
+            const songs = Array.isArray(items) ? items.filter(item => item && item.id && item.id.videoId) : [];
+            if (!songs.length) {
+                clearMusicResults('Nenhuma música encontrada.');
+                return;
+            }
+
+            songs.forEach(item => {
+                const videoId = String(item.id.videoId);
+                const snippet = item.snippet || {};
+                const card = document.createElement('article');
+                card.className = 'music-result';
+
+                const image = document.createElement('img');
+                image.alt = '';
+                image.loading = 'lazy';
+                image.src = String(snippet.thumbnails && (snippet.thumbnails.medium || snippet.thumbnails.default) && (snippet.thumbnails.medium || snippet.thumbnails.default).url || '');
+
+                const copy = document.createElement('div');
+                copy.className = 'music-result-copy';
+
+                const title = document.createElement('div');
+                title.className = 'music-result-title';
+                title.textContent = String(snippet.title || 'Música');
+
+                const channel = document.createElement('div');
+                channel.className = 'music-result-channel';
+                channel.textContent = String(snippet.channelTitle || '');
+
+                const play = document.createElement('button');
+                play.type = 'button';
+                play.className = 'music-play';
+                play.textContent = '▶ Tocar no YouTube Music';
+                play.addEventListener('click', () => playOnYouTubeMusic(videoId, title.textContent));
+
+                copy.append(title, channel, play);
+                card.append(image, copy);
+                results.appendChild(card);
+            });
+        }
+
+        async function searchYouTubeMusic(event) {
+            if (event) event.preventDefault();
+            const input = document.getElementById('music-search-input');
+            const button = document.getElementById('music-search-button');
+            const query = input.value.trim();
+            if (!query) {
+                input.focus();
+                return;
+            }
+            if (!youtubeAccessToken) {
+                document.getElementById('music-state').textContent = 'Vincule sua conta primeiro';
+                return;
+            }
+
+            button.disabled = true;
+            clearMusicResults('Buscando músicas...');
+            try {
+                const url = new URL('https://www.googleapis.com/youtube/v3/search');
+                url.searchParams.set('part', 'snippet');
+                url.searchParams.set('type', 'video');
+                url.searchParams.set('videoCategoryId', '10');
+                url.searchParams.set('maxResults', '12');
+                url.searchParams.set('q', query);
+                const response = await fetch(url.href, {
+                    headers: { Authorization: `Bearer ${youtubeAccessToken}` }
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (response.status === 401) {
+                    youtubeAccessToken = '';
+                    try { sessionStorage.removeItem('ol_youtube_music_access_token'); } catch (error) {}
+                    setYouTubeMusicLinked(false);
+                    throw new Error('A autorização expirou. Vincule a conta novamente.');
+                }
+                if (!response.ok) {
+                    const reason = payload && payload.error && payload.error.errors && payload.error.errors[0] && payload.error.errors[0].reason;
+                    if (reason === 'accessNotConfigured') {
+                        throw new Error('Ative a YouTube Data API v3 no projeto Google/Firebase.');
+                    }
+                    throw new Error(String(payload && payload.error && payload.error.message || 'Falha ao buscar no YouTube.'));
+                }
+                renderYouTubeMusicResults(payload.items);
+                document.getElementById('music-state').textContent = 'Conta vinculada — escolha uma música';
+            } catch (error) {
+                console.error('Busca do YouTube Music falhou:', error);
+                clearMusicResults(String(error && error.message || 'Não foi possível buscar músicas.'));
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function playOnYouTubeMusic(videoId, title = 'música') {
+            const safeId = String(videoId || '').replace(/[^A-Za-z0-9_-]/g, '');
+            if (!safeId) return;
+            const musicUrl = `https://music.youtube.com/watch?v=${encodeURIComponent(safeId)}`;
+            const musicWindow = window.open(musicUrl, 'outro-lado-youtube-music');
+            if (!musicWindow) {
+                document.getElementById('music-state').textContent = 'Permita pop-ups para abrir o YouTube Music';
+                return;
+            }
+            try { musicWindow.focus(); } catch (error) {}
+            document.getElementById('music-state').textContent = `Tocando no YouTube Music: ${String(title).slice(0, 70)}`;
+        }
+
+        restoreYouTubeMusicConnection();
 
         function toggleFullscreen() {
             const stage = document.getElementById('stage');
