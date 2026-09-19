@@ -93,7 +93,8 @@
         .control-button.primary { border-color: var(--blue-strong); background: linear-gradient(135deg, #126a9a, #164b6b); color: #fff; box-shadow: 0 0 18px rgba(57,174,232,0.14); }
         .control-button.danger { border-color: rgba(255,93,108,0.68); background: rgba(130,24,37,0.65); color: #fff; }
         .thumbnail-control { display: inline-flex; align-items: center; gap: 7px; min-height: 43px; padding: 6px 8px; border: 1px solid rgba(139,204,246,0.18); border-radius: 9px; background: rgba(139,204,246,0.045); }
-        .thumbnail-time { width: 76px; min-height: 31px; border: 1px solid rgba(139,204,246,0.24); border-radius: 7px; outline: none; background: rgba(1,7,12,0.86); color: #fff; padding: 5px 7px; font-weight: 800; text-align: center; }
+        .thumbnail-time { width: 48px; min-height: 31px; border: 1px solid rgba(139,204,246,0.24); border-radius: 7px; outline: none; background: rgba(1,7,12,0.86); color: #fff; padding: 5px 4px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+        .thumbnail-time-separator { color: #8fa7b5; font-size: 0.8rem; font-weight: 900; }
         .thumbnail-label { max-width: 150px; overflow: hidden; color: #8fa7b5; font-size: 0.7rem; text-overflow: ellipsis; white-space: nowrap; }
         .status-line { padding: 10px 17px; border-top: 1px solid rgba(255,255,255,0.055); background: rgba(1,5,9,0.96); color: var(--muted); font-size: 0.8rem; }
         .status-line strong { color: var(--blue); }
@@ -241,7 +242,7 @@
                 <div id="thumbnail-overlay" class="thumbnail-overlay hidden" aria-live="polite">
                     <img id="thumbnail-overlay-image" alt="Thumbnail da sessão">
                     <video id="thumbnail-overlay-video" autoplay muted loop playsinline preload="auto" hidden></video>
-                    <div id="thumbnail-countdown" class="thumbnail-countdown">0:10</div>
+                    <div id="thumbnail-countdown" class="thumbnail-countdown">00:00:10</div>
                 </div>
                 <button id="transmission-audio-gate" class="transmission-audio-gate" type="button" onclick="unlockTransmissionAudio()" hidden>Ativar áudio da transmissão</button>
                 <div id="empty-state" class="empty-state">
@@ -263,8 +264,11 @@
                         <button class="control-button" type="button" onclick="openThumbnailPicker()">Thumbnail</button>
                         <input id="thumbnail-file" type="file" accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime" hidden>
                         <span id="thumbnail-file-name" class="thumbnail-label">Nenhuma mídia</span>
-                        <input id="thumbnail-time" class="thumbnail-time" type="number" min="1" max="3600" step="1" value="10" aria-label="Tempo do contador em segundos">
-                        <span class="thumbnail-label">s</span>
+                        <input id="thumbnail-hours" class="thumbnail-time" type="number" min="0" max="99" step="1" value="0" aria-label="Horas do contador">
+                        <span class="thumbnail-time-separator">:</span>
+                        <input id="thumbnail-minutes" class="thumbnail-time" type="number" min="0" max="59" step="1" value="0" aria-label="Minutos do contador">
+                        <span class="thumbnail-time-separator">:</span>
+                        <input id="thumbnail-seconds" class="thumbnail-time" type="number" min="0" max="59" step="1" value="10" aria-label="Segundos do contador">
                         <button id="thumbnail-start-button" class="control-button" type="button" onclick="toggleThumbnailCountdown()">Iniciar contador</button>
                     </div>
                     <button id="pip-button" class="control-button" type="button" onclick="togglePictureInPicture()" hidden>Janela flutuante</button>
@@ -388,7 +392,9 @@
         const thumbnailCountdown = document.getElementById('thumbnail-countdown');
         const thumbnailFileInput = document.getElementById('thumbnail-file');
         const thumbnailFileName = document.getElementById('thumbnail-file-name');
-        const thumbnailTimeInput = document.getElementById('thumbnail-time');
+        const thumbnailHoursInput = document.getElementById('thumbnail-hours');
+        const thumbnailMinutesInput = document.getElementById('thumbnail-minutes');
+        const thumbnailSecondsInput = document.getElementById('thumbnail-seconds');
         const thumbnailStartButton = document.getElementById('thumbnail-start-button');
         const transmissionAudioGate = document.getElementById('transmission-audio-gate');
         const pipButton = document.getElementById('pip-button');
@@ -458,6 +464,7 @@
         let selectedThumbnailMediaId = '';
         let selectedThumbnailVideoFile = null;
         let selectedThumbnailVideoUrl = '';
+        let thumbnailSelectionReady = false;
         let thumbnailTimer = null;
         let thumbnailFadeTimer = null;
         let thumbnailMediaRequestId = '';
@@ -1565,9 +1572,20 @@
 
         function formatCountdownValue(milliseconds) {
             const total = Math.max(0, Math.ceil(Number(milliseconds || 0) / 1000));
-            const minutes = Math.floor(total / 60);
+            const hours = String(Math.floor(total / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
             const seconds = String(total % 60).padStart(2, '0');
-            return `${minutes}:${seconds}`;
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function countdownDurationSeconds() {
+            const hours = Math.max(0, Math.min(99, Math.floor(Number(thumbnailHoursInput.value) || 0)));
+            const minutes = Math.max(0, Math.min(59, Math.floor(Number(thumbnailMinutesInput.value) || 0)));
+            const seconds = Math.max(0, Math.min(59, Math.floor(Number(thumbnailSecondsInput.value) || 0)));
+            thumbnailHoursInput.value = String(hours);
+            thumbnailMinutesInput.value = String(minutes);
+            thumbnailSecondsInput.value = String(seconds);
+            return Math.max(1, Math.min(359999, hours * 3600 + minutes * 60 + seconds));
         }
 
         function createThumbnailMediaId() {
@@ -1848,6 +1866,7 @@
                     selectedThumbnailMediaId = createThumbnailMediaId();
                     selectedThumbnailVideoFile = file;
                     selectedThumbnailVideoUrl = URL.createObjectURL(file);
+                    thumbnailSelectionReady = true;
                     thumbnailVideoUrls.set(selectedThumbnailMediaId, selectedThumbnailVideoUrl);
                     thumbnailFileName.textContent = file.name;
                     setStatus('vídeo de thumbnail pronto; ele ficará em loop durante o contador.');
@@ -1863,12 +1882,14 @@
                     selectedThumbnailVideoUrl = '';
                 }
                 selectedThumbnailData = await compressThumbnailFile(file);
+                thumbnailSelectionReady = true;
                 thumbnailFileName.textContent = file.name;
                 setStatus('thumbnail pronta; escolha o tempo e inicie o contador.');
             } catch (error) {
                 selectedThumbnailData = '';
                 selectedThumbnailMediaId = '';
                 selectedThumbnailVideoFile = null;
+                thumbnailSelectionReady = false;
                 thumbnailFileName.textContent = 'Nenhuma mídia';
                 setStatus(String(error && error.message || 'não foi possível carregar a thumbnail.'));
             }
@@ -1890,16 +1911,19 @@
             }
 
             const mediaType = selectedThumbnailMediaType === 'video' ? 'video' : 'image';
-            const imageData = mediaType === 'image' ? (selectedThumbnailData || sharedOverlayState.imageData) : '';
+            const imageData = mediaType === 'image' ? selectedThumbnailData : '';
             const mediaId = mediaType === 'video' ? selectedThumbnailMediaId : '';
-            if ((mediaType === 'image' && !imageData) || (mediaType === 'video' && (!mediaId || !selectedThumbnailVideoFile))) {
-                setStatus('escolha uma imagem ou vídeo para a thumbnail antes de iniciar o contador.');
-                openThumbnailPicker();
+            const mediaReady = thumbnailSelectionReady && (
+                (mediaType === 'image' && Boolean(imageData))
+                || (mediaType === 'video' && Boolean(mediaId) && Boolean(selectedThumbnailVideoFile))
+            );
+
+            if (!mediaReady) {
+                setStatus('nenhuma thumbnail selecionada. Clique em Thumbnail para escolher uma imagem ou vídeo.');
                 return;
             }
 
-            const duration = Math.max(1, Math.min(3600, Math.round(Number(thumbnailTimeInput.value) || 10)));
-            thumbnailTimeInput.value = String(duration);
+            const duration = countdownDurationSeconds();
             socket.emit('screen_share_overlay_control', {
                 mesa: tableCode,
                 mediaType,
@@ -1910,7 +1934,7 @@
                 endAt: Date.now() + duration * 1000
             });
             if (mediaType === 'video') setTimeout(() => sendThumbnailVideo(), 80);
-            setStatus(`thumbnail ${mediaType === 'video' ? 'em vídeo ' : ''}iniciada por ${duration} segundo${duration === 1 ? '' : 's'}; a transmissão aparecerá com fade ao final.`);
+            setStatus(`thumbnail ${mediaType === 'video' ? 'em vídeo ' : ''}iniciada por ${formatCountdownValue(duration * 1000)}; a transmissão aparecerá com fade ao final.`);
         }
 
         function chooseTable() {
