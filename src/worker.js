@@ -713,7 +713,7 @@ export class TableRoom extends DurableObject {
             const byteLength = chunk instanceof ArrayBuffer ? chunk.byteLength : (ArrayBuffer.isView(chunk) ? chunk.byteLength : 0);
             if (!byteLength || byteLength > 256 * 1024) return;
             const index = Math.max(0, Math.floor(Number(data.index) || 0));
-            const total = Math.max(1, Math.min(192, Math.floor(Number(data.total) || 1)));
+            const total = Math.max(1, Math.min(1024, Math.floor(Number(data.total) || 1)));
             if (index >= total) return;
             const mimeType = /^video\/(?:mp4|webm|ogg|quicktime)$/i.test(String(data.mimeType || '')) ? String(data.mimeType) : 'video/mp4';
             const payload = { mesa: this.table, mediaId, index, total, mimeType, chunk };
