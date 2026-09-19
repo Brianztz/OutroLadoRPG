@@ -60,7 +60,8 @@
         .stage { position: relative; display: grid; place-items: center; width: 100%; min-height: min(74vh, 880px); overflow: hidden; background: radial-gradient(circle at center, rgba(21,39,54,0.52), rgba(1,4,8,0.96) 64%); }
         .thumbnail-overlay { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; overflow: hidden; background: #010204; opacity: 1; visibility: visible; transition: opacity 0.9s ease, visibility 0s linear 0s; pointer-events: none; }
         .thumbnail-overlay.hidden { opacity: 0; visibility: hidden; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
-        .thumbnail-overlay img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .thumbnail-overlay img, .thumbnail-overlay video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .thumbnail-overlay img[hidden], .thumbnail-overlay video[hidden] { display: none; }
         .thumbnail-overlay::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.24) 100%); }
         .thumbnail-countdown { position: relative; z-index: 2; min-width: 180px; padding: 15px 24px; border: 1px solid rgba(255,255,255,0.24); border-radius: 18px; background: rgba(0,0,0,0.52); backdrop-filter: blur(12px); color: #fff; box-shadow: 0 14px 46px rgba(0,0,0,0.35); font-size: clamp(3rem, 10vw, 7.5rem); font-weight: 950; line-height: 1; letter-spacing: -0.045em; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 3px 24px rgba(0,0,0,0.8); }
         .transmission-audio-gate { position: absolute; z-index: 8; left: 50%; bottom: 24px; transform: translateX(-50%); min-height: 46px; padding: 10px 18px; border: 1px solid rgba(86,221,167,0.58); border-radius: 10px; background: rgba(6,35,25,0.94); color: #c9f7e4; cursor: pointer; font-weight: 900; box-shadow: 0 12px 36px rgba(0,0,0,0.4); }
@@ -239,6 +240,7 @@
                 <canvas id="fallback-frame" class="fallback-frame" role="img" aria-label="Tela transmitida"></canvas>
                 <div id="thumbnail-overlay" class="thumbnail-overlay hidden" aria-live="polite">
                     <img id="thumbnail-overlay-image" alt="Thumbnail da sessão">
+                    <video id="thumbnail-overlay-video" autoplay muted loop playsinline preload="auto" hidden></video>
                     <div id="thumbnail-countdown" class="thumbnail-countdown">0:10</div>
                 </div>
                 <button id="transmission-audio-gate" class="transmission-audio-gate" type="button" onclick="unlockTransmissionAudio()" hidden>Ativar áudio da transmissão</button>
@@ -259,8 +261,8 @@
                     <video id="opening-source" preload="metadata" playsinline hidden></video>
                     <div class="thumbnail-control music-host-only">
                         <button class="control-button" type="button" onclick="openThumbnailPicker()">Thumbnail</button>
-                        <input id="thumbnail-file" type="file" accept="image/*" hidden>
-                        <span id="thumbnail-file-name" class="thumbnail-label">Nenhuma imagem</span>
+                        <input id="thumbnail-file" type="file" accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime" hidden>
+                        <span id="thumbnail-file-name" class="thumbnail-label">Nenhuma mídia</span>
                         <input id="thumbnail-time" class="thumbnail-time" type="number" min="1" max="3600" step="1" value="10" aria-label="Tempo do contador em segundos">
                         <span class="thumbnail-label">s</span>
                         <button id="thumbnail-start-button" class="control-button" type="button" onclick="toggleThumbnailCountdown()">Iniciar contador</button>
@@ -382,6 +384,7 @@
         const openingVolumeValue = document.getElementById('opening-volume-value');
         const thumbnailOverlay = document.getElementById('thumbnail-overlay');
         const thumbnailOverlayImage = document.getElementById('thumbnail-overlay-image');
+        const thumbnailOverlayVideo = document.getElementById('thumbnail-overlay-video');
         const thumbnailCountdown = document.getElementById('thumbnail-countdown');
         const thumbnailFileInput = document.getElementById('thumbnail-file');
         const thumbnailFileName = document.getElementById('thumbnail-file-name');
@@ -451,9 +454,17 @@
         let musicFadeToken = 0;
         let musicFadeTimer = null;
         let selectedThumbnailData = '';
+        let selectedThumbnailMediaType = 'image';
+        let selectedThumbnailMediaId = '';
+        let selectedThumbnailVideoFile = null;
+        let selectedThumbnailVideoUrl = '';
         let thumbnailTimer = null;
         let thumbnailFadeTimer = null;
-        let sharedOverlayState = { mesa: tableCode, imageData: '', active: false, duration: 0, endAt: 0, revision: 0 };
+        let thumbnailMediaRequestId = '';
+        const thumbnailVideoUrls = new Map();
+        const thumbnailIncomingTransfers = new Map();
+        const thumbnailVideoSending = new Set();
+        let sharedOverlayState = { mesa: tableCode, mediaType: 'image', mediaId: '', imageData: '', active: false, duration: 0, endAt: 0, revision: 0 };
         const hostPeers = new Map();
         const pendingIce = new Map();
         const fallbackCanvas = document.createElement('canvas');
@@ -1559,6 +1570,13 @@
             return `${minutes}:${seconds}`;
         }
 
+        function createThumbnailMediaId() {
+            if (window.crypto && typeof crypto.randomUUID === 'function') {
+                return `thumb_${crypto.randomUUID().replace(/-/g, '')}`;
+            }
+            return `thumb_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+        }
+
         function clearThumbnailTimers() {
             if (thumbnailTimer) clearInterval(thumbnailTimer);
             if (thumbnailFadeTimer) clearTimeout(thumbnailFadeTimer);
@@ -1568,6 +1586,7 @@
 
         function hideThumbnailOverlay(animated = true) {
             clearThumbnailTimers();
+            thumbnailOverlayVideo.pause();
             if (animated) {
                 thumbnailOverlay.classList.add('hidden');
             } else {
@@ -1581,16 +1600,66 @@
             }
         }
 
+        function requestThumbnailVideo(mediaId) {
+            if (!mediaId || !socket.connected || thumbnailMediaRequestId === mediaId) return;
+            thumbnailMediaRequestId = mediaId;
+            socket.emit('screen_share_overlay_media_request', { mesa: tableCode, mediaId });
+            setTimeout(() => {
+                if (thumbnailMediaRequestId === mediaId && !thumbnailVideoUrls.has(mediaId)) {
+                    thumbnailMediaRequestId = '';
+                }
+            }, 2500);
+        }
+
+        function applyThumbnailMedia(state) {
+            const mediaType = state && state.mediaType === 'video' ? 'video' : 'image';
+            if (mediaType === 'video') {
+                thumbnailOverlayImage.hidden = true;
+                thumbnailOverlayVideo.hidden = false;
+                const mediaId = String(state.mediaId || '');
+                let url = '';
+                if (mediaId && mediaId === selectedThumbnailMediaId && selectedThumbnailVideoUrl) {
+                    url = selectedThumbnailVideoUrl;
+                } else {
+                    url = thumbnailVideoUrls.get(mediaId) || '';
+                }
+                if (url) {
+                    if (thumbnailOverlayVideo.src !== url) {
+                        thumbnailOverlayVideo.src = url;
+                        thumbnailOverlayVideo.load();
+                    }
+                    thumbnailOverlayVideo.muted = true;
+                    thumbnailOverlayVideo.loop = true;
+                    thumbnailOverlayVideo.play().catch(() => {});
+                    thumbnailMediaRequestId = '';
+                } else {
+                    thumbnailOverlayVideo.pause();
+                    thumbnailOverlayVideo.removeAttribute('src');
+                    thumbnailOverlayVideo.load();
+                    requestThumbnailVideo(mediaId);
+                }
+                return;
+            }
+
+            thumbnailOverlayVideo.pause();
+            thumbnailOverlayVideo.hidden = true;
+            thumbnailOverlayImage.hidden = false;
+            thumbnailOverlayImage.src = String(state && state.imageData || '');
+        }
+
         function showThumbnailOverlay(state) {
             clearThumbnailTimers();
-            const imageData = String(state && state.imageData || '');
+            const mediaType = state && state.mediaType === 'video' ? 'video' : 'image';
+            const hasMedia = mediaType === 'video'
+                ? Boolean(state && state.mediaId)
+                : Boolean(state && state.imageData);
             const endAt = Number(state && state.endAt) || 0;
-            if (!imageData || !state.active || endAt <= Date.now()) {
+            if (!hasMedia || !state.active || endAt <= Date.now()) {
                 hideThumbnailOverlay(endAt > 0);
                 return;
             }
-            selectedThumbnailData = imageData;
-            thumbnailOverlayImage.src = imageData;
+
+            applyThumbnailMedia(state);
             thumbnailOverlay.classList.remove('hidden');
             if (!spectatorMode) {
                 thumbnailStartButton.textContent = 'Encerrar contador';
@@ -1605,6 +1674,7 @@
                     thumbnailCountdown.textContent = '0:00';
                     thumbnailOverlay.classList.add('hidden');
                     thumbnailFadeTimer = setTimeout(() => {
+                        thumbnailOverlayVideo.pause();
                         if (!spectatorMode) {
                             thumbnailStartButton.textContent = 'Iniciar contador';
                             thumbnailStartButton.classList.remove('danger');
@@ -1620,15 +1690,17 @@
             if (!rawState || normalizeTableCode(rawState.mesa) !== tableCode) return;
             sharedOverlayState = {
                 mesa: tableCode,
+                mediaType: rawState.mediaType === 'video' ? 'video' : 'image',
+                mediaId: String(rawState.mediaId || ''),
                 imageData: String(rawState.imageData || ''),
                 active: Boolean(rawState.active),
                 duration: Math.max(0, Number(rawState.duration) || 0),
                 endAt: Math.max(0, Number(rawState.endAt) || 0),
                 revision: Math.max(0, Number(rawState.revision) || 0)
             };
-            if (sharedOverlayState.imageData) {
+            if (sharedOverlayState.mediaType === 'image' && sharedOverlayState.imageData) {
                 selectedThumbnailData = sharedOverlayState.imageData;
-                if (!spectatorMode && thumbnailFileName.textContent === 'Nenhuma imagem') {
+                if (!spectatorMode && thumbnailFileName.textContent === 'Nenhuma mídia') {
                     thumbnailFileName.textContent = 'Thumbnail carregada';
                 }
             }
@@ -1680,7 +1752,7 @@
                 const context = smaller.getContext('2d', { alpha: false });
                 context.fillStyle = '#010204';
                 context.fillRect(0, 0, width, height);
-                context.drawImage(canvas, 0, 0, width, height);
+                context.drawImage(canvas, 0, 0, smaller.width, smaller.height);
                 canvas = smaller;
                 quality = Math.max(0.62, quality - 0.07);
                 blob = await toBlob(canvas, quality);
@@ -1691,17 +1763,113 @@
             return dataUrl;
         }
 
+        async function sendThumbnailVideo(target = '') {
+            if (!selectedThumbnailVideoFile || !selectedThumbnailMediaId || !socket.connected) return;
+            const key = target || '*';
+            if (thumbnailVideoSending.has(key)) return;
+            thumbnailVideoSending.add(key);
+            try {
+                const chunkSize = 192 * 1024;
+                const total = Math.ceil(selectedThumbnailVideoFile.size / chunkSize);
+                if (total < 1 || total > 192) throw new Error('O vídeo da thumbnail é grande demais.');
+                for (let index = 0; index < total; index += 1) {
+                    const start = index * chunkSize;
+                    const chunk = await selectedThumbnailVideoFile.slice(start, Math.min(selectedThumbnailVideoFile.size, start + chunkSize)).arrayBuffer();
+                    socket.emit('screen_share_overlay_media_chunk', {
+                        mesa: tableCode,
+                        mediaId: selectedThumbnailMediaId,
+                        index,
+                        total,
+                        mimeType: selectedThumbnailVideoFile.type || 'video/mp4',
+                        target,
+                        chunk
+                    });
+                    if (index % 4 === 3) await new Promise(resolve => setTimeout(resolve, 8));
+                }
+            } catch (error) {
+                if (!target) setStatus(String(error && error.message || 'não foi possível enviar o vídeo da thumbnail.'));
+            } finally {
+                thumbnailVideoSending.delete(key);
+            }
+        }
+
+        function receiveThumbnailVideoChunk(data) {
+            if (!data || normalizeTableCode(data.mesa) !== tableCode) return;
+            const mediaId = String(data.mediaId || '');
+            const index = Math.max(0, Math.floor(Number(data.index) || 0));
+            const total = Math.max(1, Math.floor(Number(data.total) || 1));
+            if (!mediaId || total > 192 || index >= total || !(data.chunk instanceof ArrayBuffer)) return;
+
+            let transfer = thumbnailIncomingTransfers.get(mediaId);
+            if (!transfer || transfer.total !== total) {
+                transfer = {
+                    total,
+                    mimeType: String(data.mimeType || 'video/mp4'),
+                    chunks: new Array(total),
+                    received: 0
+                };
+                thumbnailIncomingTransfers.set(mediaId, transfer);
+            }
+            if (!transfer.chunks[index]) {
+                transfer.chunks[index] = data.chunk;
+                transfer.received += 1;
+            }
+            if (transfer.received < transfer.total) return;
+
+            const blob = new Blob(transfer.chunks, { type: transfer.mimeType });
+            const oldUrl = thumbnailVideoUrls.get(mediaId);
+            if (oldUrl && oldUrl !== selectedThumbnailVideoUrl) URL.revokeObjectURL(oldUrl);
+            const url = URL.createObjectURL(blob);
+            thumbnailVideoUrls.set(mediaId, url);
+            thumbnailIncomingTransfers.delete(mediaId);
+            thumbnailMediaRequestId = '';
+
+            if (sharedOverlayState.active && sharedOverlayState.mediaType === 'video' && sharedOverlayState.mediaId === mediaId) {
+                applyThumbnailMedia(sharedOverlayState);
+            }
+        }
+
         thumbnailFileInput.addEventListener('change', async () => {
             const file = thumbnailFileInput.files && thumbnailFileInput.files[0];
             if (!file) return;
             thumbnailFileName.textContent = 'Processando...';
             try {
+                if (String(file.type || '').startsWith('video/')) {
+                    if (file.size > 30 * 1024 * 1024) throw new Error('Use um vídeo de thumbnail com até 30 MB.');
+                    if (thumbnailOverlayVideo.canPlayType(file.type || '') === '') {
+                        throw new Error('Esse formato de vídeo não é compatível com o navegador. Use MP4 ou WebM.');
+                    }
+                    if (selectedThumbnailVideoUrl) {
+                        URL.revokeObjectURL(selectedThumbnailVideoUrl);
+                        if (selectedThumbnailMediaId) thumbnailVideoUrls.delete(selectedThumbnailMediaId);
+                    }
+                    selectedThumbnailMediaType = 'video';
+                    selectedThumbnailData = '';
+                    selectedThumbnailMediaId = createThumbnailMediaId();
+                    selectedThumbnailVideoFile = file;
+                    selectedThumbnailVideoUrl = URL.createObjectURL(file);
+                    thumbnailVideoUrls.set(selectedThumbnailMediaId, selectedThumbnailVideoUrl);
+                    thumbnailFileName.textContent = file.name;
+                    setStatus('vídeo de thumbnail pronto; ele ficará em loop durante o contador.');
+                    return;
+                }
+
+                if (!String(file.type || '').startsWith('image/')) throw new Error('Selecione uma imagem ou vídeo válido.');
+                selectedThumbnailMediaType = 'image';
+                selectedThumbnailMediaId = '';
+                selectedThumbnailVideoFile = null;
+                if (selectedThumbnailVideoUrl) {
+                    URL.revokeObjectURL(selectedThumbnailVideoUrl);
+                    selectedThumbnailVideoUrl = '';
+                }
                 selectedThumbnailData = await compressThumbnailFile(file);
                 thumbnailFileName.textContent = file.name;
                 setStatus('thumbnail pronta; escolha o tempo e inicie o contador.');
             } catch (error) {
                 selectedThumbnailData = '';
-                thumbnailFileName.textContent = 'Nenhuma imagem';
+                selectedThumbnailMediaId = '';
+                selectedThumbnailVideoFile = null;
+                thumbnailFileName.textContent = 'Nenhuma mídia';
                 setStatus(String(error && error.message || 'não foi possível carregar a thumbnail.'));
             }
         });
@@ -1712,28 +1880,37 @@
             if (currentlyActive) {
                 socket.emit('screen_share_overlay_control', {
                     mesa: tableCode,
-                    imageData: selectedThumbnailData || sharedOverlayState.imageData,
+                    mediaType: sharedOverlayState.mediaType,
+                    mediaId: sharedOverlayState.mediaId,
+                    imageData: sharedOverlayState.imageData,
                     active: false,
                     duration: sharedOverlayState.duration || 10
                 });
                 return;
             }
-            const imageData = selectedThumbnailData || sharedOverlayState.imageData;
-            if (!imageData) {
-                setStatus('escolha uma thumbnail antes de iniciar o contador.');
+
+            const mediaType = selectedThumbnailMediaType === 'video' ? 'video' : 'image';
+            const imageData = mediaType === 'image' ? (selectedThumbnailData || sharedOverlayState.imageData) : '';
+            const mediaId = mediaType === 'video' ? selectedThumbnailMediaId : '';
+            if ((mediaType === 'image' && !imageData) || (mediaType === 'video' && (!mediaId || !selectedThumbnailVideoFile))) {
+                setStatus('escolha uma imagem ou vídeo para a thumbnail antes de iniciar o contador.');
                 openThumbnailPicker();
                 return;
             }
+
             const duration = Math.max(1, Math.min(3600, Math.round(Number(thumbnailTimeInput.value) || 10)));
             thumbnailTimeInput.value = String(duration);
             socket.emit('screen_share_overlay_control', {
                 mesa: tableCode,
+                mediaType,
+                mediaId,
                 imageData,
                 active: true,
                 duration,
                 endAt: Date.now() + duration * 1000
             });
-            setStatus(`thumbnail iniciada por ${duration} segundo${duration === 1 ? '' : 's'}; a transmissão aparecerá com fade ao final.`);
+            if (mediaType === 'video') setTimeout(() => sendThumbnailVideo(), 80);
+            setStatus(`thumbnail ${mediaType === 'video' ? 'em vídeo ' : ''}iniciada por ${duration} segundo${duration === 1 ? '' : 's'}; a transmissão aparecerá com fade ao final.`);
         }
 
         function chooseTable() {
@@ -2101,16 +2278,97 @@
             playPlaylistTrack(previous);
         }
 
+        function playerVideoId(player) {
+            if (!player || typeof player.getVideoData !== 'function') return '';
+            try {
+                const data = player.getVideoData() || {};
+                return safeMusicVideoId(data.video_id);
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function playersForMusicVideo(videoId) {
+            const safeId = safeMusicVideoId(videoId);
+            return [musicPlayer, musicCrossfadePlayer].filter((player, index, list) => {
+                if (!player || list.indexOf(player) !== index) return false;
+                return playerVideoId(player) === safeId;
+            });
+        }
+
+        function applyImmediateMusicTransport(rawData) {
+            if (!rawData || normalizeTableCode(rawData.mesa) !== tableCode) return;
+            const videoId = safeMusicVideoId(rawData.videoId);
+            if (!videoId || videoId !== sharedMusicState.videoId) return;
+
+            const playing = Boolean(rawData.playing);
+            const position = Math.max(0, Number(rawData.position) || 0);
+            const updatedAt = Math.max(0, Number(rawData.updatedAt) || Date.now());
+            sharedMusicState = {
+                ...sharedMusicState,
+                playing,
+                position,
+                updatedAt,
+                revision: Math.max(Number(sharedMusicState.revision) || 0, Number(rawData.revision) || 0)
+            };
+            pendingMusicState = null;
+            musicIgnoreEventsUntil = Date.now() + 650;
+            updateSharedMusicUi(sharedMusicState);
+
+            const button = document.getElementById('music-controller-play');
+            if (button) button.textContent = playing ? '⏸ Pausar' : '▶ Play';
+
+            const targetPosition = playing
+                ? position + Math.max(0, (Date.now() - updatedAt) / 1000)
+                : position;
+            const targets = playersForMusicVideo(videoId);
+            if (!targets.length && musicPlayer) targets.push(musicPlayer);
+
+            targets.forEach(player => {
+                try {
+                    const current = Number(player.getCurrentTime()) || 0;
+                    if (Math.abs(current - targetPosition) > 0.35) player.seekTo(targetPosition, true);
+                    if (playing) {
+                        if (spectatorMode && !musicAudioUnlocked) player.mute();
+                        else player.unMute();
+                        player.playVideo();
+                    } else {
+                        player.pauseVideo();
+                    }
+                } catch (error) {}
+            });
+        }
+
         function musicTogglePlayback() {
             if (!musicPlayerReady || !musicPlayer || !sharedMusicState.videoId) return;
             musicHostOwnsControl = true;
+
+            let currentPosition = Math.max(0, Number(sharedMusicState.position) || 0);
+            let currentlyPlaying = Boolean(sharedMusicState.playing);
+            const matchingPlayers = playersForMusicVideo(sharedMusicState.videoId);
+            const controlPlayer = matchingPlayers[0] || musicPlayer;
             try {
-                if (musicPlayer.getPlayerState() === 1) musicPlayer.pauseVideo();
-                else {
-                    musicPlayer.unMute();
-                    musicPlayer.playVideo();
-                }
+                currentPosition = Math.max(0, Number(controlPlayer.getCurrentTime()) || currentPosition);
+                currentlyPlaying = Number(controlPlayer.getPlayerState()) === 1;
             } catch (error) {}
+
+            const nextPlaying = !currentlyPlaying;
+            const transport = {
+                mesa: tableCode,
+                videoId: sharedMusicState.videoId,
+                playing: nextPlaying,
+                position: currentPosition,
+                updatedAt: Date.now(),
+                revision: Math.max(0, Number(sharedMusicState.revision) || 0) + 1
+            };
+
+            applyImmediateMusicTransport(transport);
+            socket.emit('screen_share_music_transport', {
+                mesa: tableCode,
+                videoId: transport.videoId,
+                playing: transport.playing,
+                position: transport.position
+            });
         }
 
         function previewMusicSeek(value) {
@@ -3018,9 +3276,23 @@
             applySharedMusicState(state);
         });
 
+        socket.on('screen_share_music_transport', data => {
+            applyImmediateMusicTransport(data);
+        });
+
         socket.on('screen_share_overlay_state', state => {
             if (normalizeTableCode(state && state.mesa) !== tableCode) return;
             applyScreenOverlayState(state);
+        });
+
+        socket.on('screen_share_overlay_media_request', data => {
+            if (spectatorMode || !data || normalizeTableCode(data.mesa) !== tableCode) return;
+            if (String(data.mediaId || '') !== selectedThumbnailMediaId || !selectedThumbnailVideoFile) return;
+            sendThumbnailVideo(String(data.requesterId || ''));
+        });
+
+        socket.on('screen_share_overlay_media_chunk', data => {
+            receiveThumbnailVideoChunk(data);
         });
 
         socket.on('screen_share_start_denied', data => {
@@ -3235,6 +3507,13 @@
             if (musicSyncTimer) clearInterval(musicSyncTimer);
             if (musicControllerTimer) clearInterval(musicControllerTimer);
             clearThumbnailTimers();
+            thumbnailOverlayVideo.pause();
+            if (selectedThumbnailVideoUrl) URL.revokeObjectURL(selectedThumbnailVideoUrl);
+            thumbnailVideoUrls.forEach(url => {
+                if (url && url !== selectedThumbnailVideoUrl) URL.revokeObjectURL(url);
+            });
+            thumbnailVideoUrls.clear();
+            thumbnailIncomingTransfers.clear();
             cancelMusicFade();
             openingSource.pause();
             if (openingAudioContext) openingAudioContext.close().catch(() => {});
