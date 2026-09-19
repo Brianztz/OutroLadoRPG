@@ -1231,7 +1231,8 @@
                 title: sharedMusicState.title,
                 channel: sharedMusicState.channel,
                 position,
-                playing
+                playing,
+                volume: sharedMusicState.volume
             } : null;
 
             if (sharedMusicState.videoId) {
@@ -1243,7 +1244,8 @@
                     title: sharedMusicState.title,
                     channel: sharedMusicState.channel,
                     playing: false,
-                    position
+                    position,
+                    volume: sharedMusicState.volume
                 });
             }
         }
@@ -1259,9 +1261,17 @@
                 channel: resume.channel,
                 playing: Boolean(resume.playing),
                 position: resume.position,
+                volume: Math.max(0, Math.min(100, Number(resume.volume) || musicBaseVolume)),
                 updatedAt: Date.now()
             };
             pendingMusicState = sharedMusicState;
+            if (!spectatorMode) {
+                musicBaseVolume = sharedMusicState.volume;
+                const volumeInput = document.getElementById('music-volume');
+                const volumeLabel = document.getElementById('music-volume-value');
+                if (volumeInput) volumeInput.value = String(musicBaseVolume);
+                if (volumeLabel) volumeLabel.textContent = `${Math.round(musicBaseVolume)}%`;
+            }
             updateSharedMusicUi(sharedMusicState);
             ensureYouTubeIframeApi();
             if (musicPlayerReady && musicPlayer) {
@@ -1282,7 +1292,8 @@
                 title: resume.title,
                 channel: resume.channel,
                 playing: Boolean(resume.playing),
-                position: resume.position
+                position: resume.position,
+                volume: Math.max(0, Math.min(100, Number(resume.volume) || musicBaseVolume))
             });
         }
 
@@ -1560,6 +1571,7 @@
             channel: '',
             playing: false,
             position: 0,
+            volume: 75,
             updatedAt: 0,
             revision: 0
         };
@@ -1841,17 +1853,37 @@
 
         function setMusicVolume(value) {
             musicBaseVolume = Math.max(0, Math.min(100, Number(value) || 0));
+            sharedMusicState.volume = musicBaseVolume;
             const input = document.getElementById('music-volume');
             const label = document.getElementById('music-volume-value');
             if (input) input.value = String(musicBaseVolume);
             if (label) label.textContent = `${Math.round(musicBaseVolume)}%`;
             try { localStorage.setItem('music_volume', String(musicBaseVolume)); } catch (error) {}
-            if (!musicPlayerReady || !musicPlayer) return;
-            if (musicFadeTimer) return;
-            try {
-                musicPlayer.unMute();
-                musicPlayer.setVolume(musicBaseVolume);
-            } catch (error) {}
+
+            if (musicPlayerReady && musicPlayer && !musicFadeTimer) {
+                try {
+                    musicPlayer.unMute();
+                    musicPlayer.setVolume(musicBaseVolume);
+                } catch (error) {}
+            }
+
+            if (!spectatorMode && socket.connected && sharedMusicState.videoId) {
+                let position = Math.max(0, Number(sharedMusicState.position) || 0);
+                let playing = Boolean(sharedMusicState.playing);
+                if (musicPlayerReady && musicPlayer) {
+                    try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
+                    try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
+                }
+                socket.emit('screen_share_music_control', {
+                    mesa: tableCode,
+                    videoId: sharedMusicState.videoId,
+                    title: sharedMusicState.title,
+                    channel: sharedMusicState.channel,
+                    playing,
+                    position,
+                    volume: musicBaseVolume
+                });
+            }
         }
 
         function updateMusicController() {
@@ -1896,6 +1928,7 @@
                     const value = Math.round(start + (end - start) * eased);
                     try { musicPlayer.setVolume(value); } catch (error) {}
                     if (progress >= 1) {
+                        musicFadeTimer = null;
                         resolve();
                         return;
                     }
@@ -1907,7 +1940,7 @@
 
         async function transitionMusicTrack(state, previousVideoId) {
             if (!musicPlayerReady || !musicPlayer || !state.videoId) return;
-            const targetVolume = spectatorMode ? 75 : musicBaseVolume;
+            const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
             const target = musicTargetPosition(state);
             const hasPrevious = Boolean(previousVideoId);
             if (hasPrevious && previousVideoId !== state.videoId) {
@@ -1931,7 +1964,8 @@
             }
             await new Promise(resolve => setTimeout(resolve, 90));
             if (state.playing && (!spectatorMode || musicAudioUnlocked)) {
-                await rampMusicVolume(targetVolume, MUSIC_FADE_IN_MS);
+                const liveTargetVolume = Math.max(0, Math.min(100, Number(sharedMusicState.volume) || targetVolume));
+                await rampMusicVolume(liveTargetVolume, MUSIC_FADE_IN_MS);
             } else {
                 try { musicPlayer.setVolume(targetVolume); } catch (error) {}
             }
@@ -2013,6 +2047,7 @@
                 channel: videoId ? String(rawState.channel || '').slice(0, 140) : '',
                 playing: videoId ? Boolean(rawState.playing) : false,
                 position: videoId ? Math.max(0, Number(rawState.position) || 0) : 0,
+                volume: Math.max(0, Math.min(100, Number.isFinite(Number(rawState.volume)) ? Number(rawState.volume) : 75)),
                 updatedAt: Math.max(0, Number(rawState.updatedAt) || 0),
                 revision: Math.max(0, Number(rawState.revision) || 0)
             };
@@ -2043,6 +2078,9 @@
                 } else {
                     musicPlayer.pauseVideo();
                 }
+                if (!musicFadeTimer && (!spectatorMode || musicAudioUnlocked)) {
+                    musicPlayer.setVolume(sharedMusicState.volume);
+                }
             } catch (error) {
                 console.warn('Falha ao sincronizar música:', error);
             }
@@ -2066,7 +2104,8 @@
                 title: sharedMusicState.title,
                 channel: sharedMusicState.channel,
                 playing: Boolean(playing),
-                position
+                position,
+                volume: Math.max(0, Math.min(100, Number(sharedMusicState.volume) || 0))
             });
         }
 
@@ -2075,7 +2114,7 @@
             if (!spectatorMode) {
                 try { musicPlayer.setVolume(musicBaseVolume); } catch (error) {}
             } else {
-                try { musicPlayer.setVolume(75); } catch (error) {}
+                try { musicPlayer.setVolume(Math.max(0, Math.min(100, Number(sharedMusicState.volume) || 75))); } catch (error) {}
             }
             if (spectatorMode && !musicAudioUnlocked) {
                 try { musicPlayer.mute(); } catch (error) {}
@@ -2147,6 +2186,7 @@
             if (!musicPlayerReady || !musicPlayer || !sharedMusicState.videoId) return;
             try {
                 musicPlayer.unMute();
+                musicPlayer.setVolume(Math.max(0, Math.min(100, Number(sharedMusicState.volume) || 75)));
                 const target = musicTargetPosition(sharedMusicState);
                 const current = Number(musicPlayer.getCurrentTime()) || 0;
                 if (Math.abs(current - target) > 1.5) musicPlayer.seekTo(target, true);
@@ -2176,6 +2216,7 @@
                 channel: String(channel || '').slice(0, 140),
                 playing: true,
                 position: 0,
+                volume: musicBaseVolume,
                 updatedAt: Date.now(),
                 revision: Number(sharedMusicState.revision || 0) + 1
             };
@@ -2188,7 +2229,8 @@
                 title: sharedMusicState.title,
                 channel: sharedMusicState.channel,
                 playing: true,
-                position: 0
+                position: 0,
+                volume: musicBaseVolume
             });
             document.getElementById('music-state').textContent = 'Tocando para toda a mesa';
         }
