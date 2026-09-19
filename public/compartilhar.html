@@ -3693,6 +3693,28 @@
                                     musicPlayer.cueVideoById({ videoId: state.videoId, startSeconds: target });
                                     musicPlayer.setVolume(targetVolume);
                                 }
+                            } else {
+                                let currentPosition = 0;
+                                try { currentPosition = Number(musicPlayer.getCurrentTime()) || 0; } catch (error) {}
+                                if (Math.abs(currentPosition - target) > 1.2) {
+                                    try { musicPlayer.seekTo(target, true); } catch (error) {}
+                                }
+                                if (state.playing) {
+                                    if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                                    else musicPlayer.unMute();
+                                    musicPlayer.playVideo();
+                                    if (!spectatorMode || musicAudioUnlocked) {
+                                        const currentVolume = Number(musicPlayer.getVolume()) || 0;
+                                        if (Math.abs(currentVolume - targetVolume) > 2) {
+                                            await rampMusicVolume(targetVolume, Math.min(700, MUSIC_CROSSFADE_MS));
+                                        } else {
+                                            musicPlayer.setVolume(targetVolume);
+                                        }
+                                    }
+                                } else {
+                                    musicPlayer.pauseVideo();
+                                    musicPlayer.setVolume(targetVolume);
+                                }
                             }
                         } catch (error) {}
                         resetNaturalEndFade();
@@ -3932,7 +3954,11 @@
             pendingMusicState = resumeState;
             updateSharedMusicUi(resumeState);
             ensureYouTubeIframeApi();
-            applySharedMusicState(resumeState).catch(() => {});
+            if (musicTransitionActive) {
+                queuedMusicTransitionState = cloneMusicTransitionState(resumeState);
+            } else {
+                applySharedMusicState(resumeState).catch(() => {});
+            }
             socket.emit('screen_share_music_control', {
                 mesa: tableCode,
                 videoId: resumeState.videoId,
@@ -3962,6 +3988,11 @@
                 updatedAt: Math.max(0, Number(rawState.updatedAt) || 0),
                 revision: Math.max(0, Number(rawState.revision) || 0)
             };
+            if (!spectatorMode && mediaMusicLockActive && sharedMusicState.playing) {
+                mediaMusicResumeWanted = true;
+                sharedMusicState.playing = false;
+                sharedMusicState.updatedAt = Date.now();
+            }
             pendingMusicState = sharedMusicState;
             if (!spectatorMode) {
                 musicBaseVolume = sharedMusicState.volume;
@@ -3980,11 +4011,7 @@
                     interruptMusicTransition(sharedMusicState);
                     return;
                 }
-                if (videoId !== musicTransitionTargetId) {
-                    queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
-                } else if (queuedMusicTransitionState && queuedMusicTransitionState.videoId === videoId) {
-                    queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
-                }
+                queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
                 return;
             }
 
