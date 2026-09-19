@@ -64,7 +64,7 @@
         .thumbnail-overlay video { opacity: 1 !important; visibility: visible !important; background: #010204; }
         .thumbnail-overlay img[hidden], .thumbnail-overlay video[hidden] { display: none; }
         .thumbnail-overlay::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.24) 100%); }
-        .thumbnail-countdown { position: absolute; z-index: 7; left: 50%; top: 50%; min-width: 180px; padding: 15px 24px; border: 1px solid rgba(255,255,255,0.24); border-radius: 18px; background: rgba(0,0,0,0.52); backdrop-filter: blur(12px); color: #fff; box-shadow: 0 14px 46px rgba(0,0,0,0.35); font-size: clamp(3rem, 10vw, 7.5rem); font-weight: 950; line-height: 1; letter-spacing: -0.045em; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 3px 24px rgba(0,0,0,0.8); transform: translate(-50%, -50%) scale(var(--counter-scale, 1)); transform-origin: center; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
+        .thumbnail-countdown { position: absolute; z-index: 7; left: 50%; top: 50%; min-width: 0; padding: 7px 10px; border: 0; border-radius: 0; background: transparent; backdrop-filter: none; color: #fff; box-shadow: none; font-size: clamp(3rem, 10vw, 7.5rem); font-weight: 950; line-height: 1; letter-spacing: -0.045em; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 3px 24px rgba(0,0,0,0.9); transform: translate(-50%, -50%) scale(var(--counter-scale, 1)); transform-origin: center; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
         .thumbnail-countdown.dragging { cursor: grabbing; }
         .thumbnail-countdown-resize { position: absolute; right: -7px; bottom: -7px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.38); border-radius: 7px; background: rgba(5,14,22,0.94); color: #dff4ff; font-size: 0.72rem; line-height: 1; cursor: nwse-resize; box-shadow: 0 5px 16px rgba(0,0,0,0.4); }
         body.spectator-mode .thumbnail-countdown { cursor: default; pointer-events: none; }
@@ -1957,56 +1957,13 @@
         }
 
         function rememberMusicForCinematic() {
-            abortMusicTransitions();
-            musicTransitionActive = false;
-            resetNaturalEndFade(false);
-            let position = Math.max(0, Number(sharedMusicState.position) || 0);
-            let playing = Boolean(sharedMusicState.playing);
-            if (musicPlayerReady && musicPlayer && sharedMusicState.videoId) {
-                try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
-                try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
-            }
-            cinematicMusicResume = sharedMusicState.videoId ? {
-                videoId: sharedMusicState.videoId,
-                position,
-                playing
-            } : null;
-            if (sharedMusicState.videoId) {
-                applyImmediateMusicTransport({
-                    mesa: tableCode,
-                    videoId: sharedMusicState.videoId,
-                    playing: false,
-                    position,
-                    updatedAt: Date.now(),
-                    revision: Number(sharedMusicState.revision || 0) + 1
-                });
-                socket.emit('screen_share_music_transport', {
-                    mesa: tableCode,
-                    videoId: sharedMusicState.videoId,
-                    playing: false,
-                    position
-                });
-            }
+            cinematicMusicResume = { locked: true };
+            beginMediaMusicLock('cinematic');
         }
 
         function resumeMusicAfterCinematic() {
-            const resume = cinematicMusicResume;
             cinematicMusicResume = null;
-            if (!resume || !resume.videoId) return;
-            applyImmediateMusicTransport({
-                mesa: tableCode,
-                videoId: resume.videoId,
-                playing: Boolean(resume.playing),
-                position: resume.position,
-                updatedAt: Date.now(),
-                revision: Number(sharedMusicState.revision || 0) + 1
-            });
-            socket.emit('screen_share_music_transport', {
-                mesa: tableCode,
-                videoId: resume.videoId,
-                playing: Boolean(resume.playing),
-                position: resume.position
-            });
+            releaseMediaMusicLock(true);
         }
 
         async function startCinematic() {
@@ -2018,7 +1975,7 @@
                 return;
             }
             if (activeSourceMode === 'cinematic') return;
-            if (activeSourceMode === 'opening') await finishOpening(true);
+            if (activeSourceMode === 'opening') await finishOpening(false);
             else if (isBroadcasting) stopSharing(true);
 
             cinematicButton.disabled = true;
@@ -2185,84 +2142,13 @@
         }
 
         function rememberMusicForOpening() {
-            abortMusicTransitions();
-            musicTransitionActive = false;
-            resetNaturalEndFade(false);
-            let position = Math.max(0, Number(sharedMusicState.position) || 0);
-            let playing = Boolean(sharedMusicState.playing);
-            if (musicPlayerReady && musicPlayer && sharedMusicState.videoId) {
-                try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
-                try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
-            }
-            openingMusicResume = sharedMusicState.videoId ? {
-                videoId: sharedMusicState.videoId,
-                title: sharedMusicState.title,
-                channel: sharedMusicState.channel,
-                position,
-                playing,
-                volume: sharedMusicState.volume
-            } : null;
-
-            if (sharedMusicState.videoId) {
-                musicIgnoreEventsUntil = Date.now() + 900;
-                try { if (musicPlayerReady && musicPlayer) musicPlayer.pauseVideo(); } catch (error) {}
-                socket.emit('screen_share_music_control', {
-                    mesa: tableCode,
-                    videoId: sharedMusicState.videoId,
-                    title: sharedMusicState.title,
-                    channel: sharedMusicState.channel,
-                    playing: false,
-                    position,
-                    volume: sharedMusicState.volume
-                });
-            }
+            openingMusicResume = { locked: true };
+            beginMediaMusicLock('opening');
         }
 
         function resumeMusicAfterOpening() {
-            const resume = openingMusicResume;
             openingMusicResume = null;
-            if (!resume || !resume.videoId) return;
-            sharedMusicState = {
-                ...sharedMusicState,
-                videoId: resume.videoId,
-                title: resume.title,
-                channel: resume.channel,
-                playing: Boolean(resume.playing),
-                position: resume.position,
-                volume: Math.max(0, Math.min(100, Number(resume.volume) || musicBaseVolume)),
-                updatedAt: Date.now()
-            };
-            pendingMusicState = sharedMusicState;
-            if (!spectatorMode) {
-                musicBaseVolume = sharedMusicState.volume;
-                const volumeInput = document.getElementById('music-volume');
-                const volumeLabel = document.getElementById('music-volume-value');
-                if (volumeInput) volumeInput.value = String(musicBaseVolume);
-                if (volumeLabel) volumeLabel.textContent = `${Math.round(musicBaseVolume)}%`;
-            }
-            updateSharedMusicUi(sharedMusicState);
-            ensureYouTubeIframeApi();
-            if (musicPlayerReady && musicPlayer) {
-                musicIgnoreEventsUntil = Date.now() + 1000;
-                try {
-                    musicPlayer.seekTo(resume.position, true);
-                    if (resume.playing) {
-                        musicPlayer.unMute();
-                        musicPlayer.playVideo();
-                    } else {
-                        musicPlayer.pauseVideo();
-                    }
-                } catch (error) {}
-            }
-            socket.emit('screen_share_music_control', {
-                mesa: tableCode,
-                videoId: resume.videoId,
-                title: resume.title,
-                channel: resume.channel,
-                playing: Boolean(resume.playing),
-                position: resume.position,
-                volume: Math.max(0, Math.min(100, Number(resume.volume) || musicBaseVolume))
-            });
+            releaseMediaMusicLock(true);
         }
 
         function waitOpeningReady(timeoutMs = 7000) {
@@ -2300,7 +2186,7 @@
                 openingFileInput.click();
                 return;
             }
-            if (activeSourceMode === 'cinematic') await finishCinematic(true);
+            if (activeSourceMode === 'cinematic') await finishCinematic(false);
             else if (isBroadcasting && activeSourceMode !== 'opening') stopSharing(true);
 
             openingButton.disabled = true;
@@ -2404,6 +2290,8 @@
         function stopSharing(notifyServer = true) {
             const wasBroadcasting = isBroadcasting;
             const stoppedMode = activeSourceMode;
+            const releaseSceneMusicAfterStop = (stoppedMode === 'opening' && !openingFinishing)
+                || (stoppedMode === 'cinematic' && !cinematicFinishing);
             isBroadcasting = false;
             activeSourceMode = '';
             broadcastAvailable = false;
@@ -2452,6 +2340,7 @@
             setEmpty('Nenhuma tela sendo transmitida', 'Quando alguém desta mesa iniciar o compartilhamento, a transmissão aparecerá aqui automaticamente.');
             setStatus('aguardando uma transmissão nesta mesa.');
             if (notifyServer && wasBroadcasting && socket.connected) socket.emit('screen_share_stop');
+            if (releaseSceneMusicAfterStop) releaseMediaMusicLock(true);
         }
 
         function toggleSharing() {
@@ -3136,7 +3025,10 @@
         let musicTransitionMode = '';
         let naturalEndFadeActive = false;
         let naturalEndFadeVideoId = '';
-        const MUSIC_CROSSFADE_MS = 1000;
+        let mediaMusicLockActive = false;
+        let mediaMusicLockReason = '';
+        let mediaMusicResumeWanted = false;
+        const MUSIC_CROSSFADE_MS = 1500;
 
         function safeMusicVideoId(value) {
             return String(value || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
@@ -3398,7 +3290,11 @@
             const videoId = safeMusicVideoId(rawData.videoId);
             if (!videoId || videoId !== sharedMusicState.videoId) return;
 
-            const playing = Boolean(rawData.playing);
+            let playing = Boolean(rawData.playing);
+            if (!spectatorMode && mediaMusicLockActive && playing) {
+                mediaMusicResumeWanted = true;
+                playing = false;
+            }
             const position = Math.max(0, Number(rawData.position) || 0);
             const updatedAt = Math.max(0, Number(rawData.updatedAt) || Date.now());
             sharedMusicState = {
@@ -3439,6 +3335,30 @@
         function musicTogglePlayback() {
             if (!musicPlayerReady || !musicPlayer || !sharedMusicState.videoId) return;
             musicHostOwnsControl = true;
+
+            if (mediaMusicLockActive) {
+                mediaMusicResumeWanted = true;
+                const position = currentLockedMusicPosition();
+                sharedMusicState = {
+                    ...sharedMusicState,
+                    playing: false,
+                    position,
+                    updatedAt: Date.now()
+                };
+                [musicPlayer, musicCrossfadePlayer].forEach(player => {
+                    if (!player) return;
+                    try { player.pauseVideo(); } catch (error) {}
+                });
+                socket.emit('screen_share_music_transport', {
+                    mesa: tableCode,
+                    videoId: sharedMusicState.videoId,
+                    playing: false,
+                    position
+                });
+                const sync = document.getElementById('music-sync-state');
+                if (sync) sync.textContent = `Preparada • começa após a ${mediaMusicLockLabel()}`;
+                return;
+            }
 
             let currentPosition = Math.max(0, Number(sharedMusicState.position) || 0);
             let currentlyPlaying = Boolean(sharedMusicState.playing);
@@ -3512,6 +3432,7 @@
                     try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
                     try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
                 }
+                if (mediaMusicLockActive) playing = false;
                 socket.emit('screen_share_music_control', {
                     mesa: tableCode,
                     videoId: sharedMusicState.videoId,
@@ -3700,7 +3621,7 @@
         }
 
         function updateNaturalEndFade(current, duration, playerState) {
-            if (spectatorMode || !sharedMusicState.videoId || !duration || duration <= 0 || musicTransitionActive) return;
+            if (spectatorMode || mediaMusicLockActive || !sharedMusicState.videoId || !duration || duration <= 0 || musicTransitionActive) return;
             if (!musicPlaylistQueue.length || musicPlaylistIndex < 0 || musicPlaylistIndex >= musicPlaylistQueue.length - 1) return;
             const currentId = currentMusicVideoId();
             if (!currentId || currentId !== sharedMusicState.videoId) return;
@@ -3711,7 +3632,8 @@
                 return;
             }
 
-            if (remaining > 1.25) {
+            const crossfadeWindow = MUSIC_CROSSFADE_MS / 1000 + 0.25;
+            if (remaining > crossfadeWindow) {
                 if (naturalEndFadeActive) resetNaturalEndFade();
                 return;
             }
@@ -3927,6 +3849,104 @@
             }
         }
 
+        function mediaMusicLockLabel() {
+            return mediaMusicLockReason === 'opening' ? 'abertura' : 'cinematic';
+        }
+
+        function currentLockedMusicPosition() {
+            let position = Math.max(0, Number(sharedMusicState.position) || 0);
+            const matching = playersForMusicVideo(sharedMusicState.videoId);
+            const player = matching[0] || (currentMusicVideoId() === sharedMusicState.videoId ? musicPlayer : null);
+            if (player) {
+                try { position = Math.max(0, Number(player.getCurrentTime()) || position); } catch (error) {}
+            }
+            return position;
+        }
+
+        function beginMediaMusicLock(reason) {
+            if (spectatorMode) return;
+            mediaMusicLockReason = reason === 'opening' ? 'opening' : 'cinematic';
+            if (mediaMusicLockActive) return;
+
+            mediaMusicLockActive = true;
+            mediaMusicResumeWanted = Boolean(sharedMusicState.videoId);
+            abortMusicTransitions();
+            musicTransitionActive = false;
+            resetNaturalEndFade(false);
+
+            if (!sharedMusicState.videoId) return;
+            const position = currentLockedMusicPosition();
+            sharedMusicState = {
+                ...sharedMusicState,
+                playing: false,
+                position,
+                updatedAt: Date.now(),
+                revision: Math.max(0, Number(sharedMusicState.revision) || 0) + 1
+            };
+            pendingMusicState = sharedMusicState;
+            musicIgnoreEventsUntil = Date.now() + 1200;
+
+            [musicPlayer, musicCrossfadePlayer].forEach(player => {
+                if (!player) return;
+                try { player.pauseVideo(); } catch (error) {}
+            });
+            updateSharedMusicUi(sharedMusicState);
+            const sync = document.getElementById('music-sync-state');
+            if (sync) sync.textContent = `Pausada durante a ${mediaMusicLockLabel()}`;
+
+            socket.emit('screen_share_music_control', {
+                mesa: tableCode,
+                videoId: sharedMusicState.videoId,
+                title: sharedMusicState.title,
+                channel: sharedMusicState.channel,
+                playing: false,
+                position,
+                volume: sharedMusicState.volume,
+                transitionMode: sharedMusicState.transitionMode || 'manual'
+            });
+        }
+
+        function releaseMediaMusicLock(forcePlay = true) {
+            if (spectatorMode) return;
+            const wasLocked = mediaMusicLockActive;
+            mediaMusicLockActive = false;
+            mediaMusicLockReason = '';
+
+            if (!wasLocked || !sharedMusicState.videoId) {
+                mediaMusicResumeWanted = false;
+                return;
+            }
+
+            const shouldPlay = Boolean(forcePlay && mediaMusicResumeWanted);
+            mediaMusicResumeWanted = false;
+            if (!shouldPlay) return;
+
+            const resumeState = {
+                ...sharedMusicState,
+                playing: true,
+                position: Math.max(0, Number(sharedMusicState.position) || 0),
+                updatedAt: Date.now(),
+                revision: Math.max(0, Number(sharedMusicState.revision) || 0) + 1
+            };
+            sharedMusicState = resumeState;
+            pendingMusicState = resumeState;
+            updateSharedMusicUi(resumeState);
+            ensureYouTubeIframeApi();
+            applySharedMusicState(resumeState).catch(() => {});
+            socket.emit('screen_share_music_control', {
+                mesa: tableCode,
+                videoId: resumeState.videoId,
+                title: resumeState.title,
+                channel: resumeState.channel,
+                playing: true,
+                position: resumeState.position,
+                volume: resumeState.volume,
+                transitionMode: resumeState.transitionMode || 'manual'
+            });
+            const state = document.getElementById('music-state');
+            if (state) state.textContent = 'Tocando para toda a mesa';
+        }
+
         async function applySharedMusicState(rawState) {
             if (!rawState || normalizeTableCode(rawState.mesa) !== tableCode) return;
             const videoId = safeMusicVideoId(rawState.videoId);
@@ -4007,6 +4027,7 @@
                 }
             }
             if (playing === null) playing = Boolean(sharedMusicState.playing);
+            if (mediaMusicLockActive) playing = false;
             socket.emit('screen_share_music_control', {
                 mesa: tableCode,
                 videoId: sharedMusicState.videoId,
@@ -4049,6 +4070,13 @@
             if (sharedMusicState.videoId) {
                 if (playerState === 1) document.getElementById('music-sync-state').textContent = 'Sincronizado • tocando';
                 else if (playerState === 2 || playerState === 0) document.getElementById('music-sync-state').textContent = 'Sincronizado • pausado';
+            }
+            if (!spectatorMode && mediaMusicLockActive) {
+                if (playerState === 1) {
+                    mediaMusicResumeWanted = true;
+                    try { musicPlayer.pauseVideo(); } catch (error) {}
+                }
+                return;
             }
             if (spectatorMode || musicTransitionActive || Date.now() < musicIgnoreEventsUntil) return;
             if (![0, 1, 2].includes(playerState)) return;
@@ -4138,12 +4166,14 @@
             }
             musicHostOwnsControl = true;
             musicAudioUnlocked = true;
+            const playNow = !mediaMusicLockActive;
+            if (mediaMusicLockActive) mediaMusicResumeWanted = true;
             sharedMusicState = {
                 mesa: tableCode,
                 videoId: safeId,
                 title: String(title || 'Música').slice(0, 180),
                 channel: String(channel || '').slice(0, 140),
-                playing: true,
+                playing: playNow,
                 position: 0,
                 volume: musicBaseVolume,
                 transitionMode,
@@ -4158,12 +4188,14 @@
                 videoId: safeId,
                 title: sharedMusicState.title,
                 channel: sharedMusicState.channel,
-                playing: true,
+                playing: playNow,
                 position: 0,
                 volume: musicBaseVolume,
                 transitionMode
             });
-            document.getElementById('music-state').textContent = 'Tocando para toda a mesa';
+            document.getElementById('music-state').textContent = playNow
+                ? 'Tocando para toda a mesa'
+                : `Preparada • começa após a ${mediaMusicLockLabel()}`;
         }
 
         async function restoreYouTubeMusicConnection() {
