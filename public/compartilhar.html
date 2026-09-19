@@ -1226,6 +1226,8 @@
         }
 
         function rememberMusicForOpening() {
+            abortMusicTransitions();
+            musicTransitionActive = false;
             let position = Math.max(0, Number(sharedMusicState.position) || 0);
             let playing = Boolean(sharedMusicState.playing);
             if (musicPlayerReady && musicPlayer && sharedMusicState.videoId) {
@@ -1615,8 +1617,12 @@
         let musicPlaylistsLoaded = false;
         let musicSeekingPreview = false;
         let musicBaseVolume = 75;
-        const MUSIC_FADE_OUT_MS = 500;
-        const MUSIC_FADE_IN_MS = 650;
+        let musicTransitionActive = false;
+        let musicTransitionTargetId = '';
+        let queuedMusicTransitionState = null;
+        let musicTransitionEpoch = 0;
+        const MUSIC_FADE_OUT_MS = 60 * 1000;
+        const MUSIC_FADE_IN_MS = 60 * 1000;
 
         function safeMusicVideoId(value) {
             return String(value || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
@@ -1902,7 +1908,7 @@
             if (!spectatorMode && socket.connected && sharedMusicState.videoId) {
                 let position = Math.max(0, Number(sharedMusicState.position) || 0);
                 let playing = Boolean(sharedMusicState.playing);
-                if (musicPlayerReady && musicPlayer) {
+                if (!musicTransitionActive && musicPlayerReady && musicPlayer) {
                     try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
                     try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
                 }
@@ -1942,65 +1948,131 @@
             musicFadeTimer = null;
         }
 
+        function abortMusicTransitions() {
+            musicTransitionEpoch += 1;
+            queuedMusicTransitionState = null;
+            musicTransitionTargetId = '';
+            cancelMusicFade();
+        }
+
         function rampMusicVolume(target, duration = 350) {
             if (!musicPlayerReady || !musicPlayer) return Promise.resolve();
             const token = ++musicFadeToken;
-            let start = 0;
-            try { start = Number(musicPlayer.getVolume()) || 0; } catch (error) {}
-            const end = Math.max(0, Math.min(100, Number(target) || 0));
+            let startVolume = 0;
+            try { startVolume = Number(musicPlayer.getVolume()) || 0; } catch (error) {}
+            const endVolume = Math.max(0, Math.min(100, Number(target) || 0));
             const startedAt = performance.now();
             return new Promise(resolve => {
                 const step = now => {
                     if (token !== musicFadeToken) {
+                        musicFadeTimer = null;
                         resolve();
                         return;
                     }
                     const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
                     const eased = progress * progress * (3 - 2 * progress);
-                    const value = Math.round(start + (end - start) * eased);
+                    const value = Math.round(startVolume + (endVolume - startVolume) * eased);
                     try { musicPlayer.setVolume(value); } catch (error) {}
                     if (progress >= 1) {
                         musicFadeTimer = null;
                         resolve();
                         return;
                     }
-                    musicFadeTimer = setTimeout(() => requestAnimationFrame(step), 28);
+                    musicFadeTimer = setTimeout(() => requestAnimationFrame(step), 50);
                 };
                 requestAnimationFrame(step);
             });
         }
 
-        async function transitionMusicTrack(state, previousVideoId) {
-            if (!musicPlayerReady || !musicPlayer || !state.videoId) return;
-            const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
-            const target = musicTargetPosition(state);
-            const hasPrevious = Boolean(previousVideoId);
-            if (hasPrevious && previousVideoId !== state.videoId) {
-                await rampMusicVolume(0, MUSIC_FADE_OUT_MS);
-            } else {
-                cancelMusicFade();
-            }
-            musicIgnoreEventsUntil = Date.now() + 1700;
+        function cloneMusicTransitionState(state) {
+            return {
+                mesa: tableCode,
+                videoId: safeMusicVideoId(state && state.videoId),
+                title: String(state && state.title || '').slice(0, 180),
+                channel: String(state && state.channel || '').slice(0, 140),
+                playing: Boolean(state && state.playing),
+                position: Math.max(0, Number(state && state.position) || 0),
+                volume: Math.max(0, Math.min(100, Number(state && state.volume) || 0)),
+                updatedAt: Math.max(0, Number(state && state.updatedAt) || Date.now()),
+                revision: Math.max(0, Number(state && state.revision) || 0)
+            };
+        }
+
+        async function processMusicTransitionQueue() {
+            if (musicTransitionActive || !musicPlayerReady || !musicPlayer) return;
+            musicTransitionActive = true;
+            const epoch = musicTransitionEpoch;
             try {
-                musicPlayer.setVolume(0);
-                if (state.playing) {
-                    if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
-                    else musicPlayer.unMute();
-                    musicPlayer.loadVideoById({ videoId: state.videoId, startSeconds: target });
-                } else {
-                    musicPlayer.cueVideoById({ videoId: state.videoId, startSeconds: target });
-                    if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                while (queuedMusicTransitionState && epoch === musicTransitionEpoch) {
+                    let state = cloneMusicTransitionState(queuedMusicTransitionState);
+                    queuedMusicTransitionState = null;
+                    if (!state.videoId) continue;
+                    musicTransitionTargetId = state.videoId;
+
+                    let currentId = currentMusicVideoId();
+                    if (currentId && currentId !== state.videoId) {
+                        const sync = document.getElementById('music-sync-state');
+                        if (sync) sync.textContent = 'Esmaecendo música atual…';
+                        await rampMusicVolume(0, MUSIC_FADE_OUT_MS);
+                        if (epoch !== musicTransitionEpoch) return;
+
+                        if (queuedMusicTransitionState && queuedMusicTransitionState.videoId !== state.videoId) {
+                            state = cloneMusicTransitionState(queuedMusicTransitionState);
+                            queuedMusicTransitionState = null;
+                            musicTransitionTargetId = state.videoId;
+                        }
+                    }
+
+                    const target = musicTargetPosition(state);
+                    musicIgnoreEventsUntil = Date.now() + MUSIC_FADE_OUT_MS + MUSIC_FADE_IN_MS + 3000;
+                    try {
+                        musicPlayer.setVolume(0);
+                        if (state.playing) {
+                            if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                            else musicPlayer.unMute();
+                            musicPlayer.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                        } else {
+                            musicPlayer.cueVideoById({ videoId: state.videoId, startSeconds: target });
+                            if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                        }
+                    } catch (error) {
+                        continue;
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 120));
+                    if (epoch !== musicTransitionEpoch) return;
+
+                    if (state.playing && (!spectatorMode || musicAudioUnlocked)) {
+                        const sync = document.getElementById('music-sync-state');
+                        if (sync) sync.textContent = 'Aumentando volume da nova faixa…';
+                        const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
+                        await rampMusicVolume(targetVolume, MUSIC_FADE_IN_MS);
+                        if (epoch !== musicTransitionEpoch) return;
+                    } else {
+                        try { musicPlayer.setVolume(Math.max(0, Math.min(100, Number(state.volume) || 0))); } catch (error) {}
+                    }
+
+                    if (sharedMusicState.videoId === state.videoId) {
+                        const sync = document.getElementById('music-sync-state');
+                        if (sync) sync.textContent = state.playing ? 'Sincronizado • tocando' : 'Sincronizado • pausado';
+                    }
                 }
-            } catch (error) {
-                return;
+            } finally {
+                if (epoch === musicTransitionEpoch) {
+                    musicTransitionActive = false;
+                    musicTransitionTargetId = '';
+                    pendingMusicState = null;
+                }
             }
-            await new Promise(resolve => setTimeout(resolve, 90));
-            if (state.playing && (!spectatorMode || musicAudioUnlocked)) {
-                const liveTargetVolume = Math.max(0, Math.min(100, Number(sharedMusicState.volume) || targetVolume));
-                await rampMusicVolume(liveTargetVolume, MUSIC_FADE_IN_MS);
-            } else {
-                try { musicPlayer.setVolume(targetVolume); } catch (error) {}
-            }
+        }
+
+        function queueMusicTransition(state) {
+            queuedMusicTransitionState = cloneMusicTransitionState(state);
+            processMusicTransitionQueue().catch(error => {
+                console.warn('Falha na transição suave de música:', error);
+                musicTransitionActive = false;
+                musicTransitionTargetId = '';
+            });
         }
 
         function setYouTubeMusicLinked(linked, user = null) {
@@ -2070,7 +2142,6 @@
 
         async function applySharedMusicState(rawState) {
             if (!rawState || normalizeTableCode(rawState.mesa) !== tableCode) return;
-            const previousPlayerId = currentMusicVideoId();
             const videoId = safeMusicVideoId(rawState.videoId);
             sharedMusicState = {
                 mesa: tableCode,
@@ -2084,21 +2155,35 @@
                 revision: Math.max(0, Number(rawState.revision) || 0)
             };
             pendingMusicState = sharedMusicState;
+            if (!spectatorMode) {
+                musicBaseVolume = sharedMusicState.volume;
+                const volumeInput = document.getElementById('music-volume');
+                const volumeLabel = document.getElementById('music-volume-value');
+                if (volumeInput) volumeInput.value = String(musicBaseVolume);
+                if (volumeLabel) volumeLabel.textContent = `${Math.round(musicBaseVolume)}%`;
+            }
             updateSharedMusicUi(sharedMusicState);
             ensureYouTubeIframeApi();
             if (!musicPlayerReady || !musicPlayer || !videoId) return;
 
-            const target = musicTargetPosition(sharedMusicState);
-            const currentId = previousPlayerId || currentMusicVideoId();
-            let currentTime = 0;
-            try { currentTime = Number(musicPlayer.getCurrentTime()) || 0; } catch (error) {}
-
-            if (currentId !== videoId) {
-                await transitionMusicTrack(sharedMusicState, currentId);
-                pendingMusicState = null;
+            const currentId = currentMusicVideoId();
+            if (musicTransitionActive) {
+                if (videoId !== musicTransitionTargetId) {
+                    queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
+                } else if (queuedMusicTransitionState && queuedMusicTransitionState.videoId === videoId) {
+                    queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
+                }
                 return;
             }
 
+            if (currentId !== videoId) {
+                queueMusicTransition(sharedMusicState);
+                return;
+            }
+
+            const target = musicTargetPosition(sharedMusicState);
+            let currentTime = 0;
+            try { currentTime = Number(musicPlayer.getCurrentTime()) || 0; } catch (error) {}
             const shouldSeek = Math.abs(currentTime - target) > 1.5;
             musicIgnoreEventsUntil = Date.now() + 900;
             try {
@@ -2120,7 +2205,7 @@
         }
 
         function broadcastCurrentMusicState(forcedPlaying = null) {
-            if (spectatorMode || !socket.connected || !sharedMusicState.videoId) return;
+            if (spectatorMode || !socket.connected || !sharedMusicState.videoId || musicTransitionActive) return;
             let position = Math.max(0, Number(sharedMusicState.position) || 0);
             let playing = forcedPlaying;
             if (musicPlayerReady && musicPlayer) {
@@ -2162,7 +2247,7 @@
                 if (playerState === 1) document.getElementById('music-sync-state').textContent = 'Sincronizado • tocando';
                 else if (playerState === 2 || playerState === 0) document.getElementById('music-sync-state').textContent = 'Sincronizado • pausado';
             }
-            if (spectatorMode || Date.now() < musicIgnoreEventsUntil) return;
+            if (spectatorMode || musicTransitionActive || Date.now() < musicIgnoreEventsUntil) return;
             if (![0, 1, 2].includes(playerState)) return;
             musicHostOwnsControl = true;
             if (playerState === 0 && musicPlaylistQueue.length && musicPlaylistIndex >= 0) {
@@ -2413,7 +2498,7 @@
         ensureYouTubeIframeApi();
         restoreYouTubeMusicConnection();
         musicSyncTimer = setInterval(() => {
-            if (!spectatorMode && musicHostOwnsControl && sharedMusicState.videoId && socket.connected) {
+            if (!spectatorMode && !musicTransitionActive && musicHostOwnsControl && sharedMusicState.videoId && socket.connected) {
                 broadcastCurrentMusicState();
             }
         }, 4000);
