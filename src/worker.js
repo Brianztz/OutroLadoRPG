@@ -959,6 +959,25 @@ export default {
                 headers
             });
         }
+        if (url.pathname === '/ficha' || url.pathname === '/ficha/' || url.pathname === '/ficha.html') {
+            const assetResponse = await env.ASSETS.fetch(request);
+            const contentType = String(assetResponse.headers.get('content-type') || '');
+            if (!assetResponse.ok || !contentType.includes('text/html')) return assetResponse;
+
+            const html = await assetResponse.text();
+            const playerOccupationScript = '<script defer src="/player-occupations.js?v=20260919-1"></script>';
+            const body = html.includes('</head>')
+                ? html.replace('</head>', playerOccupationScript + '</head>')
+                : playerOccupationScript + html;
+            const headers = new Headers(assetResponse.headers);
+            headers.delete('content-length');
+            headers.set('Cache-Control', 'no-store');
+            return new Response(body, {
+                status: assetResponse.status,
+                statusText: assetResponse.statusText,
+                headers
+            });
+        }
         return env.ASSETS.fetch(request);
     }
 };

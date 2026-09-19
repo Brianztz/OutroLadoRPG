@@ -1,11 +1,25 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { maxHttpBufferSize: 20 * 1024 * 1024 });
+
+app.get(['/ficha', '/ficha/', '/ficha.html'], async (req, res, next) => {
+    try {
+        const filePath = path.join(__dirname, 'public', 'ficha.html');
+        const html = await fs.promises.readFile(filePath, 'utf8');
+        const playerOccupationScript = '<script defer src="/player-occupations.js?v=20260919-1"></script>';
+        res.type('html').set('Cache-Control', 'no-store').send(
+            html.includes('</head>') ? html.replace('</head>', playerOccupationScript + '</head>') : playerOccupationScript + html
+        );
+    } catch (error) {
+        next(error);
+    }
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 

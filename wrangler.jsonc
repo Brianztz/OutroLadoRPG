@@ -18,7 +18,10 @@
     "run_worker_first": [
       "/ws",
       "/health",
-      "/socket.io/*"
+      "/socket.io/*",
+      "/ficha",
+      "/ficha/",
+      "/ficha.html"
     ]
   },
   "durable_objects": {
