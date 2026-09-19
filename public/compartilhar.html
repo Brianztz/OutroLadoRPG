@@ -1789,7 +1789,7 @@
             try {
                 const chunkSize = 192 * 1024;
                 const total = Math.ceil(selectedThumbnailVideoFile.size / chunkSize);
-                if (total < 1 || total > 192) throw new Error('O vídeo da thumbnail é grande demais.');
+                if (total < 1 || total > 1024) throw new Error('O vídeo da thumbnail é grande demais.');
                 for (let index = 0; index < total; index += 1) {
                     const start = index * chunkSize;
                     const chunk = await selectedThumbnailVideoFile.slice(start, Math.min(selectedThumbnailVideoFile.size, start + chunkSize)).arrayBuffer();
@@ -1802,7 +1802,11 @@
                         target,
                         chunk
                     });
-                    if (index % 4 === 3) await new Promise(resolve => setTimeout(resolve, 8));
+                    if (index % 4 === 3) {
+                        const progress = Math.min(100, Math.round(((index + 1) / total) * 100));
+                        if (!target) setStatus(`enviando vídeo da thumbnail... ${progress}%`);
+                        await new Promise(resolve => setTimeout(resolve, selectedThumbnailVideoFile.size > 60 * 1024 * 1024 ? 14 : 8));
+                    }
                 }
             } catch (error) {
                 if (!target) setStatus(String(error && error.message || 'não foi possível enviar o vídeo da thumbnail.'));
@@ -1816,7 +1820,7 @@
             const mediaId = String(data.mediaId || '');
             const index = Math.max(0, Math.floor(Number(data.index) || 0));
             const total = Math.max(1, Math.floor(Number(data.total) || 1));
-            if (!mediaId || total > 192 || index >= total || !(data.chunk instanceof ArrayBuffer)) return;
+            if (!mediaId || total > 1024 || index >= total || !(data.chunk instanceof ArrayBuffer)) return;
 
             let transfer = thumbnailIncomingTransfers.get(mediaId);
             if (!transfer || transfer.total !== total) {
@@ -1853,7 +1857,7 @@
             thumbnailFileName.textContent = 'Processando...';
             try {
                 if (String(file.type || '').startsWith('video/')) {
-                    if (file.size > 30 * 1024 * 1024) throw new Error('Use um vídeo de thumbnail com até 30 MB.');
+                    if (file.size > 150 * 1024 * 1024) throw new Error('Use um vídeo de thumbnail com até 150 MB.');
                     if (thumbnailOverlayVideo.canPlayType(file.type || '') === '') {
                         throw new Error('Esse formato de vídeo não é compatível com o navegador. Use MP4 ou WebM.');
                     }
