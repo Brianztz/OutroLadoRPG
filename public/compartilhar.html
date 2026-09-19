@@ -966,9 +966,14 @@
         function chooseRelayMimeType() {
             if (typeof MediaRecorder === 'undefined') return '';
             const hasAudio = Boolean(localStream && localStream.getAudioTracks().length);
+            const cinematic = activeSourceMode === 'cinematic';
             const options = hasAudio
-                ? ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm']
-                : ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm'];
+                ? (cinematic
+                    ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+                    : ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm'])
+                : (cinematic
+                    ? ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+                    : ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm']);
             return options.find(type => MediaRecorder.isTypeSupported(type) && (!window.MediaSource || MediaSource.isTypeSupported(type))) || '';
         }
 
@@ -1002,7 +1007,7 @@
                 relayChunkProduced = false;
                 relayRecorder = new MediaRecorder(localStream, {
                     mimeType: requestedMimeType,
-                    videoBitsPerSecond: 8000000,
+                    videoBitsPerSecond: activeSourceMode === 'cinematic' ? 18000000 : 8000000,
                     audioBitsPerSecond: 320000
                 });
                 relayMimeType = relayRecorder.mimeType || requestedMimeType;
@@ -1176,7 +1181,9 @@
             if (fallbackCaptureBusy || !isBroadcasting || !localStream || !needsFrames || video.readyState < 2 || !fallbackContext) return;
             const sourceWidth = video.videoWidth || 1280;
             const sourceHeight = video.videoHeight || 720;
-            const scale = Math.min(1, 1280 / sourceWidth, 720 / sourceHeight);
+            const fallbackMaxWidth = activeSourceMode === 'cinematic' ? 1920 : 1280;
+            const fallbackMaxHeight = activeSourceMode === 'cinematic' ? 1080 : 720;
+            const scale = Math.min(1, fallbackMaxWidth / sourceWidth, fallbackMaxHeight / sourceHeight);
             const width = Math.max(2, Math.round(sourceWidth * scale / 2) * 2);
             const height = Math.max(2, Math.round(sourceHeight * scale / 2) * 2);
             if (fallbackCanvas.width !== width || fallbackCanvas.height !== height) {
@@ -1198,11 +1205,19 @@
                 } finally {
                     fallbackCaptureBusy = false;
                 }
-            }, 'image/webp', 0.82);
+            }, 'image/webp', activeSourceMode === 'cinematic' ? 0.94 : 0.82);
         }
 
         function targetPeerBitrate() {
             const activePeers = Math.max(1, hostPeers.size);
+            if (activeSourceMode === 'cinematic') {
+                // Cinematics recebem um orçamento maior porque detalhes finos,
+                // grão e cenas com movimento sofrem bastante com compressão baixa.
+                return Math.max(6000000, Math.floor(24000000 / activePeers));
+            }
+            if (activeSourceMode === 'opening') {
+                return Math.max(3500000, Math.floor(14000000 / activePeers));
+            }
             return Math.max(1800000, Math.floor(10000000 / activePeers));
         }
 
@@ -1210,13 +1225,17 @@
             if (!sender || !sender.track || sender.track.kind !== 'video') return;
             try {
                 const parameters = sender.getParameters();
-                if (!parameters.encodings || !parameters.encodings.length) return;
+                if (!parameters.encodings || !parameters.encodings.length) parameters.encodings = [{}];
                 parameters.encodings[0].maxBitrate = bitrate;
                 parameters.encodings[0].maxFramerate = 60;
                 parameters.encodings[0].scaleResolutionDownBy = 1;
                 if ('priority' in parameters.encodings[0]) parameters.encodings[0].priority = 'high';
                 if ('networkPriority' in parameters.encodings[0]) parameters.encodings[0].networkPriority = 'high';
-                if ('degradationPreference' in parameters) parameters.degradationPreference = 'maintain-framerate';
+                if ('degradationPreference' in parameters) {
+                    parameters.degradationPreference = activeSourceMode === 'cinematic'
+                        ? 'maintain-resolution'
+                        : 'maintain-framerate';
+                }
                 await sender.setParameters(parameters);
             } catch (error) {
                 console.info('O navegador ajustará automaticamente a qualidade da transmissão.');
@@ -1374,13 +1393,19 @@
             if (videoTrack) {
                 const selectedSurface = videoTrack.getSettings().displaySurface;
                 videoTrack.contentHint = mode === 'streamlabs' || mode === 'opening' || mode === 'cinematic' || selectedSurface === 'window' ? 'motion' : 'detail';
-                try {
-                    await videoTrack.applyConstraints({
-                        width: { ideal: 1920, max: 1920 },
-                        height: { ideal: 1080, max: 1080 },
-                        frameRate: { ideal: 60, max: 60 }
-                    });
-                } catch (error) { console.info('O navegador ajustou automaticamente a resolução da captura.'); }
+                if (mode !== 'cinematic') {
+                    try {
+                        await videoTrack.applyConstraints({
+                            width: { ideal: 1920, max: 1920 },
+                            height: { ideal: 1080, max: 1080 },
+                            frameRate: { ideal: 60, max: 60 }
+                        });
+                    } catch (error) { console.info('O navegador ajustou automaticamente a resolução da captura.'); }
+                } else {
+                    // captureStream() já traz os quadros na resolução do arquivo.
+                    // Não aplicamos um teto de 1080p para não reduzir Cinematics 1440p/4K.
+                    try { videoTrack.contentHint = 'motion'; } catch (error) {}
+                }
                 if (mode === 'screen') {
                     try {
                         await videoTrack.applyConstraints({ cursor: { exact: 'never' } });
@@ -1391,9 +1416,11 @@
                     }
                 }
                 const settings = videoTrack.getSettings();
-                if (settings.width && settings.height) {
+                const reportedWidth = Number(settings.width) || (mode === 'cinematic' ? Number(cinematicSource.videoWidth) : 0);
+                const reportedHeight = Number(settings.height) || (mode === 'cinematic' ? Number(cinematicSource.videoHeight) : 0);
+                if (reportedWidth && reportedHeight) {
                     const fps = Math.round(Number(settings.frameRate) || 60);
-                    captureLabel = `${settings.width}×${settings.height} a ${fps} FPS`;
+                    captureLabel = `${reportedWidth}×${reportedHeight} a até ${fps} FPS`;
                 }
                 videoTrack.onended = () => {
                     if (mode === 'opening') finishOpening(true);
@@ -1441,7 +1468,7 @@
                 ? ' A câmera virtual envia somente o vídeo da cena.'
                 : (mode === 'opening'
                     ? ' O áudio da abertura está sendo enviado para a mesa.'
-                    : (mode === 'cinematic' ? ' O áudio da cinematic está sendo enviado para a mesa.' : ''));
+                    : (mode === 'cinematic' ? ' Perfil Cinema ativo: prioridade para resolução e bitrate elevado.' : ''));
             setStatus(`${sourceName} está sendo transmitido em ${captureLabel}.${audioNote}`);
             socket.emit('screen_share_start', { mesa: tableCode });
         }
@@ -1690,8 +1717,8 @@
                         '-map', '0:v:0',
                         '-map', '0:a:0?',
                         '-c:v', 'libx264',
-                        '-preset', 'ultrafast',
-                        '-crf', '23',
+                        '-preset', 'veryfast',
+                        '-crf', '18',
                         '-pix_fmt', 'yuv420p',
                         '-c:a', 'aac',
                         '-b:a', '160k',
@@ -1710,7 +1737,7 @@
                         '-c:v', 'libvpx',
                         '-deadline', 'realtime',
                         '-cpu-used', '8',
-                        '-crf', '30',
+                        '-crf', '24',
                         '-b:v', '0',
                         '-c:a', 'libvorbis',
                         '-q:a', '5',
