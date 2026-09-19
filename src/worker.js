@@ -304,7 +304,7 @@ function normalizeScreenOverlayState(table, rawData, previousState = null) {
     const imageData = mediaType === 'image' && /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 1_600_000
         ? rawImage
         : (mediaType === 'image' && !hasImage ? previous.imageData : '');
-    const duration = Math.max(1, Math.min(3600, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
+    const duration = Math.max(1, Math.min(359999, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
     const hasMedia = mediaType === 'video' ? Boolean(mediaId) : Boolean(imageData);
     const active = Boolean(source.active) && hasMedia;
     const requestedEndAt = Number(source.endAt);
