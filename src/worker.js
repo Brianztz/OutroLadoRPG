@@ -240,6 +240,38 @@ function normalizeScreenChatText(value) {
     return String(value || '').replace(/\r\n?/g, '\n').trim().slice(0, 400);
 }
 
+function emptyScreenMusicState(table) {
+    return {
+        mesa: normalizeTableCode(table),
+        videoId: '',
+        title: '',
+        channel: '',
+        playing: false,
+        position: 0,
+        updatedAt: 0,
+        revision: 0
+    };
+}
+
+function normalizeScreenMusicState(table, rawData, previousState = null) {
+    const previous = previousState || emptyScreenMusicState(table);
+    const source = rawData && typeof rawData === 'object' ? rawData : {};
+    const rawVideoId = Object.prototype.hasOwnProperty.call(source, 'videoId') ? source.videoId : previous.videoId;
+    const videoId = String(rawVideoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
+    const numericPosition = Number(Object.prototype.hasOwnProperty.call(source, 'position') ? source.position : previous.position);
+    const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : 0));
+    return {
+        mesa: normalizeTableCode(table),
+        videoId,
+        title: videoId ? String(Object.prototype.hasOwnProperty.call(source, 'title') ? source.title : previous.title || '').trim().slice(0, 180) : '',
+        channel: videoId ? String(Object.prototype.hasOwnProperty.call(source, 'channel') ? source.channel : previous.channel || '').trim().slice(0, 140) : '',
+        playing: videoId ? Boolean(Object.prototype.hasOwnProperty.call(source, 'playing') ? source.playing : previous.playing) : false,
+        position: videoId ? position : 0,
+        updatedAt: Date.now(),
+        revision: Math.max(0, Number(previous.revision) || 0) + 1
+    };
+}
+
 function compactPlayer(data) {
     return {
         codigo: normalizePlayerCode(data && (data.codigo || data.id)),
@@ -272,6 +304,7 @@ export class TableRoom extends DurableObject {
         this.lumina = { mesa: DEFAULT_TABLE, enabled: false, caseId: 'aurora-adelanio' };
         this.inspection = null;
         this.chat = [];
+        this.music = emptyScreenMusicState(DEFAULT_TABLE);
         this.relayMimeType = '';
         this.relayBootstrapChunk = null;
         this.relayRecentChunks = [];
@@ -287,6 +320,8 @@ export class TableRoom extends DurableObject {
             this.lumina = await ctx.storage.get('lumina') || { mesa: this.table, enabled: false, caseId: 'aurora-adelanio' };
             this.inspection = await ctx.storage.get('inspection') || null;
             this.chat = await ctx.storage.get('screen-chat') || [];
+            this.music = await ctx.storage.get('screen-music') || emptyScreenMusicState(this.table);
+            this.music.mesa = this.table;
         });
     }
 
@@ -332,6 +367,7 @@ export class TableRoom extends DurableObject {
             screenShareRole: '',
             screenShareSpectator: url.searchParams.get('screenShareMode') === 'spectator',
             lastScreenChatAt: 0,
+            lastScreenMusicAt: 0,
             lastScreenShareRetryAt: 0
         });
         const headers = protocols.includes('ol-v1') ? { 'Sec-WebSocket-Protocol': 'ol-v1' } : undefined;
@@ -524,6 +560,7 @@ export class TableRoom extends DurableObject {
             const room = this.screenState();
             this.send(ws, 'screen_share_state', { mesa: this.table, active: Boolean(room.broadcasterId), viewers: room.viewers.size });
             this.send(ws, 'screen_share_chat_history', { mesa: this.table, messages: this.chat });
+            this.send(ws, 'screen_share_music_state', this.music);
             if (room.broadcasterId && room.broadcasterId !== meta.id) {
                 this.send(ws, 'screen_share_available', { mesa: this.table, broadcasterId: room.broadcasterId });
             }
@@ -549,6 +586,17 @@ export class TableRoom extends DurableObject {
             if (this.chat.length > 120) this.chat.splice(0, this.chat.length - 120);
             await this.ctx.storage.put('screen-chat', this.chat);
             this.broadcastScreen('screen_share_chat_message', message);
+            return;
+        }
+
+        if (event === 'screen_share_music_control') {
+            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
+            const now = Date.now();
+            if (now - Number(meta.lastScreenMusicAt || 0) < 120) return;
+            meta = this.updateMeta(ws, { lastScreenMusicAt: now });
+            this.music = normalizeScreenMusicState(this.table, data, this.music);
+            await this.ctx.storage.put('screen-music', this.music);
+            this.broadcastScreen('screen_share_music_state', this.music);
             return;
         }
 
