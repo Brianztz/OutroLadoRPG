@@ -296,7 +296,7 @@ function normalizeScreenOverlayState(table, rawData, previousState = null) {
     const source = rawData && typeof rawData === 'object' ? rawData : {};
     const hasImage = Object.prototype.hasOwnProperty.call(source, 'imageData');
     const rawImage = hasImage ? String(source.imageData || '') : previous.imageData;
-    const imageData = /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 2_800_000 ? rawImage : (hasImage ? '' : previous.imageData);
+    const imageData = /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 1_600_000 ? rawImage : (hasImage ? '' : previous.imageData);
     const duration = Math.max(1, Math.min(3600, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
     const active = Boolean(source.active) && Boolean(imageData);
     const requestedEndAt = Number(source.endAt);
