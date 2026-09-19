@@ -3028,7 +3028,7 @@
         let mediaMusicLockActive = false;
         let mediaMusicLockReason = '';
         let mediaMusicResumeWanted = false;
-        const MUSIC_CROSSFADE_MS = 1500;
+        const MUSIC_CROSSFADE_MS = 2500;
 
         function safeMusicVideoId(value) {
             return String(value || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
@@ -3583,9 +3583,14 @@
                         return;
                     }
                     const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
-                    const eased = progress * progress * (3 - 2 * progress);
-                    try { outgoing.setVolume(Math.round(outgoingStart * (1 - eased))); } catch (error) {}
-                    try { incoming.setVolume(Math.round(incomingStart + (incomingEnd - incomingStart) * eased)); } catch (error) {}
+                    // Crossfade de potência igual: no meio da transição as duas
+                    // faixas continuam audíveis (~70% cada), evitando o "buraco"
+                    // de volume de uma interpolação linear.
+                    const angle = progress * Math.PI / 2;
+                    const outgoingFactor = Math.cos(angle);
+                    const incomingFactor = Math.sin(angle);
+                    try { outgoing.setVolume(Math.round(outgoingStart * outgoingFactor)); } catch (error) {}
+                    try { incoming.setVolume(Math.round(incomingStart + (incomingEnd - incomingStart) * incomingFactor)); } catch (error) {}
                     if (progress >= 1) {
                         musicFadeTimer = null;
                         try { outgoing.setVolume(0); outgoing.pauseVideo(); } catch (error) {}
