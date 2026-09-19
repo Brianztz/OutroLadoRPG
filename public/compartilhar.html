@@ -1228,6 +1228,7 @@
         function rememberMusicForOpening() {
             abortMusicTransitions();
             musicTransitionActive = false;
+            resetNaturalEndFade(false);
             let position = Math.max(0, Number(sharedMusicState.position) || 0);
             let playing = Boolean(sharedMusicState.playing);
             if (musicPlayerReady && musicPlayer && sharedMusicState.videoId) {
@@ -1606,6 +1607,7 @@
             playing: false,
             position: 0,
             volume: 75,
+            transitionMode: 'manual',
             updatedAt: 0,
             revision: 0
         };
@@ -1621,8 +1623,13 @@
         let musicTransitionTargetId = '';
         let queuedMusicTransitionState = null;
         let musicTransitionEpoch = 0;
-        const MUSIC_FADE_OUT_MS = 60 * 1000;
-        const MUSIC_FADE_IN_MS = 60 * 1000;
+        let musicTransitionMode = '';
+        let naturalEndFadeActive = false;
+        let naturalEndFadeVideoId = '';
+        const MANUAL_FADE_OUT_MS = 700;
+        const MANUAL_FADE_IN_MS = 900;
+        const NATURAL_FADE_OUT_MS = 60 * 1000;
+        const NATURAL_FADE_IN_MS = 60 * 1000;
 
         function safeMusicVideoId(value) {
             return String(value || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
@@ -1820,11 +1827,15 @@
             }
         }
 
-        function playPlaylistTrack(index) {
+        function playPlaylistTrack(index, transitionMode = 'manual') {
             const song = musicPlaylistQueue[index];
             if (!song) return;
             musicPlaylistIndex = index;
-            playSharedMusic(song.videoId, song.title, song.channel, { keepQueue: true, queueIndex: index });
+            playSharedMusic(song.videoId, song.title, song.channel, {
+                keepQueue: true,
+                queueIndex: index,
+                transitionMode
+            });
             renderPlaylistTracks();
         }
 
@@ -1838,7 +1849,7 @@
                 }
                 return;
             }
-            playPlaylistTrack(next);
+            playPlaylistTrack(next, auto ? 'auto' : 'manual');
         }
 
         function musicPreviousTrack() {
@@ -1884,6 +1895,7 @@
             let duration = 0;
             try { duration = Number(musicPlayer.getDuration()) || 0; } catch (error) {}
             const target = duration * (Math.max(0, Math.min(1000, Number(value) || 0)) / 1000);
+            resetNaturalEndFade(false);
             try { musicPlayer.seekTo(target, true); } catch (error) {}
             musicHostOwnsControl = true;
             setTimeout(() => broadcastCurrentMusicState(), 150);
@@ -1925,7 +1937,7 @@
         }
 
         function updateMusicController() {
-            if (spectatorMode || !musicPlayerReady || !musicPlayer) return;
+            if (!musicPlayerReady || !musicPlayer) return;
             let current = 0;
             let duration = 0;
             let state = -1;
@@ -1934,6 +1946,10 @@
                 duration = Number(musicPlayer.getDuration()) || 0;
                 state = Number(musicPlayer.getPlayerState());
             } catch (error) {}
+
+            updateNaturalEndFade(current, duration, state);
+            if (spectatorMode) return;
+
             document.getElementById('music-controller-play').textContent = state === 1 ? '⏸ Pausar' : '▶ Play';
             document.getElementById('music-duration').textContent = formatMusicTime(duration);
             if (!musicSeekingPreview) {
@@ -1985,6 +2001,7 @@
         }
 
         function cloneMusicTransitionState(state) {
+            const transitionMode = String(state && state.transitionMode || 'manual') === 'auto' ? 'auto' : 'manual';
             return {
                 mesa: tableCode,
                 videoId: safeMusicVideoId(state && state.videoId),
@@ -1993,9 +2010,67 @@
                 playing: Boolean(state && state.playing),
                 position: Math.max(0, Number(state && state.position) || 0),
                 volume: Math.max(0, Math.min(100, Number(state && state.volume) || 0)),
+                transitionMode,
                 updatedAt: Math.max(0, Number(state && state.updatedAt) || Date.now()),
                 revision: Math.max(0, Number(state && state.revision) || 0)
             };
+        }
+
+        function resetNaturalEndFade(restoreVolume = false) {
+            const wasActive = naturalEndFadeActive;
+            naturalEndFadeActive = false;
+            naturalEndFadeVideoId = '';
+            if (!wasActive) return;
+            cancelMusicFade();
+            if (restoreVolume && musicPlayerReady && musicPlayer && !musicTransitionActive) {
+                const target = Math.max(0, Math.min(100, Number(sharedMusicState.volume) || (spectatorMode ? 75 : musicBaseVolume)));
+                rampMusicVolume(target, 450);
+            }
+        }
+
+        function updateNaturalEndFade(current, duration, playerState) {
+            if (!sharedMusicState.videoId || !duration || duration <= 0 || musicTransitionActive) return;
+            const currentId = currentMusicVideoId();
+            if (!currentId || currentId !== sharedMusicState.videoId) return;
+
+            const remaining = Math.max(0, duration - current);
+            if (playerState !== 1) {
+                if (naturalEndFadeActive && playerState !== 0) resetNaturalEndFade(true);
+                return;
+            }
+
+            if (remaining > 60.5) {
+                if (naturalEndFadeActive) resetNaturalEndFade(true);
+                return;
+            }
+
+            if (remaining > 0.2 && !naturalEndFadeActive) {
+                naturalEndFadeActive = true;
+                naturalEndFadeVideoId = currentId;
+                const sync = document.getElementById('music-sync-state');
+                if (sync) sync.textContent = 'Fade final • 1 minuto';
+                rampMusicVolume(0, Math.min(NATURAL_FADE_OUT_MS, Math.max(800, remaining * 1000))).then(() => {
+                    if (naturalEndFadeActive && naturalEndFadeVideoId === currentMusicVideoId()) {
+                        const syncNow = document.getElementById('music-sync-state');
+                        if (syncNow) syncNow.textContent = 'Finalizando faixa…';
+                    }
+                });
+            }
+        }
+
+        function interruptMusicTransition(nextState) {
+            musicTransitionEpoch += 1;
+            cancelMusicFade();
+            musicTransitionActive = false;
+            musicTransitionTargetId = '';
+            musicTransitionMode = '';
+            queuedMusicTransitionState = cloneMusicTransitionState(nextState);
+            processMusicTransitionQueue().catch(error => {
+                console.warn('Falha na transição suave de música:', error);
+                musicTransitionActive = false;
+                musicTransitionTargetId = '';
+                musicTransitionMode = '';
+            });
         }
 
         async function processMusicTransitionQueue() {
@@ -2007,24 +2082,24 @@
                     let state = cloneMusicTransitionState(queuedMusicTransitionState);
                     queuedMusicTransitionState = null;
                     if (!state.videoId) continue;
-                    musicTransitionTargetId = state.videoId;
 
-                    let currentId = currentMusicVideoId();
+                    musicTransitionTargetId = state.videoId;
+                    musicTransitionMode = state.transitionMode;
+                    const automatic = state.transitionMode === 'auto';
+                    const fadeOutMs = automatic ? 120 : MANUAL_FADE_OUT_MS;
+                    const fadeInMs = automatic ? NATURAL_FADE_IN_MS : MANUAL_FADE_IN_MS;
+                    const currentId = currentMusicVideoId();
+
                     if (currentId && currentId !== state.videoId) {
                         const sync = document.getElementById('music-sync-state');
-                        if (sync) sync.textContent = 'Esmaecendo música atual…';
-                        await rampMusicVolume(0, MUSIC_FADE_OUT_MS);
+                        if (sync) sync.textContent = automatic ? 'Trocando para a próxima faixa…' : 'Esmaecendo para trocar…';
+                        await rampMusicVolume(0, fadeOutMs);
                         if (epoch !== musicTransitionEpoch) return;
-
-                        if (queuedMusicTransitionState && queuedMusicTransitionState.videoId !== state.videoId) {
-                            state = cloneMusicTransitionState(queuedMusicTransitionState);
-                            queuedMusicTransitionState = null;
-                            musicTransitionTargetId = state.videoId;
-                        }
                     }
 
+                    resetNaturalEndFade(false);
                     const target = musicTargetPosition(state);
-                    musicIgnoreEventsUntil = Date.now() + MUSIC_FADE_OUT_MS + MUSIC_FADE_IN_MS + 3000;
+                    musicIgnoreEventsUntil = Date.now() + fadeOutMs + fadeInMs + 3000;
                     try {
                         musicPlayer.setVolume(0);
                         if (state.playing) {
@@ -2044,9 +2119,9 @@
 
                     if (state.playing && (!spectatorMode || musicAudioUnlocked)) {
                         const sync = document.getElementById('music-sync-state');
-                        if (sync) sync.textContent = 'Aumentando volume da nova faixa…';
+                        if (sync) sync.textContent = automatic ? 'Fade-in da nova faixa • 1 minuto' : 'Entrando nova faixa…';
                         const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
-                        await rampMusicVolume(targetVolume, MUSIC_FADE_IN_MS);
+                        await rampMusicVolume(targetVolume, fadeInMs);
                         if (epoch !== musicTransitionEpoch) return;
                     } else {
                         try { musicPlayer.setVolume(Math.max(0, Math.min(100, Number(state.volume) || 0))); } catch (error) {}
@@ -2061,17 +2136,24 @@
                 if (epoch === musicTransitionEpoch) {
                     musicTransitionActive = false;
                     musicTransitionTargetId = '';
+                    musicTransitionMode = '';
                     pendingMusicState = null;
                 }
             }
         }
 
         function queueMusicTransition(state) {
-            queuedMusicTransitionState = cloneMusicTransitionState(state);
+            const nextState = cloneMusicTransitionState(state);
+            if (musicTransitionActive && nextState.transitionMode === 'manual' && nextState.videoId !== musicTransitionTargetId) {
+                interruptMusicTransition(nextState);
+                return;
+            }
+            queuedMusicTransitionState = nextState;
             processMusicTransitionQueue().catch(error => {
                 console.warn('Falha na transição suave de música:', error);
                 musicTransitionActive = false;
                 musicTransitionTargetId = '';
+                musicTransitionMode = '';
             });
         }
 
@@ -2151,6 +2233,7 @@
                 playing: videoId ? Boolean(rawState.playing) : false,
                 position: videoId ? Math.max(0, Number(rawState.position) || 0) : 0,
                 volume: Math.max(0, Math.min(100, Number.isFinite(Number(rawState.volume)) ? Number(rawState.volume) : 75)),
+                transitionMode: String(rawState.transitionMode || 'manual') === 'auto' ? 'auto' : 'manual',
                 updatedAt: Math.max(0, Number(rawState.updatedAt) || 0),
                 revision: Math.max(0, Number(rawState.revision) || 0)
             };
@@ -2168,6 +2251,10 @@
 
             const currentId = currentMusicVideoId();
             if (musicTransitionActive) {
+                if (videoId !== musicTransitionTargetId && sharedMusicState.transitionMode === 'manual') {
+                    interruptMusicTransition(sharedMusicState);
+                    return;
+                }
                 if (videoId !== musicTransitionTargetId) {
                     queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
                 } else if (queuedMusicTransitionState && queuedMusicTransitionState.videoId === videoId) {
@@ -2315,6 +2402,7 @@
 
         function playSharedMusic(videoId, title = 'Música', channel = '', options = {}) {
             const safeId = safeMusicVideoId(videoId);
+            const transitionMode = options.transitionMode === 'auto' ? 'auto' : 'manual';
             if (!safeId || spectatorMode) return;
             if (!options.keepQueue) {
                 musicPlaylistQueue = [];
@@ -2334,6 +2422,7 @@
                 playing: true,
                 position: 0,
                 volume: musicBaseVolume,
+                transitionMode,
                 updatedAt: Date.now(),
                 revision: Number(sharedMusicState.revision || 0) + 1
             };
@@ -2347,7 +2436,8 @@
                 channel: sharedMusicState.channel,
                 playing: true,
                 position: 0,
-                volume: musicBaseVolume
+                volume: musicBaseVolume,
+                transitionMode
             });
             document.getElementById('music-state').textContent = 'Tocando para toda a mesa';
         }
