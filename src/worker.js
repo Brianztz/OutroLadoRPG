@@ -493,8 +493,8 @@ export class TableRoom extends DurableObject {
         return { broadcasterId, viewers, fallbackViewers, frameViewers };
     }
 
-    broadcastScreen(event, data) {
-        this.broadcast(event, data, meta => meta.screenShareJoined);
+    broadcastScreen(event, data, predicate = null) {
+        this.broadcast(event, data, meta => meta.screenShareJoined && (!predicate || predicate(meta)));
     }
 
     emitScreenState() {
