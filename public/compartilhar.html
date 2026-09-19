@@ -51,6 +51,9 @@
         .table-button span { color: #fff; }
         .opening-button { border-color: rgba(255,82,82,0.62) !important; background: linear-gradient(135deg, rgba(144,14,22,0.94), rgba(78,7,12,0.94)) !important; color: #fff !important; }
         .opening-button.active { border-color: rgba(255,170,76,0.82) !important; background: linear-gradient(135deg, rgba(150,72,8,0.96), rgba(86,35,4,0.96)) !important; }
+        .opening-volume-option { min-height: 40px; display: inline-grid; grid-template-columns: auto minmax(90px,150px) 42px; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid rgba(255,170,76,0.25); border-radius: 8px; background: rgba(255,170,76,0.055); color: #c9d7df; font-size: 0.72rem; font-weight: 800; }
+        .opening-volume-option input { width: 100%; accent-color: #ff9b42; }
+        .opening-volume-option span { color: #ffcc9a; font-variant-numeric: tabular-nums; text-align: right; }
 
         .broadcast-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 340px); gap: 16px; align-items: stretch; }
         .screen-shell { min-width: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
@@ -145,7 +148,8 @@
         .music-progress-row { display: grid; grid-template-columns: 42px minmax(80px,1fr) 42px; gap: 8px; align-items: center; width: 100%; }
         .music-progress-row span { color: #8ea5b5; font-size: 0.68rem; font-variant-numeric: tabular-nums; text-align: center; }
         .music-range { width: 100%; accent-color: #ff4242; cursor: pointer; }
-        .music-volume { display: grid; grid-template-columns: auto minmax(90px,180px); gap: 8px; align-items: center; color: #8ea5b5; font-size: 0.7rem; }
+        .music-volume { display: grid; grid-template-columns: auto minmax(90px,180px) 42px; gap: 8px; align-items: center; color: #8ea5b5; font-size: 0.7rem; }
+        .music-volume span { color: #b8c8d1; font-variant-numeric: tabular-nums; text-align: right; }
         .music-library { display: grid; gap: 10px; padding-top: 2px; }
         .music-library-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
         .music-library-head strong { color: #eef8fd; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -237,6 +241,7 @@
                     <button id="share-button" class="control-button primary" type="button" onclick="toggleSharing()">Compartilhar minha tela</button>
                     <button id="streamlabs-button" class="control-button" type="button" onclick="toggleStreamlabs()">Transmitir pelo Streamlabs</button>
                     <button id="opening-button" class="control-button opening-button" type="button" onclick="toggleOpening()">Iniciar abertura</button>
+                    <label class="opening-volume-option music-host-only">Volume abertura <input id="opening-volume" type="range" min="0" max="100" value="85" step="1" oninput="setOpeningVolume(this.value)"><span id="opening-volume-value">85%</span></label>
                     <input id="opening-file" type="file" accept="video/*" hidden>
                     <video id="opening-source" preload="metadata" playsinline hidden></video>
                     <label class="audio-option"><input id="share-audio" type="checkbox" checked> Compartilhar áudio</label>
@@ -276,7 +281,7 @@
                                 <input id="music-progress" class="music-range" type="range" min="0" max="1000" value="0" step="1" aria-label="Progresso da música" oninput="previewMusicSeek(this.value)" onchange="commitMusicSeek(this.value)">
                                 <span id="music-duration">0:00</span>
                             </div>
-                            <label class="music-volume">Volume <input id="music-volume" class="music-range" type="range" min="0" max="100" value="70" step="1" oninput="setMusicVolume(this.value)"></label>
+                            <label class="music-volume">Volume música <input id="music-volume" class="music-range" type="range" min="0" max="100" value="75" step="1" oninput="setMusicVolume(this.value)"><span id="music-volume-value">75%</span></label>
                         </div>
                         <button id="music-audio-enable" class="music-button music-unlock" type="button" onclick="enableSharedMusicAudio()" hidden>Ativar áudio da mesa</button>
                     </div>
@@ -351,6 +356,8 @@
         const openingButton = document.getElementById('opening-button');
         const openingFileInput = document.getElementById('opening-file');
         const openingSource = document.getElementById('opening-source');
+        const openingVolume = document.getElementById('opening-volume');
+        const openingVolumeValue = document.getElementById('opening-volume-value');
         const audioOption = document.getElementById('share-audio');
         const soundButton = document.getElementById('sound-button');
         const pipButton = document.getElementById('pip-button');
@@ -409,6 +416,12 @@
         let openingObjectUrl = '';
         let openingMusicResume = null;
         let openingFinishing = false;
+        let openingAudioContext = null;
+        let openingAudioSourceNode = null;
+        let openingGainNode = null;
+        let openingAudioDestination = null;
+        let musicFadeToken = 0;
+        let musicFadeTimer = null;
         const hostPeers = new Map();
         const pendingIce = new Map();
         const fallbackCanvas = document.createElement('canvas');
@@ -625,7 +638,7 @@
                 relayRecorder = new MediaRecorder(localStream, {
                     mimeType: requestedMimeType,
                     videoBitsPerSecond: 8000000,
-                    audioBitsPerSecond: 128000
+                    audioBitsPerSecond: 320000
                 });
                 relayMimeType = relayRecorder.mimeType || requestedMimeType;
                 socket.emit('screen_share_relay_reset', { mimeType: relayMimeType });
@@ -846,10 +859,54 @@
             }
         }
 
+        async function configureAudioSender(sender) {
+            if (!sender || !sender.track || sender.track.kind !== 'audio') return;
+            try {
+                sender.track.contentHint = 'music';
+            } catch (error) {}
+            try {
+                const parameters = sender.getParameters();
+                if (!parameters.encodings || !parameters.encodings.length) parameters.encodings = [{}];
+                parameters.encodings[0].maxBitrate = 320000;
+                if ('priority' in parameters.encodings[0]) parameters.encodings[0].priority = 'high';
+                if ('networkPriority' in parameters.encodings[0]) parameters.encodings[0].networkPriority = 'high';
+                await sender.setParameters(parameters);
+            } catch (error) {
+                console.info('O navegador ajustará automaticamente a qualidade do áudio.');
+            }
+        }
+
+        function enhanceOpusSdp(sdp) {
+            const source = String(sdp || '');
+            const match = source.match(/a=rtpmap:(\d+) opus\/48000\/2/i);
+            if (!match) return source;
+            const payload = match[1];
+            const fmtpRegex = new RegExp(`a=fmtp:${payload} ([^\\r\\n]*)`, 'i');
+            const settings = 'minptime=10;useinbandfec=1;stereo=1;sprop-stereo=1;maxaveragebitrate=320000;usedtx=0';
+            if (fmtpRegex.test(source)) {
+                return source.replace(fmtpRegex, (line, current) => {
+                    const existing = String(current || '');
+                    const additions = settings.split(';').filter(item => {
+                        const key = item.split('=')[0];
+                        return !new RegExp(`(?:^|;)${key}=`, 'i').test(existing);
+                    });
+                    return `a=fmtp:${payload} ${existing}${additions.length ? ';' + additions.join(';') : ''}`;
+                });
+            }
+            return source.replace(
+                new RegExp(`(a=rtpmap:${payload} opus\\/48000\\/2\\r?\\n)`, 'i'),
+                `$1a=fmtp:${payload} ${settings}\r\n`
+            );
+        }
+
         async function rebalanceHostBitrates() {
             const bitrate = targetPeerBitrate();
             const updates = [];
-            hostPeers.forEach(peer => peer.getSenders().forEach(sender => updates.push(configureVideoSender(sender, bitrate))));
+            hostPeers.forEach(peer => peer.getSenders().forEach(sender => {
+                updates.push(sender.track && sender.track.kind === 'audio'
+                    ? configureAudioSender(sender)
+                    : configureVideoSender(sender, bitrate));
+            }));
             await Promise.allSettled(updates);
         }
 
@@ -913,10 +970,13 @@
             const peer = createPeer(viewerId, false);
             hostPeers.set(viewerId, peer);
             const senders = localStream.getTracks().map(track => peer.addTrack(track, localStream));
-            await Promise.all(senders.map(configureVideoSender));
+            await Promise.all(senders.map(sender => sender.track && sender.track.kind === 'audio'
+                ? configureAudioSender(sender)
+                : configureVideoSender(sender)));
             await rebalanceHostBitrates();
             const offer = await peer.createOffer();
-            await peer.setLocalDescription(offer);
+            const enhancedOffer = { type: offer.type, sdp: enhanceOpusSdp(offer.sdp) };
+            await peer.setLocalDescription(enhancedOffer);
             socket.emit('screen_share_offer', { target: viewerId, sdp: peer.localDescription });
         }
 
@@ -942,6 +1002,10 @@
             frameViewerCount = 0;
             relayDisabledForShare = false;
             const videoTrack = stream.getVideoTracks()[0];
+            stream.getAudioTracks().forEach(track => {
+                try { track.contentHint = 'music'; } catch (error) {}
+                try { track.applyConstraints({ channelCount: 2, sampleRate: 48000, sampleSize: 16 }); } catch (error) {}
+            });
             let captureLabel = 'alta qualidade';
             if (videoTrack) {
                 const selectedSurface = videoTrack.getSettings().displaySurface;
@@ -1105,11 +1169,53 @@
             }
         }
 
+        async function ensureOpeningAudioGraph() {
+            if (openingAudioContext && openingAudioSourceNode && openingGainNode && openingAudioDestination) {
+                if (openingAudioContext.state === 'suspended') await openingAudioContext.resume();
+                return;
+            }
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) throw new Error('Este navegador não oferece áudio de alta qualidade para a abertura.');
+            openingAudioContext = new AudioContextClass({ sampleRate: 48000, latencyHint: 'interactive' });
+            openingAudioSourceNode = openingAudioContext.createMediaElementSource(openingSource);
+            openingGainNode = openingAudioContext.createGain();
+            openingAudioDestination = openingAudioContext.createMediaStreamDestination();
+            openingAudioSourceNode.connect(openingGainNode);
+            openingGainNode.connect(openingAudioDestination);
+            openingGainNode.connect(openingAudioContext.destination);
+            setOpeningVolume(openingVolume ? openingVolume.value : 85);
+            if (openingAudioContext.state === 'suspended') await openingAudioContext.resume();
+        }
+
+        function setOpeningVolume(value) {
+            const normalized = Math.max(0, Math.min(100, Number(value) || 0));
+            if (openingVolume) openingVolume.value = String(normalized);
+            if (openingVolumeValue) openingVolumeValue.textContent = `${Math.round(normalized)}%`;
+            try { localStorage.setItem('opening_volume', String(normalized)); } catch (error) {}
+            if (openingGainNode && openingAudioContext) {
+                const now = openingAudioContext.currentTime;
+                openingGainNode.gain.cancelScheduledValues(now);
+                openingGainNode.gain.setTargetAtTime(normalized / 100, now, 0.018);
+            } else {
+                openingSource.volume = normalized / 100;
+            }
+        }
+
         function captureOpeningStream() {
             const capture = openingSource.captureStream || openingSource.mozCaptureStream;
             if (typeof capture !== 'function') throw new Error('Este navegador não consegue transmitir o vídeo da abertura diretamente.');
-            const stream = capture.call(openingSource);
-            if (!stream || !stream.getVideoTracks().length) throw new Error('O vídeo da abertura não gerou uma faixa de vídeo.');
+            const mediaStream = capture.call(openingSource);
+            if (!mediaStream || !mediaStream.getVideoTracks().length) throw new Error('O vídeo da abertura não gerou uma faixa de vídeo.');
+            const stream = new MediaStream();
+            mediaStream.getVideoTracks().forEach(track => stream.addTrack(track));
+            const audioTracks = openingAudioDestination && openingAudioDestination.stream
+                ? openingAudioDestination.stream.getAudioTracks()
+                : [];
+            audioTracks.forEach(track => {
+                try { track.contentHint = 'music'; } catch (error) {}
+                stream.addTrack(track);
+            });
+            if (!stream.getAudioTracks().length) throw new Error('Não foi possível preparar o áudio da abertura.');
             return stream;
         }
 
@@ -1208,9 +1314,10 @@
             try {
                 rememberMusicForOpening();
                 openingSource.currentTime = 0;
-                openingSource.volume = 1;
                 openingSource.muted = false;
                 await waitOpeningReady();
+                await ensureOpeningAudioGraph();
+                setOpeningVolume(openingVolume ? openingVolume.value : 85);
                 await openingSource.play();
                 await new Promise(resolve => setTimeout(resolve, 60));
                 const stream = captureOpeningStream();
@@ -1463,6 +1570,9 @@
         let musicPlaylistName = '';
         let musicPlaylistsLoaded = false;
         let musicSeekingPreview = false;
+        let musicBaseVolume = 75;
+        const MUSIC_FADE_OUT_MS = 500;
+        const MUSIC_FADE_IN_MS = 650;
 
         function safeMusicVideoId(value) {
             return String(value || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
@@ -1730,10 +1840,17 @@
         }
 
         function setMusicVolume(value) {
+            musicBaseVolume = Math.max(0, Math.min(100, Number(value) || 0));
+            const input = document.getElementById('music-volume');
+            const label = document.getElementById('music-volume-value');
+            if (input) input.value = String(musicBaseVolume);
+            if (label) label.textContent = `${Math.round(musicBaseVolume)}%`;
+            try { localStorage.setItem('music_volume', String(musicBaseVolume)); } catch (error) {}
             if (!musicPlayerReady || !musicPlayer) return;
+            if (musicFadeTimer) return;
             try {
                 musicPlayer.unMute();
-                musicPlayer.setVolume(Math.max(0, Math.min(100, Number(value) || 0)));
+                musicPlayer.setVolume(musicBaseVolume);
             } catch (error) {}
         }
 
@@ -1752,6 +1869,71 @@
             if (!musicSeekingPreview) {
                 document.getElementById('music-current-time').textContent = formatMusicTime(current);
                 document.getElementById('music-progress').value = duration > 0 ? String(Math.round((current / duration) * 1000)) : '0';
+            }
+        }
+
+        function cancelMusicFade() {
+            musicFadeToken += 1;
+            if (musicFadeTimer) clearTimeout(musicFadeTimer);
+            musicFadeTimer = null;
+        }
+
+        function rampMusicVolume(target, duration = 350) {
+            if (!musicPlayerReady || !musicPlayer) return Promise.resolve();
+            const token = ++musicFadeToken;
+            let start = 0;
+            try { start = Number(musicPlayer.getVolume()) || 0; } catch (error) {}
+            const end = Math.max(0, Math.min(100, Number(target) || 0));
+            const startedAt = performance.now();
+            return new Promise(resolve => {
+                const step = now => {
+                    if (token !== musicFadeToken) {
+                        resolve();
+                        return;
+                    }
+                    const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+                    const eased = progress * progress * (3 - 2 * progress);
+                    const value = Math.round(start + (end - start) * eased);
+                    try { musicPlayer.setVolume(value); } catch (error) {}
+                    if (progress >= 1) {
+                        resolve();
+                        return;
+                    }
+                    musicFadeTimer = setTimeout(() => requestAnimationFrame(step), 28);
+                };
+                requestAnimationFrame(step);
+            });
+        }
+
+        async function transitionMusicTrack(state, previousVideoId) {
+            if (!musicPlayerReady || !musicPlayer || !state.videoId) return;
+            const targetVolume = spectatorMode ? 75 : musicBaseVolume;
+            const target = musicTargetPosition(state);
+            const hasPrevious = Boolean(previousVideoId);
+            if (hasPrevious && previousVideoId !== state.videoId) {
+                await rampMusicVolume(0, MUSIC_FADE_OUT_MS);
+            } else {
+                cancelMusicFade();
+            }
+            musicIgnoreEventsUntil = Date.now() + 1700;
+            try {
+                musicPlayer.setVolume(0);
+                if (state.playing) {
+                    if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                    else musicPlayer.unMute();
+                    musicPlayer.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                } else {
+                    musicPlayer.cueVideoById({ videoId: state.videoId, startSeconds: target });
+                    if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                }
+            } catch (error) {
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 90));
+            if (state.playing && (!spectatorMode || musicAudioUnlocked)) {
+                await rampMusicVolume(targetVolume, MUSIC_FADE_IN_MS);
+            } else {
+                try { musicPlayer.setVolume(targetVolume); } catch (error) {}
             }
         }
 
@@ -1820,8 +2002,9 @@
             }
         }
 
-        function applySharedMusicState(rawState) {
+        async function applySharedMusicState(rawState) {
             if (!rawState || normalizeTableCode(rawState.mesa) !== tableCode) return;
+            const previousPlayerId = currentMusicVideoId();
             const videoId = safeMusicVideoId(rawState.videoId);
             sharedMusicState = {
                 mesa: tableCode,
@@ -1839,31 +2022,26 @@
             if (!musicPlayerReady || !musicPlayer || !videoId) return;
 
             const target = musicTargetPosition(sharedMusicState);
-            const currentId = currentMusicVideoId();
+            const currentId = previousPlayerId || currentMusicVideoId();
             let currentTime = 0;
             try { currentTime = Number(musicPlayer.getCurrentTime()) || 0; } catch (error) {}
-            const shouldSeek = Math.abs(currentTime - target) > 1.5;
-            musicIgnoreEventsUntil = Date.now() + 1400;
 
+            if (currentId !== videoId) {
+                await transitionMusicTrack(sharedMusicState, currentId);
+                pendingMusicState = null;
+                return;
+            }
+
+            const shouldSeek = Math.abs(currentTime - target) > 1.5;
+            musicIgnoreEventsUntil = Date.now() + 900;
             try {
-                if (currentId !== videoId) {
-                    if (sharedMusicState.playing) {
-                        if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
-                        else musicPlayer.unMute();
-                        musicPlayer.loadVideoById({ videoId, startSeconds: target });
-                    } else {
-                        musicPlayer.cueVideoById({ videoId, startSeconds: target });
-                        if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
-                    }
+                if (shouldSeek) musicPlayer.seekTo(target, true);
+                if (sharedMusicState.playing) {
+                    if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
+                    else musicPlayer.unMute();
+                    musicPlayer.playVideo();
                 } else {
-                    if (shouldSeek) musicPlayer.seekTo(target, true);
-                    if (sharedMusicState.playing) {
-                        if (spectatorMode && !musicAudioUnlocked) musicPlayer.mute();
-                        else musicPlayer.unMute();
-                        musicPlayer.playVideo();
-                    } else {
-                        musicPlayer.pauseVideo();
-                    }
+                    musicPlayer.pauseVideo();
                 }
             } catch (error) {
                 console.warn('Falha ao sincronizar música:', error);
@@ -1895,7 +2073,9 @@
         function onSharedMusicPlayerReady() {
             musicPlayerReady = true;
             if (!spectatorMode) {
-                try { musicPlayer.setVolume(Number(document.getElementById('music-volume').value) || 70); } catch (error) {}
+                try { musicPlayer.setVolume(musicBaseVolume); } catch (error) {}
+            } else {
+                try { musicPlayer.setVolume(75); } catch (error) {}
             }
             if (spectatorMode && !musicAudioUnlocked) {
                 try { musicPlayer.mute(); } catch (error) {}
@@ -2002,13 +2182,6 @@
             pendingMusicState = sharedMusicState;
             updateSharedMusicUi(sharedMusicState);
             ensureYouTubeIframeApi();
-            if (musicPlayerReady && musicPlayer) {
-                musicIgnoreEventsUntil = Date.now() + 1200;
-                try {
-                    musicPlayer.unMute();
-                    musicPlayer.loadVideoById({ videoId: safeId, startSeconds: 0 });
-                } catch (error) {}
-            }
             socket.emit('screen_share_music_control', {
                 mesa: tableCode,
                 videoId: safeId,
@@ -2156,6 +2329,13 @@
             }
         }
 
+        try {
+            const savedMusicVolume = Number(localStorage.getItem('music_volume'));
+            if (Number.isFinite(savedMusicVolume)) musicBaseVolume = Math.max(0, Math.min(100, savedMusicVolume));
+            const savedOpeningVolume = Number(localStorage.getItem('opening_volume'));
+            if (Number.isFinite(savedOpeningVolume)) setOpeningVolume(savedOpeningVolume);
+            setMusicVolume(musicBaseVolume);
+        } catch (error) {}
         ensureYouTubeIframeApi();
         restoreYouTubeMusicConnection();
         musicSyncTimer = setInterval(() => {
@@ -2289,7 +2469,8 @@
                 await viewerPeer.setRemoteDescription(data.sdp);
                 await flushIce(viewerHostId, viewerPeer);
                 const answer = await viewerPeer.createAnswer();
-                await viewerPeer.setLocalDescription(answer);
+                const enhancedAnswer = { type: answer.type, sdp: enhanceOpusSdp(answer.sdp) };
+                await viewerPeer.setLocalDescription(enhancedAnswer);
                 socket.emit('screen_share_answer', { target: viewerHostId, sdp: viewerPeer.localDescription });
             } catch (error) {
                 setStatus('não foi possível abrir a transmissão.');
@@ -2420,7 +2601,9 @@
         window.addEventListener('beforeunload', () => {
             if (musicSyncTimer) clearInterval(musicSyncTimer);
             if (musicControllerTimer) clearInterval(musicControllerTimer);
+            cancelMusicFade();
             openingSource.pause();
+            if (openingAudioContext) openingAudioContext.close().catch(() => {});
             if (openingObjectUrl) URL.revokeObjectURL(openingObjectUrl);
             stopRelayRecorder();
             cleanupRelayPlayback();
