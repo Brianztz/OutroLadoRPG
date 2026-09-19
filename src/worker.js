@@ -249,6 +249,7 @@ function emptyScreenMusicState(table) {
         playing: false,
         position: 0,
         volume: 75,
+        transitionMode: 'manual',
         updatedAt: 0,
         revision: 0
     };
@@ -263,6 +264,7 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
     const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : 0));
     const numericVolume = Number(Object.prototype.hasOwnProperty.call(source, 'volume') ? source.volume : previous.volume);
     const volume = Math.max(0, Math.min(100, Number.isFinite(numericVolume) ? numericVolume : 75));
+    const transitionMode = String(source.transitionMode || 'manual') === 'auto' ? 'auto' : 'manual';
     return {
         mesa: normalizeTableCode(table),
         videoId,
@@ -271,6 +273,7 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
         playing: videoId ? Boolean(Object.prototype.hasOwnProperty.call(source, 'playing') ? source.playing : previous.playing) : false,
         position: videoId ? position : 0,
         volume,
+        transitionMode,
         updatedAt: Date.now(),
         revision: Math.max(0, Number(previous.revision) || 0) + 1
     };
