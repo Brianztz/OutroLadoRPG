@@ -49,6 +49,8 @@
         .connection.online .connection-dot { background: var(--green); }
         .table-button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(139,204,246,0.48); border-radius: 8px; background: rgba(5,16,26,0.9); color: var(--blue); cursor: pointer; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
         .table-button span { color: #fff; }
+        .opening-button { border-color: rgba(255,82,82,0.62) !important; background: linear-gradient(135deg, rgba(144,14,22,0.94), rgba(78,7,12,0.94)) !important; color: #fff !important; }
+        .opening-button.active { border-color: rgba(255,170,76,0.82) !important; background: linear-gradient(135deg, rgba(150,72,8,0.96), rgba(86,35,4,0.96)) !important; }
 
         .broadcast-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 340px); gap: 16px; align-items: stretch; }
         .screen-shell { min-width: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
@@ -180,6 +182,7 @@
         body.spectator-mode .music-host-only,
         body.spectator-mode #share-button,
         body.spectator-mode #streamlabs-button,
+        body.spectator-mode #opening-button,
         body.spectator-mode .audio-option { display: none !important; }
 
         @media (max-width: 1080px) {
@@ -233,6 +236,9 @@
                 <div class="control-group">
                     <button id="share-button" class="control-button primary" type="button" onclick="toggleSharing()">Compartilhar minha tela</button>
                     <button id="streamlabs-button" class="control-button" type="button" onclick="toggleStreamlabs()">Transmitir pelo Streamlabs</button>
+                    <button id="opening-button" class="control-button opening-button" type="button" onclick="toggleOpening()">Iniciar abertura</button>
+                    <input id="opening-file" type="file" accept="video/*" hidden>
+                    <video id="opening-source" preload="metadata" playsinline hidden></video>
                     <label class="audio-option"><input id="share-audio" type="checkbox" checked> Compartilhar áudio</label>
                     <button id="sound-button" class="control-button" type="button" onclick="toggleSound()" hidden>Ativar áudio</button>
                     <button id="pip-button" class="control-button" type="button" onclick="togglePictureInPicture()" hidden>Janela flutuante</button>
@@ -342,6 +348,9 @@
         const emptyCopy = document.getElementById('empty-copy');
         const shareButton = document.getElementById('share-button');
         const streamlabsButton = document.getElementById('streamlabs-button');
+        const openingButton = document.getElementById('opening-button');
+        const openingFileInput = document.getElementById('opening-file');
+        const openingSource = document.getElementById('opening-source');
         const audioOption = document.getElementById('share-audio');
         const soundButton = document.getElementById('sound-button');
         const pipButton = document.getElementById('pip-button');
@@ -396,6 +405,10 @@
         let viewerDisconnectTimer = null;
         let viewerCount = 0;
         let fallbackRequested = false;
+        let openingFile = null;
+        let openingObjectUrl = '';
+        let openingMusicResume = null;
+        let openingFinishing = false;
         const hostPeers = new Map();
         const pendingIce = new Map();
         const fallbackCanvas = document.createElement('canvas');
@@ -425,11 +438,12 @@
             }
             video.srcObject = stream;
             video.playbackRate = 1;
-            video.muted = true;
+            const hasAudio = stream.getAudioTracks().length > 0;
+            const canAutoUseAudio = !local && hasAudio && typeof musicAudioUnlocked !== 'undefined' && musicAudioUnlocked;
+            video.muted = local || !canAutoUseAudio;
             video.classList.add('visible');
             emptyState.classList.add('hidden');
-            const hasAudio = stream.getAudioTracks().length > 0;
-            soundButton.hidden = local || !hasAudio;
+            soundButton.hidden = local || !hasAudio || !video.muted;
             soundButton.textContent = 'Ativar áudio';
             pipButton.hidden = !pictureInPictureSupported;
             if (local) fallbackImage.classList.remove('visible');
@@ -953,7 +967,10 @@
                     const fps = Math.round(Number(settings.frameRate) || 60);
                     captureLabel = `${settings.width}×${settings.height} a ${fps} FPS`;
                 }
-                videoTrack.onended = () => stopSharing(true);
+                videoTrack.onended = () => {
+                    if (mode === 'opening') finishOpening(true);
+                    else stopSharing(true);
+                };
             }
             showVideo(stream, true);
             if (mode === 'streamlabs') {
@@ -961,16 +978,26 @@
                 streamlabsButton.classList.add('danger');
                 streamlabsButton.disabled = false;
                 shareButton.disabled = true;
+                openingButton.disabled = true;
+            } else if (mode === 'opening') {
+                openingButton.textContent = 'Encerrar abertura';
+                openingButton.classList.add('active');
+                openingButton.disabled = false;
+                shareButton.disabled = true;
+                streamlabsButton.disabled = true;
             } else {
                 shareButton.textContent = 'Parar transmissão';
                 shareButton.classList.remove('primary');
                 shareButton.classList.add('danger');
                 streamlabsButton.disabled = true;
+                openingButton.disabled = true;
             }
             audioOption.disabled = true;
-            liveBadge.textContent = 'Você está ao vivo';
+            liveBadge.textContent = mode === 'opening' ? 'Abertura ao vivo' : 'Você está ao vivo';
             liveBadge.classList.add('live');
-            const audioNote = mode === 'streamlabs' ? ' A câmera virtual envia somente o vídeo da cena.' : '';
+            const audioNote = mode === 'streamlabs'
+                ? ' A câmera virtual envia somente o vídeo da cena.'
+                : (mode === 'opening' ? ' O áudio da abertura está sendo enviado para a mesa.' : '');
             setStatus(`${sourceName} está sendo transmitido em ${captureLabel}.${audioNote}`);
             socket.emit('screen_share_start', { mesa: tableCode });
         }
@@ -1078,6 +1105,170 @@
             }
         }
 
+        function captureOpeningStream() {
+            const capture = openingSource.captureStream || openingSource.mozCaptureStream;
+            if (typeof capture !== 'function') throw new Error('Este navegador não consegue transmitir o vídeo da abertura diretamente.');
+            const stream = capture.call(openingSource);
+            if (!stream || !stream.getVideoTracks().length) throw new Error('O vídeo da abertura não gerou uma faixa de vídeo.');
+            return stream;
+        }
+
+        function rememberMusicForOpening() {
+            let position = Math.max(0, Number(sharedMusicState.position) || 0);
+            let playing = Boolean(sharedMusicState.playing);
+            if (musicPlayerReady && musicPlayer && sharedMusicState.videoId) {
+                try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
+                try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
+            }
+            openingMusicResume = sharedMusicState.videoId ? {
+                videoId: sharedMusicState.videoId,
+                title: sharedMusicState.title,
+                channel: sharedMusicState.channel,
+                position,
+                playing
+            } : null;
+
+            if (sharedMusicState.videoId) {
+                musicIgnoreEventsUntil = Date.now() + 900;
+                try { if (musicPlayerReady && musicPlayer) musicPlayer.pauseVideo(); } catch (error) {}
+                socket.emit('screen_share_music_control', {
+                    mesa: tableCode,
+                    videoId: sharedMusicState.videoId,
+                    title: sharedMusicState.title,
+                    channel: sharedMusicState.channel,
+                    playing: false,
+                    position
+                });
+            }
+        }
+
+        function resumeMusicAfterOpening() {
+            const resume = openingMusicResume;
+            openingMusicResume = null;
+            if (!resume || !resume.videoId) return;
+            sharedMusicState = {
+                ...sharedMusicState,
+                videoId: resume.videoId,
+                title: resume.title,
+                channel: resume.channel,
+                playing: Boolean(resume.playing),
+                position: resume.position,
+                updatedAt: Date.now()
+            };
+            pendingMusicState = sharedMusicState;
+            updateSharedMusicUi(sharedMusicState);
+            ensureYouTubeIframeApi();
+            if (musicPlayerReady && musicPlayer) {
+                musicIgnoreEventsUntil = Date.now() + 1000;
+                try {
+                    musicPlayer.seekTo(resume.position, true);
+                    if (resume.playing) {
+                        musicPlayer.unMute();
+                        musicPlayer.playVideo();
+                    } else {
+                        musicPlayer.pauseVideo();
+                    }
+                } catch (error) {}
+            }
+            socket.emit('screen_share_music_control', {
+                mesa: tableCode,
+                videoId: resume.videoId,
+                title: resume.title,
+                channel: resume.channel,
+                playing: Boolean(resume.playing),
+                position: resume.position
+            });
+        }
+
+        function waitOpeningReady() {
+            if (openingSource.readyState >= 2) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                const onReady = () => cleanup(resolve);
+                const onError = () => cleanup(() => reject(new Error('Não foi possível abrir o vídeo da abertura.')));
+                const cleanup = callback => {
+                    openingSource.removeEventListener('loadeddata', onReady);
+                    openingSource.removeEventListener('error', onError);
+                    callback();
+                };
+                openingSource.addEventListener('loadeddata', onReady, { once: true });
+                openingSource.addEventListener('error', onError, { once: true });
+            });
+        }
+
+        async function startOpening() {
+            if (!ensureReadyToBroadcast()) return;
+            if (!openingFile) {
+                openingFileInput.click();
+                return;
+            }
+            if (isBroadcasting && activeSourceMode !== 'opening') stopSharing(true);
+
+            openingButton.disabled = true;
+            setStatus('preparando a abertura do RPG...');
+            try {
+                rememberMusicForOpening();
+                openingSource.currentTime = 0;
+                openingSource.volume = 1;
+                openingSource.muted = false;
+                await waitOpeningReady();
+                const stream = captureOpeningStream();
+                await openingSource.play();
+                await new Promise(resolve => setTimeout(resolve, 80));
+                await activateBroadcastStream(stream, 'opening', 'Abertura do RPG');
+            } catch (error) {
+                console.warn('Falha ao iniciar a abertura:', error);
+                openingSource.pause();
+                openingButton.disabled = false;
+                resumeMusicAfterOpening();
+                setStatus(String(error && error.message || 'não foi possível iniciar a abertura.'));
+            }
+        }
+
+        function finishOpening(resumeMusic = true) {
+            if (openingFinishing) return;
+            openingFinishing = true;
+            try {
+                openingSource.pause();
+                try { openingSource.currentTime = 0; } catch (error) {}
+                if (activeSourceMode === 'opening') stopSharing(true);
+                openingButton.textContent = 'Iniciar abertura';
+                openingButton.classList.remove('active');
+                openingButton.disabled = false;
+                if (resumeMusic) resumeMusicAfterOpening();
+                else openingMusicResume = null;
+                setStatus(resumeMusic ? 'abertura encerrada; música da mesa restaurada.' : 'abertura encerrada.');
+            } finally {
+                openingFinishing = false;
+            }
+        }
+
+        function toggleOpening() {
+            if (activeSourceMode === 'opening') {
+                finishOpening(true);
+                return;
+            }
+            startOpening();
+        }
+
+        openingFileInput.addEventListener('change', () => {
+            const file = openingFileInput.files && openingFileInput.files[0];
+            if (!file) return;
+            if (!String(file.type || '').startsWith('video/')) {
+                setStatus('selecione um arquivo de vídeo para a abertura.');
+                openingFileInput.value = '';
+                return;
+            }
+            openingFile = file;
+            if (openingObjectUrl) URL.revokeObjectURL(openingObjectUrl);
+            openingObjectUrl = URL.createObjectURL(file);
+            openingSource.src = openingObjectUrl;
+            openingSource.load();
+            setStatus(`abertura carregada: ${file.name}. Iniciando...`);
+            startOpening();
+        });
+
+        openingSource.addEventListener('ended', () => finishOpening(true));
+
         function stopSharing(notifyServer = true) {
             const wasBroadcasting = isBroadcasting;
             isBroadcasting = false;
@@ -1105,6 +1296,9 @@
             streamlabsButton.textContent = 'Transmitir pelo Streamlabs';
             streamlabsButton.classList.remove('danger');
             streamlabsButton.disabled = false;
+            openingButton.textContent = 'Iniciar abertura';
+            openingButton.classList.remove('active');
+            openingButton.disabled = false;
             audioOption.disabled = false;
             liveBadge.textContent = 'Aguardando';
             liveBadge.classList.remove('live');
@@ -2226,6 +2420,8 @@
         window.addEventListener('beforeunload', () => {
             if (musicSyncTimer) clearInterval(musicSyncTimer);
             if (musicControllerTimer) clearInterval(musicControllerTimer);
+            openingSource.pause();
+            if (openingObjectUrl) URL.revokeObjectURL(openingObjectUrl);
             stopRelayRecorder();
             cleanupRelayPlayback();
             if (fallbackCaptureTimer) clearInterval(fallbackCaptureTimer);
