@@ -31,6 +31,7 @@ const clueInspections = new Map();
 const luminaStates = new Map();
 const screenShareRooms = new Map();
 const screenShareChats = new Map();
+const screenShareMusicStates = new Map();
 
 function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
@@ -85,6 +86,46 @@ function normalizeScreenChatName(value) {
 
 function normalizeScreenChatText(value) {
     return String(value || '').replace(/\r\n?/g, '\n').trim().slice(0, 400);
+}
+
+function emptyScreenMusicState(table) {
+    return {
+        mesa: normalizeTableCode(table),
+        videoId: '',
+        title: '',
+        channel: '',
+        playing: false,
+        position: 0,
+        updatedAt: 0,
+        revision: 0
+    };
+}
+
+function getScreenShareMusicState(table) {
+    const normalizedTable = normalizeTableCode(table);
+    if (!screenShareMusicStates.has(normalizedTable)) {
+        screenShareMusicStates.set(normalizedTable, emptyScreenMusicState(normalizedTable));
+    }
+    return screenShareMusicStates.get(normalizedTable);
+}
+
+function normalizeScreenMusicState(table, rawData, previousState = null) {
+    const previous = previousState || emptyScreenMusicState(table);
+    const source = rawData && typeof rawData === 'object' ? rawData : {};
+    const rawVideoId = Object.prototype.hasOwnProperty.call(source, 'videoId') ? source.videoId : previous.videoId;
+    const videoId = String(rawVideoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
+    const numericPosition = Number(Object.prototype.hasOwnProperty.call(source, 'position') ? source.position : previous.position);
+    const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : 0));
+    return {
+        mesa: normalizeTableCode(table),
+        videoId,
+        title: videoId ? String(Object.prototype.hasOwnProperty.call(source, 'title') ? source.title : previous.title || '').trim().slice(0, 180) : '',
+        channel: videoId ? String(Object.prototype.hasOwnProperty.call(source, 'channel') ? source.channel : previous.channel || '').trim().slice(0, 140) : '',
+        playing: videoId ? Boolean(Object.prototype.hasOwnProperty.call(source, 'playing') ? source.playing : previous.playing) : false,
+        position: videoId ? position : 0,
+        updatedAt: Date.now(),
+        revision: Math.max(0, Number(previous.revision) || 0) + 1
+    };
 }
 
 function emitScreenShareFallbackCount(table, room = getScreenShareRoom(table)) {
@@ -366,6 +407,7 @@ io.on('connection', socket => {
         const room = getScreenShareRoom(table);
         socket.emit('screen_share_state', { mesa: table, active: Boolean(room.broadcasterId), viewers: room.viewers.size });
         socket.emit('screen_share_chat_history', { mesa: table, messages: getScreenShareChat(table) });
+        socket.emit('screen_share_music_state', getScreenShareMusicState(table));
         if (room.broadcasterId && room.broadcasterId !== socket.id) {
             socket.emit('screen_share_available', { mesa: table, broadcasterId: room.broadcasterId });
         }
@@ -392,6 +434,19 @@ io.on('connection', socket => {
         messages.push(message);
         if (messages.length > 120) messages.splice(0, messages.length - 120);
         io.to(screenRoom(table)).emit('screen_share_chat_message', message);
+    });
+
+    socket.on('screen_share_music_control', rawData => {
+        if (socket.data.screenShareSpectator || !rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.screenShareTable);
+        if (socket.data.screenShareTable !== table) return;
+        const now = Date.now();
+        if (now - Number(socket.data.lastScreenMusicAt || 0) < 120) return;
+        socket.data.lastScreenMusicAt = now;
+        const previous = getScreenShareMusicState(table);
+        const state = normalizeScreenMusicState(table, rawData, previous);
+        screenShareMusicStates.set(table, state);
+        io.to(screenRoom(table)).emit('screen_share_music_state', state);
     });
 
     socket.on('screen_share_start', rawData => {
