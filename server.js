@@ -32,6 +32,7 @@ const luminaStates = new Map();
 const screenShareRooms = new Map();
 const screenShareChats = new Map();
 const screenShareMusicStates = new Map();
+const screenShareOverlayStates = new Map();
 
 function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
@@ -130,6 +131,49 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
         position: videoId ? position : 0,
         volume,
         transitionMode,
+        updatedAt: Date.now(),
+        revision: Math.max(0, Number(previous.revision) || 0) + 1
+    };
+}
+
+function emptyScreenOverlayState(table) {
+    return {
+        mesa: normalizeTableCode(table),
+        imageData: '',
+        active: false,
+        duration: 0,
+        endAt: 0,
+        updatedAt: 0,
+        revision: 0
+    };
+}
+
+function getScreenShareOverlayState(table) {
+    const normalizedTable = normalizeTableCode(table);
+    if (!screenShareOverlayStates.has(normalizedTable)) {
+        screenShareOverlayStates.set(normalizedTable, emptyScreenOverlayState(normalizedTable));
+    }
+    return screenShareOverlayStates.get(normalizedTable);
+}
+
+function normalizeScreenOverlayState(table, rawData, previousState = null) {
+    const previous = previousState || emptyScreenOverlayState(table);
+    const source = rawData && typeof rawData === 'object' ? rawData : {};
+    const hasImage = Object.prototype.hasOwnProperty.call(source, 'imageData');
+    const rawImage = hasImage ? String(source.imageData || '') : previous.imageData;
+    const imageData = /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 2_800_000 ? rawImage : (hasImage ? '' : previous.imageData);
+    const duration = Math.max(1, Math.min(3600, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
+    const active = Boolean(source.active) && Boolean(imageData);
+    const requestedEndAt = Number(source.endAt);
+    const endAt = active
+        ? (Number.isFinite(requestedEndAt) && requestedEndAt > Date.now() ? requestedEndAt : Date.now() + duration * 1000)
+        : 0;
+    return {
+        mesa: normalizeTableCode(table),
+        imageData,
+        active,
+        duration,
+        endAt,
         updatedAt: Date.now(),
         revision: Math.max(0, Number(previous.revision) || 0) + 1
     };
@@ -415,6 +459,7 @@ io.on('connection', socket => {
         socket.emit('screen_share_state', { mesa: table, active: Boolean(room.broadcasterId), viewers: room.viewers.size });
         socket.emit('screen_share_chat_history', { mesa: table, messages: getScreenShareChat(table) });
         socket.emit('screen_share_music_state', getScreenShareMusicState(table));
+        socket.emit('screen_share_overlay_state', getScreenShareOverlayState(table));
         if (room.broadcasterId && room.broadcasterId !== socket.id) {
             socket.emit('screen_share_available', { mesa: table, broadcasterId: room.broadcasterId });
         }
@@ -454,6 +499,19 @@ io.on('connection', socket => {
         const state = normalizeScreenMusicState(table, rawData, previous);
         screenShareMusicStates.set(table, state);
         io.to(screenRoom(table)).emit('screen_share_music_state', state);
+    });
+
+    socket.on('screen_share_overlay_control', rawData => {
+        if (socket.data.screenShareSpectator || !rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.screenShareTable);
+        if (socket.data.screenShareTable !== table) return;
+        const now = Date.now();
+        if (now - Number(socket.data.lastScreenOverlayAt || 0) < 180) return;
+        socket.data.lastScreenOverlayAt = now;
+        const previous = getScreenShareOverlayState(table);
+        const state = normalizeScreenOverlayState(table, rawData, previous);
+        screenShareOverlayStates.set(table, state);
+        io.to(screenRoom(table)).emit('screen_share_overlay_state', state);
     });
 
     socket.on('screen_share_start', rawData => {
