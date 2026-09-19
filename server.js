@@ -305,6 +305,28 @@ io.on('connection', socket => {
         socket.emit('lumina_state_updated', getLuminaState(table));
     });
 
+    socket.on('kick_player', rawData => {
+        if (!socket.data.isMaster || !rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.masterTable);
+        const code = normalizePlayerCode(rawData.codigo || rawData.id);
+        if (!code) return;
+        const key = playerKey(table, code);
+        const targetIds = Array.from(playerSockets.get(key) || []);
+        targetIds.forEach(socketId => {
+            io.to(socketId).emit('player_kicked', { mesa: table, codigo: code, reason: 'removed_by_master' });
+            const targetSocket = io.sockets.sockets.get(socketId);
+            if (targetSocket) targetSocket.disconnect(true);
+        });
+        playerSockets.delete(key);
+        playersData.delete(key);
+        io.to(tableRoom(table)).emit('player_disconnected', { codigo: code, mesa: table, reason: 'removed_by_master' });
+        const inspection = clueInspections.get(table);
+        if (inspection && inspection.codigo === code) {
+            clueInspections.delete(table);
+            io.to(tableRoom(table)).emit('clue_inspection_stopped', { mesa: table, codigo: code, reason: 'removed_by_master' });
+        }
+    });
+
     socket.on('lumina_ready', rawData => {
         const table = normalizeTableCode(rawData && typeof rawData === 'object' ? rawData.mesa : rawData);
         const previousTable = socket.data.luminaTable;

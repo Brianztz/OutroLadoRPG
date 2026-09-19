@@ -472,6 +472,29 @@ export class TableRoom extends DurableObject {
             return;
         }
 
+        if (event === 'kick_player') {
+            if (!meta.isMaster || !data || typeof data !== 'object') return;
+            const code = normalizePlayerCode(data.codigo || data.id);
+            if (!code) return;
+
+            const targets = this.playerSockets(code);
+            for (const target of targets) {
+                this.send(target, 'player_kicked', { mesa: this.table, codigo: code, reason: 'removed_by_master' });
+                this.updateMeta(target, { playerCode: '' });
+                try { target.close(4003, 'removed by master'); } catch (error) {}
+            }
+
+            this.players.delete(code);
+            try { await this.ctx.storage.delete(`player:${code}`); } catch (error) {}
+            if (this.inspection && this.inspection.codigo === code) {
+                this.inspection = null;
+                await this.persistInspection();
+                this.broadcast('clue_inspection_stopped', { mesa: this.table, codigo: code, reason: 'removed_by_master' });
+            }
+            this.broadcast('player_disconnected', { codigo: code, mesa: this.table, reason: 'removed_by_master' });
+            return;
+        }
+
         if (event === 'lumina_ready') {
             this.updateMeta(ws, { isLumina: true });
             this.send(ws, 'lumina_state_updated', this.lumina);
@@ -927,7 +950,14 @@ export default {
         }
         if (url.pathname === '/socket.io/socket.io.js') {
             const assetUrl = new URL('/realtime-client.js', url);
-            return env.ASSETS.fetch(new Request(assetUrl, request));
+            const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, request));
+            const headers = new Headers(assetResponse.headers);
+            headers.set('Cache-Control', 'no-store');
+            return new Response(assetResponse.body, {
+                status: assetResponse.status,
+                statusText: assetResponse.statusText,
+                headers
+            });
         }
         return env.ASSETS.fetch(request);
     }

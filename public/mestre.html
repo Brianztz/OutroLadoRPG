@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escudo do Mestre</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <script src="firebase-client.js?v=20260914-2"></script>
+    <script src="firebase-client.js?v=20260919-1"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => OLFirebase.guardPage('master'));
     </script>
@@ -101,10 +101,13 @@
         .tag-lesionado { border: 1px solid var(--accent-red); background: rgba(229,57,53,0.4); }
         .tag-morrendo { background: var(--accent-red); animation: pulse-red 1.5s infinite; }
         .tag-enlouquecendo { border: 1px solid var(--accent-blue); background: rgba(139,204,246,0.4); }
-        .player-actions { display: block; }
-        .btn-ver-ficha { width: 100%; margin-top: 3px; padding: 10px 6px; border-radius: 6px; font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .player-actions { display: grid; grid-template-columns: 1fr; gap: 7px; }
+        .btn-ver-ficha, .btn-remove-player { width: 100%; margin: 0; padding: 10px 6px; border-radius: 6px; font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .btn-ver-ficha { border: 1px solid var(--accent-blue); background: rgba(139,204,246,0.1); color: var(--accent-blue); }
         .btn-ver-ficha:hover { background: var(--accent-blue); color: #000; }
+        .btn-remove-player { border: 1px solid rgba(217,75,83,0.72); background: rgba(217,75,83,0.10); color: #ff8f95; }
+        .btn-remove-player:hover { background: rgba(217,75,83,0.88); color: #fff; }
+        .btn-remove-player:disabled { opacity: 0.45; cursor: wait; }
         .initiative-container { min-width: 340px; flex: 1.15; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-card); backdrop-filter: blur(8px); }
         .initiative-title { padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.52); color: var(--accent-yellow); font-weight: 900; }
         .initiative-round { padding: 4px 8px; border: 1px solid rgba(210,232,248,0.35); border-radius: 999px; font-size: 0.65em; white-space: nowrap; }
@@ -257,6 +260,10 @@
         .clues-toolbar-title { margin: 0; color: var(--accent-yellow); font-size: 0.9em; font-weight: 900; text-transform: uppercase; }
         .clues-toolbar-info { margin-top: 4px; color: var(--text-secondary); font-size: 0.68em; }
         .clues-count { color: var(--accent-yellow); }
+        .clues-sync-status { margin-left: 5px; color: var(--text-secondary); font-size: 0.92em; font-weight: 900; white-space: nowrap; }
+        .clues-sync-status.saving { color: #9ed8ff; }
+        .clues-sync-status.saved { color: #72f6ad; }
+        .clues-sync-status.error { color: #ff8f95; }
         .clue-create-button { padding: 10px 16px; border: 1px solid var(--accent-yellow); border-radius: 7px; background: rgba(210,232,248,0.13); color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .clue-create-button:hover { background: var(--accent-yellow); color: #000; }
         .master-clues-grid { min-height: 0; display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 15px; align-content: flex-start; overflow-y: auto; padding-right: 7px; }
@@ -517,7 +524,7 @@
 
     <section id="master-tab-clues" class="clues-workspace master-tab-panel">
         <div class="clues-toolbar">
-            <div><h2 class="clues-toolbar-title">Pistas do Mestre</h2><div class="clues-toolbar-info"><span id="master-clues-count" class="clues-count">0 PISTAS</span> cadastradas</div></div>
+            <div><h2 class="clues-toolbar-title">Pistas do Mestre</h2><div class="clues-toolbar-info"><span id="master-clues-count" class="clues-count">0 PISTAS</span> cadastradas · <span id="master-clues-sync-status" class="clues-sync-status saving">CARREGANDO...</span></div></div>
             <button class="clue-create-button" type="button" onclick="openMasterClueForm()">+ NOVA PISTA</button>
         </div>
         <div id="master-clues-grid" class="master-clues-grid"></div>
@@ -768,7 +775,7 @@
     </div>
 
     <script src="catalog-data.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js?v=20260919-1"></script>
     <script>
         const socket = io();
         const playersBoard = document.getElementById('players-board');
@@ -800,7 +807,11 @@
         let masterCluesCloudLastHash = '';
         let masterCluesCloudSaveTimer = null;
         let masterCluesCloudQueuedJson = '';
+        let masterCluesCloudSaveInFlight = false;
+        let masterCluesCloudSavingHash = '';
+        let masterCluesCloudRetryCount = 0;
         let masterCluesCloudUnsubscribe = null;
+        let masterCluesLocalStorageWarningShown = false;
         let editingMasterClueId = null;
         let currentMasterClueId = null;
         let pendingMasterClueFront = '';
@@ -1398,16 +1409,28 @@
             }
         }
 
+        function setMasterCluesSyncStatus(state, message) {
+            const status = document.getElementById('master-clues-sync-status');
+            if (!status) return;
+            status.className = `clues-sync-status${state ? ` ${state}` : ''}`;
+            status.textContent = message || (state === 'saved' ? 'SALVO NA NUVEM' : state === 'error' ? 'ERRO AO SALVAR' : 'SALVANDO...');
+        }
+
         function saveMasterCluesState() {
             const cluesJson = JSON.stringify(masterCluesState);
             try {
                 localStorage.setItem(masterCluesStorageKey(), cluesJson);
             } catch (error) {
-                alert('Os arquivos da pista ficaram grandes demais para salvar neste navegador. Use imagens menores ou um link para o áudio.');
+                console.warn('A cópia local das pistas não coube no navegador:', error);
+                if (!masterCluesLocalStorageWarningShown) {
+                    masterCluesLocalStorageWarningShown = true;
+                    alert('As pistas ficaram grandes demais para a cópia local do navegador. Elas continuarão sendo salvas na nuvem; aguarde o indicador mostrar "SALVO NA NUVEM" antes de fechar a página.');
+                }
             }
             if (masterCluesCloudApplying) return;
             if (!masterCluesCloudReady) {
                 masterCluesCloudDirtyBeforeReady = true;
+                setMasterCluesSyncStatus('saving', 'AGUARDANDO NUVEM...');
                 return;
             }
             queueMasterCluesCloudSave(cluesJson);
@@ -1417,12 +1440,16 @@
             clearTimeout(masterCluesCloudSaveTimer);
             masterCluesCloudSaveTimer = null;
             masterCluesCloudQueuedJson = '';
+            masterCluesCloudSaveInFlight = false;
+            masterCluesCloudSavingHash = '';
+            masterCluesCloudRetryCount = 0;
             if (typeof masterCluesCloudUnsubscribe === 'function') masterCluesCloudUnsubscribe();
             masterCluesCloudUnsubscribe = null;
             masterCluesCloudReady = false;
             masterCluesCloudApplying = false;
             masterCluesCloudDirtyBeforeReady = false;
             masterCluesCloudLastHash = '';
+            setMasterCluesSyncStatus('saving', 'RECONECTANDO...');
         }
 
         function applyMasterCluesCloud(cloudClues, uid) {
@@ -1432,37 +1459,87 @@
             masterCluesCloudApplying = true;
             try {
                 masterCluesState = parsedClues.map(normalizeMasterClue);
-                localStorage.setItem(masterCluesStorageKey(), cloudClues.cluesJson);
+                try {
+                    localStorage.setItem(masterCluesStorageKey(), cloudClues.cluesJson);
+                } catch (storageError) {
+                    console.warn('A cópia local das pistas recebidas da nuvem não coube no navegador:', storageError);
+                }
                 if (currentMasterClueId && !masterCluesState.some(clue => clue.id === currentMasterClueId)) closeMasterClueInfo();
                 renderMasterClues();
                 masterCluesCloudLastHash = cloudClues.cluesHash || OLFirebase.hashCharacterSheet(cloudClues.cluesJson);
-                localStorage.setItem(masterCluesCloudMarkerKey(uid), masterCluesCloudLastHash);
+                try { localStorage.setItem(masterCluesCloudMarkerKey(uid), masterCluesCloudLastHash); } catch (error) {}
+                setMasterCluesSyncStatus('saved', 'SALVO NA NUVEM');
                 return true;
             } finally {
                 masterCluesCloudApplying = false;
             }
         }
 
-        function queueMasterCluesCloudSave(cluesJson = JSON.stringify(masterCluesState)) {
-            if (!masterCluesCloudReady || masterCluesCloudApplying || !window.OLFirebase) return;
-            masterCluesCloudQueuedJson = cluesJson;
+        function scheduleMasterCluesCloudSave(delay = 250) {
             clearTimeout(masterCluesCloudSaveTimer);
-            masterCluesCloudSaveTimer = setTimeout(async () => {
-                const queuedJson = masterCluesCloudQueuedJson;
+            masterCluesCloudSaveTimer = setTimeout(() => {
+                masterCluesCloudSaveTimer = null;
+                flushMasterCluesCloudSave();
+            }, Math.max(0, Number(delay) || 0));
+        }
+
+        async function flushMasterCluesCloudSave() {
+            if (!masterCluesCloudReady || masterCluesCloudApplying || masterCluesCloudSaveInFlight || !window.OLFirebase) return;
+            const queuedJson = masterCluesCloudQueuedJson;
+            if (!queuedJson) return;
+
+            const syncingTable = masterTableCode;
+            const queuedHash = OLFirebase.hashCharacterSheet(queuedJson);
+            if (queuedHash === masterCluesCloudLastHash) {
                 masterCluesCloudQueuedJson = '';
-                if (!queuedJson) return;
-                const queuedHash = OLFirebase.hashCharacterSheet(queuedJson);
-                if (queuedHash === masterCluesCloudLastHash) return;
-                try {
-                    const user = await OLFirebase.getCurrentUser();
-                    if (!user) return;
-                    const result = await OLFirebase.saveMasterClues(masterTableCode, queuedJson);
-                    masterCluesCloudLastHash = result.cluesHash;
-                    localStorage.setItem(masterCluesCloudMarkerKey(user.uid), result.cluesHash);
-                } catch (error) {
-                    console.error('Não foi possível salvar as pistas do mestre na nuvem:', error);
+                setMasterCluesSyncStatus('saved', 'SALVO NA NUVEM');
+                return;
+            }
+
+            masterCluesCloudQueuedJson = '';
+            masterCluesCloudSaveInFlight = true;
+            masterCluesCloudSavingHash = queuedHash;
+            setMasterCluesSyncStatus('saving', 'SALVANDO...');
+            let failed = false;
+
+            try {
+                const user = await OLFirebase.getCurrentUser();
+                if (!user) throw new Error('Sua sessão do Firebase não está disponível.');
+                const result = await OLFirebase.saveMasterClues(syncingTable, queuedJson);
+                if (syncingTable !== masterTableCode) return;
+                masterCluesCloudLastHash = result.cluesHash || queuedHash;
+                try { localStorage.setItem(masterCluesCloudMarkerKey(user.uid), masterCluesCloudLastHash); } catch (error) {}
+                masterCluesCloudRetryCount = 0;
+            } catch (error) {
+                failed = true;
+                console.error('Não foi possível salvar as pistas do mestre na nuvem:', error);
+                if (syncingTable === masterTableCode && !masterCluesCloudQueuedJson) {
+                    masterCluesCloudQueuedJson = queuedJson;
                 }
-            }, 600);
+                masterCluesCloudRetryCount = Math.min(6, masterCluesCloudRetryCount + 1);
+                setMasterCluesSyncStatus('error', 'ERRO — TENTANDO NOVAMENTE');
+            } finally {
+                masterCluesCloudSaveInFlight = false;
+                masterCluesCloudSavingHash = '';
+                if (syncingTable !== masterTableCode) return;
+                if (masterCluesCloudQueuedJson) {
+                    const retryDelay = failed ? Math.min(10000, 750 * (2 ** masterCluesCloudRetryCount)) : 60;
+                    scheduleMasterCluesCloudSave(retryDelay);
+                } else if (!failed) {
+                    setMasterCluesSyncStatus('saved', 'SALVO NA NUVEM');
+                }
+            }
+        }
+
+        function queueMasterCluesCloudSave(cluesJson = JSON.stringify(masterCluesState)) {
+            if (masterCluesCloudApplying || !window.OLFirebase) return;
+            masterCluesCloudQueuedJson = cluesJson;
+            setMasterCluesSyncStatus('saving', 'SALVANDO...');
+            if (!masterCluesCloudReady) {
+                masterCluesCloudDirtyBeforeReady = true;
+                return;
+            }
+            if (!masterCluesCloudSaveInFlight) scheduleMasterCluesCloudSave(250);
         }
 
         async function initializeMasterCluesCloudSync() {
@@ -1507,6 +1584,8 @@
 
                 masterCluesCloudDirtyBeforeReady = false;
                 masterCluesCloudReady = true;
+                setMasterCluesSyncStatus('saved', 'SALVO NA NUVEM');
+                if (masterCluesCloudQueuedJson) scheduleMasterCluesCloudSave(0);
                 masterCluesCloudUnsubscribe = await OLFirebase.watchMasterClues(syncingTable, (nextClues, error) => {
                     if (syncingTable !== masterTableCode) return;
                     if (error) {
@@ -1515,7 +1594,11 @@
                     }
                     if (!nextClues || !nextClues.cluesJson) return;
                     const nextHash = nextClues.cluesHash || OLFirebase.hashCharacterSheet(nextClues.cluesJson);
-                    if (nextHash === masterCluesCloudLastHash) return;
+                    if (nextHash === masterCluesCloudLastHash || nextHash === masterCluesCloudSavingHash) return;
+                    // Nunca reaplica um snapshot remoto enquanto existe uma alteração local
+                    // aguardando ou sendo gravada. Isso evita uma confirmação antiga
+                    // apagar uma pista recém-criada.
+                    if (masterCluesCloudSaveInFlight || masterCluesCloudQueuedJson) return;
                     try {
                         applyMasterCluesCloud(nextClues, user.uid);
                     } catch (parseError) {
@@ -1523,7 +1606,14 @@
                     }
                 });
             } catch (error) {
-                if (syncingTable === masterTableCode) masterCluesCloudReady = true;
+                if (syncingTable === masterTableCode) {
+                    masterCluesCloudReady = true;
+                    setMasterCluesSyncStatus('error', 'NUVEM INDISPONÍVEL');
+                    if (masterCluesCloudDirtyBeforeReady || masterCluesCloudQueuedJson) {
+                        masterCluesCloudQueuedJson = JSON.stringify(masterCluesState);
+                        scheduleMasterCluesCloudSave(1500);
+                    }
+                }
                 console.error('A sincronização das pistas do mestre não pôde ser iniciada:', error);
             }
         }
@@ -2803,8 +2893,9 @@
                 <div><div class="bar-label vida">VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
                 <div><div class="bar-label sanidade">SANIDADE</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
                 <div class="status-tags">${tags}</div>
-                <div class="player-actions"><button class="btn-ver-ficha" type="button">🔍 VER FICHA</button></div>`;
+                <div class="player-actions"><button class="btn-ver-ficha" type="button">🔍 VER FICHA</button><button class="btn-remove-player" type="button">✕ REMOVER DA MESA</button></div>`;
             card.querySelector('.btn-ver-ficha').onclick = () => abrirFicha(code);
+            card.querySelector('.btn-remove-player').onclick = () => removePlayerFromTable(code);
             updatePlayersCount();
         }
 
@@ -2815,6 +2906,52 @@
             const card = document.getElementById(`player-${code}`);
             if (card) card.remove();
             updatePlayersCount();
+        }
+
+        function removePlayerFromInitiative(code) {
+            const playerId = `player_${String(code || '')}`;
+            const wasActive = initiativeState.activeId === playerId;
+            const previousLength = initiativeState.entries.length;
+            initiativeState.entries = initiativeState.entries.filter(entry => entry.id !== playerId);
+            if (initiativeState.entries.length === previousLength) return;
+            if (!initiativeState.entries.length) {
+                initiativeState.activeId = null;
+                initiativeState.round = 0;
+                initiativeState.started = false;
+            } else if (wasActive) {
+                initiativeState.activeId = initiativeState.entries[0].id;
+            }
+            saveInitiativeState();
+            renderInitiative();
+        }
+
+        async function removePlayerFromTable(code) {
+            code = String(code || '').trim().toUpperCase();
+            const player = connectedPlayers.get(code);
+            const playerName = String(player && player.nome || 'este jogador');
+            if (!code || !confirm(`Remover ${playerName} da mesa ${masterTableCode}? O jogador será desconectado e precisará entrar na mesa novamente para voltar.`)) return;
+
+            const button = document.querySelector(`#player-${CSS.escape(code)} .btn-remove-player`);
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'REMOVENDO...';
+            }
+
+            // A expulsão em tempo real é imediata. A remoção do vínculo no Firestore
+            // impede que a sessão continue autorizada depois do redirecionamento.
+            socket.emit('kick_player', { mesa: masterTableCode, codigo: code });
+            removePlayer(code, masterTableCode);
+            removePlayerFromInitiative(code);
+
+            try {
+                if (!window.OLFirebase || typeof OLFirebase.removeTablePlayer !== 'function') {
+                    throw new Error('O cliente Firebase precisa ser recarregado para remover o acesso da mesa.');
+                }
+                await OLFirebase.removeTablePlayer(masterTableCode, code);
+            } catch (error) {
+                console.error('O jogador foi desconectado, mas o vínculo da mesa não pôde ser removido:', error);
+                alert(`O jogador foi desconectado agora, mas não foi possível remover o acesso salvo no Firebase. ${error && error.message ? error.message : 'Tente novamente após recarregar a página.'}`);
+            }
         }
 
         function abrirFicha(code) {

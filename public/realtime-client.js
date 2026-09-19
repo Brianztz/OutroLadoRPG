@@ -8,6 +8,7 @@
     const BINARY_FIELDS = ['frame', 'chunk'];
     const PLAYER_DISCONNECT_GRACE_MS = 4500;
     const GUARDED_PAGE = /\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
+    const PLAYER_PAGE = /\/ficha(?:\.html)?\/?$/i.test(global.location.pathname);
     const SCREEN_SHARE_PAGE = /\/compartilhar(?:\.html)?\/?$/i.test(global.location.pathname);
 
     function normalizeTableCode(value) {
@@ -252,6 +253,21 @@
             }, 2200);
         }
 
+        _handlePlayerKick(data = {}) {
+            if (!PLAYER_PAGE) return false;
+            this._manualClose = true;
+            if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
+            this._reconnectTimer = null;
+            try { global.sessionStorage.removeItem('ol_firebase_portal_access'); } catch (error) {}
+            const table = normalizeTableCode(data && data.mesa || this._table);
+            const url = new URL('./index.html', global.location.href);
+            url.search = '';
+            url.searchParams.set('mesa', table);
+            url.searchParams.set('aviso', 'Você foi removido desta mesa pelo mestre.');
+            global.setTimeout(() => global.location.replace(url.href), 0);
+            return true;
+        }
+
         _dispatchNow(event, data) {
             const handlers = this._handlers.get(event);
             if (!handlers) return;
@@ -261,6 +277,7 @@
         }
 
         _dispatch(event, data) {
+            if (event === 'player_kicked' && this._handlePlayerKick(data)) return;
             if (SCREEN_SHARE_PAGE) {
                 if (event === 'screen_share_available') {
                     this._screenShareRemoteActive = true;
@@ -399,11 +416,12 @@
                 }
             });
 
-            socket.addEventListener('close', () => {
+            socket.addEventListener('close', closeEvent => {
                 if (generation !== this._generation) return;
                 const wasConnected = this.connected;
                 this.connected = false;
                 if (wasConnected) this._dispatch('disconnect');
+                if (Number(closeEvent && closeEvent.code) === 4003 && this._handlePlayerKick({ mesa: this._table })) return;
                 if (!this._manualClose) this._scheduleReconnect();
             });
 

@@ -452,6 +452,35 @@
         }, error => listener(null, error));
     }
 
+    async function removeTablePlayer(requestedTable, requestedPlayerCode) {
+        const user = await getCurrentUser();
+        if (!user) throw new Error('Entre com sua conta Google para remover um jogador da mesa.');
+        const sdkContext = await sdkPromise;
+        const { db, firestoreSdk } = sdkContext;
+        const tableId = normalizeTableCode(requestedTable);
+        const playerCode = normalizePlayerCode(requestedPlayerCode);
+        if (!playerCode) throw new Error('Código do jogador inválido.');
+
+        const membersRef = firestoreSdk.collection(db, 'tables', tableId, 'members');
+        const membersSnapshot = await withTimeout(
+            firestoreSdk.getDocs(membersRef),
+            FIRESTORE_TIMEOUT_MS,
+            portalNetworkError('localizar o jogador na mesa')
+        );
+        const target = membersSnapshot.docs.find(memberSnapshot => {
+            const data = memberSnapshot.data() || {};
+            return data.role === 'player' && normalizePlayerCode(data.playerCode) === playerCode;
+        });
+        if (!target) throw new Error('Não foi possível localizar o vínculo deste jogador no Firebase.');
+
+        await withTimeout(
+            firestoreSdk.deleteDoc(firestoreSdk.doc(db, 'tables', tableId, 'members', target.id)),
+            FIRESTORE_TIMEOUT_MS,
+            portalNetworkError('remover o jogador da mesa')
+        );
+        return { uid: target.id, playerCode, tableId };
+    }
+
     async function ensureUserProfiles(user) {
         const { db, firestoreSdk } = await sdkPromise;
         const { doc, getDoc, serverTimestamp, setDoc } = firestoreSdk;
@@ -679,6 +708,7 @@
         onUserChanged,
         preparePortal,
         refreshRealtimeToken,
+        removeTablePlayer,
         saveCharacter,
         saveMasterClues,
         signInWithGoogle,
