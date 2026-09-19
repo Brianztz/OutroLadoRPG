@@ -135,6 +135,25 @@
         .music-now-channel { width: 100%; overflow: hidden; color: #8ea5b5; font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
         .music-sync-state { color: var(--green); font-size: 0.72rem; font-weight: 800; }
         .music-unlock { margin-top: 4px; border-color: rgba(86,221,167,0.55); background: rgba(86,221,167,0.12); color: #bff6df; }
+        .music-controller { width: 100%; display: grid; gap: 8px; margin-top: 6px; }
+        .music-controller-buttons { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+        .music-controller-button { min-width: 42px; min-height: 36px; padding: 7px 10px; border: 1px solid rgba(139,204,246,0.25); border-radius: 8px; background: rgba(139,204,246,0.07); color: #edf7fc; cursor: pointer; font-size: 0.78rem; font-weight: 900; }
+        .music-controller-button:hover { border-color: var(--blue); background: rgba(139,204,246,0.15); }
+        .music-controller-button.play { min-width: 62px; border-color: rgba(255,0,0,0.45); background: rgba(170,0,0,0.16); }
+        .music-progress-row { display: grid; grid-template-columns: 42px minmax(80px,1fr) 42px; gap: 8px; align-items: center; width: 100%; }
+        .music-progress-row span { color: #8ea5b5; font-size: 0.68rem; font-variant-numeric: tabular-nums; text-align: center; }
+        .music-range { width: 100%; accent-color: #ff4242; cursor: pointer; }
+        .music-volume { display: grid; grid-template-columns: auto minmax(90px,180px); gap: 8px; align-items: center; color: #8ea5b5; font-size: 0.7rem; }
+        .music-library { display: grid; gap: 10px; padding-top: 2px; }
+        .music-library-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .music-library-head strong { color: #eef8fd; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+        .music-playlists { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+        .music-playlist-card { flex: 0 0 190px; min-height: 62px; padding: 9px 10px; border: 1px solid rgba(139,204,246,0.15); border-radius: 9px; background: rgba(139,204,246,0.045); color: #edf7fc; cursor: pointer; text-align: left; }
+        .music-playlist-card:hover { border-color: rgba(255,0,0,0.45); background: rgba(255,0,0,0.07); }
+        .music-playlist-card strong { display: block; overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+        .music-playlist-card span { display: block; margin-top: 4px; color: #7f95a3; font-size: 0.66rem; }
+        .music-library-current { color: #9cb2c0; font-size: 0.72rem; }
+        .music-queue-number { color: #ff8b8b; font-size: 0.64rem; font-weight: 900; }
 
         body.spectator-mode .music-now { grid-template-columns: 1fr; }
         body.spectator-mode .music-player-shell {
@@ -240,11 +259,34 @@
                         <strong id="music-now-title" class="music-now-title">Nenhuma música</strong>
                         <span id="music-now-channel" class="music-now-channel"></span>
                         <span id="music-sync-state" class="music-sync-state">Aguardando sincronização</span>
+                        <div id="music-controller" class="music-controller music-host-only">
+                            <div class="music-controller-buttons">
+                                <button class="music-controller-button" type="button" onclick="musicPreviousTrack()" title="Faixa anterior">⏮</button>
+                                <button id="music-controller-play" class="music-controller-button play" type="button" onclick="musicTogglePlayback()">▶ Play</button>
+                                <button class="music-controller-button" type="button" onclick="musicNextTrack()" title="Próxima faixa">⏭</button>
+                            </div>
+                            <div class="music-progress-row">
+                                <span id="music-current-time">0:00</span>
+                                <input id="music-progress" class="music-range" type="range" min="0" max="1000" value="0" step="1" aria-label="Progresso da música" oninput="previewMusicSeek(this.value)" onchange="commitMusicSeek(this.value)">
+                                <span id="music-duration">0:00</span>
+                            </div>
+                            <label class="music-volume">Volume <input id="music-volume" class="music-range" type="range" min="0" max="100" value="70" step="1" oninput="setMusicVolume(this.value)"></label>
+                        </div>
                         <button id="music-audio-enable" class="music-button music-unlock" type="button" onclick="enableSharedMusicAudio()" hidden>Ativar áudio da mesa</button>
                     </div>
                 </div>
                 <div id="music-body" class="music-body music-host-only" hidden>
                     <div id="music-account" class="music-account"></div>
+                    <div class="music-library">
+                        <div class="music-library-head">
+                            <strong>Suas playlists</strong>
+                            <button id="music-playlists-refresh" class="music-button" type="button" onclick="loadYouTubeMusicPlaylists(true)">Atualizar playlists</button>
+                        </div>
+                        <div id="music-playlists" class="music-playlists">
+                            <div class="music-empty">Vincule a conta para carregar suas playlists.</div>
+                        </div>
+                        <div id="music-library-current" class="music-library-current"></div>
+                    </div>
                     <form class="music-search-form" onsubmit="searchYouTubeMusic(event)">
                         <input id="music-search-input" class="music-search-input" type="search" maxlength="120" autocomplete="off" placeholder="Buscar música ou artista">
                         <button id="music-search-button" class="music-button" type="submit">Buscar</button>
@@ -1221,9 +1263,302 @@
             revision: 0
         };
         let musicSyncTimer = null;
+        let musicControllerTimer = null;
+        let musicPlaylistQueue = [];
+        let musicPlaylistIndex = -1;
+        let musicPlaylistName = '';
+        let musicPlaylistsLoaded = false;
+        let musicSeekingPreview = false;
 
         function safeMusicVideoId(value) {
             return String(value || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
+        }
+
+        function formatMusicTime(value) {
+            const seconds = Math.max(0, Math.floor(Number(value) || 0));
+            const minutes = Math.floor(seconds / 60);
+            const rest = String(seconds % 60).padStart(2, '0');
+            return `${minutes}:${rest}`;
+        }
+
+        async function youtubeApi(path, params = {}) {
+            if (!youtubeAccessToken) throw new Error('Vincule sua conta primeiro.');
+            const url = new URL(`https://www.googleapis.com/youtube/v3/${path}`);
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+            });
+            const response = await fetch(url.href, { headers: { Authorization: `Bearer ${youtubeAccessToken}` } });
+            const payload = await response.json().catch(() => ({}));
+            if (response.status === 401) {
+                youtubeAccessToken = '';
+                try { sessionStorage.removeItem('ol_youtube_music_access_token'); } catch (error) {}
+                setYouTubeMusicLinked(false);
+                throw new Error('A autorização expirou. Vincule a conta novamente.');
+            }
+            if (!response.ok) {
+                const reason = payload && payload.error && payload.error.errors && payload.error.errors[0] && payload.error.errors[0].reason;
+                if (reason === 'accessNotConfigured') throw new Error('Ative a YouTube Data API v3 no projeto Google/Firebase.');
+                throw new Error(String(payload && payload.error && payload.error.message || 'Falha ao acessar o YouTube.'));
+            }
+            return payload;
+        }
+
+        function renderMusicPlaylists(playlists) {
+            const root = document.getElementById('music-playlists');
+            root.textContent = '';
+            if (!Array.isArray(playlists) || !playlists.length) {
+                const empty = document.createElement('div');
+                empty.className = 'music-empty';
+                empty.textContent = 'Nenhuma playlist encontrada nesta conta.';
+                root.appendChild(empty);
+                return;
+            }
+            playlists.forEach(playlist => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'music-playlist-card';
+                const title = document.createElement('strong');
+                title.textContent = String(playlist.title || 'Playlist');
+                const count = document.createElement('span');
+                count.textContent = `${Math.max(0, Number(playlist.count) || 0)} faixas`;
+                button.append(title, count);
+                button.addEventListener('click', () => loadYouTubeMusicPlaylistTracks(playlist.id, playlist.title));
+                root.appendChild(button);
+            });
+        }
+
+        async function loadYouTubeMusicPlaylists(force = false) {
+            if (spectatorMode || !youtubeAccessToken) return;
+            if (musicPlaylistsLoaded && !force) return;
+            const refresh = document.getElementById('music-playlists-refresh');
+            const root = document.getElementById('music-playlists');
+            if (refresh) refresh.disabled = true;
+            root.innerHTML = '<div class="music-empty">Carregando playlists...</div>';
+            try {
+                const playlists = [];
+                let pageToken = '';
+                let pages = 0;
+                do {
+                    const payload = await youtubeApi('playlists', {
+                        part: 'snippet,contentDetails',
+                        mine: 'true',
+                        maxResults: 50,
+                        pageToken
+                    });
+                    (payload.items || []).forEach(item => {
+                        if (!item || !item.id) return;
+                        playlists.push({
+                            id: String(item.id),
+                            title: String(item.snippet && item.snippet.title || 'Playlist'),
+                            count: Number(item.contentDetails && item.contentDetails.itemCount) || 0
+                        });
+                    });
+                    pageToken = String(payload.nextPageToken || '');
+                    pages += 1;
+                } while (pageToken && pages < 4);
+
+                try {
+                    const channelPayload = await youtubeApi('channels', { part: 'contentDetails', mine: 'true', maxResults: 1 });
+                    const likesId = channelPayload.items && channelPayload.items[0]
+                        && channelPayload.items[0].contentDetails
+                        && channelPayload.items[0].contentDetails.relatedPlaylists
+                        && channelPayload.items[0].contentDetails.relatedPlaylists.likes;
+                    if (likesId && !playlists.some(item => item.id === likesId)) {
+                        playlists.unshift({ id: String(likesId), title: 'Músicas curtidas', count: 0 });
+                    }
+                } catch (error) {}
+
+                musicPlaylistsLoaded = true;
+                renderMusicPlaylists(playlists);
+            } catch (error) {
+                root.innerHTML = '';
+                const empty = document.createElement('div');
+                empty.className = 'music-empty';
+                empty.textContent = String(error && error.message || 'Não foi possível carregar as playlists.');
+                root.appendChild(empty);
+            } finally {
+                if (refresh) refresh.disabled = false;
+            }
+        }
+
+        function renderPlaylistTracks() {
+            const results = document.getElementById('music-results');
+            results.textContent = '';
+            const current = document.getElementById('music-library-current');
+            current.textContent = musicPlaylistName
+                ? `Playlist aberta: ${musicPlaylistName} • ${musicPlaylistQueue.length} faixas`
+                : '';
+            if (!musicPlaylistQueue.length) {
+                clearMusicResults('Essa playlist não tem faixas reproduzíveis.');
+                return;
+            }
+            musicPlaylistQueue.forEach((song, index) => {
+                const card = document.createElement('article');
+                card.className = 'music-result';
+                const image = document.createElement('img');
+                image.alt = '';
+                image.loading = 'lazy';
+                image.src = String(song.thumbnail || '');
+                const copy = document.createElement('div');
+                copy.className = 'music-result-copy';
+                const number = document.createElement('div');
+                number.className = 'music-queue-number';
+                number.textContent = `FAIXA ${index + 1}`;
+                const title = document.createElement('div');
+                title.className = 'music-result-title';
+                title.textContent = song.title;
+                const channel = document.createElement('div');
+                channel.className = 'music-result-channel';
+                channel.textContent = song.channel;
+                const play = document.createElement('button');
+                play.type = 'button';
+                play.className = 'music-play';
+                play.textContent = index === musicPlaylistIndex ? '▶ Tocando' : '▶ Tocar';
+                play.addEventListener('click', () => playPlaylistTrack(index));
+                copy.append(number, title, channel, play);
+                card.append(image, copy);
+                results.appendChild(card);
+            });
+        }
+
+        async function loadYouTubeMusicPlaylistTracks(playlistId, playlistTitle) {
+            if (spectatorMode || !youtubeAccessToken) return;
+            clearMusicResults('Carregando faixas da playlist...');
+            document.getElementById('music-library-current').textContent = `Abrindo ${String(playlistTitle || 'playlist')}...`;
+            try {
+                const songs = [];
+                let pageToken = '';
+                let pages = 0;
+                do {
+                    const payload = await youtubeApi('playlistItems', {
+                        part: 'snippet,contentDetails',
+                        playlistId,
+                        maxResults: 50,
+                        pageToken
+                    });
+                    (payload.items || []).forEach(item => {
+                        const snippet = item && item.snippet || {};
+                        const videoId = safeMusicVideoId(item && item.contentDetails && item.contentDetails.videoId);
+                        const title = String(snippet.title || '').trim();
+                        if (!videoId || !title || /deleted video|private video/i.test(title)) return;
+                        const thumb = snippet.thumbnails && (snippet.thumbnails.medium || snippet.thumbnails.default);
+                        songs.push({
+                            videoId,
+                            title,
+                            channel: String(snippet.videoOwnerChannelTitle || snippet.channelTitle || ''),
+                            thumbnail: String(thumb && thumb.url || '')
+                        });
+                    });
+                    pageToken = String(payload.nextPageToken || '');
+                    pages += 1;
+                } while (pageToken && pages < 8);
+
+                musicPlaylistQueue = songs;
+                musicPlaylistIndex = -1;
+                musicPlaylistName = String(playlistTitle || 'Playlist').slice(0, 160);
+                renderPlaylistTracks();
+            } catch (error) {
+                musicPlaylistQueue = [];
+                musicPlaylistIndex = -1;
+                musicPlaylistName = '';
+                clearMusicResults(String(error && error.message || 'Não foi possível abrir a playlist.'));
+                document.getElementById('music-library-current').textContent = '';
+            }
+        }
+
+        function playPlaylistTrack(index) {
+            const song = musicPlaylistQueue[index];
+            if (!song) return;
+            musicPlaylistIndex = index;
+            playSharedMusic(song.videoId, song.title, song.channel, { keepQueue: true, queueIndex: index });
+            renderPlaylistTracks();
+        }
+
+        function musicNextTrack(auto = false) {
+            if (!musicPlaylistQueue.length) return;
+            const next = musicPlaylistIndex < 0 ? 0 : musicPlaylistIndex + 1;
+            if (next >= musicPlaylistQueue.length) {
+                if (auto) {
+                    try { musicPlayer && musicPlayer.pauseVideo(); } catch (error) {}
+                    broadcastCurrentMusicState(false);
+                }
+                return;
+            }
+            playPlaylistTrack(next);
+        }
+
+        function musicPreviousTrack() {
+            if (!musicPlaylistQueue.length) return;
+            if (musicPlayerReady && musicPlayer) {
+                try {
+                    const current = Number(musicPlayer.getCurrentTime()) || 0;
+                    if (current > 4) {
+                        musicPlayer.seekTo(0, true);
+                        broadcastCurrentMusicState(true);
+                        return;
+                    }
+                } catch (error) {}
+            }
+            const previous = musicPlaylistIndex > 0 ? musicPlaylistIndex - 1 : 0;
+            playPlaylistTrack(previous);
+        }
+
+        function musicTogglePlayback() {
+            if (!musicPlayerReady || !musicPlayer || !sharedMusicState.videoId) return;
+            musicHostOwnsControl = true;
+            try {
+                if (musicPlayer.getPlayerState() === 1) musicPlayer.pauseVideo();
+                else {
+                    musicPlayer.unMute();
+                    musicPlayer.playVideo();
+                }
+            } catch (error) {}
+        }
+
+        function previewMusicSeek(value) {
+            musicSeekingPreview = true;
+            if (!musicPlayerReady || !musicPlayer) return;
+            let duration = 0;
+            try { duration = Number(musicPlayer.getDuration()) || 0; } catch (error) {}
+            const target = duration * (Math.max(0, Math.min(1000, Number(value) || 0)) / 1000);
+            document.getElementById('music-current-time').textContent = formatMusicTime(target);
+        }
+
+        function commitMusicSeek(value) {
+            musicSeekingPreview = false;
+            if (!musicPlayerReady || !musicPlayer) return;
+            let duration = 0;
+            try { duration = Number(musicPlayer.getDuration()) || 0; } catch (error) {}
+            const target = duration * (Math.max(0, Math.min(1000, Number(value) || 0)) / 1000);
+            try { musicPlayer.seekTo(target, true); } catch (error) {}
+            musicHostOwnsControl = true;
+            setTimeout(() => broadcastCurrentMusicState(), 150);
+        }
+
+        function setMusicVolume(value) {
+            if (!musicPlayerReady || !musicPlayer) return;
+            try {
+                musicPlayer.unMute();
+                musicPlayer.setVolume(Math.max(0, Math.min(100, Number(value) || 0)));
+            } catch (error) {}
+        }
+
+        function updateMusicController() {
+            if (spectatorMode || !musicPlayerReady || !musicPlayer) return;
+            let current = 0;
+            let duration = 0;
+            let state = -1;
+            try {
+                current = Number(musicPlayer.getCurrentTime()) || 0;
+                duration = Number(musicPlayer.getDuration()) || 0;
+                state = Number(musicPlayer.getPlayerState());
+            } catch (error) {}
+            document.getElementById('music-controller-play').textContent = state === 1 ? '⏸ Pausar' : '▶ Play';
+            document.getElementById('music-duration').textContent = formatMusicTime(duration);
+            if (!musicSeekingPreview) {
+                document.getElementById('music-current-time').textContent = formatMusicTime(current);
+                document.getElementById('music-progress').value = duration > 0 ? String(Math.round((current / duration) * 1000)) : '0';
+            }
         }
 
         function setYouTubeMusicLinked(linked, user = null) {
@@ -1365,6 +1700,9 @@
 
         function onSharedMusicPlayerReady() {
             musicPlayerReady = true;
+            if (!spectatorMode) {
+                try { musicPlayer.setVolume(Number(document.getElementById('music-volume').value) || 70); } catch (error) {}
+            }
             if (spectatorMode && !musicAudioUnlocked) {
                 try { musicPlayer.mute(); } catch (error) {}
             }
@@ -1382,6 +1720,10 @@
             if (spectatorMode || Date.now() < musicIgnoreEventsUntil) return;
             if (![0, 1, 2].includes(playerState)) return;
             musicHostOwnsControl = true;
+            if (playerState === 0 && musicPlaylistQueue.length && musicPlaylistIndex >= 0) {
+                musicNextTrack(true);
+                return;
+            }
             broadcastCurrentMusicState(playerState === 1);
         }
 
@@ -1398,7 +1740,7 @@
                 width: '100%',
                 height: '200',
                 playerVars: {
-                    controls: spectatorMode ? 0 : 1,
+                    controls: 0,
                     playsinline: 1,
                     rel: 0,
                     origin: window.location.origin
@@ -1440,9 +1782,17 @@
             }
         }
 
-        function playSharedMusic(videoId, title = 'Música', channel = '') {
+        function playSharedMusic(videoId, title = 'Música', channel = '', options = {}) {
             const safeId = safeMusicVideoId(videoId);
             if (!safeId || spectatorMode) return;
+            if (!options.keepQueue) {
+                musicPlaylistQueue = [];
+                musicPlaylistIndex = -1;
+                musicPlaylistName = '';
+                document.getElementById('music-library-current').textContent = '';
+            } else if (Number.isInteger(options.queueIndex)) {
+                musicPlaylistIndex = options.queueIndex;
+            }
             musicHostOwnsControl = true;
             musicAudioUnlocked = true;
             sharedMusicState = {
@@ -1488,6 +1838,7 @@
             try {
                 const user = window.OLFirebase ? await OLFirebase.getCurrentUser() : null;
                 setYouTubeMusicLinked(true, user);
+                loadYouTubeMusicPlaylists();
             } catch (error) {
                 setYouTubeMusicLinked(true);
             }
@@ -1507,6 +1858,8 @@
                 if (!youtubeAccessToken) throw new Error('Não foi possível obter autorização do YouTube.');
                 try { sessionStorage.setItem('ol_youtube_music_access_token', youtubeAccessToken); } catch (error) {}
                 setYouTubeMusicLinked(true, result.user);
+                musicPlaylistsLoaded = false;
+                loadYouTubeMusicPlaylists(true);
                 document.getElementById('music-search-input').focus();
             } catch (error) {
                 console.error('Falha ao vincular YouTube Music:', error);
@@ -1591,30 +1944,14 @@
             button.disabled = true;
             clearMusicResults('Buscando músicas...');
             try {
-                const url = new URL('https://www.googleapis.com/youtube/v3/search');
-                url.searchParams.set('part', 'snippet');
-                url.searchParams.set('type', 'video');
-                url.searchParams.set('videoCategoryId', '10');
-                url.searchParams.set('videoEmbeddable', 'true');
-                url.searchParams.set('maxResults', '12');
-                url.searchParams.set('q', query);
-                const response = await fetch(url.href, {
-                    headers: { Authorization: `Bearer ${youtubeAccessToken}` }
+                const payload = await youtubeApi('search', {
+                    part: 'snippet',
+                    type: 'video',
+                    videoCategoryId: 10,
+                    videoEmbeddable: 'true',
+                    maxResults: 12,
+                    q: query
                 });
-                const payload = await response.json().catch(() => ({}));
-                if (response.status === 401) {
-                    youtubeAccessToken = '';
-                    try { sessionStorage.removeItem('ol_youtube_music_access_token'); } catch (error) {}
-                    setYouTubeMusicLinked(false);
-                    throw new Error('A autorização expirou. Vincule a conta novamente.');
-                }
-                if (!response.ok) {
-                    const reason = payload && payload.error && payload.error.errors && payload.error.errors[0] && payload.error.errors[0].reason;
-                    if (reason === 'accessNotConfigured') {
-                        throw new Error('Ative a YouTube Data API v3 no projeto Google/Firebase.');
-                    }
-                    throw new Error(String(payload && payload.error && payload.error.message || 'Falha ao buscar no YouTube.'));
-                }
                 renderYouTubeMusicResults(payload.items);
                 document.getElementById('music-state').textContent = 'Conta vinculada — escolha uma música';
             } catch (error) {
@@ -1632,6 +1969,7 @@
                 broadcastCurrentMusicState();
             }
         }, 4000);
+        musicControllerTimer = setInterval(updateMusicController, 500);
 
         function toggleFullscreen() {
             const stage = document.getElementById('stage');
@@ -1887,6 +2225,7 @@
 
         window.addEventListener('beforeunload', () => {
             if (musicSyncTimer) clearInterval(musicSyncTimer);
+            if (musicControllerTimer) clearInterval(musicControllerTimer);
             stopRelayRecorder();
             cleanupRelayPlayback();
             if (fallbackCaptureTimer) clearInterval(fallbackCaptureTimer);
