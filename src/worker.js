@@ -282,6 +282,8 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
 function emptyScreenOverlayState(table) {
     return {
         mesa: normalizeTableCode(table),
+        mediaType: 'image',
+        mediaId: '',
         imageData: '',
         active: false,
         duration: 0,
@@ -294,17 +296,25 @@ function emptyScreenOverlayState(table) {
 function normalizeScreenOverlayState(table, rawData, previousState = null) {
     const previous = previousState || emptyScreenOverlayState(table);
     const source = rawData && typeof rawData === 'object' ? rawData : {};
+    const mediaType = String(Object.prototype.hasOwnProperty.call(source, 'mediaType') ? source.mediaType : previous.mediaType) === 'video' ? 'video' : 'image';
+    const rawMediaId = Object.prototype.hasOwnProperty.call(source, 'mediaId') ? source.mediaId : previous.mediaId;
+    const mediaId = String(rawMediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
     const hasImage = Object.prototype.hasOwnProperty.call(source, 'imageData');
     const rawImage = hasImage ? String(source.imageData || '') : previous.imageData;
-    const imageData = /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 1_600_000 ? rawImage : (hasImage ? '' : previous.imageData);
+    const imageData = mediaType === 'image' && /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 1_600_000
+        ? rawImage
+        : (mediaType === 'image' && !hasImage ? previous.imageData : '');
     const duration = Math.max(1, Math.min(3600, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
-    const active = Boolean(source.active) && Boolean(imageData);
+    const hasMedia = mediaType === 'video' ? Boolean(mediaId) : Boolean(imageData);
+    const active = Boolean(source.active) && hasMedia;
     const requestedEndAt = Number(source.endAt);
     const endAt = active
         ? (Number.isFinite(requestedEndAt) && requestedEndAt > Date.now() ? requestedEndAt : Date.now() + duration * 1000)
         : 0;
     return {
         mesa: normalizeTableCode(table),
+        mediaType,
+        mediaId: mediaType === 'video' ? mediaId : '',
         imageData,
         active,
         duration,
@@ -647,6 +657,31 @@ export class TableRoom extends DurableObject {
             return;
         }
 
+        if (event === 'screen_share_music_transport') {
+            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
+            const videoId = String(data.videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
+            if (!videoId || videoId !== this.music.videoId) return;
+            const numericPosition = Number(data.position);
+            const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : this.music.position));
+            this.music = {
+                ...this.music,
+                playing: Boolean(data.playing),
+                position,
+                updatedAt: Date.now(),
+                revision: Math.max(0, Number(this.music.revision) || 0) + 1
+            };
+            this.broadcastScreen('screen_share_music_transport', {
+                mesa: this.table,
+                videoId,
+                playing: this.music.playing,
+                position: this.music.position,
+                updatedAt: this.music.updatedAt,
+                revision: this.music.revision
+            });
+            await this.ctx.storage.put('screen-music', this.music);
+            return;
+        }
+
         if (event === 'screen_share_overlay_control') {
             if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
             const now = Date.now();
@@ -655,6 +690,36 @@ export class TableRoom extends DurableObject {
             this.screenOverlay = normalizeScreenOverlayState(this.table, data, this.screenOverlay);
             await this.ctx.storage.put('screen-overlay', this.screenOverlay);
             this.broadcastScreen('screen_share_overlay_state', this.screenOverlay);
+            return;
+        }
+
+        if (event === 'screen_share_overlay_media_request') {
+            if (!meta.screenShareJoined || !data || typeof data !== 'object') return;
+            const mediaId = String(data.mediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
+            if (!this.screenOverlay.active || this.screenOverlay.mediaType !== 'video' || !mediaId || mediaId !== this.screenOverlay.mediaId) return;
+            this.broadcastScreen('screen_share_overlay_media_request', {
+                mesa: this.table,
+                mediaId,
+                requesterId: meta.id
+            }, targetMeta => targetMeta.id !== meta.id);
+            return;
+        }
+
+        if (event === 'screen_share_overlay_media_chunk') {
+            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
+            const mediaId = String(data.mediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
+            if (this.screenOverlay.mediaType !== 'video' || !mediaId || mediaId !== this.screenOverlay.mediaId) return;
+            const chunk = data.chunk;
+            const byteLength = chunk instanceof ArrayBuffer ? chunk.byteLength : (ArrayBuffer.isView(chunk) ? chunk.byteLength : 0);
+            if (!byteLength || byteLength > 256 * 1024) return;
+            const index = Math.max(0, Math.floor(Number(data.index) || 0));
+            const total = Math.max(1, Math.min(192, Math.floor(Number(data.total) || 1)));
+            if (index >= total) return;
+            const mimeType = /^video\/(?:mp4|webm|ogg|quicktime)$/i.test(String(data.mimeType || '')) ? String(data.mimeType) : 'video/mp4';
+            const payload = { mesa: this.table, mediaId, index, total, mimeType, chunk };
+            const target = String(data.target || '').slice(0, 120);
+            if (target) this.sendToId(target, 'screen_share_overlay_media_chunk', payload);
+            else this.broadcastScreen('screen_share_overlay_media_chunk', payload, targetMeta => targetMeta.id !== meta.id);
             return;
         }
 
