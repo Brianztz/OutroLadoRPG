@@ -145,6 +145,9 @@ function emptyScreenOverlayState(table) {
         active: false,
         duration: 0,
         endAt: 0,
+        counterX: 0.5,
+        counterY: 0.5,
+        counterScale: 1,
         updatedAt: 0,
         revision: 0
     };
@@ -170,6 +173,12 @@ function normalizeScreenOverlayState(table, rawData, previousState = null) {
         ? rawImage
         : (mediaType === 'image' && !hasImage ? previous.imageData : '');
     const duration = Math.max(1, Math.min(359999, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
+    const rawCounterX = Number(Object.prototype.hasOwnProperty.call(source, 'counterX') ? source.counterX : previous.counterX);
+    const rawCounterY = Number(Object.prototype.hasOwnProperty.call(source, 'counterY') ? source.counterY : previous.counterY);
+    const rawCounterScale = Number(Object.prototype.hasOwnProperty.call(source, 'counterScale') ? source.counterScale : previous.counterScale);
+    const counterX = Math.max(0.04, Math.min(0.96, Number.isFinite(rawCounterX) ? rawCounterX : 0.5));
+    const counterY = Math.max(0.06, Math.min(0.94, Number.isFinite(rawCounterY) ? rawCounterY : 0.5));
+    const counterScale = Math.max(0.35, Math.min(2.25, Number.isFinite(rawCounterScale) ? rawCounterScale : 1));
     const hasMedia = mediaType === 'video' ? Boolean(mediaId) : Boolean(imageData);
     const active = Boolean(source.active) && hasMedia;
     const requestedEndAt = Number(source.endAt);
@@ -184,6 +193,9 @@ function normalizeScreenOverlayState(table, rawData, previousState = null) {
         active,
         duration,
         endAt,
+        counterX,
+        counterY,
+        counterScale,
         updatedAt: Date.now(),
         revision: Math.max(0, Number(previous.revision) || 0) + 1
     };
@@ -557,7 +569,7 @@ io.on('connection', socket => {
         if (socket.data.screenShareTable !== table) return;
         const state = getScreenShareOverlayState(table);
         const mediaId = String(rawData.mediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
-        if (!state.active || state.mediaType !== 'video' || !mediaId || mediaId !== state.mediaId) return;
+        if (state.mediaType !== 'video' || !mediaId || mediaId !== state.mediaId) return;
         socket.to(screenRoom(table)).emit('screen_share_overlay_media_request', {
             mesa: table,
             mediaId,
