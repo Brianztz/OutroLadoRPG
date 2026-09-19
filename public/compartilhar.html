@@ -136,7 +136,28 @@
         .music-sync-state { color: var(--green); font-size: 0.72rem; font-weight: 800; }
         .music-unlock { margin-top: 4px; border-color: rgba(86,221,167,0.55); background: rgba(86,221,167,0.12); color: #bff6df; }
 
-        body.spectator-mode .music-player-shell { pointer-events: none; }
+        body.spectator-mode .music-now { grid-template-columns: 1fr; }
+        body.spectator-mode .music-player-shell {
+            position: fixed;
+            left: -10000px;
+            top: -10000px;
+            width: 200px;
+            height: 200px;
+            min-height: 200px;
+            opacity: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        body.spectator-mode .music-player-shell #music-player,
+        body.spectator-mode .music-player-shell iframe {
+            width: 200px !important;
+            height: 200px !important;
+            min-height: 200px;
+        }
+        body.spectator-mode .music-now-kicker,
+        body.spectator-mode .music-now-channel,
+        body.spectator-mode .music-sync-state { display: none !important; }
+        body.spectator-mode .music-now-copy { gap: 8px; }
         body.spectator-mode .music-host-only,
         body.spectator-mode #share-button,
         body.spectator-mode #streamlabs-button,
