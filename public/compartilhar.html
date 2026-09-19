@@ -58,6 +58,13 @@
         .broadcast-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 340px); gap: 16px; align-items: stretch; }
         .screen-shell { min-width: 0; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 0 60px rgba(57,174,232,0.025); }
         .stage { position: relative; display: grid; place-items: center; width: 100%; min-height: min(74vh, 880px); overflow: hidden; background: radial-gradient(circle at center, rgba(21,39,54,0.52), rgba(1,4,8,0.96) 64%); }
+        .thumbnail-overlay { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; overflow: hidden; background: #010204; opacity: 1; visibility: visible; transition: opacity 0.9s ease, visibility 0s linear 0s; pointer-events: none; }
+        .thumbnail-overlay.hidden { opacity: 0; visibility: hidden; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
+        .thumbnail-overlay img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .thumbnail-overlay::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.24) 100%); }
+        .thumbnail-countdown { position: relative; z-index: 2; min-width: 180px; padding: 15px 24px; border: 1px solid rgba(255,255,255,0.24); border-radius: 18px; background: rgba(0,0,0,0.52); backdrop-filter: blur(12px); color: #fff; box-shadow: 0 14px 46px rgba(0,0,0,0.35); font-size: clamp(3rem, 10vw, 7.5rem); font-weight: 950; line-height: 1; letter-spacing: -0.045em; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 3px 24px rgba(0,0,0,0.8); }
+        .transmission-audio-gate { position: absolute; z-index: 8; left: 50%; bottom: 24px; transform: translateX(-50%); min-height: 46px; padding: 10px 18px; border: 1px solid rgba(86,221,167,0.58); border-radius: 10px; background: rgba(6,35,25,0.94); color: #c9f7e4; cursor: pointer; font-weight: 900; box-shadow: 0 12px 36px rgba(0,0,0,0.4); }
+        .transmission-audio-gate[hidden] { display: none; }
         .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(139,204,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(139,204,246,0.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: radial-gradient(circle at center, black, transparent 78%); }
         video, .fallback-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #010204; opacity: 0; transition: none; }
         video.visible, .fallback-frame.visible { opacity: 1; }
@@ -84,8 +91,9 @@
         .control-button:hover { transform: translateY(-1px); border-color: var(--blue); background: rgba(139,204,246,0.13); }
         .control-button.primary { border-color: var(--blue-strong); background: linear-gradient(135deg, #126a9a, #164b6b); color: #fff; box-shadow: 0 0 18px rgba(57,174,232,0.14); }
         .control-button.danger { border-color: rgba(255,93,108,0.68); background: rgba(130,24,37,0.65); color: #fff; }
-        .audio-option { display: inline-flex; align-items: center; gap: 9px; min-height: 43px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.09); border-radius: 9px; color: var(--muted); font-size: 0.86rem; cursor: pointer; }
-        .audio-option input { width: 17px; height: 17px; accent-color: var(--blue-strong); }
+        .thumbnail-control { display: inline-flex; align-items: center; gap: 7px; min-height: 43px; padding: 6px 8px; border: 1px solid rgba(139,204,246,0.18); border-radius: 9px; background: rgba(139,204,246,0.045); }
+        .thumbnail-time { width: 76px; min-height: 31px; border: 1px solid rgba(139,204,246,0.24); border-radius: 7px; outline: none; background: rgba(1,7,12,0.86); color: #fff; padding: 5px 7px; font-weight: 800; text-align: center; }
+        .thumbnail-label { max-width: 150px; overflow: hidden; color: #8fa7b5; font-size: 0.7rem; text-overflow: ellipsis; white-space: nowrap; }
         .status-line { padding: 10px 17px; border-top: 1px solid rgba(255,255,255,0.055); background: rgba(1,5,9,0.96); color: var(--muted); font-size: 0.8rem; }
         .status-line strong { color: var(--blue); }
         .secure-note { color: #738895; font-size: 0.75rem; }
@@ -187,8 +195,7 @@
         body.spectator-mode .music-host-only,
         body.spectator-mode #share-button,
         body.spectator-mode #streamlabs-button,
-        body.spectator-mode #opening-button,
-        body.spectator-mode .audio-option { display: none !important; }
+        body.spectator-mode #opening-button { display: none !important; }
 
         @media (max-width: 1080px) {
             .broadcast-layout { grid-template-columns: 1fr; }
@@ -202,7 +209,7 @@
             .stage { min-height: 58vh; }
             .controls { align-items: stretch; flex-direction: column; }
             .control-group { display: grid; grid-template-columns: 1fr 1fr; }
-            .control-button.primary, .audio-option { grid-column: 1 / -1; }
+            .control-button.primary { grid-column: 1 / -1; }
             .control-button { width: 100%; }
             .secure-note { text-align: center; }
             .music-now { grid-template-columns: 1fr; }
@@ -230,6 +237,11 @@
                 <div id="viewer-badge" class="stage-badge viewer-badge">0 espectadores</div>
                 <video id="screen-video" autoplay playsinline></video>
                 <canvas id="fallback-frame" class="fallback-frame" role="img" aria-label="Tela transmitida"></canvas>
+                <div id="thumbnail-overlay" class="thumbnail-overlay hidden" aria-live="polite">
+                    <img id="thumbnail-overlay-image" alt="Thumbnail da sessão">
+                    <div id="thumbnail-countdown" class="thumbnail-countdown">0:10</div>
+                </div>
+                <button id="transmission-audio-gate" class="transmission-audio-gate" type="button" onclick="unlockTransmissionAudio()" hidden>Ativar áudio da transmissão</button>
                 <div id="empty-state" class="empty-state">
                     <div class="empty-icon" aria-hidden="true">▣</div>
                     <h1 id="empty-title">Nenhuma tela sendo transmitida</h1>
@@ -245,8 +257,14 @@
                     <label class="opening-volume-option music-host-only">Volume abertura <input id="opening-volume" type="range" min="0" max="100" value="85" step="1" oninput="setOpeningVolume(this.value)"><span id="opening-volume-value">85%</span></label>
                     <input id="opening-file" type="file" accept="video/*" hidden>
                     <video id="opening-source" preload="metadata" playsinline hidden></video>
-                    <label class="audio-option"><input id="share-audio" type="checkbox" checked> Compartilhar áudio</label>
-                    <button id="sound-button" class="control-button" type="button" onclick="toggleSound()" hidden>Ativar áudio</button>
+                    <div class="thumbnail-control music-host-only">
+                        <button class="control-button" type="button" onclick="openThumbnailPicker()">Thumbnail</button>
+                        <input id="thumbnail-file" type="file" accept="image/*" hidden>
+                        <span id="thumbnail-file-name" class="thumbnail-label">Nenhuma imagem</span>
+                        <input id="thumbnail-time" class="thumbnail-time" type="number" min="1" max="3600" step="1" value="10" aria-label="Tempo do contador em segundos">
+                        <span class="thumbnail-label">s</span>
+                        <button id="thumbnail-start-button" class="control-button" type="button" onclick="toggleThumbnailCountdown()">Iniciar contador</button>
+                    </div>
                     <button id="pip-button" class="control-button" type="button" onclick="togglePictureInPicture()" hidden>Janela flutuante</button>
                     <button class="control-button" type="button" onclick="toggleFullscreen()">Tela cheia</button>
                     <button class="control-button" type="button" onclick="copyViewerLink()">Copiar link</button>
@@ -362,8 +380,14 @@
         const openingSource = document.getElementById('opening-source');
         const openingVolume = document.getElementById('opening-volume');
         const openingVolumeValue = document.getElementById('opening-volume-value');
-        const audioOption = document.getElementById('share-audio');
-        const soundButton = document.getElementById('sound-button');
+        const thumbnailOverlay = document.getElementById('thumbnail-overlay');
+        const thumbnailOverlayImage = document.getElementById('thumbnail-overlay-image');
+        const thumbnailCountdown = document.getElementById('thumbnail-countdown');
+        const thumbnailFileInput = document.getElementById('thumbnail-file');
+        const thumbnailFileName = document.getElementById('thumbnail-file-name');
+        const thumbnailTimeInput = document.getElementById('thumbnail-time');
+        const thumbnailStartButton = document.getElementById('thumbnail-start-button');
+        const transmissionAudioGate = document.getElementById('transmission-audio-gate');
         const pipButton = document.getElementById('pip-button');
         const liveBadge = document.getElementById('live-badge');
         const viewerBadge = document.getElementById('viewer-badge');
@@ -426,6 +450,10 @@
         let openingAudioDestination = null;
         let musicFadeToken = 0;
         let musicFadeTimer = null;
+        let selectedThumbnailData = '';
+        let thumbnailTimer = null;
+        let thumbnailFadeTimer = null;
+        let sharedOverlayState = { mesa: tableCode, imageData: '', active: false, duration: 0, endAt: 0, revision: 0 };
         const hostPeers = new Map();
         const pendingIce = new Map();
         const fallbackCanvas = document.createElement('canvas');
@@ -442,8 +470,31 @@
             emptyState.classList.remove('hidden');
             video.classList.remove('visible');
             fallbackImage.classList.remove('visible');
-            soundButton.hidden = true;
             pipButton.hidden = true;
+        }
+
+        function showTransmissionAudioGate() {
+            if (!spectatorMode || isBroadcasting) return;
+            transmissionAudioGate.hidden = false;
+        }
+
+        function unlockTransmissionAudio() {
+            musicAudioUnlocked = true;
+            transmissionAudioGate.hidden = true;
+            try {
+                video.muted = false;
+                video.volume = 1;
+                if (video.srcObject || video.src) video.play().catch(() => showTransmissionAudioGate());
+            } catch (error) {}
+            try {
+                if (musicPlayerReady && musicPlayer) {
+                    musicPlayer.unMute();
+                    musicPlayer.setVolume(Math.max(0, Math.min(100, Number(sharedMusicState.volume) || 75)));
+                    if (sharedMusicState.playing) musicPlayer.playVideo();
+                }
+                if (musicCrossfadePlayer) musicCrossfadePlayer.unMute();
+            } catch (error) {}
+            updateSharedMusicUi(sharedMusicState);
         }
 
         function showVideo(stream, local = false) {
@@ -455,19 +506,27 @@
             }
             video.srcObject = stream;
             video.playbackRate = 1;
-            const hasAudio = stream.getAudioTracks().length > 0;
-            const canAutoUseAudio = !local && hasAudio && typeof musicAudioUnlocked !== 'undefined' && musicAudioUnlocked;
-            video.muted = local || !canAutoUseAudio;
+            video.volume = 1;
+            video.muted = Boolean(local);
             video.classList.add('visible');
             emptyState.classList.add('hidden');
-            soundButton.hidden = local || !hasAudio || !video.muted;
-            soundButton.textContent = 'Ativar áudio';
             pipButton.hidden = !pictureInPictureSupported;
-            if (local) fallbackImage.classList.remove('visible');
+            if (local) {
+                transmissionAudioGate.hidden = true;
+                fallbackImage.classList.remove('visible');
+            }
             video.play().then(() => {
-                if (!local) confirmRemotePlayback();
+                if (!local) {
+                    transmissionAudioGate.hidden = true;
+                    confirmRemotePlayback();
+                }
             }).catch(() => {
-                if (!local) setStatus('preparando o modo compatível da transmissão...');
+                if (!local) {
+                    video.muted = true;
+                    video.play().then(confirmRemotePlayback).catch(() => requestFallback());
+                    showTransmissionAudioGate();
+                    setStatus('a transmissão está pronta; confirme uma vez para liberar o áudio do navegador.');
+                }
             });
         }
 
@@ -478,7 +537,6 @@
             if (peerConnectTimer) clearTimeout(peerConnectTimer);
             peerConnectTimer = null;
             fallbackImage.classList.remove('visible');
-            soundButton.hidden = video.srcObject.getAudioTracks().length < 1;
             socket.emit('screen_share_peer_connected', { mesa: tableCode });
             liveBadge.textContent = 'Ao vivo';
             liveBadge.classList.add('live');
@@ -540,7 +598,6 @@
                 fallbackImage.classList.add('visible');
                 video.classList.remove('visible');
                 emptyState.classList.add('hidden');
-                soundButton.hidden = true;
                 pipButton.hidden = true;
                 if (document.pictureInPictureElement === video) document.exitPictureInPicture().catch(() => {});
                 liveBadge.textContent = 'Ao vivo';
@@ -767,12 +824,11 @@
             relayMediaSource = new MediaSource();
             relayObjectUrl = URL.createObjectURL(relayMediaSource);
             video.src = relayObjectUrl;
-            video.muted = true;
+            video.muted = false;
+            video.volume = 1;
             video.classList.add('visible');
             fallbackImage.classList.remove('visible');
             emptyState.classList.add('hidden');
-            soundButton.hidden = false;
-            soundButton.textContent = 'Ativar áudio';
             pipButton.hidden = !pictureInPictureSupported;
             relayMediaSource.addEventListener('sourceopen', () => {
                 try {
@@ -1060,7 +1116,6 @@
                 streamlabsButton.disabled = true;
                 openingButton.disabled = true;
             }
-            audioOption.disabled = true;
             liveBadge.textContent = mode === 'opening' ? 'Abertura ao vivo' : 'Você está ao vivo';
             liveBadge.classList.add('live');
             const audioNote = mode === 'streamlabs'
@@ -1079,7 +1134,7 @@
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({
                     video: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 60, max: 60 }, cursor: 'never' },
-                    audio: audioOption.checked
+                    audio: true
                 });
                 await activateBroadcastStream(stream, 'screen', 'Sua tela');
             } catch (error) {
@@ -1456,7 +1511,6 @@
             openingButton.textContent = 'Iniciar abertura';
             openingButton.classList.remove('active');
             openingButton.disabled = false;
-            audioOption.disabled = false;
             liveBadge.textContent = 'Aguardando';
             liveBadge.classList.remove('live');
             setEmpty('Nenhuma tela sendo transmitida', 'Quando alguém desta mesa iniciar o compartilhamento, a transmissão aparecerá aqui automaticamente.');
@@ -1472,14 +1526,6 @@
         function toggleStreamlabs() {
             if (isBroadcasting) stopSharing(true);
             else startStreamlabsSharing();
-        }
-
-        function toggleSound() {
-            const usingRelay = Boolean(relayObjectUrl && video.src);
-            if (!usingRelay && (!video.srcObject || !video.srcObject.getAudioTracks().length)) return;
-            video.muted = !video.muted;
-            soundButton.textContent = video.muted ? 'Ativar áudio' : 'Silenciar áudio';
-            video.play().catch(() => setStatus('clique novamente em Ativar áudio.'));
         }
 
         async function togglePictureInPicture() {
@@ -1504,6 +1550,183 @@
             } catch (error) {
                 setStatus('não foi possível abrir a janela flutuante.');
             }
+        }
+
+        function formatCountdownValue(milliseconds) {
+            const total = Math.max(0, Math.ceil(Number(milliseconds || 0) / 1000));
+            const minutes = Math.floor(total / 60);
+            const seconds = String(total % 60).padStart(2, '0');
+            return `${minutes}:${seconds}`;
+        }
+
+        function clearThumbnailTimers() {
+            if (thumbnailTimer) clearInterval(thumbnailTimer);
+            if (thumbnailFadeTimer) clearTimeout(thumbnailFadeTimer);
+            thumbnailTimer = null;
+            thumbnailFadeTimer = null;
+        }
+
+        function hideThumbnailOverlay(animated = true) {
+            clearThumbnailTimers();
+            if (animated) {
+                thumbnailOverlay.classList.add('hidden');
+            } else {
+                thumbnailOverlay.style.transition = 'none';
+                thumbnailOverlay.classList.add('hidden');
+                requestAnimationFrame(() => { thumbnailOverlay.style.transition = ''; });
+            }
+            if (!spectatorMode) {
+                thumbnailStartButton.textContent = 'Iniciar contador';
+                thumbnailStartButton.classList.remove('danger');
+            }
+        }
+
+        function showThumbnailOverlay(state) {
+            clearThumbnailTimers();
+            const imageData = String(state && state.imageData || '');
+            const endAt = Number(state && state.endAt) || 0;
+            if (!imageData || !state.active || endAt <= Date.now()) {
+                hideThumbnailOverlay(endAt > 0);
+                return;
+            }
+            selectedThumbnailData = imageData;
+            thumbnailOverlayImage.src = imageData;
+            thumbnailOverlay.classList.remove('hidden');
+            if (!spectatorMode) {
+                thumbnailStartButton.textContent = 'Encerrar contador';
+                thumbnailStartButton.classList.add('danger');
+            }
+
+            const update = () => {
+                const remaining = endAt - Date.now();
+                thumbnailCountdown.textContent = formatCountdownValue(remaining);
+                if (remaining <= 0) {
+                    clearThumbnailTimers();
+                    thumbnailCountdown.textContent = '0:00';
+                    thumbnailOverlay.classList.add('hidden');
+                    thumbnailFadeTimer = setTimeout(() => {
+                        if (!spectatorMode) {
+                            thumbnailStartButton.textContent = 'Iniciar contador';
+                            thumbnailStartButton.classList.remove('danger');
+                        }
+                    }, 950);
+                }
+            };
+            update();
+            thumbnailTimer = setInterval(update, 100);
+        }
+
+        function applyScreenOverlayState(rawState) {
+            if (!rawState || normalizeTableCode(rawState.mesa) !== tableCode) return;
+            sharedOverlayState = {
+                mesa: tableCode,
+                imageData: String(rawState.imageData || ''),
+                active: Boolean(rawState.active),
+                duration: Math.max(0, Number(rawState.duration) || 0),
+                endAt: Math.max(0, Number(rawState.endAt) || 0),
+                revision: Math.max(0, Number(rawState.revision) || 0)
+            };
+            if (sharedOverlayState.imageData) {
+                selectedThumbnailData = sharedOverlayState.imageData;
+                if (!spectatorMode && thumbnailFileName.textContent === 'Nenhuma imagem') {
+                    thumbnailFileName.textContent = 'Thumbnail carregada';
+                }
+            }
+            showThumbnailOverlay(sharedOverlayState);
+        }
+
+        function openThumbnailPicker() {
+            if (spectatorMode) return;
+            thumbnailFileInput.click();
+        }
+
+        async function compressThumbnailFile(file) {
+            if (!file || !String(file.type || '').startsWith('image/')) throw new Error('Selecione uma imagem válida.');
+            const bitmap = await createImageBitmap(file);
+            const scale = Math.min(1, 1920 / bitmap.width, 1080 / bitmap.height);
+            const width = Math.max(2, Math.round(bitmap.width * scale));
+            const height = Math.max(2, Math.round(bitmap.height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext('2d', { alpha: false });
+            context.fillStyle = '#010204';
+            context.fillRect(0, 0, width, height);
+            context.drawImage(bitmap, 0, 0, width, height);
+            bitmap.close();
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob(value => value ? resolve(value) : reject(new Error('Não foi possível processar a thumbnail.')), 'image/webp', 0.84);
+            });
+            if (blob.size > 2_000_000) {
+                const smaller = document.createElement('canvas');
+                const reduce = Math.min(1, Math.sqrt(1_650_000 / blob.size));
+                smaller.width = Math.max(2, Math.round(width * reduce));
+                smaller.height = Math.max(2, Math.round(height * reduce));
+                const smallContext = smaller.getContext('2d', { alpha: false });
+                smallContext.fillStyle = '#010204';
+                smallContext.fillRect(0, 0, smaller.width, smaller.height);
+                smallContext.drawImage(canvas, 0, 0, smaller.width, smaller.height);
+                return new Promise((resolve, reject) => {
+                    smaller.toBlob(value => {
+                        if (!value) return reject(new Error('Não foi possível reduzir a thumbnail.'));
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result || ''));
+                        reader.onerror = () => reject(new Error('Não foi possível ler a thumbnail.'));
+                        reader.readAsDataURL(value);
+                    }, 'image/webp', 0.76);
+                });
+            }
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(new Error('Não foi possível ler a thumbnail.'));
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        thumbnailFileInput.addEventListener('change', async () => {
+            const file = thumbnailFileInput.files && thumbnailFileInput.files[0];
+            if (!file) return;
+            thumbnailFileName.textContent = 'Processando...';
+            try {
+                selectedThumbnailData = await compressThumbnailFile(file);
+                thumbnailFileName.textContent = file.name;
+                setStatus('thumbnail pronta; escolha o tempo e inicie o contador.');
+            } catch (error) {
+                selectedThumbnailData = '';
+                thumbnailFileName.textContent = 'Nenhuma imagem';
+                setStatus(String(error && error.message || 'não foi possível carregar a thumbnail.'));
+            }
+        });
+
+        function toggleThumbnailCountdown() {
+            if (spectatorMode || !socket.connected) return;
+            const currentlyActive = sharedOverlayState.active && Number(sharedOverlayState.endAt) > Date.now();
+            if (currentlyActive) {
+                socket.emit('screen_share_overlay_control', {
+                    mesa: tableCode,
+                    imageData: selectedThumbnailData || sharedOverlayState.imageData,
+                    active: false,
+                    duration: sharedOverlayState.duration || 10
+                });
+                return;
+            }
+            const imageData = selectedThumbnailData || sharedOverlayState.imageData;
+            if (!imageData) {
+                setStatus('escolha uma thumbnail antes de iniciar o contador.');
+                openThumbnailPicker();
+                return;
+            }
+            const duration = Math.max(1, Math.min(3600, Math.round(Number(thumbnailTimeInput.value) || 10)));
+            thumbnailTimeInput.value = String(duration);
+            socket.emit('screen_share_overlay_control', {
+                mesa: tableCode,
+                imageData,
+                active: true,
+                duration,
+                endAt: Date.now() + duration * 1000
+            });
+            setStatus(`thumbnail iniciada por ${duration} segundo${duration === 1 ? '' : 's'}; a transmissão aparecerá com fade ao final.`);
         }
 
         function chooseTable() {
@@ -2523,6 +2746,7 @@
         window.onYouTubeIframeAPIReady = initSharedMusicPlayer;
 
         function enableSharedMusicAudio() {
+            unlockTransmissionAudio();
             musicAudioUnlocked = true;
             updateSharedMusicUi(sharedMusicState);
             if (!musicPlayerReady || !musicPlayer || !sharedMusicState.videoId) return;
@@ -2746,7 +2970,15 @@
             pipButton.textContent = 'Janela flutuante';
         });
         video.addEventListener('loadeddata', () => {
-            if (!isBroadcasting && video.srcObject) video.play().then(confirmRemotePlayback).catch(() => requestFallback());
+            if (!isBroadcasting && video.srcObject) {
+                video.muted = false;
+                video.volume = 1;
+                video.play().then(confirmRemotePlayback).catch(() => {
+                    video.muted = true;
+                    video.play().then(confirmRemotePlayback).catch(() => requestFallback());
+                    showTransmissionAudioGate();
+                });
+            }
         });
 
         socket.on('connect', () => {
@@ -2777,6 +3009,11 @@
         socket.on('screen_share_music_state', state => {
             if (normalizeTableCode(state && state.mesa) !== tableCode) return;
             applySharedMusicState(state);
+        });
+
+        socket.on('screen_share_overlay_state', state => {
+            if (normalizeTableCode(state && state.mesa) !== tableCode) return;
+            applyScreenOverlayState(state);
         });
 
         socket.on('screen_share_start_denied', data => {
@@ -2937,8 +3174,10 @@
                     liveBadge.textContent = 'Ao vivo';
                     liveBadge.classList.add('live');
                     setStatus('assistindo em alta qualidade 1080p60.');
-                }).catch(() => setStatus('clique em Ativar áudio para iniciar a transmissão.'))
-                    .finally(() => { relayPlayPending = false; });
+                }).catch(() => {
+                    showTransmissionAudioGate();
+                    setStatus('confirme uma vez para liberar o áudio da transmissão.');
+                }).finally(() => { relayPlayPending = false; });
             }
             if (relayPlaybackStarted) {
                 const currentPlaybackTime = Number(video.currentTime) || 0;
@@ -2988,6 +3227,7 @@
         window.addEventListener('beforeunload', () => {
             if (musicSyncTimer) clearInterval(musicSyncTimer);
             if (musicControllerTimer) clearInterval(musicControllerTimer);
+            clearThumbnailTimers();
             cancelMusicFade();
             openingSource.pause();
             if (openingAudioContext) openingAudioContext.close().catch(() => {});
