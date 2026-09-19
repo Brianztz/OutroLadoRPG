@@ -4174,12 +4174,8 @@ function removeCurrentClue() {
         isLoadingData = true;
         try {
             localStorage.setItem('ordem_save_local', cloudCharacter.sheetJson);
-            if (cloudCharacter.playerCode) {
-                playerCode = cloudCharacter.playerCode;
-                localStorage.setItem('player_sync_code', playerCode);
-                const codeElement = document.getElementById('display-player-code');
-                if (codeElement) codeElement.innerText = playerCode;
-            }
+            // O código identifica o jogador, não o personagem carregado.
+            // Uma ficha da nuvem nunca pode trocar a identidade local.
             populateData(parsedData);
             characterCloudLastHash = cloudCharacter.sheetHash || OLFirebase.hashCharacterSheet(cloudCharacter.sheetJson);
             localStorage.setItem(characterCloudMarkerKey(uid), characterCloudLastHash);
@@ -4206,12 +4202,7 @@ function removeCurrentClue() {
                 if (!user) return;
                 const result = await OLFirebase.saveCharacter(tableCode, sheetJson, getCharacterCloudMetadata());
                 characterCloudLastHash = result.sheetHash;
-                if (result.playerCode && result.playerCode !== playerCode) {
-                    playerCode = result.playerCode;
-                    localStorage.setItem('player_sync_code', playerCode);
-                    const codeElement = document.getElementById('display-player-code');
-                    if (codeElement) codeElement.innerText = playerCode;
-                }
+                // Mantém o código local mesmo ao trocar de personagem.
                 localStorage.setItem(characterCloudMarkerKey(user.uid), result.sheetHash);
             } catch (error) {
                 console.error('Não foi possível salvar a ficha na nuvem:', error);
@@ -4246,12 +4237,7 @@ function removeCurrentClue() {
                 } else {
                     characterCloudLastHash = remoteHash;
                     localStorage.setItem(markerKey, remoteHash);
-                    if (remoteCharacter.playerCode && remoteCharacter.playerCode !== playerCode) {
-                        playerCode = remoteCharacter.playerCode;
-                        localStorage.setItem('player_sync_code', playerCode);
-                        const codeElement = document.getElementById('display-player-code');
-                        if (codeElement) codeElement.innerText = playerCode;
-                    }
+                    // O código do jogador é persistente e não vem da ficha remota.
                 }
             } else if (localJson) {
                 const result = await OLFirebase.saveCharacter(tableCode, localJson, getCharacterCloudMetadata());
@@ -4365,6 +4351,7 @@ function removeCurrentClue() {
         const file = event.target.files[0];
         if (!file) return;
 
+        const preservedPlayerCode = !viewCode ? playerCode : null;
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -4373,9 +4360,16 @@ function removeCurrentClue() {
                 // Salva no localStorage para manter a persistência
                 localStorage.setItem('ordem_save_local', JSON.stringify(importedData));
                 
-                // Recarrega os dados na interface
+                // Recarrega os dados sem trocar a identidade/código do jogador.
                 isLoadingData = true; 
                 populateData(importedData);
+                if (!viewCode && preservedPlayerCode) {
+                    playerCode = preservedPlayerCode;
+                    localStorage.setItem('player_sync_code', preservedPlayerCode);
+                    const codeElement = document.getElementById('display-player-code');
+                    if (codeElement) codeElement.innerText = preservedPlayerCode;
+                    refreshLuminaFrameTable();
+                }
                 queueCharacterCloudSave(importedData);
                 
                 alert("Ficha carregada com sucesso!");
