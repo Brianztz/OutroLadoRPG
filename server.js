@@ -578,7 +578,7 @@ io.on('connection', socket => {
             : (ArrayBuffer.isView(chunk) ? chunk.byteLength : (Buffer.isBuffer(chunk) ? chunk.length : 0));
         if (!byteLength || byteLength > 256 * 1024) return;
         const index = Math.max(0, Math.floor(Number(rawData.index) || 0));
-        const total = Math.max(1, Math.min(192, Math.floor(Number(rawData.total) || 1)));
+        const total = Math.max(1, Math.min(1024, Math.floor(Number(rawData.total) || 1)));
         if (index >= total) return;
         const mimeType = /^video\/(?:mp4|webm|ogg|quicktime)$/i.test(String(rawData.mimeType || ''))
             ? String(rawData.mimeType)
