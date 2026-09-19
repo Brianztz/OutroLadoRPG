@@ -380,7 +380,7 @@
                                     <button id="cinematic-choose-button" class="control-button soft" type="button" onclick="toggleCinematicMenu()">Escolher cinematic</button>
                                     <div id="cinematic-selected" class="cinematic-selected">Nenhuma cinematic selecionada</div>
                                     <button id="cinematic-button" class="control-button primary" type="button" onclick="toggleCinematic()">Iniciar cinematic</button>
-                                    <input id="cinematic-files" type="file" accept="video/*" multiple hidden>
+                                    <input id="cinematic-files" type="file" accept="video/*,.mkv,.avi,.mov,.m4v,.wmv,.flv,.ts,.m2ts,.mpeg,.mpg" multiple hidden>
                                     <video id="cinematic-source" preload="auto" playsinline hidden></video>
                                     <div id="cinematic-menu" class="cinematic-menu" hidden></div>
                                 </div>
@@ -599,6 +599,9 @@
         let cinematicFinishing = false;
         let cinematicMusicResume = null;
         const cinematicLibrary = new Map();
+        let cinematicTranscoderPromise = null;
+        let cinematicTranscoder = null;
+        let cinematicConvertingId = '';
         let musicFadeToken = 0;
         let musicFadeTimer = null;
         let selectedThumbnailData = '';
@@ -671,7 +674,7 @@
                 const name = document.createElement('span');
                 name.textContent = item.name;
                 const size = document.createElement('small');
-                size.textContent = formatFileSize(item.file.size);
+                size.textContent = `${formatFileSize(item.file.size)}${item.convertedUrl ? ' • convertido' : (item.needsConversion ? ' • converter' : '')}`;
                 button.append(name, size);
                 button.addEventListener('click', () => {
                     selectCinematic(item.id);
@@ -703,31 +706,56 @@
             cinematicSource.src = item.url;
             cinematicSource.load();
             renderCinematicMenu();
-            setStatus(`cinematic selecionada: ${item.name}. Preparando vídeo...`);
+            setStatus(item.needsConversion
+                ? `cinematic selecionada: ${item.name}. O formato será convertido automaticamente ao iniciar.`
+                : `cinematic selecionada: ${item.name}. Preparando vídeo...`
+            );
+        }
+
+        function looksLikeCinematicFile(file) {
+            if (!file) return false;
+            if (String(file.type || '').startsWith('video/')) return true;
+            return /\.(?:mp4|m4v|mov|mkv|avi|webm|wmv|flv|ts|m2ts|mpeg|mpg)$/i.test(String(file.name || ''));
         }
 
         cinematicFilesInput.addEventListener('change', () => {
-            const files = [...(cinematicFilesInput.files || [])].filter(file => String(file.type || '').startsWith('video/'));
+            const files = [...(cinematicFilesInput.files || [])].filter(looksLikeCinematicFile);
             if (!files.length) {
                 setStatus('selecione um ou mais arquivos de vídeo para a cinematic.');
                 return;
             }
             let firstNewId = '';
             files.forEach(file => {
-                if (cinematicSource.canPlayType(file.type || '') === '') return;
                 const id = createCinematicId();
-                const item = { id, name: file.name, file, url: URL.createObjectURL(file) };
+                const nativeHint = cinematicSource.canPlayType(file.type || '');
+                const item = {
+                    id,
+                    name: file.name,
+                    file,
+                    originalUrl: URL.createObjectURL(file),
+                    url: '',
+                    convertedUrl: '',
+                    convertedMime: '',
+                    nativeHint,
+                    needsConversion: nativeHint === ''
+                };
+                item.url = item.originalUrl;
                 cinematicLibrary.set(id, item);
                 if (!firstNewId) firstNewId = id;
             });
             cinematicFilesInput.value = '';
             if (!firstNewId) {
-                setStatus('nenhum dos vídeos selecionados é compatível com o navegador.');
+                setStatus('não foi possível adicionar os vídeos selecionados.');
                 return;
             }
             if (!cinematicSelectedId || !cinematicLibrary.has(cinematicSelectedId)) selectCinematic(firstNewId);
             else renderCinematicMenu();
-            setStatus(`${files.length} cinematic${files.length === 1 ? '' : 's'} adicionada${files.length === 1 ? '' : 's'} à biblioteca desta sessão.`);
+
+            const conversionCount = files.filter(file => cinematicSource.canPlayType(file.type || '') === '').length;
+            setStatus(conversionCount
+                ? `${files.length} cinematic${files.length === 1 ? '' : 's'} adicionada${files.length === 1 ? '' : 's'}. ${conversionCount} será${conversionCount === 1 ? '' : 'ão'} convertida${conversionCount === 1 ? '' : 's'} automaticamente se necessário.`
+                : `${files.length} cinematic${files.length === 1 ? '' : 's'} adicionada${files.length === 1 ? '' : 's'} à biblioteca desta sessão.`
+            );
         });
 
         document.addEventListener('click', event => {
@@ -1562,6 +1590,185 @@
             return stream;
         }
 
+        async function loadCinematicTranscoder() {
+            if (cinematicTranscoder) return cinematicTranscoder;
+            if (cinematicTranscoderPromise) return cinematicTranscoderPromise;
+
+            cinematicTranscoderPromise = (async () => {
+                if (!window.FFmpeg || typeof window.FFmpeg.createFFmpeg !== 'function') {
+                    await new Promise((resolve, reject) => {
+                        const existing = document.querySelector('script[data-cinematic-ffmpeg]');
+                        if (existing) {
+                            if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') return resolve();
+                            existing.addEventListener('load', resolve, { once: true });
+                            existing.addEventListener('error', () => reject(new Error('Não foi possível carregar o conversor de vídeo.')), { once: true });
+                            return;
+                        }
+                        const script = document.createElement('script');
+                        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+                        script.crossOrigin = 'anonymous';
+                        script.dataset.cinematicFfmpeg = '1';
+                        script.addEventListener('load', resolve, { once: true });
+                        script.addEventListener('error', () => reject(new Error('Não foi possível carregar o conversor de vídeo. Verifique sua internet.')), { once: true });
+                        document.head.appendChild(script);
+                    });
+                }
+
+                if (!window.FFmpeg || typeof window.FFmpeg.createFFmpeg !== 'function') {
+                    throw new Error('O conversor de vídeo não ficou disponível.');
+                }
+
+                const ffmpeg = window.FFmpeg.createFFmpeg({
+                    log: false,
+                    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                });
+                ffmpeg.setProgress(({ ratio }) => {
+                    if (!cinematicConvertingId) return;
+                    const item = cinematicLibrary.get(cinematicConvertingId);
+                    const percent = Math.max(0, Math.min(100, Math.round((Number(ratio) || 0) * 100)));
+                    setStatus(`convertendo cinematic${item ? `: ${item.name}` : ''}... ${percent}%`);
+                });
+                setStatus('carregando conversor de vídeo pela primeira vez...');
+                await ffmpeg.load();
+                cinematicTranscoder = {
+                    ffmpeg,
+                    fetchFile: window.FFmpeg.fetchFile
+                };
+                return cinematicTranscoder;
+            })();
+
+            try {
+                return await cinematicTranscoderPromise;
+            } catch (error) {
+                cinematicTranscoderPromise = null;
+                throw error;
+            }
+        }
+
+        function cinematicInputExtension(file) {
+            const match = String(file && file.name || '').toLowerCase().match(/\.([a-z0-9]{2,6})$/);
+            return match ? match[1] : 'bin';
+        }
+
+        async function transcodeCinematicForBrowser(item) {
+            if (!item || !item.file) throw new Error('A cinematic original não está mais disponível.');
+            if (item.convertedUrl) {
+                item.url = item.convertedUrl;
+                item.needsConversion = false;
+                return item;
+            }
+            if (item.file.size > 500 * 1024 * 1024) {
+                throw new Error('Essa cinematic é maior que 500 MB. Para conversão automática no navegador, use um arquivo menor.');
+            }
+            if (cinematicConvertingId && cinematicConvertingId !== item.id) {
+                throw new Error('Já existe outra cinematic sendo convertida. Aguarde ela terminar.');
+            }
+
+            cinematicConvertingId = item.id;
+            cinematicButton.disabled = true;
+            cinematicChooseButton.disabled = true;
+
+            const { ffmpeg, fetchFile } = await loadCinematicTranscoder();
+            const safeId = String(item.id).replace(/[^A-Za-z0-9_-]/g, '');
+            const inputName = `input_${safeId}.${cinematicInputExtension(item.file)}`;
+            const mp4Name = `output_${safeId}.mp4`;
+            const webmName = `output_${safeId}.webm`;
+            let outputName = mp4Name;
+            let outputMime = 'video/mp4';
+
+            const unlink = name => {
+                try { ffmpeg.FS('unlink', name); } catch (error) {}
+            };
+
+            try {
+                setStatus(`preparando conversão: ${item.name}...`);
+                ffmpeg.FS('writeFile', inputName, await fetchFile(item.file));
+
+                try {
+                    await ffmpeg.run(
+                        '-i', inputName,
+                        '-map', '0:v:0',
+                        '-map', '0:a:0?',
+                        '-c:v', 'libx264',
+                        '-preset', 'ultrafast',
+                        '-crf', '23',
+                        '-pix_fmt', 'yuv420p',
+                        '-c:a', 'aac',
+                        '-b:a', '160k',
+                        '-movflags', '+faststart',
+                        mp4Name
+                    );
+                } catch (mp4Error) {
+                    unlink(mp4Name);
+                    setStatus(`convertendo ${item.name} para WebM compatível...`);
+                    outputName = webmName;
+                    outputMime = 'video/webm';
+                    await ffmpeg.run(
+                        '-i', inputName,
+                        '-map', '0:v:0',
+                        '-map', '0:a:0?',
+                        '-c:v', 'libvpx',
+                        '-deadline', 'realtime',
+                        '-cpu-used', '8',
+                        '-crf', '30',
+                        '-b:v', '0',
+                        '-c:a', 'libvorbis',
+                        '-q:a', '5',
+                        webmName
+                    );
+                }
+
+                const data = ffmpeg.FS('readFile', outputName);
+                if (!data || !data.byteLength) throw new Error('A conversão terminou sem gerar um vídeo válido.');
+
+                const convertedBlob = new Blob([data.buffer], { type: outputMime });
+                if (item.convertedUrl) URL.revokeObjectURL(item.convertedUrl);
+                item.convertedUrl = URL.createObjectURL(convertedBlob);
+                item.convertedMime = outputMime;
+                item.url = item.convertedUrl;
+                item.needsConversion = false;
+                setStatus(`cinematic convertida: ${item.name}. Preparando reprodução...`);
+                return item;
+            } catch (error) {
+                console.warn('Falha ao converter cinematic:', error);
+                throw new Error('Não consegui converter essa cinematic automaticamente. Tente um MP4 H.264/AAC ou WebM.');
+            } finally {
+                unlink(inputName);
+                unlink(mp4Name);
+                unlink(webmName);
+                cinematicConvertingId = '';
+                cinematicButton.disabled = false;
+                cinematicChooseButton.disabled = false;
+            }
+        }
+
+        async function ensureCinematicPlayable(item) {
+            if (!item) throw new Error('Nenhuma cinematic selecionada.');
+            if (item.needsConversion) {
+                await transcodeCinematicForBrowser(item);
+            }
+
+            cinematicSource.pause();
+            cinematicSource.preload = 'auto';
+            if (cinematicSource.src !== item.url) cinematicSource.src = item.url;
+            try {
+                await waitCinematicReady(30000);
+                return item;
+            } catch (error) {
+                const code = Number(cinematicSource.error && cinematicSource.error.code) || 0;
+                if ((code === 3 || code === 4) && !item.convertedUrl) {
+                    item.needsConversion = true;
+                    await transcodeCinematicForBrowser(item);
+                    cinematicSource.pause();
+                    cinematicSource.src = item.url;
+                    cinematicSource.load();
+                    await waitCinematicReady(30000);
+                    return item;
+                }
+                throw error;
+            }
+        }
+
         function cinematicMediaErrorMessage() {
             const error = cinematicSource.error;
             const code = Number(error && error.code) || 0;
@@ -1680,10 +1887,7 @@
             cinematicButton.disabled = true;
             setStatus(`preparando cinematic: ${item.name}...`);
             try {
-                cinematicSource.pause();
-                cinematicSource.preload = 'auto';
-                if (cinematicSource.src !== item.url) cinematicSource.src = item.url;
-                await waitCinematicReady(30000);
+                await ensureCinematicPlayable(item);
                 try { cinematicSource.currentTime = 0; } catch (error) {}
                 cinematicSource.muted = false;
                 await ensureCinematicAudioGraph();
@@ -1764,7 +1968,14 @@
             setStatus(`cinematic pronta: ${item.name}${durationText}.`);
         });
         cinematicSource.addEventListener('error', () => {
-            if (activeSourceMode === 'cinematic') return;
+            if (activeSourceMode === 'cinematic' || cinematicConvertingId) return;
+            const item = cinematicLibrary.get(cinematicSelectedId);
+            const code = Number(cinematicSource.error && cinematicSource.error.code) || 0;
+            if (item && (code === 3 || code === 4) && !item.convertedUrl) {
+                item.needsConversion = true;
+                setStatus(`cinematic incompatível nativamente: ${item.name}. Clique em Iniciar cinematic para converter automaticamente.`);
+                return;
+            }
             setStatus(cinematicMediaErrorMessage());
         });
         cinematicSource.addEventListener('ended', () => finishCinematic(true));
@@ -4232,7 +4443,8 @@
             if (cinematicAudioContext) cinematicAudioContext.close().catch(() => {});
             if (openingObjectUrl) URL.revokeObjectURL(openingObjectUrl);
             cinematicLibrary.forEach(item => {
-                try { URL.revokeObjectURL(item.url); } catch (error) {}
+                try { if (item.originalUrl) URL.revokeObjectURL(item.originalUrl); } catch (error) {}
+                try { if (item.convertedUrl && item.convertedUrl !== item.originalUrl) URL.revokeObjectURL(item.convertedUrl); } catch (error) {}
             });
             cinematicLibrary.clear();
             stopRelayRecorder();
