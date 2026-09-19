@@ -945,7 +945,7 @@
             let captureLabel = 'alta qualidade';
             if (videoTrack) {
                 const selectedSurface = videoTrack.getSettings().displaySurface;
-                videoTrack.contentHint = mode === 'streamlabs' || selectedSurface === 'window' ? 'motion' : 'detail';
+                videoTrack.contentHint = mode === 'streamlabs' || mode === 'opening' || selectedSurface === 'window' ? 'motion' : 'detail';
                 try {
                     await videoTrack.applyConstraints({
                         width: { ideal: 1920, max: 1920 },
@@ -1211,9 +1211,9 @@
                 openingSource.volume = 1;
                 openingSource.muted = false;
                 await waitOpeningReady();
-                const stream = captureOpeningStream();
                 await openingSource.play();
-                await new Promise(resolve => setTimeout(resolve, 80));
+                await new Promise(resolve => setTimeout(resolve, 60));
+                const stream = captureOpeningStream();
                 await activateBroadcastStream(stream, 'opening', 'Abertura do RPG');
             } catch (error) {
                 console.warn('Falha ao iniciar a abertura:', error);
