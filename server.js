@@ -139,6 +139,8 @@ function normalizeScreenMusicState(table, rawData, previousState = null) {
 function emptyScreenOverlayState(table) {
     return {
         mesa: normalizeTableCode(table),
+        mediaType: 'image',
+        mediaId: '',
         imageData: '',
         active: false,
         duration: 0,
@@ -159,17 +161,25 @@ function getScreenShareOverlayState(table) {
 function normalizeScreenOverlayState(table, rawData, previousState = null) {
     const previous = previousState || emptyScreenOverlayState(table);
     const source = rawData && typeof rawData === 'object' ? rawData : {};
+    const mediaType = String(Object.prototype.hasOwnProperty.call(source, 'mediaType') ? source.mediaType : previous.mediaType) === 'video' ? 'video' : 'image';
+    const rawMediaId = Object.prototype.hasOwnProperty.call(source, 'mediaId') ? source.mediaId : previous.mediaId;
+    const mediaId = String(rawMediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
     const hasImage = Object.prototype.hasOwnProperty.call(source, 'imageData');
     const rawImage = hasImage ? String(source.imageData || '') : previous.imageData;
-    const imageData = /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 1_600_000 ? rawImage : (hasImage ? '' : previous.imageData);
+    const imageData = mediaType === 'image' && /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 1_600_000
+        ? rawImage
+        : (mediaType === 'image' && !hasImage ? previous.imageData : '');
     const duration = Math.max(1, Math.min(3600, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
-    const active = Boolean(source.active) && Boolean(imageData);
+    const hasMedia = mediaType === 'video' ? Boolean(mediaId) : Boolean(imageData);
+    const active = Boolean(source.active) && hasMedia;
     const requestedEndAt = Number(source.endAt);
     const endAt = active
         ? (Number.isFinite(requestedEndAt) && requestedEndAt > Date.now() ? requestedEndAt : Date.now() + duration * 1000)
         : 0;
     return {
         mesa: normalizeTableCode(table),
+        mediaType,
+        mediaId: mediaType === 'video' ? mediaId : '',
         imageData,
         active,
         duration,
@@ -501,6 +511,33 @@ io.on('connection', socket => {
         io.to(screenRoom(table)).emit('screen_share_music_state', state);
     });
 
+    socket.on('screen_share_music_transport', rawData => {
+        if (socket.data.screenShareSpectator || !rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.screenShareTable);
+        if (socket.data.screenShareTable !== table) return;
+        const previous = getScreenShareMusicState(table);
+        const videoId = String(rawData.videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
+        if (!videoId || videoId !== previous.videoId) return;
+        const numericPosition = Number(rawData.position);
+        const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : previous.position));
+        const state = {
+            ...previous,
+            playing: Boolean(rawData.playing),
+            position,
+            updatedAt: Date.now(),
+            revision: Math.max(0, Number(previous.revision) || 0) + 1
+        };
+        screenShareMusicStates.set(table, state);
+        io.to(screenRoom(table)).emit('screen_share_music_transport', {
+            mesa: table,
+            videoId,
+            playing: state.playing,
+            position: state.position,
+            updatedAt: state.updatedAt,
+            revision: state.revision
+        });
+    });
+
     socket.on('screen_share_overlay_control', rawData => {
         if (socket.data.screenShareSpectator || !rawData || typeof rawData !== 'object') return;
         const table = normalizeTableCode(rawData.mesa || socket.data.screenShareTable);
@@ -512,6 +549,44 @@ io.on('connection', socket => {
         const state = normalizeScreenOverlayState(table, rawData, previous);
         screenShareOverlayStates.set(table, state);
         io.to(screenRoom(table)).emit('screen_share_overlay_state', state);
+    });
+
+    socket.on('screen_share_overlay_media_request', rawData => {
+        if (!rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.screenShareTable);
+        if (socket.data.screenShareTable !== table) return;
+        const state = getScreenShareOverlayState(table);
+        const mediaId = String(rawData.mediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
+        if (!state.active || state.mediaType !== 'video' || !mediaId || mediaId !== state.mediaId) return;
+        socket.to(screenRoom(table)).emit('screen_share_overlay_media_request', {
+            mesa: table,
+            mediaId,
+            requesterId: socket.id
+        });
+    });
+
+    socket.on('screen_share_overlay_media_chunk', rawData => {
+        if (socket.data.screenShareSpectator || !rawData || typeof rawData !== 'object') return;
+        const table = normalizeTableCode(rawData.mesa || socket.data.screenShareTable);
+        if (socket.data.screenShareTable !== table) return;
+        const state = getScreenShareOverlayState(table);
+        const mediaId = String(rawData.mediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
+        if (state.mediaType !== 'video' || !mediaId || mediaId !== state.mediaId) return;
+        const chunk = rawData.chunk;
+        const byteLength = chunk instanceof ArrayBuffer
+            ? chunk.byteLength
+            : (ArrayBuffer.isView(chunk) ? chunk.byteLength : (Buffer.isBuffer(chunk) ? chunk.length : 0));
+        if (!byteLength || byteLength > 256 * 1024) return;
+        const index = Math.max(0, Math.floor(Number(rawData.index) || 0));
+        const total = Math.max(1, Math.min(192, Math.floor(Number(rawData.total) || 1)));
+        if (index >= total) return;
+        const mimeType = /^video\/(?:mp4|webm|ogg|quicktime)$/i.test(String(rawData.mimeType || ''))
+            ? String(rawData.mimeType)
+            : 'video/mp4';
+        const payload = { mesa: table, mediaId, index, total, mimeType, chunk };
+        const target = String(rawData.target || '').slice(0, 120);
+        if (target) io.to(target).emit('screen_share_overlay_media_chunk', payload);
+        else socket.to(screenRoom(table)).emit('screen_share_overlay_media_chunk', payload);
     });
 
     socket.on('screen_share_start', rawData => {
