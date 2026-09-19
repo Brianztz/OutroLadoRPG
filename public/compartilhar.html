@@ -1170,21 +1170,27 @@
         }
 
         async function ensureOpeningAudioGraph() {
-            if (openingAudioContext && openingAudioSourceNode && openingGainNode && openingAudioDestination) {
-                if (openingAudioContext.state === 'suspended') await openingAudioContext.resume();
-                return;
-            }
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) throw new Error('Este navegador não oferece áudio de alta qualidade para a abertura.');
-            openingAudioContext = new AudioContextClass({ sampleRate: 48000, latencyHint: 'interactive' });
-            openingAudioSourceNode = openingAudioContext.createMediaElementSource(openingSource);
-            openingGainNode = openingAudioContext.createGain();
-            openingAudioDestination = openingAudioContext.createMediaStreamDestination();
-            openingAudioSourceNode.connect(openingGainNode);
-            openingGainNode.connect(openingAudioDestination);
-            openingGainNode.connect(openingAudioContext.destination);
-            setOpeningVolume(openingVolume ? openingVolume.value : 85);
+
+            if (!openingAudioContext || openingAudioContext.state === 'closed') {
+                openingAudioContext = new AudioContextClass({ sampleRate: 48000, latencyHint: 'interactive' });
+                openingAudioSourceNode = openingAudioContext.createMediaElementSource(openingSource);
+                openingGainNode = openingAudioContext.createGain();
+                openingAudioSourceNode.connect(openingGainNode);
+                openingGainNode.connect(openingAudioContext.destination);
+            }
+
             if (openingAudioContext.state === 'suspended') await openingAudioContext.resume();
+
+            if (openingAudioDestination) {
+                try { openingGainNode.disconnect(openingAudioDestination); } catch (error) {}
+                try { openingAudioDestination.stream.getTracks().forEach(track => track.stop()); } catch (error) {}
+            }
+
+            openingAudioDestination = openingAudioContext.createMediaStreamDestination();
+            openingGainNode.connect(openingAudioDestination);
+            setOpeningVolume(openingVolume ? openingVolume.value : 85);
         }
 
         function setOpeningVolume(value) {
@@ -1297,19 +1303,33 @@
             });
         }
 
-        function waitOpeningReady() {
+        function waitOpeningReady(timeoutMs = 7000) {
             if (openingSource.readyState >= 2) return Promise.resolve();
             return new Promise((resolve, reject) => {
+                let settled = false;
+                const timer = setTimeout(() => cleanup(() => reject(new Error('A abertura demorou para carregar. Tente iniciar novamente.'))), timeoutMs);
                 const onReady = () => cleanup(resolve);
                 const onError = () => cleanup(() => reject(new Error('Não foi possível abrir o vídeo da abertura.')));
                 const cleanup = callback => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
                     openingSource.removeEventListener('loadeddata', onReady);
+                    openingSource.removeEventListener('canplay', onReady);
                     openingSource.removeEventListener('error', onError);
                     callback();
                 };
                 openingSource.addEventListener('loadeddata', onReady, { once: true });
+                openingSource.addEventListener('canplay', onReady, { once: true });
                 openingSource.addEventListener('error', onError, { once: true });
             });
+        }
+
+        function withOpeningTimeout(promise, timeoutMs = 8000) {
+            return Promise.race([
+                Promise.resolve(promise),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('A abertura não iniciou. Tente novamente.')), timeoutMs))
+            ]);
         }
 
         async function startOpening() {
@@ -1324,18 +1344,30 @@
             setStatus('preparando a abertura do RPG...');
             try {
                 rememberMusicForOpening();
-                openingSource.currentTime = 0;
+                openingSource.pause();
+                try {
+                    if (openingSource.ended || openingSource.currentTime > 0) openingSource.currentTime = 0;
+                } catch (error) {}
                 openingSource.muted = false;
                 await waitOpeningReady();
                 await ensureOpeningAudioGraph();
                 setOpeningVolume(openingVolume ? openingVolume.value : 85);
-                await openingSource.play();
-                await new Promise(resolve => setTimeout(resolve, 60));
+                await withOpeningTimeout(openingSource.play(), 5000);
+                await new Promise(resolve => setTimeout(resolve, 90));
                 const stream = captureOpeningStream();
-                await activateBroadcastStream(stream, 'opening', 'Abertura do RPG');
+                const freshAudioTrack = stream.getAudioTracks()[0];
+                if (!freshAudioTrack || freshAudioTrack.readyState !== 'live') {
+                    throw new Error('O áudio da abertura não ficou pronto. Tente iniciar novamente.');
+                }
+                await withOpeningTimeout(activateBroadcastStream(stream, 'opening', 'Abertura do RPG'), 7000);
             } catch (error) {
                 console.warn('Falha ao iniciar a abertura:', error);
                 openingSource.pause();
+                if (openingAudioDestination) {
+                    try { openingGainNode.disconnect(openingAudioDestination); } catch (disconnectError) {}
+                    try { openingAudioDestination.stream.getTracks().forEach(track => track.stop()); } catch (trackError) {}
+                    openingAudioDestination = null;
+                }
                 openingButton.disabled = false;
                 resumeMusicAfterOpening();
                 setStatus(String(error && error.message || 'não foi possível iniciar a abertura.'));
