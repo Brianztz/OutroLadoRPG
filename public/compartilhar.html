@@ -91,16 +91,48 @@
         .viewer-badge { right: 14px; }
         @keyframes livePulse { 50% { opacity: 0.35; } }
 
-        .controls { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 17px; border-top: 1px solid rgba(139,204,246,0.13); background: linear-gradient(180deg, rgba(9,18,28,0.97), rgba(3,9,15,0.98)); }
-        .control-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .control-button { min-height: 43px; padding: 10px 15px; border: 1px solid rgba(139,204,246,0.34); border-radius: 9px; background: rgba(139,204,246,0.07); color: var(--text); cursor: pointer; font-weight: 850; transition: 0.2s ease; }
-        .control-button:hover { transform: translateY(-1px); border-color: var(--blue); background: rgba(139,204,246,0.13); }
-        .control-button.primary { border-color: var(--blue-strong); background: linear-gradient(135deg, #126a9a, #164b6b); color: #fff; box-shadow: 0 0 18px rgba(57,174,232,0.14); }
-        .control-button.danger { border-color: rgba(255,93,108,0.68); background: rgba(130,24,37,0.65); color: #fff; }
-        .thumbnail-control { display: inline-flex; align-items: center; gap: 7px; min-height: 43px; padding: 6px 8px; border: 1px solid rgba(139,204,246,0.18); border-radius: 9px; background: rgba(139,204,246,0.045); }
-        .thumbnail-time { width: 48px; min-height: 31px; border: 1px solid rgba(139,204,246,0.24); border-radius: 7px; outline: none; background: rgba(1,7,12,0.86); color: #fff; padding: 5px 4px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+        .controls { border-top: 1px solid rgba(139,204,246,0.13); background: linear-gradient(180deg, rgba(9,18,28,0.985), rgba(3,9,15,0.995)); }
+        .control-tabs { display: flex; gap: 7px; padding: 12px 14px 0; overflow-x: auto; scrollbar-width: none; }
+        .control-tabs::-webkit-scrollbar { display: none; }
+        .control-tab { position: relative; flex: 0 0 auto; min-height: 42px; padding: 9px 17px; border: 1px solid transparent; border-bottom: 0; border-radius: 11px 11px 0 0; background: transparent; color: #78909f; cursor: pointer; font-size: 0.76rem; font-weight: 950; letter-spacing: 0.055em; text-transform: uppercase; transition: 0.2s ease; }
+        .control-tab:hover { color: #dff4ff; background: rgba(139,204,246,0.055); }
+        .control-tab.active { border-color: rgba(139,204,246,0.22); background: linear-gradient(180deg, rgba(24,52,71,0.72), rgba(8,21,32,0.86)); color: #e8f8ff; box-shadow: inset 0 2px 0 rgba(82,194,255,0.65); }
+        .control-panels { padding: 0 14px 14px; }
+        .control-panel { display: none; padding: 14px; border: 1px solid rgba(139,204,246,0.18); border-radius: 0 13px 13px 13px; background: linear-gradient(145deg, rgba(7,17,27,0.9), rgba(3,10,17,0.94)); }
+        .control-panel.active { display: block; }
+        .control-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+        .control-card-grid.single { grid-template-columns: minmax(0,1fr); }
+        .control-card { min-width: 0; padding: 14px; border: 1px solid rgba(139,204,246,0.13); border-radius: 12px; background: linear-gradient(145deg, rgba(139,204,246,0.045), rgba(255,255,255,0.018)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.025); }
+        .control-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+        .control-card-title { min-width: 0; }
+        .control-card-title strong { display: block; color: #edf9ff; font-size: 0.86rem; letter-spacing: 0.03em; }
+        .control-card-title span { display: block; margin-top: 4px; color: #718896; font-size: 0.69rem; line-height: 1.4; }
+        .control-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .control-button { min-height: 40px; padding: 9px 14px; border: 1px solid rgba(139,204,246,0.28); border-radius: 9px; background: linear-gradient(145deg, rgba(139,204,246,0.09), rgba(139,204,246,0.035)); color: var(--text); cursor: pointer; font-weight: 850; transition: 0.18s ease; }
+        .control-button:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(82,194,255,0.72); background: rgba(82,194,255,0.12); box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
+        .control-button:disabled { opacity: 0.42; cursor: not-allowed; }
+        .control-button.primary { border-color: rgba(82,194,255,0.72); background: linear-gradient(135deg, #1675a8, #164b6b); color: #fff; box-shadow: 0 0 20px rgba(57,174,232,0.13); }
+        .control-button.danger { border-color: rgba(255,93,108,0.68); background: linear-gradient(135deg, rgba(151,28,43,0.92), rgba(94,17,27,0.92)); color: #fff; }
+        .control-button.active { border-color: rgba(255,170,76,0.72); background: linear-gradient(135deg, rgba(145,72,13,0.94), rgba(91,39,7,0.94)); color: #fff; }
+        .control-button.soft { color: #bcd2df; }
+        .viewer-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px 13px; border-top: 1px solid rgba(255,255,255,0.045); }
+        .viewer-tools-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+        .viewer-tools .control-button { min-height: 35px; padding: 7px 11px; font-size: 0.72rem; }
+        .thumbnail-control { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; min-height: 43px; padding: 0; border: 0; background: transparent; }
+        .thumbnail-time { width: 48px; min-height: 34px; border: 1px solid rgba(139,204,246,0.24); border-radius: 7px; outline: none; background: rgba(1,7,12,0.86); color: #fff; padding: 5px 4px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+        .thumbnail-time:focus { border-color: rgba(82,194,255,0.75); box-shadow: 0 0 0 3px rgba(82,194,255,0.08); }
         .thumbnail-time-separator { color: #8fa7b5; font-size: 0.8rem; font-weight: 900; }
-        .thumbnail-label { max-width: 150px; overflow: hidden; color: #8fa7b5; font-size: 0.7rem; text-overflow: ellipsis; white-space: nowrap; }
+        .thumbnail-label { max-width: 175px; overflow: hidden; color: #8fa7b5; font-size: 0.7rem; text-overflow: ellipsis; white-space: nowrap; }
+        .cinematic-controls { position: relative; display: grid; grid-template-columns: auto auto minmax(160px,1fr) auto; gap: 8px; align-items: center; }
+        .cinematic-selected { min-width: 0; min-height: 40px; display: flex; align-items: center; padding: 8px 11px; border: 1px solid rgba(139,204,246,0.15); border-radius: 9px; background: rgba(0,0,0,0.2); color: #92a9b7; font-size: 0.73rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cinematic-menu { position: absolute; z-index: 30; left: 132px; top: calc(100% + 7px); width: min(420px, calc(100vw - 60px)); max-height: 250px; overflow-y: auto; padding: 7px; border: 1px solid rgba(139,204,246,0.28); border-radius: 11px; background: rgba(3,10,17,0.985); box-shadow: 0 22px 60px rgba(0,0,0,0.55); }
+        .cinematic-menu[hidden] { display: none; }
+        .cinematic-menu-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 10px 11px; border: 0; border-radius: 8px; background: transparent; color: #d7eaf4; cursor: pointer; text-align: left; }
+        .cinematic-menu-item:hover, .cinematic-menu-item.active { background: rgba(82,194,255,0.1); }
+        .cinematic-menu-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cinematic-menu-item small { flex: 0 0 auto; color: #607987; }
+        .cinematic-empty { padding: 12px; color: #69818e; font-size: 0.74rem; text-align: center; }
+        .secure-note { color: #738895; font-size: 0.72rem; }
         .status-line { padding: 10px 17px; border-top: 1px solid rgba(255,255,255,0.055); background: rgba(1,5,9,0.96); color: var(--muted); font-size: 0.8rem; }
         .status-line strong { color: var(--blue); }
         .secure-note { color: #738895; font-size: 0.75rem; }
@@ -200,9 +232,12 @@
         body.spectator-mode .music-sync-state { display: none !important; }
         body.spectator-mode .music-now-copy { gap: 8px; }
         body.spectator-mode .music-host-only,
+        body.spectator-mode .control-tabs,
+        body.spectator-mode .control-panels,
         body.spectator-mode #share-button,
         body.spectator-mode #streamlabs-button,
-        body.spectator-mode #opening-button { display: none !important; }
+        body.spectator-mode #opening-button,
+        body.spectator-mode #cinematic-button { display: none !important; }
 
         @media (max-width: 1080px) {
             .broadcast-layout { grid-template-columns: 1fr; }
@@ -214,10 +249,16 @@
             .topbar { align-items: flex-start; flex-direction: column; }
             .top-actions { width: 100%; justify-content: space-between; }
             .stage { min-height: 58vh; }
-            .controls { align-items: stretch; flex-direction: column; }
-            .control-group { display: grid; grid-template-columns: 1fr 1fr; }
-            .control-button.primary { grid-column: 1 / -1; }
-            .control-button { width: 100%; }
+            .control-card-grid { grid-template-columns: 1fr; }
+            .control-tabs { padding-left: 10px; padding-right: 10px; }
+            .control-panels { padding-left: 10px; padding-right: 10px; }
+            .control-panel { padding: 10px; }
+            .cinematic-controls { grid-template-columns: 1fr 1fr; }
+            .cinematic-selected { grid-column: 1 / -1; }
+            .cinematic-menu { left: 0; width: 100%; }
+            .viewer-tools { align-items: stretch; flex-direction: column; }
+            .viewer-tools-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+            .viewer-tools .control-button { width: 100%; }
             .secure-note { text-align: center; }
             .music-now { grid-template-columns: 1fr; }
             .music-player-shell, #music-player, #music-player iframe, #music-player-crossfade, #music-player-crossfade iframe { min-height: 200px; height: 200px !important; }
@@ -261,29 +302,101 @@
             </section>
 
             <div class="controls">
-                <div class="control-group">
-                    <button id="share-button" class="control-button primary" type="button" onclick="toggleSharing()">Compartilhar minha tela</button>
-                    <button id="streamlabs-button" class="control-button" type="button" onclick="toggleStreamlabs()">Transmitir pelo Streamlabs</button>
-                    <button id="opening-button" class="control-button opening-button" type="button" onclick="toggleOpening()">Iniciar abertura</button>
-                    <label class="opening-volume-option music-host-only">Volume abertura <input id="opening-volume" type="range" min="0" max="100" value="85" step="1" oninput="setOpeningVolume(this.value)"><span id="opening-volume-value">85%</span></label>
-                    <input id="opening-file" type="file" accept="video/*" hidden>
-                    <video id="opening-source" preload="metadata" playsinline hidden></video>
-                    <div class="thumbnail-control music-host-only">
-                        <button class="control-button" type="button" onclick="openThumbnailPicker()">Thumbnail</button>
-                        <input id="thumbnail-file" type="file" accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime" hidden>
-                        <span id="thumbnail-file-name" class="thumbnail-label">Nenhuma mídia</span>
-                        <input id="thumbnail-hours" class="thumbnail-time" type="number" min="0" max="99" step="1" value="0" aria-label="Horas do contador">
-                        <span class="thumbnail-time-separator">:</span>
-                        <input id="thumbnail-minutes" class="thumbnail-time" type="number" min="0" max="59" step="1" value="0" aria-label="Minutos do contador">
-                        <span class="thumbnail-time-separator">:</span>
-                        <input id="thumbnail-seconds" class="thumbnail-time" type="number" min="0" max="59" step="1" value="10" aria-label="Segundos do contador">
-                        <button id="thumbnail-start-button" class="control-button" type="button" onclick="toggleThumbnailCountdown()">Iniciar contador</button>
-                    </div>
-                    <button id="pip-button" class="control-button" type="button" onclick="togglePictureInPicture()" hidden>Janela flutuante</button>
-                    <button class="control-button" type="button" onclick="toggleFullscreen()">Tela cheia</button>
-                    <button class="control-button" type="button" onclick="copyViewerLink()">Copiar link</button>
+                <button id="share-button" type="button" hidden aria-hidden="true" tabindex="-1">Compartilhar minha tela</button>
+
+                <div class="control-tabs music-host-only" role="tablist" aria-label="Controles da transmissão">
+                    <button id="control-tab-principal" class="control-tab active" type="button" role="tab" aria-selected="true" onclick="showBroadcastTab('principal')">Principal</button>
+                    <button id="control-tab-inicio" class="control-tab" type="button" role="tab" aria-selected="false" onclick="showBroadcastTab('inicio')">Início</button>
+                    <button id="control-tab-cinematic" class="control-tab" type="button" role="tab" aria-selected="false" onclick="showBroadcastTab('cinematic')">Cinematic</button>
                 </div>
-                <span class="secure-note">O navegador sempre pedirá sua permissão antes de transmitir.</span>
+
+                <div class="control-panels music-host-only">
+                    <section id="control-panel-principal" class="control-panel active" role="tabpanel">
+                        <div class="control-card-grid single">
+                            <article class="control-card">
+                                <div class="control-card-head">
+                                    <div class="control-card-title">
+                                        <strong>Transmissão principal</strong>
+                                        <span>Use a câmera virtual do Streamlabs como imagem principal da mesa.</span>
+                                    </div>
+                                </div>
+                                <div class="control-actions">
+                                    <button id="streamlabs-button" class="control-button primary" type="button" onclick="toggleStreamlabs()">Transmitir pelo Streamlabs</button>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section id="control-panel-inicio" class="control-panel" role="tabpanel" hidden>
+                        <div class="control-card-grid">
+                            <article class="control-card">
+                                <div class="control-card-head">
+                                    <div class="control-card-title">
+                                        <strong>Thumbnail e temporizador</strong>
+                                        <span>Prepare a tela de espera, posicione o contador e revele a transmissão no final.</span>
+                                    </div>
+                                </div>
+                                <div class="thumbnail-control">
+                                    <button class="control-button soft" type="button" onclick="openThumbnailPicker()">Escolher thumbnail</button>
+                                    <input id="thumbnail-file" type="file" accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime" hidden>
+                                    <span id="thumbnail-file-name" class="thumbnail-label">Nenhuma mídia</span>
+                                    <input id="thumbnail-hours" class="thumbnail-time" type="number" min="0" max="99" step="1" value="0" aria-label="Horas do contador">
+                                    <span class="thumbnail-time-separator">:</span>
+                                    <input id="thumbnail-minutes" class="thumbnail-time" type="number" min="0" max="59" step="1" value="0" aria-label="Minutos do contador">
+                                    <span class="thumbnail-time-separator">:</span>
+                                    <input id="thumbnail-seconds" class="thumbnail-time" type="number" min="0" max="59" step="1" value="10" aria-label="Segundos do contador">
+                                    <button id="thumbnail-start-button" class="control-button primary" type="button" onclick="toggleThumbnailCountdown()">Iniciar contador</button>
+                                </div>
+                            </article>
+
+                            <article class="control-card">
+                                <div class="control-card-head">
+                                    <div class="control-card-title">
+                                        <strong>Abertura</strong>
+                                        <span>Reproduza o vídeo de abertura com áudio para toda a mesa.</span>
+                                    </div>
+                                </div>
+                                <div class="control-actions">
+                                    <button id="opening-button" class="control-button opening-button" type="button" onclick="toggleOpening()">Iniciar abertura</button>
+                                    <label class="opening-volume-option">Volume abertura <input id="opening-volume" type="range" min="0" max="100" value="85" step="1" oninput="setOpeningVolume(this.value)"><span id="opening-volume-value">85%</span></label>
+                                    <input id="opening-file" type="file" accept="video/*" hidden>
+                                    <video id="opening-source" preload="metadata" playsinline hidden></video>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section id="control-panel-cinematic" class="control-panel" role="tabpanel" hidden>
+                        <div class="control-card-grid single">
+                            <article class="control-card">
+                                <div class="control-card-head">
+                                    <div class="control-card-title">
+                                        <strong>Biblioteca de Cinematics</strong>
+                                        <span>Adicione vários vídeos, escolha qual deseja executar e transmita com áudio.</span>
+                                    </div>
+                                </div>
+                                <div class="cinematic-controls">
+                                    <button class="control-button soft" type="button" onclick="openCinematicPicker()">Adicionar vídeos</button>
+                                    <button id="cinematic-choose-button" class="control-button soft" type="button" onclick="toggleCinematicMenu()">Escolher cinematic</button>
+                                    <div id="cinematic-selected" class="cinematic-selected">Nenhuma cinematic selecionada</div>
+                                    <button id="cinematic-button" class="control-button primary" type="button" onclick="toggleCinematic()">Iniciar cinematic</button>
+                                    <input id="cinematic-files" type="file" accept="video/*" multiple hidden>
+                                    <video id="cinematic-source" preload="metadata" playsinline hidden></video>
+                                    <div id="cinematic-menu" class="cinematic-menu" hidden></div>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="viewer-tools">
+                    <div class="viewer-tools-actions">
+                        <button id="pip-button" class="control-button soft" type="button" onclick="togglePictureInPicture()" hidden>Janela flutuante</button>
+                        <button class="control-button soft" type="button" onclick="toggleFullscreen()">Tela cheia</button>
+                        <button class="control-button soft" type="button" onclick="copyViewerLink()">Copiar link</button>
+                    </div>
+                    <span class="secure-note">O navegador sempre pedirá sua permissão antes de transmitir.</span>
+                </div>
             </div>
             <div id="status-line" class="status-line"><strong>Status:</strong> entrando na mesa...</div>
             <section id="music-panel" class="music-panel" aria-label="Música sincronizada da mesa">
@@ -394,6 +507,12 @@
         const openingSource = document.getElementById('opening-source');
         const openingVolume = document.getElementById('opening-volume');
         const openingVolumeValue = document.getElementById('opening-volume-value');
+        const cinematicFilesInput = document.getElementById('cinematic-files');
+        const cinematicSource = document.getElementById('cinematic-source');
+        const cinematicButton = document.getElementById('cinematic-button');
+        const cinematicChooseButton = document.getElementById('cinematic-choose-button');
+        const cinematicSelected = document.getElementById('cinematic-selected');
+        const cinematicMenu = document.getElementById('cinematic-menu');
         const thumbnailOverlay = document.getElementById('thumbnail-overlay');
         const thumbnailOverlayImage = document.getElementById('thumbnail-overlay-image');
         const thumbnailOverlayVideo = document.getElementById('thumbnail-overlay-video');
@@ -421,6 +540,11 @@
         document.getElementById('table-code').textContent = tableCode;
         chatName.value = localStorage.getItem('screen_share_chat_name') || (spectatorMode ? 'Espectador' : 'Transmissor');
         if (spectatorMode) secureNote.textContent = 'Modo espectador: assista à transmissão e converse com a mesa.';
+        if (!spectatorMode) {
+            let savedControlTab = 'principal';
+            try { savedControlTab = localStorage.getItem('screen_share_control_tab') || 'principal'; } catch (error) {}
+            queueMicrotask(() => showBroadcastTab(savedControlTab));
+        }
 
         let localStream = null;
         let isBroadcasting = false;
@@ -467,6 +591,14 @@
         let openingAudioSourceNode = null;
         let openingGainNode = null;
         let openingAudioDestination = null;
+        let cinematicAudioContext = null;
+        let cinematicAudioSourceNode = null;
+        let cinematicGainNode = null;
+        let cinematicAudioDestination = null;
+        let cinematicSelectedId = '';
+        let cinematicFinishing = false;
+        let cinematicMusicResume = null;
+        const cinematicLibrary = new Map();
         let musicFadeToken = 0;
         let musicFadeTimer = null;
         let selectedThumbnailData = '';
@@ -489,6 +621,119 @@
         const fallbackCanvas = document.createElement('canvas');
         const fallbackContext = fallbackCanvas.getContext('2d', { alpha: false });
         const pictureInPictureSupported = Boolean(document.pictureInPictureEnabled && video.requestPictureInPicture);
+
+        function showBroadcastTab(name) {
+            if (spectatorMode) return;
+            const safeName = ['principal', 'inicio', 'cinematic'].includes(name) ? name : 'principal';
+            ['principal', 'inicio', 'cinematic'].forEach(tabName => {
+                const tab = document.getElementById(`control-tab-${tabName}`);
+                const panel = document.getElementById(`control-panel-${tabName}`);
+                const active = tabName === safeName;
+                if (tab) {
+                    tab.classList.toggle('active', active);
+                    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+                }
+                if (panel) {
+                    panel.classList.toggle('active', active);
+                    panel.hidden = !active;
+                }
+            });
+            try { localStorage.setItem('screen_share_control_tab', safeName); } catch (error) {}
+        }
+
+        function formatFileSize(bytes) {
+            const value = Math.max(0, Number(bytes) || 0);
+            if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+            return `${(value / (1024 * 1024)).toFixed(value >= 100 * 1024 * 1024 ? 0 : 1)} MB`;
+        }
+
+        function createCinematicId() {
+            if (window.crypto && typeof crypto.randomUUID === 'function') {
+                return `cin_${crypto.randomUUID().replace(/-/g, '')}`;
+            }
+            return `cin_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+        }
+
+        function renderCinematicMenu() {
+            cinematicMenu.textContent = '';
+            const entries = [...cinematicLibrary.values()];
+            if (!entries.length) {
+                const empty = document.createElement('div');
+                empty.className = 'cinematic-empty';
+                empty.textContent = 'Adicione um ou mais vídeos primeiro.';
+                cinematicMenu.appendChild(empty);
+                return;
+            }
+            entries.forEach(item => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `cinematic-menu-item${item.id === cinematicSelectedId ? ' active' : ''}`;
+                const name = document.createElement('span');
+                name.textContent = item.name;
+                const size = document.createElement('small');
+                size.textContent = formatFileSize(item.file.size);
+                button.append(name, size);
+                button.addEventListener('click', () => {
+                    selectCinematic(item.id);
+                    cinematicMenu.hidden = true;
+                });
+                cinematicMenu.appendChild(button);
+            });
+        }
+
+        function openCinematicPicker() {
+            if (spectatorMode) return;
+            cinematicFilesInput.click();
+        }
+
+        function toggleCinematicMenu() {
+            if (spectatorMode) return;
+            renderCinematicMenu();
+            cinematicMenu.hidden = !cinematicMenu.hidden;
+        }
+
+        function selectCinematic(id) {
+            const item = cinematicLibrary.get(String(id || ''));
+            if (!item) return;
+            cinematicSelectedId = item.id;
+            cinematicSelected.textContent = item.name;
+            cinematicChooseButton.textContent = 'Trocar cinematic';
+            cinematicSource.pause();
+            cinematicSource.src = item.url;
+            cinematicSource.load();
+            renderCinematicMenu();
+            setStatus(`cinematic selecionada: ${item.name}.`);
+        }
+
+        cinematicFilesInput.addEventListener('change', () => {
+            const files = [...(cinematicFilesInput.files || [])].filter(file => String(file.type || '').startsWith('video/'));
+            if (!files.length) {
+                setStatus('selecione um ou mais arquivos de vídeo para a cinematic.');
+                return;
+            }
+            let firstNewId = '';
+            files.forEach(file => {
+                if (cinematicSource.canPlayType(file.type || '') === '') return;
+                const id = createCinematicId();
+                const item = { id, name: file.name, file, url: URL.createObjectURL(file) };
+                cinematicLibrary.set(id, item);
+                if (!firstNewId) firstNewId = id;
+            });
+            cinematicFilesInput.value = '';
+            if (!firstNewId) {
+                setStatus('nenhum dos vídeos selecionados é compatível com o navegador.');
+                return;
+            }
+            if (!cinematicSelectedId || !cinematicLibrary.has(cinematicSelectedId)) selectCinematic(firstNewId);
+            else renderCinematicMenu();
+            setStatus(`${files.length} cinematic${files.length === 1 ? '' : 's'} adicionada${files.length === 1 ? '' : 's'} à biblioteca desta sessão.`);
+        });
+
+        document.addEventListener('click', event => {
+            if (cinematicMenu.hidden) return;
+            if (cinematicMenu.contains(event.target) || event.target === cinematicChooseButton) return;
+            cinematicMenu.hidden = true;
+        });
 
         function setStatus(message) {
             statusLine.innerHTML = `<strong>Status:</strong> ${message}`;
@@ -1099,7 +1344,7 @@
             let captureLabel = 'alta qualidade';
             if (videoTrack) {
                 const selectedSurface = videoTrack.getSettings().displaySurface;
-                videoTrack.contentHint = mode === 'streamlabs' || mode === 'opening' || selectedSurface === 'window' ? 'motion' : 'detail';
+                videoTrack.contentHint = mode === 'streamlabs' || mode === 'opening' || mode === 'cinematic' || selectedSurface === 'window' ? 'motion' : 'detail';
                 try {
                     await videoTrack.applyConstraints({
                         width: { ideal: 1920, max: 1920 },
@@ -1123,6 +1368,7 @@
                 }
                 videoTrack.onended = () => {
                     if (mode === 'opening') finishOpening(true);
+                    else if (mode === 'cinematic') finishCinematic(true);
                     else stopSharing(true);
                 };
             }
@@ -1130,27 +1376,43 @@
             if (mode === 'streamlabs') {
                 streamlabsButton.textContent = 'Parar Streamlabs';
                 streamlabsButton.classList.add('danger');
+                streamlabsButton.classList.remove('primary');
                 streamlabsButton.disabled = false;
                 shareButton.disabled = true;
                 openingButton.disabled = true;
+                cinematicButton.disabled = true;
             } else if (mode === 'opening') {
                 openingButton.textContent = 'Encerrar abertura';
                 openingButton.classList.add('active');
                 openingButton.disabled = false;
                 shareButton.disabled = true;
                 streamlabsButton.disabled = true;
+                cinematicButton.disabled = true;
+            } else if (mode === 'cinematic') {
+                cinematicButton.textContent = 'Encerrar cinematic';
+                cinematicButton.classList.remove('primary');
+                cinematicButton.classList.add('danger');
+                cinematicButton.disabled = false;
+                shareButton.disabled = true;
+                streamlabsButton.disabled = true;
+                openingButton.disabled = true;
             } else {
                 shareButton.textContent = 'Parar transmissão';
                 shareButton.classList.remove('primary');
                 shareButton.classList.add('danger');
                 streamlabsButton.disabled = true;
                 openingButton.disabled = true;
+                cinematicButton.disabled = true;
             }
-            liveBadge.textContent = mode === 'opening' ? 'Abertura ao vivo' : 'Você está ao vivo';
+            liveBadge.textContent = mode === 'opening'
+                ? 'Abertura ao vivo'
+                : (mode === 'cinematic' ? 'Cinematic ao vivo' : 'Você está ao vivo');
             liveBadge.classList.add('live');
             const audioNote = mode === 'streamlabs'
                 ? ' A câmera virtual envia somente o vídeo da cena.'
-                : (mode === 'opening' ? ' O áudio da abertura está sendo enviado para a mesa.' : '');
+                : (mode === 'opening'
+                    ? ' O áudio da abertura está sendo enviado para a mesa.'
+                    : (mode === 'cinematic' ? ' O áudio da cinematic está sendo enviado para a mesa.' : ''));
             setStatus(`${sourceName} está sendo transmitido em ${captureLabel}.${audioNote}`);
             socket.emit('screen_share_start', { mesa: tableCode });
         }
@@ -1257,6 +1519,194 @@
                 if (!isBroadcasting) streamlabsButton.disabled = false;
             }
         }
+
+        async function ensureCinematicAudioGraph() {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) throw new Error('Este navegador não oferece áudio de alta qualidade para a cinematic.');
+
+            if (!cinematicAudioContext || cinematicAudioContext.state === 'closed') {
+                cinematicAudioContext = new AudioContextClass({ sampleRate: 48000, latencyHint: 'interactive' });
+                cinematicAudioSourceNode = cinematicAudioContext.createMediaElementSource(cinematicSource);
+                cinematicGainNode = cinematicAudioContext.createGain();
+                cinematicGainNode.gain.value = 1;
+                cinematicAudioSourceNode.connect(cinematicGainNode);
+                cinematicGainNode.connect(cinematicAudioContext.destination);
+            }
+            if (cinematicAudioContext.state === 'suspended') await cinematicAudioContext.resume();
+
+            if (cinematicAudioDestination) {
+                try { cinematicGainNode.disconnect(cinematicAudioDestination); } catch (error) {}
+                try { cinematicAudioDestination.stream.getTracks().forEach(track => track.stop()); } catch (error) {}
+            }
+            cinematicAudioDestination = cinematicAudioContext.createMediaStreamDestination();
+            cinematicGainNode.connect(cinematicAudioDestination);
+        }
+
+        function captureCinematicStream() {
+            const capture = cinematicSource.captureStream || cinematicSource.mozCaptureStream;
+            if (typeof capture !== 'function') throw new Error('Este navegador não consegue transmitir a cinematic diretamente.');
+            const mediaStream = capture.call(cinematicSource);
+            const videoTrack = mediaStream && mediaStream.getVideoTracks()[0];
+            if (!videoTrack) throw new Error('A cinematic não gerou uma faixa de vídeo.');
+
+            const stream = new MediaStream([videoTrack]);
+            const audioTracks = cinematicAudioDestination && cinematicAudioDestination.stream
+                ? cinematicAudioDestination.stream.getAudioTracks()
+                : [];
+            audioTracks.forEach(track => {
+                try { track.contentHint = 'music'; } catch (error) {}
+                stream.addTrack(track);
+            });
+            if (!stream.getAudioTracks().length) throw new Error('Não foi possível preparar o áudio da cinematic.');
+            return stream;
+        }
+
+        function waitCinematicReady(timeoutMs = 8000) {
+            if (cinematicSource.readyState >= 2) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                let settled = false;
+                const timer = setTimeout(() => cleanup(() => reject(new Error('A cinematic demorou para carregar.'))), timeoutMs);
+                const onReady = () => cleanup(resolve);
+                const onError = () => cleanup(() => reject(new Error('Não foi possível abrir o vídeo da cinematic.')));
+                const cleanup = callback => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    cinematicSource.removeEventListener('loadeddata', onReady);
+                    cinematicSource.removeEventListener('canplay', onReady);
+                    cinematicSource.removeEventListener('error', onError);
+                    callback();
+                };
+                cinematicSource.addEventListener('loadeddata', onReady, { once: true });
+                cinematicSource.addEventListener('canplay', onReady, { once: true });
+                cinematicSource.addEventListener('error', onError, { once: true });
+            });
+        }
+
+        function rememberMusicForCinematic() {
+            abortMusicTransitions();
+            musicTransitionActive = false;
+            resetNaturalEndFade(false);
+            let position = Math.max(0, Number(sharedMusicState.position) || 0);
+            let playing = Boolean(sharedMusicState.playing);
+            if (musicPlayerReady && musicPlayer && sharedMusicState.videoId) {
+                try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
+                try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
+            }
+            cinematicMusicResume = sharedMusicState.videoId ? {
+                videoId: sharedMusicState.videoId,
+                position,
+                playing
+            } : null;
+            if (sharedMusicState.videoId) {
+                applyImmediateMusicTransport({
+                    mesa: tableCode,
+                    videoId: sharedMusicState.videoId,
+                    playing: false,
+                    position,
+                    updatedAt: Date.now(),
+                    revision: Number(sharedMusicState.revision || 0) + 1
+                });
+                socket.emit('screen_share_music_transport', {
+                    mesa: tableCode,
+                    videoId: sharedMusicState.videoId,
+                    playing: false,
+                    position
+                });
+            }
+        }
+
+        function resumeMusicAfterCinematic() {
+            const resume = cinematicMusicResume;
+            cinematicMusicResume = null;
+            if (!resume || !resume.videoId) return;
+            applyImmediateMusicTransport({
+                mesa: tableCode,
+                videoId: resume.videoId,
+                playing: Boolean(resume.playing),
+                position: resume.position,
+                updatedAt: Date.now(),
+                revision: Number(sharedMusicState.revision || 0) + 1
+            });
+            socket.emit('screen_share_music_transport', {
+                mesa: tableCode,
+                videoId: resume.videoId,
+                playing: Boolean(resume.playing),
+                position: resume.position
+            });
+        }
+
+        async function startCinematic() {
+            if (!ensureReadyToBroadcast()) return;
+            const item = cinematicLibrary.get(cinematicSelectedId);
+            if (!item) {
+                setStatus('adicione um vídeo e escolha qual cinematic deseja executar.');
+                showBroadcastTab('cinematic');
+                return;
+            }
+            if (activeSourceMode === 'cinematic') return;
+            if (activeSourceMode === 'opening') finishOpening(true);
+            else if (isBroadcasting) stopSharing(true);
+
+            cinematicButton.disabled = true;
+            setStatus(`preparando cinematic: ${item.name}...`);
+            try {
+                if (cinematicSource.src !== item.url) {
+                    cinematicSource.src = item.url;
+                    cinematicSource.load();
+                }
+                cinematicSource.pause();
+                try { cinematicSource.currentTime = 0; } catch (error) {}
+                cinematicSource.muted = false;
+                await waitCinematicReady();
+                await ensureCinematicAudioGraph();
+                rememberMusicForCinematic();
+                await withOpeningTimeout(cinematicSource.play(), 6000);
+                await new Promise(resolve => setTimeout(resolve, 90));
+                const stream = captureCinematicStream();
+                await withOpeningTimeout(activateBroadcastStream(stream, 'cinematic', `Cinematic • ${item.name}`), 8000);
+            } catch (error) {
+                console.warn('Falha ao iniciar cinematic:', error);
+                cinematicSource.pause();
+                if (cinematicAudioDestination) {
+                    try { cinematicGainNode.disconnect(cinematicAudioDestination); } catch (disconnectError) {}
+                    try { cinematicAudioDestination.stream.getTracks().forEach(track => track.stop()); } catch (trackError) {}
+                    cinematicAudioDestination = null;
+                }
+                cinematicButton.disabled = false;
+                resumeMusicAfterCinematic();
+                setStatus(String(error && error.message || 'não foi possível iniciar a cinematic.'));
+            }
+        }
+
+        function finishCinematic(resumeMusic = true) {
+            if (cinematicFinishing) return;
+            cinematicFinishing = true;
+            try {
+                cinematicSource.pause();
+                try { cinematicSource.currentTime = 0; } catch (error) {}
+                if (activeSourceMode === 'cinematic') stopSharing(true);
+                cinematicButton.textContent = 'Iniciar cinematic';
+                cinematicButton.classList.remove('danger', 'active');
+                cinematicButton.classList.add('primary');
+                cinematicButton.disabled = false;
+                if (resumeMusic) resumeMusicAfterCinematic();
+                else cinematicMusicResume = null;
+                setStatus(resumeMusic ? 'cinematic encerrada; música da mesa restaurada.' : 'cinematic encerrada.');
+            } finally {
+                cinematicFinishing = false;
+            }
+        }
+
+        function toggleCinematic() {
+            if (activeSourceMode === 'cinematic') {
+                finishCinematic(true);
+                return;
+            }
+            startCinematic();
+        }
+
+        cinematicSource.addEventListener('ended', () => finishCinematic(true));
 
         async function ensureOpeningAudioGraph() {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -1430,7 +1880,8 @@
                 openingFileInput.click();
                 return;
             }
-            if (isBroadcasting && activeSourceMode !== 'opening') stopSharing(true);
+            if (activeSourceMode === 'cinematic') finishCinematic(true);
+            else if (isBroadcasting && activeSourceMode !== 'opening') stopSharing(true);
 
             openingButton.disabled = true;
             setStatus('preparando a abertura do RPG...');
@@ -1513,6 +1964,7 @@
 
         function stopSharing(notifyServer = true) {
             const wasBroadcasting = isBroadcasting;
+            const stoppedMode = activeSourceMode;
             isBroadcasting = false;
             activeSourceMode = '';
             broadcastAvailable = false;
@@ -1527,6 +1979,7 @@
                 localStream = null;
             }
             video.srcObject = null;
+            if (stoppedMode === 'cinematic') cinematicSource.pause();
             fallbackImage.classList.remove('visible');
             video.muted = false;
             pipButton.hidden = true;
@@ -1541,6 +1994,10 @@
             openingButton.textContent = 'Iniciar abertura';
             openingButton.classList.remove('active');
             openingButton.disabled = false;
+            cinematicButton.textContent = 'Iniciar cinematic';
+            cinematicButton.classList.remove('danger', 'active');
+            cinematicButton.classList.add('primary');
+            cinematicButton.disabled = false;
             liveBadge.textContent = 'Aguardando';
             liveBadge.classList.remove('live');
             setEmpty('Nenhuma tela sendo transmitida', 'Quando alguém desta mesa iniciar o compartilhamento, a transmissão aparecerá aqui automaticamente.');
@@ -1554,6 +2011,14 @@
         }
 
         function toggleStreamlabs() {
+            if (activeSourceMode === 'cinematic') {
+                finishCinematic(true);
+                return;
+            }
+            if (activeSourceMode === 'opening') {
+                finishOpening(true);
+                return;
+            }
             if (isBroadcasting) stopSharing(true);
             else startStreamlabsSharing();
         }
@@ -3700,8 +4165,14 @@
             thumbnailVideoSendPromises.clear();
             cancelMusicFade();
             openingSource.pause();
+            cinematicSource.pause();
             if (openingAudioContext) openingAudioContext.close().catch(() => {});
+            if (cinematicAudioContext) cinematicAudioContext.close().catch(() => {});
             if (openingObjectUrl) URL.revokeObjectURL(openingObjectUrl);
+            cinematicLibrary.forEach(item => {
+                try { URL.revokeObjectURL(item.url); } catch (error) {}
+            });
+            cinematicLibrary.clear();
             stopRelayRecorder();
             cleanupRelayPlayback();
             if (fallbackCaptureTimer) clearInterval(fallbackCaptureTimer);
