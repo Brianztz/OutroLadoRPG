@@ -209,6 +209,36 @@
         .music-library-current { color: #9cb2c0; font-size: 0.72rem; }
         .music-queue-number { color: #ff8b8b; font-size: 0.64rem; font-weight: 900; }
 
+        /* Vinculação pessoal ao Spotify (somente mestre). */
+        .spotify-panel { display: grid; gap: 12px; margin-top: 17px; padding: 16px; border: 1px solid rgba(30,215,96,0.27); border-radius: 12px; background: linear-gradient(135deg, rgba(30,215,96,0.055), rgba(5,13,18,0.75)); }
+        .spotify-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .spotify-heading strong { display: block; font-size: 0.85rem; font-weight: 900; color: #d5ffe2; text-transform: uppercase; letter-spacing: 0.065em; }
+        .spotify-heading span { display: block; margin-top: 4px; font-size: 0.73rem; color: #a3bbb0; }
+        .spotify-heading .spotify-error { color: #ff9b9b; }
+        .spotify-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .spotify-button { min-height: 38px; padding: 8px 12px; border: 1px solid rgba(30,215,96,0.35); border-radius: 8px; background: rgba(30,215,96,0.1); color: #d5ffe2; cursor: pointer; font-size: 0.76rem; font-weight: 900; }
+        .spotify-button:hover { background: rgba(30,215,96,0.18); }
+        .spotify-button.primary { background: #1db954; color: #02180b; border-color: #1ed760; }
+        .spotify-button:disabled { opacity: 0.5; cursor: wait; }
+        .spotify-note { margin: 0; font-size: 0.72rem; color: #91a99b; line-height: 1.5; }
+        .spotify-setup { display: grid; gap: 10px; padding: 12px; border: 1px solid rgba(30,215,96,0.2); border-radius: 9px; background: rgba(0,0,0,0.17); }
+        .spotify-setup label { display: grid; gap: 5px; font-size: 0.73rem; color: #b9d7c5; font-weight: 800; }
+        .spotify-setup input { width: 100%; min-height: 38px; border: 1px solid rgba(139,204,246,0.22); border-radius: 7px; padding: 8px 10px; background: #06121a; color: #f0fefa; font-size: 0.76rem; outline: none; }
+        .spotify-setup input:focus { border-color: #1ed760; }
+        .spotify-setup a, .spotify-open { color: #8af2ac; font-size: 0.72rem; font-weight: 800; text-decoration: none; }
+        .spotify-setup a:hover, .spotify-open:hover { text-decoration: underline; }
+        .spotify-setup-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+        .spotify-account { color: #bce8cc; font-size: 0.75rem; }
+        .spotify-playlists { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .spotify-playlists .music-playlist-card { border-color: rgba(30,215,96,0.2); }
+        .spotify-playlists .music-playlist-card:hover { border-color: #1ed760; background: rgba(30,215,96,0.08); }
+        .spotify-tracks { display: grid; gap: 6px; max-height: 310px; overflow-y: auto; }
+        .spotify-list-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 3px; font-size: 0.8rem; }
+        .spotify-list-head strong { color: #dfffea; }
+        .spotify-track { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid rgba(30,215,96,0.1); border-radius: 7px; background: rgba(0,0,0,0.13); }
+        .spotify-track span { min-width: 0; overflow: hidden; font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap; color: #d3e7d9; }
+        .spotify-track .spotify-open { flex: 0 0 auto; }
+
         body.spectator-mode .music-now { grid-template-columns: 1fr; }
         body.spectator-mode .music-player-shell {
             position: fixed;
@@ -453,6 +483,37 @@
                     <div id="music-results" class="music-results" aria-live="polite">
                         <div class="music-empty">Busque uma música para tocar para toda a mesa.</div>
                     </div>
+                </div>
+
+                <div id="spotify-panel" class="spotify-panel music-host-only" aria-label="Spotify do mestre">
+                    <div class="spotify-header">
+                        <div class="spotify-heading">
+                            <strong>Spotify do mestre</strong>
+                            <span id="spotify-state" role="status" aria-live="polite">Conta não vinculada</span>
+                        </div>
+                        <div class="spotify-actions">
+                            <button id="spotify-connect" class="spotify-button primary" type="button">Vincular Spotify</button>
+                            <button id="spotify-disconnect" class="spotify-button" type="button" hidden>Desvincular</button>
+                        </div>
+                    </div>
+                    <p class="spotify-note">Consulte suas playlists e abra faixas diretamente no Spotify. O áudio do Spotify não é retransmitido aos jogadores; a música sincronizada da mesa continua pelo YouTube Music.</p>
+                    <div id="spotify-setup" class="spotify-setup" hidden>
+                        <p class="spotify-note">Para autorizar sua conta, crie um aplicativo no <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a>. Cadastre a URL de retorno abaixo em Redirect URIs e informe somente o Client ID público. Não informe o Client Secret.</p>
+                        <label>Client ID do aplicativo Spotify
+                            <input id="spotify-client-id" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Cole o Client ID aqui">
+                        </label>
+                        <label>URL de retorno para cadastrar no Spotify
+                            <input id="spotify-redirect-uri" type="text" readonly aria-label="URL de retorno do Spotify">
+                        </label>
+                        <div class="spotify-setup-buttons">
+                            <button id="spotify-copy-redirect" class="spotify-button" type="button">Copiar URL de retorno</button>
+                            <button id="spotify-save-id" class="spotify-button primary" type="button">Autorizar minha conta</button>
+                        </div>
+                        <p class="spotify-note">Aplicativos Spotify em modo de desenvolvimento exigem conta Premium do criador e autorizam até cinco usuários cadastrados.</p>
+                    </div>
+                    <div id="spotify-account" class="spotify-account" hidden></div>
+                    <div id="spotify-playlists" class="spotify-playlists" hidden></div>
+                    <div id="spotify-tracks" class="spotify-tracks" hidden></div>
                 </div>
             </section>
         </main>
@@ -4695,5 +4756,6 @@
             if (localStream) localStream.getTracks().forEach(track => track.stop());
         });
     </script>
+    <script src="spotify-link.js?v=20261014-1"></script>
 </body>
 </html>
