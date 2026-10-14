@@ -302,8 +302,6 @@
             </section>
 
             <div class="controls">
-                <button id="share-button" type="button" hidden aria-hidden="true" tabindex="-1">Compartilhar minha tela</button>
-
                 <div class="control-tabs music-host-only" role="tablist" aria-label="Controles da transmissão">
                     <button id="control-tab-principal" class="control-tab active" type="button" role="tab" aria-selected="true" onclick="showBroadcastTab('principal')">Principal</button>
                     <button id="control-tab-inicio" class="control-tab" type="button" role="tab" aria-selected="false" onclick="showBroadcastTab('inicio')">Início</button>
@@ -317,10 +315,11 @@
                                 <div class="control-card-head">
                                     <div class="control-card-title">
                                         <strong>Transmissão principal</strong>
-                                        <span>Use a câmera virtual do Streamlabs como imagem principal da mesa.</span>
+                                        <span>Compartilhe uma tela ou janela do computador, ou use a câmera virtual do Streamlabs.</span>
                                     </div>
                                 </div>
                                 <div class="control-actions">
+                                    <button id="share-button" class="control-button primary" type="button" onclick="toggleSharing()">Compartilhar minha tela</button>
                                     <button id="streamlabs-button" class="control-button primary" type="button" onclick="toggleStreamlabs()">Transmitir pelo Streamlabs</button>
                                 </div>
                             </article>
