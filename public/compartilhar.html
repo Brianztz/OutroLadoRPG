@@ -3119,6 +3119,9 @@
         let musicTransitionMode = '';
         let naturalEndFadeActive = false;
         let naturalEndFadeVideoId = '';
+        // Prevent duplicate ENDED notifications (and the 500ms watchdog) from
+        // skipping two tracks before the incoming player becomes active.
+        let musicAutoAdvanceKey = '';
         let mediaMusicLockActive = false;
         let mediaMusicLockReason = '';
         let mediaMusicResumeWanted = false;
@@ -3326,6 +3329,7 @@
         function playPlaylistTrack(index, transitionMode = 'manual') {
             const song = musicPlaylistQueue[index];
             if (!song) return;
+            if (transitionMode !== 'auto') musicAutoAdvanceKey = '';
             musicPlaylistIndex = index;
             playSharedMusic(song.videoId, song.title, song.channel, {
                 keepQueue: true,
@@ -3336,16 +3340,33 @@
         }
 
         function musicNextTrack(auto = false) {
-            if (!musicPlaylistQueue.length) return;
+            if (spectatorMode || !musicPlaylistQueue.length) return false;
+            if (auto) {
+                if (mediaMusicLockActive || musicTransitionActive || !musicPlayerReady || !musicPlayer) return false;
+                const currentId = currentMusicVideoId();
+                const queuedSong = musicPlaylistQueue[musicPlaylistIndex];
+                // An old player can emit ENDED after the next track was
+                // already selected. Never advance the queue for that event.
+                if (!currentId || currentId !== sharedMusicState.videoId ||
+                    !queuedSong || queuedSong.videoId !== currentId) return false;
+                const key = musicPlaylistIndex + ':' + currentId;
+                if (key === musicAutoAdvanceKey) return true;
+                musicAutoAdvanceKey = key;
+            }
             const next = musicPlaylistIndex < 0 ? 0 : musicPlaylistIndex + 1;
             if (next >= musicPlaylistQueue.length) {
                 if (auto) {
-                    try { musicPlayer && musicPlayer.pauseVideo(); } catch (error) {}
+                    // Last track reached: stop instead of endlessly retrying
+                    // the same video in the controller interval.
+                    sharedMusicState.playing = false;
+                    try { musicPlayer.pauseVideo(); } catch (error) {}
                     broadcastCurrentMusicState(false);
+                    document.getElementById('music-sync-state').textContent = 'Playlist concluída';
                 }
-                return;
+                return auto;
             }
             playPlaylistTrack(next, auto ? 'auto' : 'manual');
+            return true;
         }
 
         function musicPreviousTrack() {
@@ -3553,7 +3574,11 @@
                 state = Number(musicPlayer.getPlayerState());
             } catch (error) {}
 
-            updateNaturalEndFade(current, duration, state);
+            // Some YouTube embeds do not fire onStateChange(ENDED), or fire
+            // while events are suppressed during a transition. The periodic
+            // controller check is a fallback to play the next queue entry.
+            if (!spectatorMode && state === 0) musicNextTrack(true);
+            else updateNaturalEndFade(current, duration, state);
             if (spectatorMode) return;
 
             document.getElementById('music-controller-play').textContent = state === 1 ? '⏸ Pausar' : '▶ Play';
@@ -3741,11 +3766,14 @@
             }
 
             if (remaining > 0.08 && !naturalEndFadeActive) {
-                naturalEndFadeActive = true;
-                naturalEndFadeVideoId = currentId;
-                const sync = document.getElementById('music-sync-state');
-                if (sync) sync.textContent = 'Crossfade para a próxima faixa…';
-                musicNextTrack(true);
+                // Mark this fade only when auto-advance was really accepted.
+                // Otherwise ENDED/fallback can retry instead of stalling.
+                if (musicNextTrack(true)) {
+                    naturalEndFadeActive = true;
+                    naturalEndFadeVideoId = currentId;
+                    const sync = document.getElementById('music-sync-state');
+                    if (sync) sync.textContent = 'Crossfade para a próxima faixa…';
+                }
             }
         }
 
@@ -4116,6 +4144,11 @@
                     interruptMusicTransition(sharedMusicState);
                     return;
                 }
+                // The server echoes the transition we just began locally.
+                // Don't queue a second transition to the same video, which
+                // could seek the new track forward and interfere with ENDED.
+                if (videoId === musicTransitionTargetId &&
+                    !queuedMusicTransitionState) return;
                 queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
                 return;
             }
@@ -4210,13 +4243,17 @@
                 }
                 return;
             }
-            if (spectatorMode || musicTransitionActive || Date.now() < musicIgnoreEventsUntil) return;
+            if (spectatorMode || musicTransitionActive) return;
             if (![0, 1, 2].includes(playerState)) return;
-            musicHostOwnsControl = true;
-            if (playerState === 0 && musicPlaylistQueue.length && musicPlaylistIndex >= 0) {
-                musicNextTrack(true);
-                return;
+            // An end event must not be discarded by the ordinary play/pause
+            // suppression timer. The player may have reached the end sooner
+            // than expected, especially for short tracks.
+            if (playerState === 0) {
+                if (musicNextTrack(true)) return;
+                if (currentMusicVideoId() !== sharedMusicState.videoId) return;
             }
+            if (Date.now() < musicIgnoreEventsUntil) return;
+            musicHostOwnsControl = true;
             broadcastCurrentMusicState(playerState === 1);
         }
 
@@ -4315,6 +4352,13 @@
             pendingMusicState = sharedMusicState;
             updateSharedMusicUi(sharedMusicState);
             ensureYouTubeIframeApi();
+            // Apply playback on the master's player immediately; don't
+            // depend on a server echo that may be delayed or rate-limited.
+            if (musicPlayerReady && musicPlayer) {
+                applySharedMusicState(sharedMusicState).catch(error => {
+                    console.warn('Falha ao iniciar a próxima faixa localmente:', error);
+                });
+            }
             socket.emit('screen_share_music_control', {
                 mesa: tableCode,
                 videoId: safeId,
@@ -4434,8 +4478,18 @@
                 return;
             }
 
+            const searchQueue = songs.map(item => {
+                const snippet = item.snippet || {};
+                const thumb = snippet.thumbnails && (snippet.thumbnails.medium || snippet.thumbnails.default);
+                return {
+                    videoId: safeMusicVideoId(item.id.videoId),
+                    title: String(snippet.title || 'Música'),
+                    channel: String(snippet.channelTitle || ''),
+                    thumbnail: String(thumb && thumb.url || '')
+                };
+            }).filter(song => song.videoId);
             songs.forEach(item => {
-                const videoId = String(item.id.videoId);
+                const videoId = safeMusicVideoId(item.id.videoId);
                 const snippet = item.snippet || {};
                 const card = document.createElement('article');
                 card.className = 'music-result';
@@ -4460,7 +4514,14 @@
                 play.type = 'button';
                 play.className = 'music-play';
                 play.textContent = '▶ Tocar para a mesa';
-                play.addEventListener('click', () => playSharedMusic(videoId, title.textContent, channel.textContent));
+                play.addEventListener('click', () => {
+                    const index = searchQueue.findIndex(song => song.videoId === videoId);
+                    if (index < 0) return;
+                    musicPlaylistQueue = searchQueue;
+                    musicPlaylistIndex = -1;
+                    musicPlaylistName = 'Resultados da busca';
+                    playPlaylistTrack(index);
+                });
 
                 copy.append(title, channel, play);
                 card.append(image, copy);
