@@ -1,4 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
+import { youtubeOAuthRoute } from './youtube-oauth.js';
+export { YouTubeGrant } from './youtube-oauth.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
@@ -1123,6 +1125,9 @@ export default {
         const url = new URL(request.url);
         if (url.pathname === '/health') {
             return Response.json({ ok: true, realtime: true });
+        }
+        if (url.pathname.startsWith('/api/youtube/')) {
+            return youtubeOAuthRoute(request, env, verifyFirebaseIdToken);
         }
         if (url.pathname === '/ws') {
             if (request.headers.get('Upgrade') !== 'websocket') {
