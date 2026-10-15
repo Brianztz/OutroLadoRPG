@@ -668,6 +668,7 @@
         let cinematicConvertingId = '';
         let musicFadeToken = 0;
         let musicFadeTimer = null;
+        let musicFadeFinish = null;
         let selectedThumbnailData = '';
         let selectedThumbnailMediaType = 'image';
         let selectedThumbnailMediaId = '';
@@ -3595,6 +3596,11 @@
             musicFadeToken += 1;
             if (musicFadeTimer) clearTimeout(musicFadeTimer);
             musicFadeTimer = null;
+            // Release promises awaiting a fade, even when the tab is hidden.
+            // The invalidated fade will not touch the player volume.
+            const release = musicFadeFinish;
+            musicFadeFinish = null;
+            if (release) release();
         }
 
         function abortMusicTransitions() {
@@ -3612,65 +3618,108 @@
 
         function rampMusicVolume(target, duration = 350) {
             if (!musicPlayerReady || !musicPlayer) return Promise.resolve();
+            const player = musicPlayer;
             const token = ++musicFadeToken;
             let startVolume = 0;
-            try { startVolume = Number(musicPlayer.getVolume()) || 0; } catch (error) {}
+            try { startVolume = Number(player.getVolume()) || 0; } catch (error) {}
             const endVolume = Math.max(0, Math.min(100, Number(target) || 0));
             const startedAt = performance.now();
             return new Promise(resolve => {
-                const step = now => {
-                    if (token !== musicFadeToken) {
-                        musicFadeTimer = null;
-                        resolve();
-                        return;
-                    }
-                    const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
-                    const eased = progress * progress * (3 - 2 * progress);
-                    const value = Math.round(startVolume + (endVolume - startVolume) * eased);
-                    try { musicPlayer.setVolume(value); } catch (error) {}
-                    if (progress >= 1) {
-                        musicFadeTimer = null;
-                        resolve();
-                        return;
-                    }
-                    musicFadeTimer = setTimeout(() => requestAnimationFrame(step), 50);
+                let finished = false;
+                const settle = () => {
+                    if (finished) return;
+                    finished = true;
+                    if (musicFadeTimer) clearTimeout(musicFadeTimer);
+                    musicFadeTimer = null;
+                    if (musicFadeFinish === finish) musicFadeFinish = null;
+                    resolve();
                 };
-                requestAnimationFrame(step);
+                const finish = () => {
+                    if (token === musicFadeToken) {
+                        try { player.setVolume(endVolume); } catch (error) {}
+                    }
+                    settle();
+                };
+                const step = () => {
+                    if (finished) return;
+                    if (token !== musicFadeToken) return settle();
+                    // requestAnimationFrame is suspended for background tabs.
+                    // Finish instantly if hidden, instead of trapping the
+                    // music transition in a permanently pending promise.
+                    const elapsed = performance.now() - startedAt;
+                    if (document.hidden || elapsed >= duration) return finish();
+                    const progress = Math.min(1, elapsed / Math.max(1, duration));
+                    const eased = progress * progress * (3 - 2 * progress);
+                    try { player.setVolume(Math.round(startVolume + (endVolume - startVolume) * eased)); } catch (error) {}
+                    musicFadeTimer = setTimeout(step, 50);
+                };
+                musicFadeFinish = finish;
+                step();
             });
         }
 
-        function isMusicPlayerReady(player) {
+                function isMusicPlayerReady(player) {
             return Boolean(player && musicReadyPlayers.has(player));
         }
 
+        // Background pages can throttle setTimeout heavily. Stop waiting for
+        // player-polling loops as soon as the page is hidden, and use a direct
+        // switch instead of waiting for a fade that cannot animate.
         function waitForMusicPlayerReady(player, timeoutMs = 5000) {
-            if (isMusicPlayerReady(player)) return Promise.resolve(true);
+            if (isMusicPlayerReady(player) || document.hidden) return Promise.resolve(isMusicPlayerReady(player));
             const started = performance.now();
             return new Promise(resolve => {
-                const check = () => {
-                    if (isMusicPlayerReady(player)) return resolve(true);
-                    if (performance.now() - started >= timeoutMs) return resolve(false);
-                    setTimeout(check, 50);
+                let timer = null;
+                let finished = false;
+                const done = value => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    document.removeEventListener('visibilitychange', visibilityChanged);
+                    resolve(value);
                 };
+                const visibilityChanged = () => {
+                    if (document.hidden) done(isMusicPlayerReady(player));
+                };
+                const check = () => {
+                    if (isMusicPlayerReady(player)) return done(true);
+                    if (document.hidden || performance.now() - started >= timeoutMs) return done(false);
+                    timer = setTimeout(check, 50);
+                };
+                document.addEventListener('visibilitychange', visibilityChanged);
                 check();
             });
         }
 
         function waitForMusicPlayback(player, timeoutMs = 2200) {
+            if (document.hidden) return Promise.resolve(false);
             const started = performance.now();
             return new Promise(resolve => {
+                let timer = null;
+                let finished = false;
+                const done = value => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    document.removeEventListener('visibilitychange', visibilityChanged);
+                    resolve(value);
+                };
+                const visibilityChanged = () => {
+                    if (document.hidden) done(false);
+                };
                 const check = () => {
                     try {
-                        if (player && player.getPlayerState() === 1) return resolve(true);
+                        if (player && player.getPlayerState() === 1) return done(true);
                     } catch (error) {}
-                    if (performance.now() - started >= timeoutMs) return resolve(false);
-                    setTimeout(check, 45);
+                    if (document.hidden || performance.now() - started >= timeoutMs) return done(false);
+                    timer = setTimeout(check, 45);
                 };
+                document.addEventListener('visibilitychange', visibilityChanged);
                 check();
             });
         }
 
-        function syncMusicPlayerVisuals() {
+                function syncMusicPlayerVisuals() {
             const active = musicPlayer && typeof musicPlayer.getIframe === 'function' ? musicPlayer.getIframe() : null;
             const standby = musicCrossfadePlayer && typeof musicCrossfadePlayer.getIframe === 'function' ? musicCrossfadePlayer.getIframe() : null;
             if (active) {
@@ -3698,37 +3747,42 @@
             try { incomingStart = Math.max(0, Math.min(100, Number(incoming.getVolume()) || 0)); } catch (error) {}
             const incomingEnd = Math.max(0, Math.min(100, Number(targetVolume) || 0));
             const startedAt = performance.now();
-
             return new Promise(resolve => {
-                const step = now => {
-                    if (token !== musicFadeToken) {
-                        musicFadeTimer = null;
-                        resolve();
-                        return;
-                    }
-                    const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
-                    // Crossfade de potência igual: no meio da transição as duas
-                    // faixas continuam audíveis (~70% cada), evitando o "buraco"
-                    // de volume de uma interpolação linear.
-                    const angle = progress * Math.PI / 2;
-                    const outgoingFactor = Math.cos(angle);
-                    const incomingFactor = Math.sin(angle);
-                    try { outgoing.setVolume(Math.round(outgoingStart * outgoingFactor)); } catch (error) {}
-                    try { incoming.setVolume(Math.round(incomingStart + (incomingEnd - incomingStart) * incomingFactor)); } catch (error) {}
-                    if (progress >= 1) {
-                        musicFadeTimer = null;
+                let finished = false;
+                const settle = () => {
+                    if (finished) return;
+                    finished = true;
+                    if (musicFadeTimer) clearTimeout(musicFadeTimer);
+                    musicFadeTimer = null;
+                    if (musicFadeFinish === finish) musicFadeFinish = null;
+                    resolve();
+                };
+                const finish = () => {
+                    if (token === musicFadeToken) {
                         try { outgoing.setVolume(0); outgoing.pauseVideo(); } catch (error) {}
                         try { incoming.setVolume(incomingEnd); } catch (error) {}
-                        resolve();
-                        return;
                     }
-                    musicFadeTimer = setTimeout(() => requestAnimationFrame(step), 28);
+                    settle();
                 };
-                requestAnimationFrame(step);
+                const step = () => {
+                    if (finished) return;
+                    if (token !== musicFadeToken) return settle();
+                    const elapsed = performance.now() - startedAt;
+                    if (document.hidden || elapsed >= duration) return finish();
+                    const progress = Math.min(1, elapsed / Math.max(1, duration));
+                    // Equal-power fade while visible; when hidden, complete
+                    // immediately so the next track is not stuck at 0 volume.
+                    const angle = progress * Math.PI / 2;
+                    try { outgoing.setVolume(Math.round(outgoingStart * Math.cos(angle))); } catch (error) {}
+                    try { incoming.setVolume(Math.round(incomingStart + (incomingEnd - incomingStart) * Math.sin(angle))); } catch (error) {}
+                    musicFadeTimer = setTimeout(step, 35);
+                };
+                musicFadeFinish = finish;
+                step();
             });
         }
 
-        function cloneMusicTransitionState(state) {
+                function cloneMusicTransitionState(state) {
             const transitionMode = String(state && state.transitionMode || 'manual') === 'auto' ? 'auto' : 'manual';
             return {
                 mesa: tableCode,
@@ -3811,6 +3865,45 @@
                     const currentId = currentMusicVideoId();
                     const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
                     const target = musicTargetPosition(state);
+
+                    if (document.hidden) {
+                        // When the GM switches tabs, background throttling can
+                        // freeze rAF and delay polling for many seconds.
+                        // Start the next video immediately without an animated
+                        // crossfade; keep the smooth crossfade in the foreground.
+                        const outgoing = musicPlayer;
+                        const standby = isMusicPlayerReady(musicCrossfadePlayer) ? musicCrossfadePlayer : null;
+                        const incoming = currentId !== state.videoId && standby ? standby : outgoing;
+                        musicIgnoreEventsUntil = Date.now() + 900;
+                        try {
+                            if (currentId !== state.videoId || incoming !== outgoing) {
+                                if (state.playing) {
+                                    if (spectatorMode && !musicAudioUnlocked) incoming.mute();
+                                    else incoming.unMute();
+                                    incoming.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                                } else {
+                                    incoming.cueVideoById({ videoId: state.videoId, startSeconds: target });
+                                }
+                            } else {
+                                const position = Number(incoming.getCurrentTime()) || 0;
+                                if (Math.abs(position - target) > 1.5) incoming.seekTo(target, true);
+                                if (state.playing) incoming.playVideo();
+                                else incoming.pauseVideo();
+                            }
+                            incoming.setVolume(targetVolume);
+                            if (incoming !== outgoing) {
+                                try { outgoing.setVolume(0); outgoing.pauseVideo(); } catch (error) {}
+                                musicPlayer = incoming;
+                                musicCrossfadePlayer = outgoing;
+                                musicPlayerReady = isMusicPlayerReady(musicPlayer);
+                                syncMusicPlayerVisuals();
+                            }
+                        } catch (error) {
+                            console.warn('Falha ao mudar música em segundo plano:', error);
+                        }
+                        resetNaturalEndFade();
+                        continue;
+                    }
 
                     if (!currentId || currentId === state.videoId) {
                         musicIgnoreEventsUntil = Date.now() + MUSIC_CROSSFADE_MS + 1800;
@@ -4599,6 +4692,16 @@
             }
         }, 4000);
         musicControllerTimer = setInterval(updateMusicController, 500);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Flush a foreground fade that was active just before the
+                // tab was hidden; rAF and timers may no longer run frequently.
+                if (musicFadeFinish) musicFadeFinish();
+            } else {
+                // Reconcile with the iframe when returning to the tab.
+                updateMusicController();
+            }
+        });
 
         function toggleFullscreen() {
             const stage = document.getElementById('stage');
