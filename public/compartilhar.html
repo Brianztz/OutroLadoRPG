@@ -4362,9 +4362,13 @@
             }
             const params = new URLSearchParams(location.search);
             if (params.has('youtube')) {
+                const callbackStatus = params.get('youtube');
                 params.delete('youtube');
                 history.replaceState(null, '', location.pathname +
                     (params.toString() ? '?' + params.toString() : '') + location.hash);
+                if (callbackStatus === 'error' && !youtubeBackendLinked) {
+                    state.textContent = 'Falha na autorização OAuth do Google. Verifique as credenciais e a URL de redirecionamento.';
+                }
             }
         }
 
