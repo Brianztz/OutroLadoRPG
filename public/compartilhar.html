@@ -3347,7 +3347,7 @@
             renderPlaylistTracks();
         }
 
-        function musicNextTrack(auto = false) {
+        function musicNextTrack(auto = false, skipUnavailable = false) {
             if (spectatorMode || !musicPlaylistQueue.length) return false;
             if (auto) {
                 if (mediaMusicLockActive || musicTransitionActive || !musicPlayerReady || !musicPlayer) return false;
@@ -3355,8 +3355,9 @@
                 const queuedSong = musicPlaylistQueue[musicPlaylistIndex];
                 // An old player can emit ENDED after the next track was
                 // already selected. Never advance the queue for that event.
-                if (!currentId || currentId !== sharedMusicState.videoId ||
-                    !queuedSong || queuedSong.videoId !== currentId) return false;
+                if ((currentId && currentId !== sharedMusicState.videoId) ||
+                    (!currentId && !skipUnavailable) ||
+                    !queuedSong || queuedSong.videoId !== sharedMusicState.videoId) return false;
                 const key = musicPlaylistIndex + ':' + currentId;
                 if (key === musicAutoAdvanceKey) return true;
                 musicAutoAdvanceKey = key;
@@ -4391,9 +4392,16 @@
         function onSharedMusicPlayerError(event) {
             if (event && event.target && event.target !== musicPlayer) return;
             const code = Number(event && event.data);
-            document.getElementById('music-sync-state').textContent = [101, 150].includes(code)
-                ? 'Essa faixa não permite reprodução incorporada'
+            const unavailable = [5, 100, 101, 150, 153].includes(code);
+            document.getElementById('music-sync-state').textContent = unavailable
+                ? 'Faixa indisponível — tentando a próxima…'
                 : 'Não foi possível reproduzir esta faixa';
+            if (!spectatorMode && unavailable && !mediaMusicLockActive &&
+                musicPlaylistIndex >= 0 && sharedMusicState.playing) {
+                // An unavailable embed may have no current video ID. Advance
+                // only the selected queue entry and reuse the duplicate guard.
+                musicNextTrack(true, true);
+            }
         }
 
         function musicPlayerOptions() {
