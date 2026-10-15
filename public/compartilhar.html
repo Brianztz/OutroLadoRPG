@@ -3130,6 +3130,7 @@
         let musicLastProgressAt = 0;
         let musicLastPlaybackRetryAt = 0;
         let musicPlaybackRetries = 0;
+        let musicUnplayableTimer = null;
         let mediaMusicLockActive = false;
         let mediaMusicLockReason = '';
         let mediaMusicResumeWanted = false;
@@ -4398,9 +4399,24 @@
                 : 'Não foi possível reproduzir esta faixa';
             if (!spectatorMode && unavailable && !mediaMusicLockActive &&
                 musicPlaylistIndex >= 0 && sharedMusicState.playing) {
-                // An unavailable embed may have no current video ID. Advance
-                // only the selected queue entry and reuse the duplicate guard.
-                musicNextTrack(true, true);
+                const failedId = playerVideoId(event && event.target);
+                if (failedId && failedId !== sharedMusicState.videoId) return;
+                if (failedId) {
+                    musicNextTrack(true);
+                } else if (!musicUnplayableTimer) {
+                    // An iframe may report an old error after we switch songs.
+                    // If its ID is unknown, verify that the current selection
+                    // is still stalled before considering it unavailable.
+                    const expectedId = sharedMusicState.videoId;
+                    const expectedIndex = musicPlaylistIndex;
+                    musicUnplayableTimer = setTimeout(() => {
+                        musicUnplayableTimer = null;
+                        if (!spectatorMode && !mediaMusicLockActive && !musicTransitionActive &&
+                            sharedMusicState.playing && sharedMusicState.videoId === expectedId &&
+                            musicPlaylistIndex === expectedIndex &&
+                            !currentMusicVideoId()) musicNextTrack(true, true);
+                    }, 3500);
+                }
             }
         }
 
@@ -4464,6 +4480,8 @@
             const safeId = safeMusicVideoId(videoId);
             const transitionMode = options.transitionMode === 'auto' ? 'auto' : 'manual';
             if (!safeId || spectatorMode) return;
+            if (musicUnplayableTimer) clearTimeout(musicUnplayableTimer);
+            musicUnplayableTimer = null;
             if (!options.keepQueue) {
                 musicPlaylistQueue = [];
                 musicPlaylistIndex = -1;
