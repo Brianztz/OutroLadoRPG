@@ -3047,8 +3047,51 @@
             chatInput.focus();
         }
 
+        // YouTube OAuth access is short-lived. Persist a browser-scoped link and
+        // an access token with a conservative expiry so F5 and browser restarts
+        // restore the account while Google's access grant is still valid.
+        // Unlike Spotify PKCE, Firebase's GoogleAuthProvider does not return
+        // a Google refresh token; after expiration the master must renew OAuth.
+        const YOUTUBE_LINK_KEY = 'ol_youtube_music_link_v1';
+        const YOUTUBE_ACCESS_KEY = 'ol_youtube_music_access_v1';
+        const YOUTUBE_LEGACY_KEY = 'ol_youtube_music_access_token';
+        const YOUTUBE_ACCESS_TTL_MS = 50 * 60 * 1000;
         let youtubeAccessToken = '';
-        try { youtubeAccessToken = sessionStorage.getItem('ol_youtube_music_access_token') || ''; } catch (error) {}
+
+        function readYouTubeStore(key) {
+            try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (error) { return null; }
+        }
+
+        function clearYouTubeAccess() {
+            youtubeAccessToken = '';
+            try { localStorage.removeItem(YOUTUBE_ACCESS_KEY); } catch (error) {}
+            try { sessionStorage.removeItem(YOUTUBE_LEGACY_KEY); } catch (error) {}
+        }
+
+        function saveYouTubeAccess(accessToken, user) {
+            const uid = String(user && user.uid || '');
+            if (!uid || !accessToken) throw new Error('Entre com sua conta Google para vincular o YouTube Music.');
+            const expiresAt = Date.now() + YOUTUBE_ACCESS_TTL_MS;
+            const label = String(user.displayName || user.email || 'Conta Google').slice(0, 100);
+            youtubeAccessToken = accessToken;
+            try {
+                localStorage.setItem(YOUTUBE_LINK_KEY, JSON.stringify({ uid, label }));
+                localStorage.setItem(YOUTUBE_ACCESS_KEY, JSON.stringify({ uid, accessToken, expiresAt }));
+            } catch (error) {
+                // Still keep the current tab connected when storage is disabled.
+                try { sessionStorage.setItem(YOUTUBE_LEGACY_KEY, accessToken); } catch (storageError) {}
+                document.getElementById('music-state').textContent = 'Vinculado nesta aba; libere armazenamento para manter após sair.';
+            }
+        }
+
+        function showYouTubeRenewal(user) {
+            setYouTubeMusicLinked(false);
+            if (spectatorMode) return;
+            const label = String(user && (user.displayName || user.email) || 'conta Google');
+            document.getElementById('music-state').textContent = 'Conta salva — renovar permissão do YouTube';
+            document.getElementById('music-account').textContent = `Conta: ${label}. O acesso do Google expirou; clique em Renovar acesso.`;
+            document.getElementById('music-connect').textContent = 'Renovar acesso';
+        }
 
         let musicPlayer = null;
         let musicCrossfadePlayer = null;
@@ -3103,6 +3146,13 @@
 
         async function youtubeApi(path, params = {}) {
             if (!youtubeAccessToken) throw new Error('Vincule sua conta primeiro.');
+            const stored = readYouTubeStore(YOUTUBE_ACCESS_KEY);
+            if (stored && stored.accessToken === youtubeAccessToken && Date.now() >= Number(stored.expiresAt || 0)) {
+                clearYouTubeAccess();
+                const current = window.OLFirebase ? await OLFirebase.getCurrentUser().catch(() => null) : null;
+                showYouTubeRenewal(current);
+                throw new Error('O acesso do YouTube expirou. Clique em Renovar acesso.');
+            }
             const url = new URL(`https://www.googleapis.com/youtube/v3/${path}`);
             Object.entries(params).forEach(([key, value]) => {
                 if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
@@ -3110,10 +3160,10 @@
             const response = await fetch(url.href, { headers: { Authorization: `Bearer ${youtubeAccessToken}` } });
             const payload = await response.json().catch(() => ({}));
             if (response.status === 401) {
-                youtubeAccessToken = '';
-                try { sessionStorage.removeItem('ol_youtube_music_access_token'); } catch (error) {}
-                setYouTubeMusicLinked(false);
-                throw new Error('A autorização expirou. Vincule a conta novamente.');
+                clearYouTubeAccess();
+                const user = window.OLFirebase ? await OLFirebase.getCurrentUser().catch(() => null) : null;
+                showYouTubeRenewal(user);
+                throw new Error('O acesso do YouTube expirou. Clique em Renovar acesso.');
             }
             if (!response.ok) {
                 const reason = payload && payload.error && payload.error.errors && payload.error.errors[0] && payload.error.errors[0].reason;
@@ -4295,16 +4345,43 @@
                 setYouTubeMusicLinked(false);
                 return;
             }
-            if (!youtubeAccessToken) {
+            let user = null;
+            try {
+                user = window.OLFirebase ? await OLFirebase.getCurrentUser() : null;
+            } catch (error) {
+                setYouTubeMusicLinked(false);
+                document.getElementById('music-state').textContent = 'Verifique o login do Google';
+                return;
+            }
+            if (!user || !user.uid) {
+                youtubeAccessToken = '';
                 setYouTubeMusicLinked(false);
                 return;
             }
-            try {
-                const user = window.OLFirebase ? await OLFirebase.getCurrentUser() : null;
+            const linked = readYouTubeStore(YOUTUBE_LINK_KEY);
+            const saved = readYouTubeStore(YOUTUBE_ACCESS_KEY);
+            const sameUser = saved && saved.uid === user.uid;
+            if (sameUser && typeof saved.accessToken === 'string' && saved.accessToken &&
+                Date.now() < Number(saved.expiresAt || 0) - 30000) {
+                youtubeAccessToken = saved.accessToken;
                 setYouTubeMusicLinked(true, user);
                 loadYouTubeMusicPlaylists();
-            } catch (error) {
-                setYouTubeMusicLinked(true);
+                return;
+            }
+            // Compatibility for existing links authorized before persistence.
+            let legacyToken = '';
+            try { legacyToken = sessionStorage.getItem(YOUTUBE_LEGACY_KEY) || ''; } catch (error) {}
+            if (legacyToken && (!linked || linked.uid === user.uid)) {
+                youtubeAccessToken = legacyToken;
+                setYouTubeMusicLinked(true, user);
+                loadYouTubeMusicPlaylists();
+                return;
+            }
+            clearYouTubeAccess();
+            if (linked && linked.uid === user.uid) {
+                showYouTubeRenewal(user);
+            } else {
+                setYouTubeMusicLinked(false);
             }
         }
 
@@ -4318,21 +4395,25 @@
                     throw new Error('Integração do Google não carregou. Recarregue a página.');
                 }
                 const result = await OLFirebase.connectYouTubeMusic();
-                youtubeAccessToken = String(result && result.accessToken || '');
-                if (!youtubeAccessToken) throw new Error('Não foi possível obter autorização do YouTube.');
-                try { sessionStorage.setItem('ol_youtube_music_access_token', youtubeAccessToken); } catch (error) {}
+                const accessToken = String(result && result.accessToken || '');
+                if (!accessToken) throw new Error('Não foi possível obter autorização do YouTube.');
+                saveYouTubeAccess(accessToken, result.user);
                 setYouTubeMusicLinked(true, result.user);
                 musicPlaylistsLoaded = false;
                 loadYouTubeMusicPlaylists(true);
                 document.getElementById('music-search-input').focus();
             } catch (error) {
                 console.error('Falha ao vincular YouTube Music:', error);
-                youtubeAccessToken = '';
-                try { sessionStorage.removeItem('ol_youtube_music_access_token'); } catch (storageError) {}
-                setYouTubeMusicLinked(false);
+                // Do not destroy an existing session on a cancelled popup.
+                if (!youtubeAccessToken) {
+                    const user = window.OLFirebase ? await OLFirebase.getCurrentUser().catch(() => null) : null;
+                    const linked = readYouTubeStore(YOUTUBE_LINK_KEY);
+                    if (linked && user && linked.uid === user.uid) showYouTubeRenewal(user);
+                    else setYouTubeMusicLinked(false);
+                }
                 const message = String(error && error.message || '');
                 document.getElementById('music-state').textContent = /popup-closed-by-user|cancelled-popup-request/i.test(message)
-                    ? 'Vínculo cancelado'
+                    ? 'Autorização cancelada'
                     : (message || 'Não foi possível vincular a conta');
             } finally {
                 button.disabled = false;
@@ -4435,6 +4516,19 @@
         } catch (error) {}
         ensureYouTubeIframeApi();
         restoreYouTubeMusicConnection();
+        // If the portal account changes without reloading, never reuse the
+        // previous user's YouTube grant. A return to the same user can restore.
+        if (window.OLFirebase && typeof OLFirebase.onUserChanged === 'function') {
+            OLFirebase.onUserChanged(async user => {
+                const saved = readYouTubeStore(YOUTUBE_ACCESS_KEY);
+                if (!user || (saved && saved.uid !== user.uid)) {
+                    youtubeAccessToken = '';
+                    setYouTubeMusicLinked(false);
+                } else if (!youtubeAccessToken) {
+                    await restoreYouTubeMusicConnection();
+                }
+            });
+        }
         musicSyncTimer = setInterval(() => {
             if (!spectatorMode && !musicTransitionActive && musicHostOwnsControl && sharedMusicState.videoId && socket.connected) {
                 broadcastCurrentMusicState();
