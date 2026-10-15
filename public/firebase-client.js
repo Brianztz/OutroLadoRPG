@@ -519,7 +519,8 @@
         const { auth, authSdk } = await sdkPromise;
         const provider = new authSdk.GoogleAuthProvider();
         provider.addScope('https://www.googleapis.com/auth/youtube.readonly');
-        provider.setCustomParameters({ prompt: 'consent' });
+        // Don't force Google's consent screen on every renewal. Google will
+        // request permissions again only when necessary or when revoked.
 
         const result = auth.currentUser
             ? await authSdk.reauthenticateWithPopup(auth.currentUser, provider)
