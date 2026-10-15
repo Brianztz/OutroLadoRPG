@@ -13,6 +13,7 @@
 
     const CLIENT_KEY = 'ol_spotify_client_id';
     const SESSION_KEY = 'ol_spotify_session';
+    const PERSIST_KEY = 'ol_spotify_refresh_v1';
     const PENDING_KEY = 'ol_spotify_pkce_pending';
     const AUTHORIZE_URL = 'https://accounts.spotify.com/authorize';
     const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -23,6 +24,7 @@
     let clientId = '';
     let connectionBusy = false;
     let listRequestId = 0;
+    let refreshPromise = null;
 
     const state = (message, error = false) => {
         $('spotify-state').textContent = message;
@@ -41,17 +43,44 @@
         try { sessionStorage.removeItem(key); } catch (_) {}
     };
 
+    // Access tokens remain in the tab's session; only the Spotify refresh
+    // token persists across browser restarts, allowing silent restoration.
+    function persistRefreshToken(refreshToken) {
+        if (!refreshToken) return;
+        try {
+            localStorage.setItem(PERSIST_KEY, JSON.stringify({ clientId, refreshToken }));
+        } catch (_) {
+            state('Navegador bloqueou o armazenamento: o vínculo não poderá ser restaurado após fechar.', true);
+        }
+    }
+
+    function clearRefreshToken() {
+        try { localStorage.removeItem(PERSIST_KEY); } catch (_) {}
+    }
+
     try { clientId = (localStorage.getItem(CLIENT_KEY) || '').trim(); } catch (_) {}
     try {
         const saved = JSON.parse(safeSessionGet(SESSION_KEY) || 'null');
-        if (saved && typeof saved === 'object' && saved.clientId === clientId) token = saved;
+        if (saved && saved.clientId === clientId && typeof saved.refreshToken === 'string') {
+            token = saved;
+        }
     } catch (_) {}
+    try {
+        const saved = JSON.parse(localStorage.getItem(PERSIST_KEY) || 'null');
+        if (saved && saved.clientId === clientId && typeof saved.refreshToken === 'string' &&
+            saved.refreshToken && !token) {
+            token = { clientId, accessToken: '', refreshToken: saved.refreshToken, expiresAt: 0 };
+        }
+    } catch (_) {}
+    // Migrate previously linked accounts, saved in session storage only.
+    if (token && token.refreshToken) persistRefreshToken(token.refreshToken);
     $('spotify-client-id').value = clientId;
     $('spotify-redirect-uri').value = redirectUri;
 
-    function saveToken(payload) {
+    function saveToken(payload, retainPreviousRefresh = false) {
         const accessToken = String(payload && payload.access_token || '');
-        const refreshToken = String(payload && payload.refresh_token || (token && token.refreshToken) || '');
+        const refreshToken = String(payload && payload.refresh_token ||
+            (retainPreviousRefresh && token && token.refreshToken) || '');
         if (!accessToken) throw new Error('O Spotify não forneceu um token de acesso.');
         token = {
             clientId,
@@ -60,6 +89,8 @@
             expiresAt: Date.now() + Math.max(60, Number(payload.expires_in) || 3600) * 1000
         };
         safeSessionSet(SESSION_KEY, JSON.stringify(token));
+        if (refreshToken) persistRefreshToken(refreshToken);
+        else clearRefreshToken();
     }
 
     function disconnectSpotify(message = 'Conta desvinculada deste navegador.') {
@@ -67,6 +98,7 @@
         listRequestId++;
         safeSessionRemove(SESSION_KEY);
         safeSessionRemove(PENDING_KEY);
+        clearRefreshToken();
         $('spotify-account').hidden = true;
         $('spotify-account').textContent = '';
         $('spotify-playlists').hidden = true;
@@ -175,16 +207,29 @@
     }
 
     async function currentToken() {
-        if (!token || !token.accessToken) throw new Error('Vincule sua conta Spotify para continuar.');
-        if (Date.now() < token.expiresAt - 60000) return token.accessToken;
+        if (!token) throw new Error('Vincule sua conta Spotify para continuar.');
+        if (token.accessToken && Date.now() < token.expiresAt - 60000) return token.accessToken;
         if (!token.refreshToken) throw new Error('A sessão do Spotify expirou. Vincule a conta novamente.');
-        const refreshed = await exchangeToken({
-            grant_type: 'refresh_token',
-            refresh_token: token.refreshToken,
-            client_id: clientId
-        });
-        saveToken(refreshed);
-        return token.accessToken;
+        // Share one refresh request between parallel API calls.
+        if (!refreshPromise) {
+            refreshPromise = (async () => {
+                try {
+                    const refreshed = await exchangeToken({
+                        grant_type: 'refresh_token',
+                        refresh_token: token.refreshToken,
+                        client_id: clientId
+                    });
+                    saveToken(refreshed, true);
+                    return token.accessToken;
+                } catch (error) {
+                    if (/invalid_grant|invalid_client/i.test(String(error && error.message || ''))) {
+                        disconnectSpotify('A autorização foi revogada ou expirou. Vincule novamente.');
+                    }
+                    throw error;
+                }
+            })().finally(() => { refreshPromise = null; });
+        }
+        return refreshPromise;
     }
 
     async function spotifyApi(path) {
@@ -367,6 +412,7 @@
     (async () => {
         if (await handleCallback()) return;
         if (token) {
+            state('Restaurando vínculo do Spotify...');
             try {
                 await loadLinkedAccount();
             } catch (error) {
