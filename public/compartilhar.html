@@ -3048,68 +3048,43 @@
             chatInput.focus();
         }
 
-        // YouTube OAuth access is short-lived. Persist a browser-scoped link and
-        // an access token with a conservative expiry so F5 and browser restarts
-        // restore the account while Google's access grant is still valid.
-        // Unlike Spotify PKCE, Firebase's GoogleAuthProvider does not return
-        // a Google refresh token; after expiration the master must renew OAuth.
-        const YOUTUBE_LINK_KEY = 'ol_youtube_music_link_v1';
-        const YOUTUBE_ACCESS_KEY = 'ol_youtube_music_access_v1';
-        const YOUTUBE_LEGACY_KEY = 'ol_youtube_music_access_token';
-        const YOUTUBE_ACCESS_TTL_MS = 50 * 60 * 1000;
-        let youtubeAccessToken = '';
-
-        function readYouTubeStore(key) {
-            try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (error) { return null; }
-        }
-
-        function clearYouTubeAccess() {
-            youtubeAccessToken = '';
-            try { localStorage.removeItem(YOUTUBE_ACCESS_KEY); } catch (error) {}
-            try { sessionStorage.removeItem(YOUTUBE_LEGACY_KEY); } catch (error) {}
-        }
-
-        function saveYouTubeAccess(accessToken, user) {
-            const uid = String(user && user.uid || '');
-            if (!uid || !accessToken) throw new Error('Entre com sua conta Google para vincular o YouTube Music.');
-            const expiresAt = Date.now() + YOUTUBE_ACCESS_TTL_MS;
-            const label = String(user.displayName || user.email || 'Conta Google').slice(0, 100);
-            youtubeAccessToken = accessToken;
+        // Tokens OAuth permanecem exclusivamente no servidor Cloudflare.
+        let youtubeBackendLinked = false;
+        let youtubeConnectionGeneration = 0;
+        function discardLegacyYouTubeTokens() {
+            try { sessionStorage.removeItem('ol_youtube_music_access_token'); } catch (error) {}
             try {
-                localStorage.setItem(YOUTUBE_LINK_KEY, JSON.stringify({ uid, label }));
-                localStorage.setItem(YOUTUBE_ACCESS_KEY, JSON.stringify({ uid, accessToken, expiresAt }));
-            } catch (error) {
-                // Still keep the current tab connected when storage is disabled.
-                try { sessionStorage.setItem(YOUTUBE_LEGACY_KEY, accessToken); } catch (storageError) {}
-                document.getElementById('music-state').textContent = 'Vinculado nesta aba; libere armazenamento para manter após sair.';
+                localStorage.removeItem('ol_youtube_music_link_v1');
+                localStorage.removeItem('ol_youtube_music_access_v1');
+            } catch (error) {}
+        }
+        discardLegacyYouTubeTokens();
+
+        async function youtubeBackendRequest(path, options = {}) {
+            if (spectatorMode) throw new Error('Somente o mestre pode vincular o YouTube.');
+            if (!window.OLFirebase) throw new Error('Login Google indisponível. Recarregue a página.');
+            const user = await OLFirebase.getCurrentUser();
+            if (!user) throw new Error('Entre com sua conta Google para vincular o YouTube.');
+            const idToken = await OLFirebase.refreshRealtimeToken(user);
+            const response = await fetch(path, {
+                ...options, credentials: 'same-origin', cache: 'no-store',
+                headers: {
+                    ...(options.headers || {}),
+                    Authorization: 'Bearer ' + idToken,
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {})
+                }
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const error = new Error(String(data && data.error && data.error.message ||
+                    'Não foi possível acessar o YouTube. Verifique a integração do servidor.'));
+                error.status = response.status;
+                throw error;
             }
+            return data;
         }
 
-        function showYouTubeRenewal(user) {
-            setYouTubeMusicLinked(false);
-            if (spectatorMode) return;
-            const label = String(user && (user.displayName || user.email) || 'conta Google');
-            document.getElementById('music-state').textContent = 'Conta salva — renovar permissão do YouTube';
-            document.getElementById('music-account').textContent = `Conta: ${label}. O acesso do Google expirou; clique em Renovar acesso.`;
-            document.getElementById('music-connect').textContent = 'Renovar acesso';
-            document.getElementById('music-disconnect').hidden = false;
-        }
-
-        function disconnectYouTubeMusic() {
-            if (spectatorMode) return;
-            clearYouTubeAccess();
-            try { localStorage.removeItem(YOUTUBE_LINK_KEY); } catch (error) {}
-            musicPlaylistsLoaded = false;
-            musicPlaylistQueue = [];
-            musicPlaylistIndex = -1;
-            document.getElementById('music-playlists').textContent = '';
-            document.getElementById('music-library-current').textContent = '';
-            clearMusicResults('Vincule uma conta para buscar músicas.');
-            setYouTubeMusicLinked(false);
-            document.getElementById('music-state').textContent = 'Vínculo removido deste navegador';
-        }
-
-        let musicPlayer = null;
+                let musicPlayer = null;
         let musicCrossfadePlayer = null;
         const musicReadyPlayers = new Set();
         let musicPlayerReady = false;
@@ -3161,35 +3136,31 @@
         }
 
         async function youtubeApi(path, params = {}) {
-            if (!youtubeAccessToken) throw new Error('Vincule sua conta primeiro.');
-            const stored = readYouTubeStore(YOUTUBE_ACCESS_KEY);
-            if (stored && stored.accessToken === youtubeAccessToken && Date.now() >= Number(stored.expiresAt || 0)) {
-                clearYouTubeAccess();
-                const current = window.OLFirebase ? await OLFirebase.getCurrentUser().catch(() => null) : null;
-                showYouTubeRenewal(current);
-                throw new Error('O acesso do YouTube expirou. Clique em Renovar acesso.');
+            if (!youtubeBackendLinked) throw new Error('Vincule sua conta primeiro.');
+            if (!['playlists', 'playlistItems', 'channels', 'search'].includes(path)) {
+                throw new Error('Operação não permitida.');
             }
-            const url = new URL(`https://www.googleapis.com/youtube/v3/${path}`);
+            const url = new URL('/api/youtube/data', location.origin);
+            url.searchParams.set('resource', path);
             Object.entries(params).forEach(([key, value]) => {
-                if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+                if (value !== undefined && value !== null && value !== '') {
+                    url.searchParams.set(key, String(value));
+                }
             });
-            const response = await fetch(url.href, { headers: { Authorization: `Bearer ${youtubeAccessToken}` } });
-            const payload = await response.json().catch(() => ({}));
-            if (response.status === 401) {
-                clearYouTubeAccess();
-                const user = window.OLFirebase ? await OLFirebase.getCurrentUser().catch(() => null) : null;
-                showYouTubeRenewal(user);
-                throw new Error('O acesso do YouTube expirou. Clique em Renovar acesso.');
+            try {
+                return await youtubeBackendRequest(url.pathname + url.search);
+            } catch (error) {
+                if (error.status === 401) {
+                    youtubeBackendLinked = false;
+                    setYouTubeMusicLinked(false);
+                    document.getElementById('music-state').textContent =
+                        'Autorização do YouTube revogada ou expirada. Vincule novamente.';
+                }
+                throw error;
             }
-            if (!response.ok) {
-                const reason = payload && payload.error && payload.error.errors && payload.error.errors[0] && payload.error.errors[0].reason;
-                if (reason === 'accessNotConfigured') throw new Error('Ative a YouTube Data API v3 no projeto Google/Firebase.');
-                throw new Error(String(payload && payload.error && payload.error.message || 'Falha ao acessar o YouTube.'));
-            }
-            return payload;
         }
 
-        function renderMusicPlaylists(playlists) {
+                function renderMusicPlaylists(playlists) {
             const root = document.getElementById('music-playlists');
             root.textContent = '';
             if (!Array.isArray(playlists) || !playlists.length) {
@@ -3214,7 +3185,7 @@
         }
 
         async function loadYouTubeMusicPlaylists(force = false) {
-            if (spectatorMode || !youtubeAccessToken) return;
+            if (spectatorMode || !youtubeBackendLinked) return;
             if (musicPlaylistsLoaded && !force) return;
             const refresh = document.getElementById('music-playlists-refresh');
             const root = document.getElementById('music-playlists');
@@ -3308,7 +3279,7 @@
         }
 
         async function loadYouTubeMusicPlaylistTracks(playlistId, playlistTitle) {
-            if (spectatorMode || !youtubeAccessToken) return;
+            if (spectatorMode || !youtubeBackendLinked) return;
             clearMusicResults('Carregando faixas da playlist...');
             document.getElementById('music-library-current').textContent = `Abrindo ${String(playlistTitle || 'playlist')}...`;
             try {
@@ -4364,43 +4335,36 @@
                 setYouTubeMusicLinked(false);
                 return;
             }
-            let user = null;
+            const generation = ++youtubeConnectionGeneration;
+            const state = document.getElementById('music-state');
+            state.textContent = 'Verificando vínculo salvo do YouTube...';
             try {
-                user = window.OLFirebase ? await OLFirebase.getCurrentUser() : null;
+                const user = window.OLFirebase ? await OLFirebase.getCurrentUser() : null;
+                if (!user) {
+                    youtubeBackendLinked = false;
+                    setYouTubeMusicLinked(false);
+                    state.textContent = 'Entre com o Google para vincular sua conta';
+                    return;
+                }
+                const response = await youtubeBackendRequest('/api/youtube/status');
+                if (generation !== youtubeConnectionGeneration) return;
+                youtubeBackendLinked = Boolean(response.linked);
+                setYouTubeMusicLinked(youtubeBackendLinked, user);
+                if (youtubeBackendLinked) {
+                    musicPlaylistsLoaded = false;
+                    loadYouTubeMusicPlaylists(true);
+                }
             } catch (error) {
+                if (generation !== youtubeConnectionGeneration) return;
+                youtubeBackendLinked = false;
                 setYouTubeMusicLinked(false);
-                document.getElementById('music-state').textContent = 'Verifique o login do Google';
-                return;
+                state.textContent = String(error.message || 'Não foi possível verificar o vínculo.');
             }
-            if (!user || !user.uid) {
-                youtubeAccessToken = '';
-                setYouTubeMusicLinked(false);
-                return;
-            }
-            const linked = readYouTubeStore(YOUTUBE_LINK_KEY);
-            const saved = readYouTubeStore(YOUTUBE_ACCESS_KEY);
-            const sameUser = saved && saved.uid === user.uid;
-            if (sameUser && typeof saved.accessToken === 'string' && saved.accessToken &&
-                Date.now() < Number(saved.expiresAt || 0) - 30000) {
-                youtubeAccessToken = saved.accessToken;
-                setYouTubeMusicLinked(true, user);
-                loadYouTubeMusicPlaylists();
-                return;
-            }
-            // Compatibility for existing links authorized before persistence.
-            let legacyToken = '';
-            try { legacyToken = sessionStorage.getItem(YOUTUBE_LEGACY_KEY) || ''; } catch (error) {}
-            if (legacyToken && (!linked || linked.uid === user.uid)) {
-                youtubeAccessToken = legacyToken;
-                setYouTubeMusicLinked(true, user);
-                loadYouTubeMusicPlaylists();
-                return;
-            }
-            clearYouTubeAccess();
-            if (linked && linked.uid === user.uid) {
-                showYouTubeRenewal(user);
-            } else {
-                setYouTubeMusicLinked(false);
+            const params = new URLSearchParams(location.search);
+            if (params.has('youtube')) {
+                params.delete('youtube');
+                history.replaceState(null, '', location.pathname +
+                    (params.toString() ? '?' + params.toString() : '') + location.hash);
             }
         }
 
@@ -4408,38 +4372,47 @@
             if (spectatorMode) return;
             const button = document.getElementById('music-connect');
             button.disabled = true;
-            document.getElementById('music-state').textContent = 'Abrindo autorização do Google...';
+            document.getElementById('music-state').textContent = 'Abrindo autorização segura do Google...';
             try {
-                if (!window.OLFirebase || typeof OLFirebase.connectYouTubeMusic !== 'function') {
-                    throw new Error('Integração do Google não carregou. Recarregue a página.');
+                const response = await youtubeBackendRequest('/api/youtube/oauth/start', {
+                    method: 'POST', body: JSON.stringify({ mesa: tableCode })
+                });
+                if (!response.url || new URL(response.url).origin !== 'https://accounts.google.com') {
+                    throw new Error('Endereço de autorização inválido.');
                 }
-                const result = await OLFirebase.connectYouTubeMusic();
-                const accessToken = String(result && result.accessToken || '');
-                if (!accessToken) throw new Error('Não foi possível obter autorização do YouTube.');
-                saveYouTubeAccess(accessToken, result.user);
-                setYouTubeMusicLinked(true, result.user);
-                musicPlaylistsLoaded = false;
-                loadYouTubeMusicPlaylists(true);
-                document.getElementById('music-search-input').focus();
+                location.assign(response.url);
             } catch (error) {
-                console.error('Falha ao vincular YouTube Music:', error);
-                // Do not destroy an existing session on a cancelled popup.
-                if (!youtubeAccessToken) {
-                    const user = window.OLFirebase ? await OLFirebase.getCurrentUser().catch(() => null) : null;
-                    const linked = readYouTubeStore(YOUTUBE_LINK_KEY);
-                    if (linked && user && linked.uid === user.uid) showYouTubeRenewal(user);
-                    else setYouTubeMusicLinked(false);
-                }
-                const message = String(error && error.message || '');
-                document.getElementById('music-state').textContent = /popup-closed-by-user|cancelled-popup-request/i.test(message)
-                    ? 'Autorização cancelada'
-                    : (message || 'Não foi possível vincular a conta');
+                document.getElementById('music-state').textContent =
+                    String(error.message || 'Não foi possível vincular o YouTube.');
+                button.disabled = false;
+            }
+        }
+
+        async function disconnectYouTubeMusic() {
+            if (spectatorMode) return;
+            const button = document.getElementById('music-disconnect');
+            button.disabled = true;
+            try {
+                await youtubeBackendRequest('/api/youtube/disconnect', { method: 'DELETE' });
+                youtubeConnectionGeneration++;
+                youtubeBackendLinked = false;
+                musicPlaylistsLoaded = false;
+                musicPlaylistQueue = [];
+                musicPlaylistIndex = -1;
+                document.getElementById('music-playlists').textContent = '';
+                document.getElementById('music-library-current').textContent = '';
+                clearMusicResults('Vincule sua conta para consultar suas playlists.');
+                setYouTubeMusicLinked(false);
+                document.getElementById('music-state').textContent = 'YouTube desvinculado com segurança';
+            } catch (error) {
+                document.getElementById('music-state').textContent =
+                    String(error.message || 'Erro ao desvincular.');
             } finally {
                 button.disabled = false;
             }
         }
 
-        function clearMusicResults(message) {
+                function clearMusicResults(message) {
             const results = document.getElementById('music-results');
             results.textContent = '';
             const empty = document.createElement('div');
@@ -4500,7 +4473,7 @@
                 input.focus();
                 return;
             }
-            if (!youtubeAccessToken) {
+            if (!youtubeBackendLinked) {
                 document.getElementById('music-state').textContent = 'Vincule sua conta primeiro';
                 return;
             }
@@ -4535,20 +4508,21 @@
         } catch (error) {}
         ensureYouTubeIframeApi();
         restoreYouTubeMusicConnection();
-        // If the portal account changes without reloading, never reuse the
-        // previous user's YouTube grant. A return to the same user can restore.
+        // Recheck server permissions whenever the signed-in account changes.
+        let currentYoutubeUid = '';
         if (window.OLFirebase && typeof OLFirebase.onUserChanged === 'function') {
             OLFirebase.onUserChanged(async user => {
-                const saved = readYouTubeStore(YOUTUBE_ACCESS_KEY);
-                if (!user || (saved && saved.uid !== user.uid)) {
-                    youtubeAccessToken = '';
+                const uid = String(user && user.uid || '');
+                if (uid !== currentYoutubeUid) {
+                    currentYoutubeUid = uid;
+                    youtubeBackendLinked = false;
                     setYouTubeMusicLinked(false);
-                } else if (!youtubeAccessToken) {
-                    await restoreYouTubeMusicConnection();
+                    if (uid) await restoreYouTubeMusicConnection();
                 }
             });
         }
-        musicSyncTimer = setInterval(() => {
+
+                musicSyncTimer = setInterval(() => {
             if (!spectatorMode && !musicTransitionActive && musicHostOwnsControl && sharedMusicState.videoId && socket.connected) {
                 broadcastCurrentMusicState();
             }
