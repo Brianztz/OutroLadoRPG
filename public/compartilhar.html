@@ -436,6 +436,7 @@
                     </div>
                     <div class="music-actions music-host-only">
                         <button id="music-connect" class="music-button primary" type="button" onclick="connectYouTubeMusic()">Vincular conta</button>
+                        <button id="music-disconnect" class="music-button" type="button" onclick="disconnectYouTubeMusic()" title="Esquecer vínculo deste navegador" hidden>Desvincular</button>
                     </div>
                 </div>
                 <div id="music-now" class="music-now" hidden>
@@ -3091,6 +3092,21 @@
             document.getElementById('music-state').textContent = 'Conta salva — renovar permissão do YouTube';
             document.getElementById('music-account').textContent = `Conta: ${label}. O acesso do Google expirou; clique em Renovar acesso.`;
             document.getElementById('music-connect').textContent = 'Renovar acesso';
+            document.getElementById('music-disconnect').hidden = false;
+        }
+
+        function disconnectYouTubeMusic() {
+            if (spectatorMode) return;
+            clearYouTubeAccess();
+            try { localStorage.removeItem(YOUTUBE_LINK_KEY); } catch (error) {}
+            musicPlaylistsLoaded = false;
+            musicPlaylistQueue = [];
+            musicPlaylistIndex = -1;
+            document.getElementById('music-playlists').textContent = '';
+            document.getElementById('music-library-current').textContent = '';
+            clearMusicResults('Vincule uma conta para buscar músicas.');
+            setYouTubeMusicLinked(false);
+            document.getElementById('music-state').textContent = 'Vínculo removido deste navegador';
         }
 
         let musicPlayer = null;
@@ -3926,15 +3942,18 @@
             const state = document.getElementById('music-state');
             const account = document.getElementById('music-account');
             const connectButton = document.getElementById('music-connect');
+            const disconnectButton = document.getElementById('music-disconnect');
             if (spectatorMode) {
                 body.hidden = true;
                 connectButton.hidden = true;
+                disconnectButton.hidden = true;
                 state.textContent = sharedMusicState.videoId ? 'Sincronizado com a mesa' : 'Aguardando música da mesa';
                 account.textContent = '';
                 return;
             }
             body.hidden = !linked;
             connectButton.hidden = false;
+            disconnectButton.hidden = !linked;
             connectButton.textContent = linked ? 'Reconectar conta' : 'Vincular conta';
             state.textContent = linked ? 'Conta vinculada — escolha uma música' : 'Conta não vinculada';
             account.textContent = linked
@@ -4850,6 +4869,6 @@
             if (localStream) localStream.getTracks().forEach(track => track.stop());
         });
     </script>
-    <script src="spotify-link.js?v=20261014-1"></script>
+    <script src="spotify-link.js?v=20261015-2"></script>
 </body>
 </html>
