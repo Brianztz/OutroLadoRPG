@@ -19,6 +19,7 @@
       "/ws",
       "/health",
       "/socket.io/*",
+      "/api/youtube/*",
       "/ficha",
       "/ficha/",
       "/ficha.html"
@@ -29,11 +30,19 @@
       {
         "name": "TABLE_ROOMS",
         "class_name": "TableRoom"
+      },
+      {
+        "name": "YOUTUBE_GRANTS",
+        "class_name": "YouTubeGrant"
       }
     ]
   },
   "exports": {
     "TableRoom": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "YouTubeGrant": {
       "type": "durable-object",
       "storage": "sqlite"
     }
