@@ -3125,6 +3125,11 @@
         // Prevent duplicate ENDED notifications (and the 500ms watchdog) from
         // skipping two tracks before the incoming player becomes active.
         let musicAutoAdvanceKey = '';
+        let musicLastObservedVideoId = '';
+        let musicLastObservedPosition = -1;
+        let musicLastProgressAt = 0;
+        let musicLastPlaybackRetryAt = 0;
+        let musicPlaybackRetries = 0;
         let mediaMusicLockActive = false;
         let mediaMusicLockReason = '';
         let mediaMusicResumeWanted = false;
@@ -3549,9 +3554,9 @@
             if (!spectatorMode && socket.connected && sharedMusicState.videoId) {
                 let position = Math.max(0, Number(sharedMusicState.position) || 0);
                 let playing = Boolean(sharedMusicState.playing);
-                if (!musicTransitionActive && musicPlayerReady && musicPlayer) {
+                if (!musicTransitionActive && musicPlayerReady && musicPlayer &&
+                    currentMusicVideoId() === sharedMusicState.videoId) {
                     try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
-                    try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
                 }
                 if (mediaMusicLockActive) playing = false;
                 socket.emit('screen_share_music_control', {
@@ -3577,11 +3582,39 @@
                 state = Number(musicPlayer.getPlayerState());
             } catch (error) {}
 
+            // When a background tab briefly buffers, Google may report it as
+            // paused and stop sending progress. Retrying the same active
+            // player is safer than opening a fresh iframe in the background.
+            // It never runs for a deliberate pause, scene lock or spectator.
+            if (!spectatorMode && !musicTransitionActive && !mediaMusicLockActive &&
+                sharedMusicState.playing && sharedMusicState.videoId &&
+                currentMusicVideoId() === sharedMusicState.videoId) {
+                const now = Date.now();
+                if (musicLastObservedVideoId !== sharedMusicState.videoId) {
+                    musicLastObservedVideoId = sharedMusicState.videoId;
+                    musicLastObservedPosition = current;
+                    musicLastProgressAt = now;
+                    musicLastPlaybackRetryAt = 0;
+                    musicPlaybackRetries = 0;
+                } else if (current > musicLastObservedPosition + 0.4) {
+                    musicLastObservedPosition = current;
+                    musicLastProgressAt = now;
+                    musicPlaybackRetries = 0;
+                } else if (state !== 0 && state !== 1 && now - musicLastProgressAt > 7000 &&
+                    now - musicLastPlaybackRetryAt > 7000 && musicPlaybackRetries < 3) {
+                    musicLastPlaybackRetryAt = now;
+                    musicPlaybackRetries += 1;
+                    try { musicPlayer.playVideo(); } catch (error) {}
+                }
+            }
+
             // Some YouTube embeds do not fire onStateChange(ENDED), or fire
             // while events are suppressed during a transition. The periodic
             // controller check is a fallback to play the next queue entry.
-            if (!spectatorMode && state === 0) musicNextTrack(true);
-            else updateNaturalEndFade(current, duration, state);
+            if (!spectatorMode && (state === 0 ||
+                (duration > 0 && current >= duration - 0.18 && state !== 2 && sharedMusicState.playing))) {
+                musicNextTrack(true);
+            } else updateNaturalEndFade(current, duration, state);
             if (spectatorMode) return;
 
             document.getElementById('music-controller-play').textContent = state === 1 ? '⏸ Pausar' : '▶ Play';
@@ -3871,35 +3904,31 @@
                         // freeze rAF and delay polling for many seconds.
                         // Start the next video immediately without an animated
                         // crossfade; keep the smooth crossfade in the foreground.
-                        const outgoing = musicPlayer;
-                        const standby = isMusicPlayerReady(musicCrossfadePlayer) ? musicCrossfadePlayer : null;
-                        const incoming = currentId !== state.videoId && standby ? standby : outgoing;
-                        musicIgnoreEventsUntil = Date.now() + 900;
+                        // Background autoplay is more reliable if the original
+                        // YouTube iframe is reused. Loading into a second iframe
+                        // can be blocked even after the first swap succeeded.
+                        const active = musicPlayer;
+                        musicIgnoreEventsUntil = Date.now() + 1300;
                         try {
-                            if (currentId !== state.videoId || incoming !== outgoing) {
-                                if (state.playing) {
-                                    if (spectatorMode && !musicAudioUnlocked) incoming.mute();
-                                    else incoming.unMute();
-                                    incoming.loadVideoById({ videoId: state.videoId, startSeconds: target });
-                                } else {
-                                    incoming.cueVideoById({ videoId: state.videoId, startSeconds: target });
-                                }
+                            if (musicCrossfadePlayer) {
+                                musicCrossfadePlayer.setVolume(0);
+                                musicCrossfadePlayer.pauseVideo();
+                            }
+                            if (spectatorMode && !musicAudioUnlocked) active.mute();
+                            else active.unMute();
+                            active.setVolume(targetVolume);
+                            if (currentId !== state.videoId) {
+                                if (state.playing) active.loadVideoById({ videoId: state.videoId, startSeconds: target });
+                                else active.cueVideoById({ videoId: state.videoId, startSeconds: target });
                             } else {
-                                const position = Number(incoming.getCurrentTime()) || 0;
-                                if (Math.abs(position - target) > 1.5) incoming.seekTo(target, true);
-                                if (state.playing) incoming.playVideo();
-                                else incoming.pauseVideo();
+                                const position = Number(active.getCurrentTime()) || 0;
+                                if (Math.abs(position - target) > 1.5) active.seekTo(target, true);
+                                if (state.playing) active.playVideo();
+                                else active.pauseVideo();
                             }
-                            incoming.setVolume(targetVolume);
-                            if (incoming !== outgoing) {
-                                try { outgoing.setVolume(0); outgoing.pauseVideo(); } catch (error) {}
-                                musicPlayer = incoming;
-                                musicCrossfadePlayer = outgoing;
-                                musicPlayerReady = isMusicPlayerReady(musicPlayer);
-                                syncMusicPlayerVisuals();
-                            }
+                            syncMusicPlayerVisuals();
                         } catch (error) {
-                            console.warn('Falha ao mudar música em segundo plano:', error);
+                            console.warn('Falha ao trocar faixa em segundo plano:', error);
                         }
                         resetNaturalEndFade();
                         continue;
@@ -4283,21 +4312,21 @@
         function broadcastCurrentMusicState(forcedPlaying = null) {
             if (spectatorMode || !socket.connected || !sharedMusicState.videoId || musicTransitionActive) return;
             let position = Math.max(0, Number(sharedMusicState.position) || 0);
-            let playing = forcedPlaying;
-            if (musicPlayerReady && musicPlayer) {
+            // CUED/BUFFERING/UNSTARTED are not user pauses. Previously, the
+            // periodic sync sent playing:false while the next YouTube iframe
+            // loaded and the server echo then paused the new track for good.
+            let playing = forcedPlaying === null ? Boolean(sharedMusicState.playing) : Boolean(forcedPlaying);
+            if (musicPlayerReady && musicPlayer &&
+                currentMusicVideoId() === sharedMusicState.videoId) {
                 try { position = Math.max(0, Number(musicPlayer.getCurrentTime()) || position); } catch (error) {}
-                if (playing === null) {
-                    try { playing = musicPlayer.getPlayerState() === 1; } catch (error) {}
-                }
             }
-            if (playing === null) playing = Boolean(sharedMusicState.playing);
             if (mediaMusicLockActive) playing = false;
             socket.emit('screen_share_music_control', {
                 mesa: tableCode,
                 videoId: sharedMusicState.videoId,
                 title: sharedMusicState.title,
                 channel: sharedMusicState.channel,
-                playing: Boolean(playing),
+                playing,
                 position,
                 volume: Math.max(0, Math.min(100, Number(sharedMusicState.volume) || 0))
             });
@@ -4333,7 +4362,10 @@
             const playerState = Number(event && event.data);
             if (sharedMusicState.videoId) {
                 if (playerState === 1) document.getElementById('music-sync-state').textContent = 'Sincronizado • tocando';
-                else if (playerState === 2 || playerState === 0) document.getElementById('music-sync-state').textContent = 'Sincronizado • pausado';
+                else if (playerState === 2 && !sharedMusicState.playing) document.getElementById('music-sync-state').textContent = 'Sincronizado • pausado';
+                else if (playerState === 3 || playerState === 5 || playerState === -1) {
+                    document.getElementById('music-sync-state').textContent = 'Carregando áudio da faixa…';
+                }
             }
             if (!spectatorMode && mediaMusicLockActive) {
                 if (playerState === 1) {
@@ -4351,9 +4383,9 @@
                 if (musicNextTrack(true)) return;
                 if (currentMusicVideoId() !== sharedMusicState.videoId) return;
             }
+            // Master controls publish explicit play/pause updates.
+            // Never treat incidental state changes during loading as a pause.
             if (Date.now() < musicIgnoreEventsUntil) return;
-            musicHostOwnsControl = true;
-            broadcastCurrentMusicState(playerState === 1);
         }
 
         function onSharedMusicPlayerError(event) {
