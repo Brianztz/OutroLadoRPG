@@ -3114,6 +3114,8 @@
         let musicBaseVolume = 75;
         let musicTransitionActive = false;
         let musicTransitionTargetId = '';
+        let musicTransitionTargetPlaying = false;
+        let musicTransitionTargetVolume = 75;
         let queuedMusicTransitionState = null;
         let musicTransitionEpoch = 0;
         let musicTransitionMode = '';
@@ -3803,6 +3805,8 @@
                     if (!state.videoId) continue;
 
                     musicTransitionTargetId = state.videoId;
+                    musicTransitionTargetPlaying = state.playing;
+                    musicTransitionTargetVolume = state.volume;
                     musicTransitionMode = state.transitionMode;
                     const currentId = currentMusicVideoId();
                     const targetVolume = Math.max(0, Math.min(100, Number(state.volume) || (spectatorMode ? 75 : musicBaseVolume)));
@@ -4148,6 +4152,8 @@
                 // Don't queue a second transition to the same video, which
                 // could seek the new track forward and interfere with ENDED.
                 if (videoId === musicTransitionTargetId &&
+                    sharedMusicState.playing === musicTransitionTargetPlaying &&
+                    Math.abs(sharedMusicState.volume - musicTransitionTargetVolume) < 1 &&
                     !queuedMusicTransitionState) return;
                 queuedMusicTransitionState = cloneMusicTransitionState(sharedMusicState);
                 return;
