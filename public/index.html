@@ -211,6 +211,8 @@
     <script>
         const tableInput = document.getElementById('table-input');
         const params = new URLSearchParams(window.location.search);
+        const isPlayerInvite = params.get('convite') === '1' && Boolean(params.get('mesa'));
+        let inviteJoinStarted = false;
         const authName = document.getElementById('auth-name');
         const authEmail = document.getElementById('auth-email');
         const authAvatar = document.getElementById('auth-avatar');
@@ -233,6 +235,12 @@
 
         const rememberedTable = params.get('mesa') || localStorage.getItem('portal_table_code') || localStorage.getItem('player_table_code') || localStorage.getItem('master_table_code') || 'PADRAO';
         tableInput.value = normalizeTableCode(rememberedTable);
+        if (isPlayerInvite) {
+            // A shared link targets the precise table chosen by the master.
+            tableInput.readOnly = true;
+            document.querySelector('.hint').textContent =
+                'Convite para a mesa ' + tableInput.value + '. Entre com o Google para abrir sua ficha conectada ao mestre.';
+        }
         tableInput.addEventListener('input', () => {
             const start = tableInput.selectionStart;
             tableInput.value = tableInput.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
@@ -338,7 +346,15 @@
 
         const incomingNotice = params.get('aviso');
         if (incomingNotice) showAuthMessage(incomingNotice, true);
-        OLFirebase.onUserChanged(user => renderAuthUser(user));
+        else if (isPlayerInvite) showAuthMessage('Convite recebido: conecte sua conta Google para entrar automaticamente.');
+        OLFirebase.onUserChanged(user => {
+            renderAuthUser(user);
+            if (!isPlayerInvite || !user || inviteJoinStarted) return;
+            // No auth bypass: enterPortal checks Firestore membership and
+            // registers the player before redirecting to the character sheet.
+            inviteJoinStarted = true;
+            enterPortal('player');
+        });
     </script>
 </body>
 </html>
