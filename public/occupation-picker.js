@@ -82,7 +82,7 @@
     if (!select || select.dataset.occupationPickerReady === '1') return;
     select.dataset.occupationPickerReady = '1';
 
-    const options = Array.from(select.options).filter(option => option.value && !option.disabled)
+    const options = Array.from(select.options).filter(option => option.value && !/^ocultista$/i.test(option.value.trim()) && !/^ocultista$/i.test(option.textContent.trim()))
       .map(option => ({
         value: option.value,
         label: option.textContent.trim(),
