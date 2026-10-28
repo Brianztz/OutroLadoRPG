@@ -3597,7 +3597,7 @@ function removeCurrentClue() {
     function balanceRitualDiceText(value) {
         if (typeof value !== 'string' || !value) return value;
         const steps = [4, 6, 8, 10, 12, 20];
-        return value.replace(/(?<![\\p{L}\\p{N}_])(\\d+)\\s*d\\s*(\\d+)(?!\\d)/giu, (formula, quantity) => {
+        return value.replace(/(?<![\p{L}\p{N}_])(\d+)\s*d\s*(\d+)(?!\d)/giu, (formula, quantity) => {
             const n = Number(quantity);
             if (!Number.isSafeInteger(n) || n <= 1) return formula;
             return '1d' + steps[Math.min(n, steps.length) - 1];
