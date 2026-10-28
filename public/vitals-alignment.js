@@ -25,7 +25,6 @@
 
   function isControl(element, sign) {
     if (!element || !isVisible(element)) return false;
-    if (element.matches('button:disabled')) return false;
     const label = normalize(
       element instanceof HTMLInputElement ? element.value : element.textContent
     );
