@@ -1153,7 +1153,8 @@ export default {
             if (!assetResponse.ok || !contentType.includes('text/html')) return assetResponse;
 
             const html = await assetResponse.text();
-            const playerOccupationScript = '<script defer src="/player-occupations.js?v=20260919-1"></script>';
+            const playerOccupationScript = '<script defer src="/player-occupations.js?v=20261028-1"></script>'
+                + '<script defer src="/occupation-picker.js?v=20261028-1"></script>';
             const body = html.includes('</head>')
                 ? html.replace('</head>', playerOccupationScript + '</head>')
                 : playerOccupationScript + html;
