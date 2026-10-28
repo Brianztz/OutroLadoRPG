@@ -1156,7 +1156,7 @@ export default {
             const playerOccupationScript = '<script defer src="/player-occupations.js?v=20261028-1"></script>'
                 + '<script defer src="/occupation-picker.js?v=20261028-2"></script>'
                 + '<script defer src="/character-toolbar.js?v=20261028-1"></script>
-                + '<script defer src="/vitals-alignment.js?v=20261028-1"></script>';
+                + '<script defer src="/vitals-alignment.js?v=20261028-2"></script>';
             const body = html.includes('</head>')
                 ? html.replace('</head>', playerOccupationScript + '</head>')
                 : playerOccupationScript + html;
