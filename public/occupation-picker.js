@@ -98,16 +98,43 @@
 
     const styles = document.createElement('style');
     styles.textContent = `
-      .ol-occupation-wrapper { position: relative; }
+      .ol-occupation-wrapper {
+        position: relative; display: block; min-width: 0; width: 100%;
+      }
+      /* O select original permanece no DOM para a ficha salvar os dados,
+         mas é substituído visualmente por um botão de verdade. */
+      .ol-occupation-wrapper > select {
+        position: absolute !important; width: 1px !important; height: 1px !important;
+        padding: 0 !important; margin: 0 !important; border: 0 !important;
+        opacity: 0 !important; pointer-events: none !important;
+        clip-path: inset(50%) !important; overflow: hidden !important;
+      }
       .ol-occupation-trigger {
-        position: absolute; inset: 0; z-index: 1; display: block; width: 100%;
-        padding: 0; border: 0; border-radius: 8px; background: transparent;
-        cursor: pointer; color: transparent;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        width: 100%; min-height: 60px; padding: 12px 16px;
+        border: 1px solid #5b9cc5; border-radius: 10px;
+        background: linear-gradient(125deg, #183b54, #0a1d2e);
+        box-shadow: inset 0 0 0 1px rgba(139,204,246,.08);
+        color: #eef8ff; cursor: pointer; text-align: left; font: inherit;
+      }
+      .ol-occupation-trigger:hover {
+        border-color: #9bdaff; background: linear-gradient(125deg, #245679, #0e293f);
       }
       .ol-occupation-trigger:focus-visible {
         outline: 2px solid #8bccf6; outline-offset: 3px;
         box-shadow: 0 0 0 5px rgba(139,204,246,.15);
       }
+      .ol-occupation-trigger-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+      .ol-occupation-trigger-label {
+        display: block; font-size: .8rem; font-weight: 900;
+        letter-spacing: .055em; text-transform: uppercase;
+      }
+      .ol-occupation-trigger-current {
+        display: block; font-size: .78rem; line-height: 1.4;
+        color: #a7cadf; overflow-wrap: anywhere;
+      }
+      .ol-occupation-trigger-arrow { flex: 0 0 auto; color: #8bccf6; font-size: 1.3rem; }
+      .ol-occupation-trigger:disabled { cursor: not-allowed; opacity: .55; }
       .ol-occupation-overlay[hidden] { display: none !important; }
       .ol-occupation-overlay {
         position: fixed; inset: 0; z-index: 2147483000;
@@ -217,12 +244,24 @@
     const trigger = document.createElement('button');
     trigger.type = 'button';
     trigger.className = 'ol-occupation-trigger';
-    trigger.setAttribute('aria-label', 'Selecionar ocupação e consultar sua descrição');
     trigger.setAttribute('aria-haspopup', 'dialog');
     trigger.setAttribute('aria-controls', 'ol-occupation-modal');
+    trigger.innerHTML = '<span class="ol-occupation-trigger-text"><strong class="ol-occupation-trigger-label">Escolher ocupação</strong><span class="ol-occupation-trigger-current">Clique para ver as ocupações e suas descrições</span></span><span class="ol-occupation-trigger-arrow" aria-hidden="true">➜</span>';
     select.tabIndex = -1;
     select.setAttribute('aria-hidden', 'true');
     wrap.appendChild(trigger);
+    const buttonTitle = trigger.querySelector('.ol-occupation-trigger-label');
+    const buttonCurrent = trigger.querySelector('.ol-occupation-trigger-current');
+    function syncOccupationButton() {
+      const chosen = options.find(option => option.value === select.value);
+      buttonTitle.textContent = chosen ? 'Alterar ocupação' : 'Escolher ocupação';
+      buttonCurrent.textContent = chosen ? chosen.label : 'Ver descrições e selecionar';
+      trigger.setAttribute('aria-label', chosen
+        ? 'Alterar ocupação atual: ' + chosen.label
+        : 'Escolher ocupação e consultar sua descrição');
+    }
+    select.addEventListener('change', syncOccupationButton);
+    syncOccupationButton();
 
     const overlay = document.createElement('div');
     overlay.className = 'ol-occupation-overlay';
@@ -325,7 +364,7 @@
     }
 
     function open() {
-      if (select.disabled || !overlay.hidden) return;
+      if (!overlay.hidden) return;
       previousFocus = document.activeElement;
       previousBodyOverflow = document.body.style.overflow;
       highlighted = options.some(option => option.value === select.value) ? select.value : (options[0] && options[0].value || '');
@@ -359,6 +398,7 @@
         select.value = highlighted;
         select.dispatchEvent(new Event('change', { bubbles: true }));
       }
+      syncOccupationButton();
       close();
     });
     overlay.addEventListener('keydown', event => {
