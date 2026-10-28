@@ -37,6 +37,21 @@
         .master-table-button { padding: 10px 15px; border: 1px solid var(--accent-green); border-radius: 7px; background: rgba(74,153,218,0.1); color: var(--accent-green); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-table-button:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 12px rgba(74,153,218,0.3); }
         .master-table-button span { color: #fff; letter-spacing: 1px; }
+        .master-invite-button { min-height:40px; padding:9px 15px; border:1px solid rgba(101,227,183,.64); border-radius:7px; background:rgba(34,145,115,.16); color:#9ef0d0; font-size:.77em; font-weight:900; cursor:pointer; transition:.2s; }
+        .master-invite-button:hover { background:rgba(34,145,115,.28); border-color:#9ef0d0; }
+        .master-invite-dialog { width:min(500px,calc(100vw - 28px)); max-height:calc(100vh - 40px); padding:0; border:1px solid rgba(139,204,246,.45); border-radius:16px; background:#07111c; color:var(--text-primary); box-shadow:0 24px 90px rgba(0,0,0,.9); }
+        .master-invite-dialog::backdrop { background:rgba(0,4,10,.8); backdrop-filter:blur(5px); }
+        .master-invite-content { padding:26px; display:grid; gap:14px; }
+        .master-invite-content h2 { margin:0; font-size:1.2rem; color:var(--accent-yellow); }
+        .master-invite-content p { margin:0; color:var(--text-secondary); font-size:.82rem; line-height:1.55; }
+        .master-invite-content label { display:grid; gap:6px; font-size:.77rem; font-weight:900; }
+        .master-invite-content input { width:100%; min-width:0; padding:12px; border:1px solid rgba(139,204,246,.45); border-radius:8px; background:#02070e; color:#f3f9ff; font:inherit; font-size:1rem; }
+        .master-invite-actions { display:flex; gap:9px; flex-wrap:wrap; }
+        .master-invite-actions button { flex:1; min-width:120px; padding:11px; border:1px solid rgba(139,204,246,.48); border-radius:8px; background:rgba(139,204,246,.14); color:#e6f5ff; font-weight:900; cursor:pointer; }
+        .master-invite-actions button.primary { background:rgba(35,153,121,.35); border-color:#72e5ba; color:#d6fff0; }
+        .master-invite-actions button:disabled { opacity:.45; cursor:wait; }
+        .master-invite-status { min-height:18px; color:#8ccfed; font-size:.77rem; overflow-wrap:anywhere; }
+        .master-invite-status.error { color:#ff939a; }
         .btn-create-catalog-entry { padding: 10px 15px; border: 1px solid var(--accent-blue); border-radius: 7px; background: rgba(139,204,246,0.1); color: var(--accent-blue); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .btn-create-catalog-entry:hover { background: var(--accent-blue); color: #000; box-shadow: 0 0 12px rgba(139,204,246,0.25); }
         .combat-mode-button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(229,57,53,0.55); border-radius: 7px; background: rgba(229,57,53,0.08); color: #ff9691; cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
@@ -448,11 +463,33 @@
         </div>
         <div class="master-top-actions">
             <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
+            <button class="master-invite-button" type="button" onclick="openMasterInvite()">✉ CONVIDAR JOGADOR</button>
             <button id="combat-mode-button" class="combat-mode-button" type="button" aria-pressed="false" onclick="toggleCombatMode()">⚔ MODO DE COMBATE</button>
             <button class="master-screen-share-button" type="button" onclick="openScreenSharePage()">▣ Compartilhar tela</button>
             <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
         </div>
     </header>
+
+    <dialog id="master-invite-dialog" class="master-invite-dialog" aria-labelledby="master-invite-title">
+        <div class="master-invite-content">
+            <h2 id="master-invite-title">✉ Convite para a mesa</h2>
+            <p>Escolha o código da mesa. Ao gerar o convite, o escudo entra nesta mesa e o link conecta o jogador a ela após o login com Google.</p>
+            <label for="master-invite-table">CÓDIGO DA MESA
+                <input id="master-invite-table" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" required autocomplete="off" spellcheck="false" placeholder="Ex.: AURORA">
+            </label>
+            <div class="master-invite-actions">
+                <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">GERAR CONVITE</button>
+                <button type="button" onclick="closeMasterInvite()">FECHAR</button>
+            </div>
+            <label for="master-invite-link">LINK DO JOGADOR
+                <input id="master-invite-link" type="text" readonly placeholder="Gere o convite para copiar o link">
+            </label>
+            <div class="master-invite-actions">
+                <button id="master-invite-copy" type="button" onclick="copyMasterInvite()" disabled>COPIAR LINK</button>
+            </div>
+            <div id="master-invite-status" class="master-invite-status" role="status" aria-live="polite"></div>
+        </div>
+    </dialog>
 
     <nav class="master-tabs" aria-label="Seções do Escudo do Mestre">
         <button class="master-tab-button active" type="button" data-master-tab="combat" onclick="switchMasterTab('combat')">⚔️ COMBATE</button>
@@ -901,12 +938,18 @@
         function chooseMasterTable() {
             const requestedTable = prompt('Digite o codigo da mesa:', masterTableCode);
             if (requestedTable === null) return;
-            const nextTable = normalizeTableCode(requestedTable);
-            if (nextTable === masterTableCode) return;
+            switchMasterTable(normalizeTableCode(requestedTable));
+        }
 
+        function switchMasterTable(nextTable) {
+            if (nextTable === masterTableCode) return;
             masterTableCode = nextTable;
             luminaEnabled = loadLuminaAccess(masterTableCode);
             localStorage.setItem('master_table_code', masterTableCode);
+            // Keep a changed table on refresh; URL parameters take priority over storage.
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('mesa', masterTableCode);
+            window.history.replaceState(null, '', newUrl.href);
             updateMasterTableUI();
             renderLuminaControl();
             playersBoard.querySelectorAll('.player-card').forEach(card => card.remove());
@@ -927,6 +970,88 @@
                 socket.emit('lumina_master_set',{ mesa: masterTableCode,enabled: luminaEnabled });
             }
         }
+
+        function openMasterInvite() {
+            const dialog = document.getElementById('master-invite-dialog');
+            document.getElementById('master-invite-table').value = masterTableCode;
+            document.getElementById('master-invite-link').value = '';
+            document.getElementById('master-invite-copy').disabled = true;
+            const status = document.getElementById('master-invite-status');
+            status.textContent = '';
+            status.classList.remove('error');
+            dialog.showModal();
+            document.getElementById('master-invite-table').focus();
+        }
+
+        function closeMasterInvite() {
+            document.getElementById('master-invite-dialog').close();
+        }
+
+        async function generateMasterInvite() {
+            const input = document.getElementById('master-invite-table');
+            const button = document.getElementById('master-invite-generate');
+            const status = document.getElementById('master-invite-status');
+            const output = document.getElementById('master-invite-link');
+            const copy = document.getElementById('master-invite-copy');
+            const entered = input.value.trim();
+            if (!entered) {
+                input.setCustomValidity('Informe o código da mesa.');
+                input.reportValidity();
+                input.setCustomValidity('');
+                return;
+            }
+            const table = normalizeTableCode(entered);
+            input.value = table;
+            button.disabled = true;
+            copy.disabled = true;
+            output.value = '';
+            status.classList.remove('error');
+            status.textContent = 'Validando a mesa e preparando o convite…';
+            try {
+                if (!window.OLFirebase || typeof OLFirebase.preparePortal !== 'function') {
+                    throw new Error('Autenticação ainda não disponível. Recarregue a página.');
+                }
+                // This creates the table for the owner (when needed) and
+                // prevents inviting players to an invalid/unowned table.
+                await OLFirebase.preparePortal('master', table);
+                switchMasterTable(table);
+                const invite = new URL('./index.html', window.location.href);
+                invite.search = '';
+                invite.searchParams.set('mesa', table);
+                invite.searchParams.set('convite', '1');
+                output.value = invite.href;
+                copy.disabled = false;
+                status.textContent = 'Convite pronto! Envie o link ao jogador para entrar diretamente nesta mesa.';
+            } catch (error) {
+                status.classList.add('error');
+                status.textContent = String(error && error.message || 'Não foi possível gerar o convite.');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function copyMasterInvite() {
+            const value = document.getElementById('master-invite-link').value;
+            if (!value) return;
+            const status = document.getElementById('master-invite-status');
+            try {
+                if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(value);
+                else {
+                    const input = document.getElementById('master-invite-link');
+                    input.focus(); input.select();
+                    if (!document.execCommand('copy')) throw new Error('Não foi possível copiar.');
+                }
+                status.classList.remove('error');
+                status.textContent = 'Link copiado! Compartilhe com seu jogador.';
+            } catch (error) {
+                status.classList.add('error');
+                status.textContent = 'Selecione o link acima para copiar manualmente.';
+            }
+        }
+
+        document.getElementById('master-invite-table').addEventListener('keydown', event => {
+            if (event.key === 'Enter') { event.preventDefault(); generateMasterInvite(); }
+        });
 
         function openScreenSharePage() {
             const url = new URL('./compartilhar.html',window.location.href);
