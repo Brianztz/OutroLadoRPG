@@ -360,6 +360,7 @@
         .popup-roll-name { margin-bottom: 4px; color: white; font-size: clamp(1.1em, 4vw, 1.7em); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 2px 2px 4px #000; overflow-wrap: anywhere; }
         .popup-number { font-size: 10em; line-height: 0.95; font-weight: 900; color: white; text-shadow: 4px 4px 0 #000; }
         .popup-res { font-size: 2.5em; font-weight: 900; margin-top: 10px; text-transform: uppercase; text-shadow: 2px 2px 4px #000; }
+        .ol-d20-pool-detail { display: block; max-width: 100%; margin-top: 9px; color: #d7e6f0; font-size: 0.32em; font-weight: 600; line-height: 1.45; text-transform: none; overflow-wrap: anywhere; }
         .custom-dice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 15px; }
         .custom-dice-field label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 0.72em; font-weight: bold; text-transform: uppercase; }
         .custom-dice-result { display: none; margin-top: 18px; padding: 16px; border: 2px solid var(--accent-blue); border-radius: 10px; background: rgba(0,0,0,0.72); text-align: center; box-shadow: 0 0 14px rgba(139,204,246,0.25); }
@@ -1034,7 +1035,7 @@
                 </div>
                 <div class="character-field character-field-body">
                     <label for="char_tipo_corpo">Tipo de Corpo</label>
-                    <select id="char_tipo_corpo" class="inv-input" onchange="aplicarTipoCorpo(this.value)"><option value="Nenhum">Não definido</option><option value="Pequeno">Pequeno</option><option value="Médio" selected>Médio</option><option value="Grande">Grande</option></select>
+                    <select id="char_tipo_corpo" class="inv-input" onchange="aplicarTipoCorpo(this.value)"><option value="Nenhum" selected>Não definido</option><option value="Pequeno">Pequeno</option><option value="Médio">Médio</option><option value="Grande">Grande</option></select>
                 </div>
                 <div class="character-field character-field-color">
                     <label for="char_cor_overlay">Cor do Overlay</label>
@@ -1378,7 +1379,8 @@
     function rolarTesteAtributo(nome, codigo) {
         const valor = obterValorAtributoEfetivo(codigo);
         const faixas = obterFaixasAtributo(valor);
-        const resultado = Math.floor(Math.random() * 20) + 1;
+        const pool = rolarPoolD20PorAtributo(valor);
+        const resultado = pool.resultadoEscolhido;
 
         let tipoResultado;
         let corResultado;
@@ -1396,7 +1398,7 @@
             corResultado = 'var(--accent-red)';
         }
 
-        showPopup(resultado, nome, tipoResultado, `color:${corResultado}`);
+        showPopup(resultado, nome, tipoResultado + detalharPoolD20(pool), `color:${corResultado}`);
     }
 
     function obterFaixasPericia(valorRelevante) {
@@ -3901,14 +3903,16 @@ function removeCurrentClue() {
         }
     }
     
+    // Atributo 0 = 1d20; +1 = 2d20 (maior); -1 = 2d20 (menor).
+    // Cada ponto adicional soma um dado à rolagem, sem somar resultados.
     function rolarPoolD20PorAtributo(valorAtributo, modificadorDados = 0) {
-        const atributo = Math.trunc(Number(valorAtributo) || 0);
-        const quantidadeBase = atributo === 0 ? 1 : Math.abs(atributo);
+        const atributo = Math.max(-20, Math.min(20, Math.trunc(Number(valorAtributo) || 0)));
+        const quantidadeBase = 1 + Math.abs(atributo);
         const ajusteDados = Math.max(-20, Math.min(20, Math.trunc(Number(modificadorDados) || 0)));
-        const quantidade = Math.max(1, quantidadeBase + ajusteDados);
+        const quantidade = Math.max(1, Math.min(41, quantidadeBase + ajusteDados));
         const resultados = Array.from({ length: quantidade }, () => Math.floor(Math.random() * 20) + 1);
-        const resultadoEscolhido = atributo < 0 ? Math.min(...resultados) : Math.max(...resultados);
-
+        const pegaMenor = atributo < 0;
+        const resultadoEscolhido = pegaMenor ? Math.min(...resultados) : Math.max(...resultados);
         return {
             atributo,
             quantidadeBase,
@@ -3916,8 +3920,13 @@ function removeCurrentClue() {
             quantidade,
             resultados,
             resultadoEscolhido,
-            pegaMenor: atributo < 0
+            pegaMenor
         };
+    }
+
+    function detalharPoolD20(pool) {
+        const regra = pool.pegaMenor ? 'menor' : 'maior';
+        return `<span class="ol-d20-pool-detail">${pool.quantidade}d20 [${pool.resultados.join(', ')}] · ${regra} resultado</span>`;
     }
 
     function rolarTesteD20(n, id, ak, modPerc, rolagemDeArma = false, armaId = null, modificadorDados = null) {
@@ -3965,11 +3974,11 @@ function removeCurrentClue() {
 
                 if (isThisCrit) anyCrit = true;
                 if (isThisCrit) {
-                    results.push(`<span style="color:var(--accent-red)">${rd} (CRÍTICO)</span>`);
+                    results.push(`<span style="color:var(--accent-red)">${rd} (CRÍTICO)</span>${detalharPoolD20(pool)}`);
                 } else {
                     const st = rd >= m.e && m.e != 99 ? "var(--accent-yellow)" : rd >= m.b && m.b != 99 ? "var(--accent-blue)" : rd >= m.n ? "var(--accent-green)" : "var(--accent-red)";
                     const lbl = rd >= m.e && m.e != 99 ? "EXT" : rd >= m.b && m.b != 99 ? "BOM" : rd >= m.n ? "NOR" : "FALHA";
-                    results.push(`<span style="color:${st}">${rd} (${lbl})</span>`);
+                    results.push(`<span style="color:${st}">${rd} (${lbl})</span>${detalharPoolD20(pool)}`);
                 }
             }
 
@@ -3990,7 +3999,7 @@ function removeCurrentClue() {
         } else {
             res = d >= m.e && m.e != 99 ? ["EXTREMO", "var(--accent-yellow)"] : d >= m.b && m.b != 99 ? ["BOM", "var(--accent-blue)"] : d >= m.n ? ["NORMAL", "var(--accent-green)"] : ["FALHA", "var(--accent-red)"];
         }
-        showPopup(d, n, res[0], "color:" + res[1]);
+        showPopup(d, n, res[0] + detalharPoolD20(pool), "color:" + res[1]);
     }
 
     function rolarAtaqueArma(id) { 
@@ -4467,7 +4476,7 @@ function removeCurrentClue() {
         ["Força", "Agilidade", "Vigor", "Intelecto", "Presença"].forEach(a => {
             let id = "attr_" + a.toLowerCase().substring(0,3);
             let codigo = id.replace('attr_', '');
-            document.getElementById('atributos-container').innerHTML += `<div class="attr-box"><div class="attr-header"><label for="${id}">${a}</label><button type="button" class="attr-roll-button" title="Rolar teste de ${a}" aria-label="Rolar teste de ${a}" onclick="rolarTesteAtributo('${a}', '${codigo}')"><img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" alt=""></button></div><input type="number" id="${id}" class="attr-input" value="1" max="10" step="1" oninput="limitarAtributo(this); registrarEdicaoAtributo(this); updateAllPericias(); updateWeight(); save()"><div class="attr-targets" id="${id}_targets"></div></div>`;
+            document.getElementById('atributos-container').innerHTML += `<div class="attr-box"><div class="attr-header"><label for="${id}">${a}</label><button type="button" class="attr-roll-button" title="Rolar teste de ${a}" aria-label="Rolar teste de ${a}" onclick="rolarTesteAtributo('${a}', '${codigo}')"><img src="https://blogger.googleusercontent.com/img/a/AVvXsEiftVk-yKnWxfthjGdnwF6awfHwHWNWsmhyKK4zNCLhhQkGaZrFRK6ccqywzrKpCZfj5XjphjWdPu0SlYHO1P4V3qxS1IOODUZ57HsAF8L5MhsYp-TUmIWnzJW97I18ccNp0DwiT6yoAL7acHi-cWVd0gAOFLAzGbaWFhuF9jwM5P9iJUs2S04wU8Xern4Y" alt=""></button></div><input type="number" id="${id}" class="attr-input" value="0" max="10" step="1" oninput="limitarAtributo(this); registrarEdicaoAtributo(this); updateAllPericias(); updateWeight(); save()"><div class="attr-targets" id="${id}_targets"></div></div>`;
         });
         periciasBase.forEach(p => {
             let sn = p.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\W/g,"_");
