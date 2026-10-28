@@ -1154,7 +1154,7 @@ export default {
 
             const html = await assetResponse.text();
             const playerOccupationScript = '<script defer src="/player-occupations.js?v=20261028-1"></script>'
-                + '<script defer src="/occupation-picker.js?v=20261028-1"></script>';
+                + '<script defer src="/occupation-picker.js?v=20261028-2"></script>';
             const body = html.includes('</head>')
                 ? html.replace('</head>', playerOccupationScript + '</head>')
                 : playerOccupationScript + html;
