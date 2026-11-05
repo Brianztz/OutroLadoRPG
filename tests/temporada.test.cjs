@@ -34,3 +34,40 @@ test('level behaves like attributes: left click increases, right click decreases
   assert.equal(app.errors.length,0);
  }finally{app.dom.window.close();}
 });
+
+test('mobile layout reuses original controls, preserves skills and switches back to desktop',async()=>{
+ const app=await setup();try{
+  const {w,writes}=app;
+  let narrow=true,onChange;
+  w.matchMedia=()=>({get matches(){return narrow},addEventListener(event,handler){if(event==='change')onChange=handler;}});
+  const originalSkillGrid=w.document.getElementById('sheet-skills-grid');
+  const originalAttr=w.document.querySelector('.attr[data-attr="forca"]');
+  w.eval(fs.readFileSync(path.join(root,'public/temporada/mobile.js'),'utf8'));
+  const mobile=w.document.getElementById('mobile-sheet');
+  assert.equal(mobile.hidden,false);
+  assert(w.document.body.classList.contains('is-mobile-season'));
+  assert.equal(w.document.querySelector('#mobile-skills-mount #sheet-skills-grid'),originalSkillGrid);
+  assert.equal(originalSkillGrid.querySelectorAll('[data-skill]').length,28);
+  assert.equal(w.document.querySelector('#mobile-attrs-mount .attr[data-attr="forca"]'),originalAttr);
+  w.document.getElementById('mobile-level-plus').click();
+  assert.equal(w.SeasonSheet.getState().level,2);
+  w.document.getElementById('mobile-level-minus').click();
+  assert.equal(w.SeasonSheet.getState().level,1);
+  originalAttr.click();
+  assert.equal(w.SeasonSheet.getState().attrs.forca,1);
+  w.document.querySelector('[data-mobile-attr="forca"] .mobile-attr-minus').click();
+  assert.equal(w.SeasonSheet.getState().attrs.forca,0);
+  w.SeasonPortrait.avatar=()=> 'data:image/png;base64,AAAA';
+  w.dispatchEvent(new w.Event('season:change'));
+  assert(w.document.getElementById('mobile-avatar-img').src.startsWith('data:image/png;base64,AAAA'));
+  narrow=false;onChange();
+  assert.equal(mobile.hidden,true);
+  assert.equal(originalSkillGrid.parentElement.id,'sheet');
+  assert.equal(originalAttr.parentElement.id,'sheet');
+  narrow=true;onChange();
+  assert.equal(w.document.querySelector('#mobile-skills-mount #sheet-skills-grid'),originalSkillGrid);
+  await delay(650);
+  assert.equal(writes.at(-1).state.attrs.forca,0);
+  assert.equal(app.errors.length,0);
+ }finally{app.dom.window.close();}
+});
