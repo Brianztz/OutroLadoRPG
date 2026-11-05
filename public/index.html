@@ -192,7 +192,7 @@
                 </div>
             </label>
 
-            <div class="role-grid">
+            <label class="table-field" for="sheet-model"><span>Ficha do jogador</span><select id="sheet-model" style="width:100%;padding:12px;background:#101923;color:#eee;border:1px solid #426076;border-radius:8px"><option value="temporada">Nova temporada</option><option value="classic">Outro Lado — original</option></select></label><div class="role-grid">
                 <button class="role-button player" type="submit" disabled>
                     <span class="role-icon" aria-hidden="true">♟</span>
                     <span class="role-copy"><strong>Entrar como jogador</strong><span>Abrir sua ficha de personagem nesta mesa.</span></span>
@@ -290,7 +290,7 @@
             localStorage.setItem('portal_table_code', table);
             const isMaster = role === 'master';
             localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
-            const destination = new URL(isMaster ? './mestre.html' : './ficha.html', window.location.href);
+            const destination = new URL(isMaster ? './mestre.html' : (document.getElementById('sheet-model').value === 'temporada' ? './ficha-temporada.html' : './ficha.html'), window.location.href);
             destination.search = '';
             destination.searchParams.set('mesa', table);
             window.location.assign(destination.href);

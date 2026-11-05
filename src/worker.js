@@ -1,6 +1,4 @@
 import { DurableObject } from 'cloudflare:workers';
-import { youtubeOAuthRoute } from './youtube-oauth.js';
-export { YouTubeGrant } from './youtube-oauth.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
@@ -116,48 +114,11 @@ function makeId(value) {
     return supplied || crypto.randomUUID().replace(/-/g, '');
 }
 
-function binaryField(data) {
-    if (!data || typeof data !== 'object') return null;
-    for (const field of ['frame', 'chunk']) {
-        const value = data[field];
-        if (value instanceof ArrayBuffer) return { field, value };
-        if (ArrayBuffer.isView(value)) {
-            return { field, value: value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) };
-        }
-    }
-    return null;
-}
+function encodePacket(event, data) { return JSON.stringify({ e: event, d: data }); }
 
-function encodePacket(event, data) {
-    const binary = binaryField(data);
-    if (!binary) return JSON.stringify({ e: event, d: data });
-    const cleanData = { ...data };
-    delete cleanData[binary.field];
-    const header = encoder.encode(JSON.stringify({ e: event, d: cleanData, b: binary.field }));
-    const body = new Uint8Array(binary.value);
-    const packet = new Uint8Array(5 + header.byteLength + body.byteLength);
-    packet[0] = 1;
-    new DataView(packet.buffer).setUint32(1, header.byteLength, false);
-    packet.set(header, 5);
-    packet.set(body, 5 + header.byteLength);
-    return packet.buffer;
-}
+    function decodePacket(raw) { return JSON.parse(raw); }
 
-function decodePacket(raw) {
-    if (typeof raw === 'string') return JSON.parse(raw);
-    const bytes = raw instanceof ArrayBuffer
-        ? new Uint8Array(raw)
-        : new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength);
-    if (bytes.byteLength < 5 || bytes[0] !== 1) throw new Error('Invalid binary packet');
-    const headerLength = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(1, false);
-    if (headerLength < 2 || 5 + headerLength > bytes.byteLength) throw new Error('Invalid packet header');
-    const packet = JSON.parse(decoder.decode(bytes.subarray(5, 5 + headerLength)));
-    packet.d = packet.d && typeof packet.d === 'object' ? packet.d : {};
-    packet.d[packet.b] = bytes.slice(5 + headerLength).buffer;
-    return packet;
-}
-
-function emptyInitiativeState() {
+    function emptyInitiativeState() {
     return { entries: [], activeId: null, round: 0, started: false };
 }
 
@@ -234,110 +195,6 @@ function normalizeClueForInspection(rawClue) {
     return clue;
 }
 
-function normalizeScreenChatName(value) {
-    return String(value || 'Espectador').trim().replace(/\s+/g, ' ').slice(0, 30) || 'Espectador';
-}
-
-function normalizeScreenChatText(value) {
-    return String(value || '').replace(/\r\n?/g, '\n').trim().slice(0, 400);
-}
-
-function emptyScreenMusicState(table) {
-    return {
-        mesa: normalizeTableCode(table),
-        videoId: '',
-        title: '',
-        channel: '',
-        playing: false,
-        position: 0,
-        volume: 75,
-        transitionMode: 'manual',
-        updatedAt: 0,
-        revision: 0
-    };
-}
-
-function normalizeScreenMusicState(table, rawData, previousState = null) {
-    const previous = previousState || emptyScreenMusicState(table);
-    const source = rawData && typeof rawData === 'object' ? rawData : {};
-    const rawVideoId = Object.prototype.hasOwnProperty.call(source, 'videoId') ? source.videoId : previous.videoId;
-    const videoId = String(rawVideoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
-    const numericPosition = Number(Object.prototype.hasOwnProperty.call(source, 'position') ? source.position : previous.position);
-    const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : 0));
-    const numericVolume = Number(Object.prototype.hasOwnProperty.call(source, 'volume') ? source.volume : previous.volume);
-    const volume = Math.max(0, Math.min(100, Number.isFinite(numericVolume) ? numericVolume : 75));
-    const transitionMode = String(source.transitionMode || 'manual') === 'auto' ? 'auto' : 'manual';
-    return {
-        mesa: normalizeTableCode(table),
-        videoId,
-        title: videoId ? String(Object.prototype.hasOwnProperty.call(source, 'title') ? source.title : previous.title || '').trim().slice(0, 180) : '',
-        channel: videoId ? String(Object.prototype.hasOwnProperty.call(source, 'channel') ? source.channel : previous.channel || '').trim().slice(0, 140) : '',
-        playing: videoId ? Boolean(Object.prototype.hasOwnProperty.call(source, 'playing') ? source.playing : previous.playing) : false,
-        position: videoId ? position : 0,
-        volume,
-        transitionMode,
-        updatedAt: Date.now(),
-        revision: Math.max(0, Number(previous.revision) || 0) + 1
-    };
-}
-
-function emptyScreenOverlayState(table) {
-    return {
-        mesa: normalizeTableCode(table),
-        mediaType: 'image',
-        mediaId: '',
-        imageData: '',
-        active: false,
-        duration: 0,
-        endAt: 0,
-        counterX: 0.5,
-        counterY: 0.5,
-        counterScale: 1,
-        updatedAt: 0,
-        revision: 0
-    };
-}
-
-function normalizeScreenOverlayState(table, rawData, previousState = null) {
-    const previous = previousState || emptyScreenOverlayState(table);
-    const source = rawData && typeof rawData === 'object' ? rawData : {};
-    const mediaType = String(Object.prototype.hasOwnProperty.call(source, 'mediaType') ? source.mediaType : previous.mediaType) === 'video' ? 'video' : 'image';
-    const rawMediaId = Object.prototype.hasOwnProperty.call(source, 'mediaId') ? source.mediaId : previous.mediaId;
-    const mediaId = String(rawMediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
-    const hasImage = Object.prototype.hasOwnProperty.call(source, 'imageData');
-    const rawImage = hasImage ? String(source.imageData || '') : previous.imageData;
-    const imageData = mediaType === 'image' && /^data:image\/(?:png|jpe?g|webp);base64,/i.test(rawImage) && rawImage.length <= 1_600_000
-        ? rawImage
-        : (mediaType === 'image' && !hasImage ? previous.imageData : '');
-    const duration = Math.max(1, Math.min(359999, Math.round(Number(source.duration) || Number(previous.duration) || 10)));
-    const rawCounterX = Number(Object.prototype.hasOwnProperty.call(source, 'counterX') ? source.counterX : previous.counterX);
-    const rawCounterY = Number(Object.prototype.hasOwnProperty.call(source, 'counterY') ? source.counterY : previous.counterY);
-    const rawCounterScale = Number(Object.prototype.hasOwnProperty.call(source, 'counterScale') ? source.counterScale : previous.counterScale);
-    const counterX = Math.max(0.04, Math.min(0.96, Number.isFinite(rawCounterX) ? rawCounterX : 0.5));
-    const counterY = Math.max(0.06, Math.min(0.94, Number.isFinite(rawCounterY) ? rawCounterY : 0.5));
-    const counterScale = Math.max(0.35, Math.min(2.25, Number.isFinite(rawCounterScale) ? rawCounterScale : 1));
-    const hasMedia = mediaType === 'video' ? Boolean(mediaId) : Boolean(imageData);
-    const active = Boolean(source.active) && hasMedia;
-    const requestedEndAt = Number(source.endAt);
-    const endAt = active
-        ? (Number.isFinite(requestedEndAt) && requestedEndAt > Date.now() ? requestedEndAt : Date.now() + duration * 1000)
-        : 0;
-    return {
-        mesa: normalizeTableCode(table),
-        mediaType,
-        mediaId: mediaType === 'video' ? mediaId : '',
-        imageData,
-        active,
-        duration,
-        endAt,
-        counterX,
-        counterY,
-        counterScale,
-        updatedAt: Date.now(),
-        revision: Math.max(0, Number(previous.revision) || 0) + 1
-    };
-}
-
 function compactPlayer(data) {
     return {
         codigo: normalizePlayerCode(data && (data.codigo || data.id)),
@@ -369,13 +226,6 @@ export class TableRoom extends DurableObject {
         this.initiative = emptyInitiativeState();
         this.lumina = { mesa: DEFAULT_TABLE, enabled: false, caseId: 'aurora-adelanio' };
         this.inspection = null;
-        this.chat = [];
-        this.music = emptyScreenMusicState(DEFAULT_TABLE);
-        this.screenOverlay = emptyScreenOverlayState(DEFAULT_TABLE);
-        this.relayMimeType = '';
-        this.relayBootstrapChunk = null;
-        this.relayRecentChunks = [];
-        this.relayRecentBytes = 0;
 
         ctx.blockConcurrencyWhile(async () => {
             this.table = normalizeTableCode(await ctx.storage.get('table'));
@@ -386,11 +236,6 @@ export class TableRoom extends DurableObject {
             this.initiative = await ctx.storage.get('initiative') || emptyInitiativeState();
             this.lumina = await ctx.storage.get('lumina') || { mesa: this.table, enabled: false, caseId: 'aurora-adelanio' };
             this.inspection = await ctx.storage.get('inspection') || null;
-            this.chat = await ctx.storage.get('screen-chat') || [];
-            this.music = await ctx.storage.get('screen-music') || emptyScreenMusicState(this.table);
-            this.music.mesa = this.table;
-            this.screenOverlay = await ctx.storage.get('screen-overlay') || emptyScreenOverlayState(this.table);
-            this.screenOverlay.mesa = this.table;
         });
     }
 
@@ -432,13 +277,6 @@ export class TableRoom extends DurableObject {
             isOverlay: false,
             isLumina: false,
             playerCode: '',
-            screenShareJoined: false,
-            screenShareRole: '',
-            screenShareSpectator: url.searchParams.get('screenShareMode') === 'spectator',
-            lastScreenChatAt: 0,
-            lastScreenMusicAt: 0,
-            lastScreenOverlayAt: 0,
-            lastScreenShareRetryAt: 0
         });
         const headers = protocols.includes('ol-v1') ? { 'Sec-WebSocket-Protocol': 'ol-v1' } : undefined;
         return new Response(null, { status: 101, webSocket: client, headers });
@@ -463,21 +301,6 @@ export class TableRoom extends DurableObject {
         try { ws.send(encodePacket(event, data)); } catch (error) {}
     }
 
-    sendMany(ids, event, data) {
-        const targets = ids instanceof Set ? ids : new Set(ids || []);
-        if (!targets.size) return;
-        const packet = encodePacket(event, data);
-        for (const ws of this.sockets()) {
-            if (ws.readyState !== 1 || !targets.has(this.meta(ws).id)) continue;
-            try { ws.send(packet); } catch (error) {}
-        }
-    }
-
-    sendToId(id, event, data) {
-        const target = this.sockets().find(ws => this.meta(ws).id === id);
-        if (target) this.send(target, event, data);
-    }
-
     broadcast(event, data, predicate = null) {
         const packet = encodePacket(event, data);
         for (const ws of this.sockets()) {
@@ -490,51 +313,6 @@ export class TableRoom extends DurableObject {
     playerSockets(code) {
         const normalized = normalizePlayerCode(code);
         return this.sockets().filter(ws => this.meta(ws).playerCode === normalized);
-    }
-
-    screenState() {
-        let broadcasterId = null;
-        const viewers = new Set();
-        const fallbackViewers = new Set();
-        const frameViewers = new Set();
-        for (const ws of this.sockets()) {
-            const meta = this.meta(ws);
-            if (meta.screenShareRole === 'broadcaster') broadcasterId = meta.id;
-            if (['viewer', 'fallback', 'frame'].includes(meta.screenShareRole)) viewers.add(meta.id);
-            if (meta.screenShareRole === 'fallback') fallbackViewers.add(meta.id);
-            if (meta.screenShareRole === 'frame') frameViewers.add(meta.id);
-        }
-        return { broadcasterId, viewers, fallbackViewers, frameViewers };
-    }
-
-    broadcastScreen(event, data, predicate = null) {
-        this.broadcast(event, data, meta => meta.screenShareJoined && (!predicate || predicate(meta)));
-    }
-
-    emitScreenState() {
-        const room = this.screenState();
-        this.broadcastScreen('screen_share_state', {
-            mesa: this.table,
-            active: Boolean(room.broadcasterId),
-            viewers: room.viewers.size
-        });
-    }
-
-    emitFallbackCount() {
-        const room = this.screenState();
-        if (!room.fallbackViewers.size) {
-            this.relayMimeType = '';
-            this.relayBootstrapChunk = null;
-            this.relayRecentChunks = [];
-            this.relayRecentBytes = 0;
-        }
-        if (room.broadcasterId) {
-            this.sendToId(room.broadcasterId, 'screen_share_fallback_count', {
-                mesa: this.table,
-                count: room.fallbackViewers.size,
-                frameCount: room.frameViewers.size
-            });
-        }
     }
 
     async persistPlayer(player) {
@@ -622,314 +400,6 @@ export class TableRoom extends DurableObject {
                 this.send(ws, 'initiative_state_updated', this.initiative);
             }
             if (this.inspection) this.send(ws, 'clue_inspection_started', this.inspection);
-            return;
-        }
-
-        if (event === 'screen_share_join') {
-            meta = this.updateMeta(ws, { screenShareJoined: true });
-            const room = this.screenState();
-            this.send(ws, 'screen_share_state', { mesa: this.table, active: Boolean(room.broadcasterId), viewers: room.viewers.size });
-            this.send(ws, 'screen_share_chat_history', { mesa: this.table, messages: this.chat });
-            this.send(ws, 'screen_share_music_state', this.music);
-            this.send(ws, 'screen_share_overlay_state', this.screenOverlay);
-            if (room.broadcasterId && room.broadcasterId !== meta.id) {
-                this.send(ws, 'screen_share_available', { mesa: this.table, broadcasterId: room.broadcasterId });
-            }
-            return;
-        }
-
-        if (event === 'screen_share_chat_send') {
-            if (!meta.screenShareJoined || !data || typeof data !== 'object') return;
-            const text = normalizeScreenChatText(data.text);
-            if (!text) return;
-            const now = Date.now();
-            if (now - Number(meta.lastScreenChatAt || 0) < 350) return;
-            meta = this.updateMeta(ws, { lastScreenChatAt: now });
-            const message = {
-                id: `${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-                mesa: this.table,
-                senderId: meta.id,
-                name: normalizeScreenChatName(data.name),
-                text,
-                createdAt: now
-            };
-            this.chat.push(message);
-            if (this.chat.length > 120) this.chat.splice(0, this.chat.length - 120);
-            await this.ctx.storage.put('screen-chat', this.chat);
-            this.broadcastScreen('screen_share_chat_message', message);
-            return;
-        }
-
-        if (event === 'screen_share_music_control') {
-            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
-            const now = Date.now();
-            if (now - Number(meta.lastScreenMusicAt || 0) < 120) return;
-            meta = this.updateMeta(ws, { lastScreenMusicAt: now });
-            this.music = normalizeScreenMusicState(this.table, data, this.music);
-            await this.ctx.storage.put('screen-music', this.music);
-            this.broadcastScreen('screen_share_music_state', this.music);
-            return;
-        }
-
-        if (event === 'screen_share_music_transport') {
-            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
-            const videoId = String(data.videoId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32);
-            if (!videoId || videoId !== this.music.videoId) return;
-            const numericPosition = Number(data.position);
-            const position = Math.max(0, Math.min(12 * 60 * 60, Number.isFinite(numericPosition) ? numericPosition : this.music.position));
-            this.music = {
-                ...this.music,
-                playing: Boolean(data.playing),
-                position,
-                updatedAt: Date.now(),
-                revision: Math.max(0, Number(this.music.revision) || 0) + 1
-            };
-            this.broadcastScreen('screen_share_music_transport', {
-                mesa: this.table,
-                videoId,
-                playing: this.music.playing,
-                position: this.music.position,
-                updatedAt: this.music.updatedAt,
-                revision: this.music.revision
-            });
-            await this.ctx.storage.put('screen-music', this.music);
-            return;
-        }
-
-        if (event === 'screen_share_overlay_control') {
-            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
-            const now = Date.now();
-            if (now - Number(meta.lastScreenOverlayAt || 0) < 180) return;
-            meta = this.updateMeta(ws, { lastScreenOverlayAt: now });
-            this.screenOverlay = normalizeScreenOverlayState(this.table, data, this.screenOverlay);
-            await this.ctx.storage.put('screen-overlay', this.screenOverlay);
-            this.broadcastScreen('screen_share_overlay_state', this.screenOverlay);
-            return;
-        }
-
-        if (event === 'screen_share_overlay_media_request') {
-            if (!meta.screenShareJoined || !data || typeof data !== 'object') return;
-            const mediaId = String(data.mediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
-            if (this.screenOverlay.mediaType !== 'video' || !mediaId || mediaId !== this.screenOverlay.mediaId) return;
-            this.broadcastScreen('screen_share_overlay_media_request', {
-                mesa: this.table,
-                mediaId,
-                requesterId: meta.id
-            }, targetMeta => targetMeta.id !== meta.id);
-            return;
-        }
-
-        if (event === 'screen_share_overlay_media_chunk') {
-            if (meta.screenShareSpectator || !meta.screenShareJoined || !data || typeof data !== 'object') return;
-            const mediaId = String(data.mediaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80);
-            if (this.screenOverlay.mediaType !== 'video' || !mediaId || mediaId !== this.screenOverlay.mediaId) return;
-            const chunk = data.chunk;
-            const byteLength = chunk instanceof ArrayBuffer ? chunk.byteLength : (ArrayBuffer.isView(chunk) ? chunk.byteLength : 0);
-            if (!byteLength || byteLength > 256 * 1024) return;
-            const index = Math.max(0, Math.floor(Number(data.index) || 0));
-            const total = Math.max(1, Math.min(1024, Math.floor(Number(data.total) || 1)));
-            if (index >= total) return;
-            const mimeType = /^video\/(?:mp4|webm|ogg|quicktime)$/i.test(String(data.mimeType || '')) ? String(data.mimeType) : 'video/mp4';
-            const payload = { mesa: this.table, mediaId, index, total, mimeType, chunk };
-            const target = String(data.target || '').slice(0, 120);
-            if (target) this.sendToId(target, 'screen_share_overlay_media_chunk', payload);
-            else this.broadcastScreen('screen_share_overlay_media_chunk', payload, targetMeta => targetMeta.id !== meta.id);
-            return;
-        }
-
-        if (event === 'screen_share_start') {
-            if (meta.screenShareSpectator) {
-                this.send(ws, 'screen_share_start_denied', { mesa: this.table, reason: 'spectator' });
-                return;
-            }
-            if (!meta.screenShareJoined) meta = this.updateMeta(ws, { screenShareJoined: true });
-            const room = this.screenState();
-            if (room.broadcasterId && room.broadcasterId !== meta.id) {
-                this.sendToId(room.broadcasterId, 'screen_share_replaced', { mesa: this.table });
-                this.broadcastScreen('screen_share_ended', { mesa: this.table, reason: 'replaced' });
-                for (const target of this.sockets()) {
-                    const targetMeta = this.meta(target);
-                    if (targetMeta.screenShareRole) this.updateMeta(target, { screenShareRole: '' });
-                }
-            }
-            this.updateMeta(ws, { screenShareRole: 'broadcaster' });
-            this.broadcastScreen('screen_share_available', { mesa: this.table, broadcasterId: meta.id });
-            this.emitScreenState();
-            return;
-        }
-
-        if (event === 'screen_share_watch') {
-            if (!meta.screenShareJoined) return;
-            const room = this.screenState();
-            if (!room.broadcasterId || room.broadcasterId === meta.id) return;
-            const wasViewer = room.viewers.has(meta.id);
-            const retryRequested = Boolean(data && data.retry === true);
-            const relayRequested = Boolean(data && data.mode === 'relay');
-            const now = Date.now();
-            const retryAllowed = retryRequested && now - Number(meta.lastScreenShareRetryAt || 0) >= 4000;
-            this.updateMeta(ws, {
-                screenShareRole: relayRequested ? 'fallback' : 'viewer',
-                lastScreenShareRetryAt: retryAllowed ? now : meta.lastScreenShareRetryAt
-            });
-            if (!wasViewer || retryAllowed) {
-                this.sendToId(room.broadcasterId, 'screen_share_viewer_joined', {
-                    mesa: this.table,
-                    viewerId: meta.id,
-                    relay: relayRequested
-                });
-                if (!wasViewer) this.emitScreenState();
-            }
-            if (relayRequested) {
-                if (this.relayMimeType) {
-                    this.send(ws, 'screen_share_relay_reset', { mesa: this.table, mimeType: this.relayMimeType });
-                    if (this.relayBootstrapChunk) {
-                        this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk: this.relayBootstrapChunk });
-                    }
-                    this.relayRecentChunks.forEach(chunk => {
-                        this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk });
-                    });
-                }
-                this.emitFallbackCount();
-            }
-            return;
-        }
-
-        if (event === 'screen_share_offer') {
-            if (!data || typeof data !== 'object') return;
-            const room = this.screenState();
-            const target = String(data.target || '');
-            if (room.broadcasterId !== meta.id || !room.viewers.has(target)) return;
-            this.sendToId(target, 'screen_share_offer', { mesa: this.table, broadcasterId: meta.id, sdp: data.sdp });
-            return;
-        }
-
-        if (event === 'screen_share_answer') {
-            if (!data || typeof data !== 'object') return;
-            const room = this.screenState();
-            const target = String(data.target || '');
-            if (room.broadcasterId !== target || !room.viewers.has(meta.id)) return;
-            this.sendToId(target, 'screen_share_answer', { mesa: this.table, viewerId: meta.id, sdp: data.sdp });
-            return;
-        }
-
-        if (event === 'screen_share_ice') {
-            if (!data || typeof data !== 'object') return;
-            const room = this.screenState();
-            const target = String(data.target || '');
-            const validPair = room.broadcasterId === meta.id
-                ? room.viewers.has(target)
-                : room.broadcasterId === target && room.viewers.has(meta.id);
-            if (!validPair) return;
-            this.sendToId(target, 'screen_share_ice', { mesa: this.table, from: meta.id, candidate: data.candidate });
-            return;
-        }
-
-        if (event === 'screen_share_fallback_request') {
-            const room = this.screenState();
-            if (!room.broadcasterId || !room.viewers.has(meta.id)) return;
-            const alreadyFallback = room.fallbackViewers.has(meta.id);
-            this.updateMeta(ws, { screenShareRole: 'fallback' });
-            if (!alreadyFallback) {
-                if (this.relayMimeType) {
-                    this.send(ws, 'screen_share_relay_reset', { mesa: this.table, mimeType: this.relayMimeType });
-                    if (this.relayBootstrapChunk) {
-                        this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk: this.relayBootstrapChunk });
-                    }
-                    this.relayRecentChunks.forEach(chunk => {
-                        this.send(ws, 'screen_share_relay_chunk', { mesa: this.table, chunk });
-                    });
-                }
-                this.emitFallbackCount();
-            }
-            return;
-        }
-
-        if (event === 'screen_share_peer_connected') {
-            if (meta.screenShareRole === 'fallback' || meta.screenShareRole === 'frame') {
-                this.updateMeta(ws, { screenShareRole: 'viewer' });
-                this.emitFallbackCount();
-            }
-            return;
-        }
-
-        if (event === 'screen_share_relay_selected') {
-            const room = this.screenState();
-            if (!room.broadcasterId || meta.screenShareRole !== 'fallback') return;
-            this.sendToId(room.broadcasterId, 'screen_share_viewer_left', { viewerId: meta.id, relay: true });
-            return;
-        }
-
-        if (event === 'screen_share_frame') {
-            if (!data || typeof data !== 'object' || !data.frame) return;
-            const room = this.screenState();
-            const byteLength = Number(data.frame.byteLength || 0);
-            if (room.broadcasterId !== meta.id || !byteLength || byteLength > 2 * 1024 * 1024) return;
-            const frameTargets = data.allFallback
-                ? new Set([...room.frameViewers, ...room.fallbackViewers])
-                : room.frameViewers;
-            this.sendMany(frameTargets, 'screen_share_frame', {
-                mesa: this.table,
-                frame: data.frame,
-                mimeType: String(data.mimeType || 'image/webp').slice(0, 40)
-            });
-            return;
-        }
-
-        if (event === 'screen_share_relay_reset') {
-            if (!data || typeof data !== 'object') return;
-            const room = this.screenState();
-            if (room.broadcasterId !== meta.id) return;
-            const mimeType = String(data.mimeType || '').slice(0, 100);
-            if (!/^video\/webm/i.test(mimeType)) return;
-            this.relayMimeType = mimeType;
-            this.relayBootstrapChunk = null;
-            this.relayRecentChunks = [];
-            this.relayRecentBytes = 0;
-            this.sendMany(room.fallbackViewers, 'screen_share_relay_reset', { mesa: this.table, mimeType });
-            return;
-        }
-
-        if (event === 'screen_share_relay_chunk') {
-            if (!data || typeof data !== 'object' || !data.chunk) return;
-            const room = this.screenState();
-            const byteLength = Number(data.chunk.byteLength || 0);
-            if (room.broadcasterId !== meta.id || !byteLength || byteLength > 10 * 1024 * 1024) return;
-            if (!this.relayBootstrapChunk) {
-                this.relayBootstrapChunk = data.chunk;
-            } else {
-                this.relayRecentChunks.push(data.chunk);
-                this.relayRecentBytes += byteLength;
-                while (this.relayRecentChunks.length > 12 || this.relayRecentBytes > 12 * 1024 * 1024) {
-                    const removed = this.relayRecentChunks.shift();
-                    this.relayRecentBytes -= Number(removed && removed.byteLength || 0);
-                }
-            }
-            this.sendMany(room.fallbackViewers, 'screen_share_relay_chunk', { mesa: this.table, chunk: data.chunk });
-            return;
-        }
-
-        if (event === 'screen_share_relay_failed') {
-            const room = this.screenState();
-            if (!room.broadcasterId || meta.screenShareRole !== 'fallback') return;
-            this.updateMeta(ws, { screenShareRole: 'frame' });
-            this.emitFallbackCount();
-            this.sendToId(room.broadcasterId, 'screen_share_relay_failed', { mesa: this.table, viewerId: meta.id });
-            return;
-        }
-
-        if (event === 'screen_share_stop') {
-            const room = this.screenState();
-            if (room.broadcasterId !== meta.id) return;
-            for (const target of this.sockets()) {
-                const targetMeta = this.meta(target);
-                if (targetMeta.screenShareRole) this.updateMeta(target, { screenShareRole: '' });
-            }
-            this.relayMimeType = '';
-            this.relayBootstrapChunk = null;
-            this.relayRecentChunks = [];
-            this.relayRecentBytes = 0;
-            this.broadcastScreen('screen_share_ended', { mesa: this.table });
-            this.emitScreenState();
             return;
         }
 
@@ -1074,25 +544,6 @@ export class TableRoom extends DurableObject {
 
     async cleanupSocket(ws) {
         const meta = this.meta(ws);
-        if (meta.screenShareRole === 'broadcaster') {
-            for (const target of this.sockets()) {
-                if (target === ws) continue;
-                const targetMeta = this.meta(target);
-                if (targetMeta.screenShareRole) this.updateMeta(target, { screenShareRole: '' });
-            }
-            this.relayMimeType = '';
-            this.relayBootstrapChunk = null;
-            this.relayRecentChunks = [];
-            this.relayRecentBytes = 0;
-            this.broadcastScreen('screen_share_ended', { mesa: this.table });
-            this.emitScreenState();
-        } else if (['viewer', 'fallback', 'frame'].includes(meta.screenShareRole)) {
-            const room = this.screenState();
-            if (room.broadcasterId) this.sendToId(room.broadcasterId, 'screen_share_viewer_left', { viewerId: meta.id });
-            this.emitFallbackCount();
-            this.emitScreenState();
-        }
-
         const code = normalizePlayerCode(meta.playerCode);
         if (!code) return;
         const hasOtherSocket = this.sockets().some(target => target !== ws && this.meta(target).playerCode === code);
@@ -1126,9 +577,6 @@ export default {
         if (url.pathname === '/health') {
             return Response.json({ ok: true, realtime: true });
         }
-        if (url.pathname.startsWith('/api/youtube/')) {
-            return youtubeOAuthRoute(request, env, verifyFirebaseIdToken);
-        }
         if (url.pathname === '/ws') {
             if (request.headers.get('Upgrade') !== 'websocket') {
                 return new Response('Expected WebSocket', { status: 426 });
@@ -1155,7 +603,7 @@ export default {
             const html = await assetResponse.text();
             const playerOccupationScript = '<script defer src="/player-occupations.js?v=20261028-1"></script>'
                 + '<script defer src="/occupation-picker.js?v=20261028-2"></script>'
-                + '<script defer src="/character-toolbar.js?v=20261028-1"></script>
+                + '<script defer src="/character-toolbar.js?v=20261028-1"></script>'
                 + '<script defer src="/vitals-alignment.js?v=20261028-3"></script>'
                 + '<script defer src="/ritual-balance-runtime.js?v=20261028-1"></script>';
             const body = html.includes('</head>')

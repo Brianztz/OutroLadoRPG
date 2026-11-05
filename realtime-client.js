@@ -3,9 +3,6 @@
 
     if (typeof global.io === 'function') return;
 
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const BINARY_FIELDS = ['frame', 'chunk'];
 
     function normalizeTableCode(value) {
         const normalized = String(value || 'PADRAO')
@@ -26,50 +23,9 @@
         return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
     }
 
-    function binaryField(data) {
-        if (!data || typeof data !== 'object') return null;
-        for (const field of BINARY_FIELDS) {
-            const value = data[field];
-            if (value instanceof ArrayBuffer) return { field, value };
-            if (ArrayBuffer.isView(value)) {
-                return {
-                    field,
-                    value: value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)
-                };
-            }
-        }
-        return null;
-    }
+    function encodePacket(event, data) { return JSON.stringify({ e: event, d: data }); }
 
-    function encodePacket(event, data) {
-        const binary = binaryField(data);
-        if (!binary) return JSON.stringify({ e: event, d: data });
-
-        const cleanData = { ...data };
-        delete cleanData[binary.field];
-        const header = encoder.encode(JSON.stringify({ e: event, d: cleanData, b: binary.field }));
-        const body = new Uint8Array(binary.value);
-        const packet = new Uint8Array(5 + header.byteLength + body.byteLength);
-        packet[0] = 1;
-        new DataView(packet.buffer).setUint32(1, header.byteLength, false);
-        packet.set(header, 5);
-        packet.set(body, 5 + header.byteLength);
-        return packet.buffer;
-    }
-
-    function decodePacket(raw) {
-        if (typeof raw === 'string') return JSON.parse(raw);
-        const bytes = raw instanceof ArrayBuffer
-            ? new Uint8Array(raw)
-            : new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength);
-        if (bytes.byteLength < 5 || bytes[0] !== 1) throw new Error('Pacote em tempo real invalido.');
-        const headerLength = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(1, false);
-        if (headerLength < 2 || 5 + headerLength > bytes.byteLength) throw new Error('Cabecalho invalido.');
-        const packet = JSON.parse(decoder.decode(bytes.subarray(5, 5 + headerLength)));
-        packet.d = packet.d && typeof packet.d === 'object' ? packet.d : {};
-        packet.d[packet.b] = bytes.slice(5 + headerLength).buffer;
-        return packet;
-    }
+    function decodePacket(raw) { return JSON.parse(raw); }
 
     class RealtimeSocket {
         constructor(options = {}) {
@@ -197,10 +153,8 @@
             url.protocol = protocol;
             url.searchParams.set('mesa', this._table);
             url.searchParams.set('client', this.id);
-            if (this.auth.screenShareMode) url.searchParams.set('screenShareMode', String(this.auth.screenShareMode));
 
             const socket = new WebSocket(url.href);
-            socket.binaryType = 'arraybuffer';
             this._socket = socket;
 
             socket.addEventListener('open', () => {

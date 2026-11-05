@@ -19,7 +19,7 @@
     const PORTAL_ACCESS_TTL_MS = 2 * 60 * 1000;
     const CHARACTER_CHUNK_SIZE = 180000;
     const CHARACTER_MAX_CHUNKS = 48;
-    const guardedPage = /\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
+    const guardedPage = /\/(?:ficha|ficha-temporada|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
     if (guardedPage) document.documentElement.classList.add('firebase-auth-pending');
 
     const style = document.createElement('style');
@@ -198,7 +198,8 @@
         global.dispatchEvent(new CustomEvent('ol:character-sync', { detail }));
     }
 
-    async function readCharacterSnapshot(snapshot, user, tableId, sdkContext) {
+    function characterCollection(variant) { return variant === 'temporada' ? 'seasonCharacters' : 'characters'; }
+    async function readCharacterSnapshot(snapshot, user, tableId, sdkContext, variant) {
         if (!snapshot.exists()) return null;
         const manifest = snapshot.data() || {};
         let sheetJson = typeof manifest.sheetJson === 'string' ? manifest.sheetJson : '';
@@ -213,7 +214,7 @@
                 return sdkContext.firestoreSdk.getDoc(sdkContext.firestoreSdk.doc(
                     sdkContext.db,
                     'tables', tableId,
-                    'characters', user.uid,
+                    characterCollection(variant), user.uid,
                     'chunks', chunkId
                 ));
             }));
@@ -240,17 +241,18 @@
         };
     }
 
-    async function loadCharacter(requestedTable) {
+    async function loadCharacter(requestedTable, variant) {
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google para carregar a ficha.');
         const sdkContext = await sdkPromise;
         const tableId = normalizeTableCode(requestedTable);
-        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'characters', user.uid);
+        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, characterCollection(variant), user.uid);
         const snapshot = await sdkContext.firestoreSdk.getDoc(reference);
-        return readCharacterSnapshot(snapshot, user, tableId, sdkContext);
+        return readCharacterSnapshot(snapshot, user, tableId, sdkContext, variant);
     }
 
     async function saveCharacter(requestedTable, sheetData, metadata = {}) {
+        const variant = metadata.sheetVariant;
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google para salvar a ficha.');
         const sdkContext = await sdkPromise;
@@ -273,7 +275,7 @@
         const requestedColor = String(metadata.overlayColor || '#8bccf6').trim();
         const overlayColor = /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(requestedColor) ? requestedColor : '#8bccf6';
         const sheetHash = hashCharacterSheet(sheetJson);
-        const reference = firestoreSdk.doc(db, 'tables', tableId, 'characters', user.uid);
+        const reference = firestoreSdk.doc(db, 'tables', tableId, characterCollection(variant), user.uid);
         const currentSnapshot = await firestoreSdk.getDoc(reference);
         const currentData = currentSnapshot.exists() ? currentSnapshot.data() : {};
         if (currentData.sheetHash === sheetHash && currentData.playerCode === playerCode) {
@@ -300,7 +302,7 @@
         });
         chunks.forEach((data, index) => {
             const chunkId = String(index).padStart(4, '0');
-            batch.set(firestoreSdk.doc(db, 'tables', tableId, 'characters', user.uid, 'chunks', chunkId), {
+            batch.set(firestoreSdk.doc(db, 'tables', tableId, characterCollection(variant), user.uid, 'chunks', chunkId), {
                 uid: user.uid,
                 index,
                 data,
@@ -311,7 +313,7 @@
             batch.delete(firestoreSdk.doc(
                 db,
                 'tables', tableId,
-                'characters', user.uid,
+                characterCollection(variant), user.uid,
                 'chunks', String(index).padStart(4, '0')
             ));
         }
@@ -320,15 +322,15 @@
         return { sheetHash, playerCode, skipped: false };
     }
 
-    async function watchCharacter(requestedTable, listener) {
+    async function watchCharacter(requestedTable, listener, variant) {
         if (typeof listener !== 'function') throw new Error('Informe uma função para acompanhar a ficha.');
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google para acompanhar a ficha.');
         const sdkContext = await sdkPromise;
         const tableId = normalizeTableCode(requestedTable);
-        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'characters', user.uid);
+        const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, characterCollection(variant), user.uid);
         return sdkContext.firestoreSdk.onSnapshot(reference, snapshot => {
-            readCharacterSnapshot(snapshot, user, tableId, sdkContext)
+            readCharacterSnapshot(snapshot, user, tableId, sdkContext, variant)
                 .then(value => listener(value, null))
                 .catch(error => listener(null, error));
         }, error => listener(null, error));
@@ -515,31 +517,6 @@
         );
     }
 
-    async function connectYouTubeMusic() {
-        const { auth, authSdk } = await sdkPromise;
-        const provider = new authSdk.GoogleAuthProvider();
-        provider.addScope('https://www.googleapis.com/auth/youtube.readonly');
-        // Don't force Google's consent screen on every renewal. Google will
-        // request permissions again only when necessary or when revoked.
-
-        const result = auth.currentUser
-            ? await authSdk.reauthenticateWithPopup(auth.currentUser, provider)
-            : await authSdk.signInWithPopup(auth, provider);
-        const googleCredential = authSdk.GoogleAuthProvider.credentialFromResult(result);
-        const accessToken = String(googleCredential && googleCredential.accessToken || '');
-        if (!accessToken) {
-            throw new Error('O Google não forneceu autorização para acessar o YouTube.');
-        }
-
-        currentUser = result.user || currentUser;
-        await refreshRealtimeToken(currentUser);
-        updateProfilesInBackground(currentUser);
-        return {
-            user: currentUser,
-            accessToken
-        };
-    }
-
     async function signInWithGoogle() {
         const { auth, authSdk } = await sdkPromise;
         const provider = new authSdk.GoogleAuthProvider();
@@ -721,7 +698,6 @@
 
     global.OLFirebase = Object.freeze({
         config: FIREBASE_CONFIG,
-        connectYouTubeMusic,
         databaseId: DATABASE_ID,
         masterEmail: MASTER_EMAIL,
         getCurrentUser,

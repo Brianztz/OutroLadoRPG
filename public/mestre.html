@@ -32,8 +32,6 @@
         .connection-dot { width: 9px; height: 9px; border-radius: 50%; background: #666; box-shadow: 0 0 0 transparent; transition: 0.2s; }
         .connection-dot.online { background: var(--accent-green); box-shadow: 0 0 10px rgba(74,153,218,0.85); }
         .master-top-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-        .master-screen-share-button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(139,204,246,0.50); border-radius: 7px; background: rgba(57,174,232,0.09); color: var(--accent-blue); cursor: pointer; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; transition: 0.2s; }
-        .master-screen-share-button:hover { transform: translateY(-1px); background: rgba(57,174,232,0.17); box-shadow: 0 0 12px rgba(57,174,232,0.20); }
         .master-table-button { padding: 10px 15px; border: 1px solid var(--accent-green); border-radius: 7px; background: rgba(74,153,218,0.1); color: var(--accent-green); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-table-button:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 12px rgba(74,153,218,0.3); }
         .master-table-button span { color: #fff; letter-spacing: 1px; }
@@ -465,7 +463,6 @@
             <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
             <button class="master-invite-button" type="button" onclick="openMasterInvite()">✉ CONVIDAR JOGADOR</button>
             <button id="combat-mode-button" class="combat-mode-button" type="button" aria-pressed="false" onclick="toggleCombatMode()">⚔ MODO DE COMBATE</button>
-            <button class="master-screen-share-button" type="button" onclick="openScreenSharePage()">▣ Compartilhar tela</button>
             <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
         </div>
     </header>
@@ -1052,12 +1049,6 @@
         document.getElementById('master-invite-table').addEventListener('keydown', event => {
             if (event.key === 'Enter') { event.preventDefault(); generateMasterInvite(); }
         });
-
-        function openScreenSharePage() {
-            const url = new URL('./compartilhar.html',window.location.href);
-            url.searchParams.set('mesa',masterTableCode);
-            window.open(url.href,'_blank','noopener');
-        }
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -3080,7 +3071,9 @@
         }
 
         function abrirFicha(code) {
-            document.getElementById('iframe-ficha').src = `ficha.html?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
+            const player = connectedPlayers.get(String(code));
+            const page = player?.sheetType === 'temporada' || player?.fullData?.sheetType === 'temporada' ? 'ficha-temporada.html' : 'ficha.html';
+            document.getElementById('iframe-ficha').src = `${page}?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
             document.getElementById('modal-ficha').style.display = 'flex';
         }
 
