@@ -734,16 +734,44 @@ renderRituals();
       preview.src=sourceUrl;
     });
   }
+  let seasonAvatarData='';
+  async function createPortraitAvatar(blob){
+    const url=URL.createObjectURL(blob),img=new Image();
+    try{
+      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});
+      const canvas=document.createElement('canvas');
+      canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(img,0,0);
+      const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let left=canvas.width,top=canvas.height,right=-1,bottom=-1;
+      for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
+        if(pixels[(y*canvas.width+x)*4+3]>128){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+      }
+      if(right<left)return '';
+      const height=bottom-top+1,width=right-left+1;
+      // The marked square covers the upper 40% of a full-body portrait.
+      // Already square portraits keep their original framing.
+      const side=height>width*1.4?height*.40:Math.max(width,height);
+      const center=(left+right+1)/2;
+      const out=document.createElement('canvas');out.width=512;out.height=512;
+      out.getContext('2d').drawImage(canvas,center-side/2,top,side,side,0,0,512,512);
+      return out.toDataURL('image/png');
+    }finally{URL.revokeObjectURL(url);}
+  }
   let photoSequence=0;
   async function setPhoto(blob){
     const sequence=++photoSequence;seasonPhotoData=blob?await fileToDataURL(blob):'';
     if(!blob){
+      seasonAvatarData='';
       if(currentObjectURL){URL.revokeObjectURL(currentObjectURL);currentObjectURL=null;}
       picture.removeAttribute('src');picture.hidden=true;hint.hidden=false;replace.hidden=true;window.dispatchEvent(new Event('season:change'));
       return;
     }
     const framed=await prepararEnquadramento(blob);
+    const avatar=await createPortraitAvatar(framed);
     if(sequence!==photoSequence)return;
+    seasonAvatarData=avatar;
     if(currentObjectURL){URL.revokeObjectURL(currentObjectURL);currentObjectURL=null;}
     currentObjectURL=URL.createObjectURL(framed);
     picture.onload=()=>{if(sequence===photoSequence){picture.hidden=false;hint.hidden=true;replace.hidden=false;}};
@@ -854,7 +882,7 @@ renderRituals();
   });
   stage.addEventListener('drop',ev=>{void loadPNG(ev.dataTransfer?.files?.[0]);});
   window.addEventListener('beforeunload',()=>{if(currentObjectURL)URL.revokeObjectURL(currentObjectURL)});
-  window.SeasonPortrait={snapshot:()=>({image:seasonPhotoData,settings:{...settings}}),async apply(value){const image=value?.image||'';if(image&&!/^data:image\/png;base64,/.test(image))throw Error('Imagem de personagem inválida');if(image!==seasonPhotoData){if(image){const blob=dataURLToBlob(image);await setPhoto(blob);await saveFile(blob);}else{await removePhoto();}}settings={...defaults,...(value?.settings||{})};applySettings();persistSettings();}};
+  window.SeasonPortrait={avatar:()=>seasonAvatarData,snapshot:()=>({image:seasonPhotoData,settings:{...settings}}),async apply(value){const image=value?.image||'';if(image&&!/^data:image\/png;base64,/.test(image))throw Error('Imagem de personagem inválida');if(image!==seasonPhotoData){if(image){const blob=dataURLToBlob(image);await setPhoto(blob);await saveFile(blob);}else{await removePhoto();}}settings={...defaults,...(value?.settings||{})};applySettings();persistSettings();}};
   window.SeasonPortrait.ready=restorePhoto();
 })();
 await window.SeasonPortrait.ready;await window.startSeasonSync();}catch(error){console.error(error);document.getElementById('season-status').textContent='Não foi possível abrir a ficha: '+error.message;}})();
