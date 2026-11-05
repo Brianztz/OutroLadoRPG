@@ -105,7 +105,38 @@
   });
   $('char-name').addEventListener('input',e=>{state.name=e.target.value.toUpperCase().slice(0,22);save();});
   $('panel-occupation').addEventListener('change',e=>{state.occupation=e.target.value;display();save()});
-  $('char-level').addEventListener('click',()=>{state.level=Math.min(20,state.level+1);display();save()});
+  const levelDialog=$('level-dialog'),levelInput=$('level-input');
+  $('char-level').addEventListener('click',()=>{
+    levelInput.value=String(state.level);
+    levelInput.setCustomValidity('');
+    levelDialog.showModal();
+    levelInput.focus();
+    levelInput.select();
+  });
+  function stepLevel(delta){
+    const value=Number(levelInput.value);
+    const base=Number.isInteger(value)&&value>=1&&value<=20?value:Number(state.level)||1;
+    levelInput.value=String(Math.max(1,Math.min(20,base+delta)));
+    levelInput.setCustomValidity('');
+  }
+  $('level-minus').addEventListener('click',()=>stepLevel(-1));
+  $('level-plus').addEventListener('click',()=>stepLevel(1));
+  $('level-cancel').addEventListener('click',()=>levelDialog.close());
+  levelInput.addEventListener('input',()=>levelInput.setCustomValidity(''));
+  levelDialog.addEventListener('click',event=>{if(event.target===levelDialog)levelDialog.close();});
+  $('level-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    const level=Number(levelInput.value);
+    if(!levelInput.value.trim()||!Number.isInteger(level)||level<1||level>20){
+      levelInput.setCustomValidity('Escolha um nível inteiro entre 1 e 20.');
+      levelInput.reportValidity();
+      return;
+    }
+    state.level=level;
+    display();
+    save();
+    levelDialog.close();
+  });
   $('char-occupation').addEventListener('click',()=>$('occupation-dialog').showModal());
   $('char-nex').addEventListener('change',e=>{state.nex=Number(e.target.value);save();});
   $('occupation-close').addEventListener('click',()=>$('occupation-dialog').close());
