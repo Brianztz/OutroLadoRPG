@@ -750,12 +750,20 @@ renderRituals();
       }
       if(right<left)return '';
       const height=bottom-top+1,width=right-left+1;
-      // Close-up of the head only: omit shoulders and torso from full-body PNGs.
+      // Reference framing: full hair, face, neck and upper shoulders, with headroom.
       // Already square portraits keep their original framing.
-      const side=height>width*1.4?height*.23:Math.max(width,height);
-      const center=(left+right+1)/2;
+      const fullBody=height>width*1.4;
+      const side=fullBody?height*.42:Math.max(width,height);
+      const cropTop=fullBody?top-side*.09:top;
+      let headLeft=right,headRight=left;
+      if(fullBody){
+        for(let y=top;y<=Math.min(bottom,top+Math.floor(height*.24));y++)for(let x=left;x<=right;x++){
+          if(pixels[(y*canvas.width+x)*4+3]>128){headLeft=Math.min(headLeft,x);headRight=Math.max(headRight,x);}
+        }
+      }
+      const center=fullBody&&headRight>=headLeft?(headLeft+headRight+1)/2:(left+right+1)/2;
       const out=document.createElement('canvas');out.width=512;out.height=512;
-      out.getContext('2d').drawImage(canvas,center-side/2,top,side,side,0,0,512,512);
+      out.getContext('2d').drawImage(canvas,center-side/2,cropTop,side,side,0,0,512,512);
       return out.toDataURL('image/png');
     }finally{URL.revokeObjectURL(url);}
   }
