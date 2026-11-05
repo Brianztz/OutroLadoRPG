@@ -750,9 +750,9 @@ renderRituals();
       }
       if(right<left)return '';
       const height=bottom-top+1,width=right-left+1;
-      // The marked square covers the upper 40% of a full-body portrait.
+      // Close-up of the head only: omit shoulders and torso from full-body PNGs.
       // Already square portraits keep their original framing.
-      const side=height>width*1.4?height*.40:Math.max(width,height);
+      const side=height>width*1.4?height*.23:Math.max(width,height);
       const center=(left+right+1)/2;
       const out=document.createElement('canvas');out.width=512;out.height=512;
       out.getContext('2d').drawImage(canvas,center-side/2,top,side,side,0,0,512,512);
