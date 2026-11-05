@@ -18,16 +18,19 @@ test('master view requests player and never writes the master own cloud characte
 
 test('sync sends cropped avatar while preserving original sheet portrait',async()=>{const app=await setup();try{const {w,sent}=app;w.SeasonPortrait.avatar=()=> 'data:image/png;base64,CROPPED';w.SeasonPortrait.snapshot=()=>({image:'data:image/png;base64,ORIGINAL',settings:{}});w.dispatchEvent(new w.Event('season:change'));await delay(650);const packet=sent.filter(p=>p.e==='status_change').at(-1).d;assert.equal(packet.foto,'data:image/png;base64,CROPPED');assert.equal(packet.fullData.info.char_img,'data:image/png;base64,ORIGINAL');assert.equal(packet.fullData.temporada.portrait.image,'data:image/png;base64,ORIGINAL');}finally{app.dom.window.close();}});
 
-test('level editor allows entering or decreasing the level and syncs the saved value',async()=>{
+test('level behaves like attributes: left click increases, right click decreases within 1 to 20 and syncs',async()=>{
  const app=await setup();try{
-  const {w,writes,sent}=app,button=w.document.getElementById('char-level'),dialog=w.document.getElementById('level-dialog'),input=w.document.getElementById('level-input'),form=w.document.getElementById('level-form');
-  button.click();assert.equal(dialog.open,true);assert.equal(input.value,'1');
-  input.value='12';form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
-  assert.equal(button.textContent,'12');assert.equal(w.SeasonSheet.getState().level,12);assert.equal(dialog.open,false);
-  await delay(650);assert.equal(writes.at(-1).state.level,12);assert.equal(sent.filter(p=>p.e==='status_change').at(-1).d.temporada.state.level,12);
-  button.click();w.document.getElementById('level-minus').click();assert.equal(input.value,'11');
-  w.document.getElementById('level-cancel').click();assert.equal(w.SeasonSheet.getState().level,12);
-  button.click();input.value='0';form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
-  assert.equal(w.SeasonSheet.getState().level,12);assert.equal(dialog.open,true);
+  const {w,writes,sent}=app,button=w.document.getElementById('char-level');
+  const rightClick=()=>{const event=new w.MouseEvent('contextmenu',{bubbles:true,cancelable:true});button.dispatchEvent(event);assert.equal(event.defaultPrevented,true);};
+  assert.equal(w.SeasonSheet.getState().level,1);
+  rightClick();assert.equal(w.SeasonSheet.getState().level,1);
+  button.click();assert.equal(button.textContent,'2');assert.equal(w.SeasonSheet.getState().level,2);
+  rightClick();assert.equal(button.textContent,'1');assert.equal(w.SeasonSheet.getState().level,1);
+  for(let n=0;n<25;n++)button.click();assert.equal(w.SeasonSheet.getState().level,20);
+  rightClick();assert.equal(w.SeasonSheet.getState().level,19);
+  await delay(650);
+  assert.equal(writes.at(-1).state.level,19);
+  assert.equal(sent.filter(p=>p.e==='status_change').at(-1).d.temporada.state.level,19);
+  assert.equal(app.errors.length,0);
  }finally{app.dom.window.close();}
 });
