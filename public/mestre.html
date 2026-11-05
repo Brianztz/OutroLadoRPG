@@ -3080,7 +3080,9 @@
         }
 
         function abrirFicha(code) {
-            document.getElementById('iframe-ficha').src = `ficha.html?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
+            const player = connectedPlayers.get(String(code));
+            const page = player?.sheetType === 'temporada' || player?.fullData?.sheetType === 'temporada' ? 'ficha-temporada.html' : 'ficha.html';
+            document.getElementById('iframe-ficha').src = `${page}?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
             document.getElementById('modal-ficha').style.display = 'flex';
         }
 

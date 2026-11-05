@@ -34,6 +34,8 @@ service cloud.firestore {
     //   joinedAt: timestamp (obrigatorio, imutavel)
     //   updatedAt: timestamp (obrigatorio)
     //
+    // tables/{tableId}/seasonCharacters/{uid} uses the same schema, ownership and limits,
+    // isolated from the classic character. Its chunks live under seasonCharacters.
     // tables/{tableId}/characters/{uid}
     //   uid / ownerUid: string (obrigatorios, imutaveis, iguais ao UID autenticado)
     //   playerCode: string (obrigatorio, 1..40)
@@ -226,6 +228,12 @@ service cloud.firestore {
         && index < getAfter(/databases/$(database)/documents/tables/$(tableId)/characters/$(uid)).data.chunkCount;
     }
 
+    function isValidSeasonCharacterParentAfter(tableId, uid, index) {
+      return existsAfter(/databases/$(database)/documents/tables/$(tableId)/seasonCharacters/$(uid))
+        && getAfter(/databases/$(database)/documents/tables/$(tableId)/seasonCharacters/$(uid)).data.storageVersion == 2
+        && index < getAfter(/databases/$(database)/documents/tables/$(tableId)/seasonCharacters/$(uid)).data.chunkCount;
+    }
+
     function isValidMasterContent(data, contentId) {
       return contentId == 'clues'
         && data.keys().hasOnly(['contentId', 'storageVersion', 'chunkCount', 'payloadSize', 'payloadHash', 'createdAt', 'updatedAt'])
@@ -344,6 +352,44 @@ service cloud.firestore {
             );
           allow update: if isValidCharacterChunk(request.resource.data, uid, chunkId)
             && isValidCharacterParentAfter(tableId, uid, request.resource.data.index)
+            && request.resource.data.uid == resource.data.uid
+            && request.resource.data.index == resource.data.index
+            && (
+              isTableOwner(tableId)
+              || (isOwner(uid) && isTableMember(tableId))
+            );
+          allow delete: if isTableOwner(tableId) || isOwner(uid);
+        }
+      }
+
+      match /seasonCharacters/{uid} {
+        allow read: if isTableOwner(tableId) || isOwner(uid);
+        allow create: if isValidCharacter(request.resource.data, uid)
+          && isRecent(request.resource.data.createdAt)
+          && (
+            isTableOwner(tableId)
+            || (isOwner(uid) && isTableMember(tableId))
+          );
+        allow update: if isValidCharacter(request.resource.data, uid)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && (
+            isTableOwner(tableId)
+            || (isOwner(uid) && isTableMember(tableId))
+          );
+        allow delete: if isTableOwner(tableId) || isOwner(uid);
+
+        match /chunks/{chunkId} {
+          allow read: if isTableOwner(tableId) || isOwner(uid);
+          allow create: if isValidCharacterChunk(request.resource.data, uid, chunkId)
+            && isValidSeasonCharacterParentAfter(tableId, uid, request.resource.data.index)
+            && (
+              isTableOwner(tableId)
+              || (isOwner(uid) && isTableMember(tableId))
+            );
+          allow update: if isValidCharacterChunk(request.resource.data, uid, chunkId)
+            && isValidSeasonCharacterParentAfter(tableId, uid, request.resource.data.index)
             && request.resource.data.uid == resource.data.uid
             && request.resource.data.index == resource.data.index
             && (

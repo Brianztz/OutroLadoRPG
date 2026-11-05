@@ -7,8 +7,8 @@
     const decoder = new TextDecoder();
     const BINARY_FIELDS = ['frame', 'chunk'];
     const PLAYER_DISCONNECT_GRACE_MS = 4500;
-    const GUARDED_PAGE = /\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
-    const PLAYER_PAGE = /\/ficha(?:\.html)?\/?$/i.test(global.location.pathname);
+    const GUARDED_PAGE = /\/(?:ficha|ficha-temporada|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
+    const PLAYER_PAGE = /\/(?:ficha|ficha-temporada)(?:\.html)?\/?$/i.test(global.location.pathname);
     const SCREEN_SHARE_PAGE = /\/compartilhar(?:\.html)?\/?$/i.test(global.location.pathname);
 
     function normalizeTableCode(value) {

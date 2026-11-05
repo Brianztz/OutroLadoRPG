@@ -4524,7 +4524,7 @@ function removeCurrentClue() {
             
             if (socket) {
                 socket.on('update_mestre', (dados) => {
-                    if (dados.codigo === viewCode && normalizeTableCode(dados.mesa) === tableCode && dados.fullData) {
+                    if (dados.codigo === viewCode && normalizeTableCode(dados.mesa) === tableCode && dados.fullData && dados.fullData.sheetType !== 'temporada') {
                         isLoadingData = true;
                         populateData(dados.fullData);
                         queueCharacterCloudSave(dados.fullData);
@@ -4536,7 +4536,7 @@ function removeCurrentClue() {
         } else {
             if (socket) {
                 socket.on('player_data_updated', (dados) => {
-                    if (dados && dados.codigo === playerCode && normalizeTableCode(dados.mesa) === tableCode && dados.fullData) {
+                    if (dados && dados.codigo === playerCode && normalizeTableCode(dados.mesa) === tableCode && dados.fullData && dados.fullData.sheetType !== 'temporada') {
                         localStorage.setItem('ordem_save_local', JSON.stringify(dados.fullData));
                         isLoadingData = true;
                         populateData(dados.fullData);
