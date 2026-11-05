@@ -3,13 +3,9 @@
 
     if (typeof global.io === 'function') return;
 
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const BINARY_FIELDS = ['frame', 'chunk'];
     const PLAYER_DISCONNECT_GRACE_MS = 4500;
     const GUARDED_PAGE = /\/(?:ficha|ficha-temporada|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
     const PLAYER_PAGE = /\/(?:ficha|ficha-temporada)(?:\.html)?\/?$/i.test(global.location.pathname);
-    const SCREEN_SHARE_PAGE = /\/compartilhar(?:\.html)?\/?$/i.test(global.location.pathname);
 
     function normalizeTableCode(value) {
         const normalized = String(value || 'PADRAO')
@@ -38,50 +34,9 @@
         return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
     }
 
-    function binaryField(data) {
-        if (!data || typeof data !== 'object') return null;
-        for (const field of BINARY_FIELDS) {
-            const value = data[field];
-            if (value instanceof ArrayBuffer) return { field, value };
-            if (ArrayBuffer.isView(value)) {
-                return {
-                    field,
-                    value: value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)
-                };
-            }
-        }
-        return null;
-    }
+    function encodePacket(event, data) { return JSON.stringify({ e: event, d: data }); }
 
-    function encodePacket(event, data) {
-        const binary = binaryField(data);
-        if (!binary) return JSON.stringify({ e: event, d: data });
-
-        const cleanData = { ...data };
-        delete cleanData[binary.field];
-        const header = encoder.encode(JSON.stringify({ e: event, d: cleanData, b: binary.field }));
-        const body = new Uint8Array(binary.value);
-        const packet = new Uint8Array(5 + header.byteLength + body.byteLength);
-        packet[0] = 1;
-        new DataView(packet.buffer).setUint32(1, header.byteLength, false);
-        packet.set(header, 5);
-        packet.set(body, 5 + header.byteLength);
-        return packet.buffer;
-    }
-
-    function decodePacket(raw) {
-        if (typeof raw === 'string') return JSON.parse(raw);
-        const bytes = raw instanceof ArrayBuffer
-            ? new Uint8Array(raw)
-            : new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength);
-        if (bytes.byteLength < 5 || bytes[0] !== 1) throw new Error('Pacote em tempo real invalido.');
-        const headerLength = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(1, false);
-        if (headerLength < 2 || 5 + headerLength > bytes.byteLength) throw new Error('Cabecalho invalido.');
-        const packet = JSON.parse(decoder.decode(bytes.subarray(5, 5 + headerLength)));
-        packet.d = packet.d && typeof packet.d === 'object' ? packet.d : {};
-        packet.d[packet.b] = bytes.slice(5 + headerLength).buffer;
-        return packet;
-    }
+    function decodePacket(raw) { return JSON.parse(raw); }
 
     class RealtimeSocket {
         constructor(options = {}) {
@@ -97,19 +52,8 @@
             this._reconnectAttempts = 0;
             this._generation = 0;
             this._disconnectTimers = new Map();
-            this._stickyPackets = new Map();
-            this._hasConnectedOnce = false;
-            this._screenShareLocalActive = false;
-            this._screenShareRemoteActive = false;
-            this._screenWatchdogTimer = null;
-            this._screenLastVideo = null;
-            this._screenLastFrameCount = -1;
-            this._screenLastMediaTime = 0;
-            this._screenLastProgressAt = Date.now();
-            this._screenLastRecoveryAt = 0;
             const urlTable = new URL(global.location.href).searchParams.get('mesa');
             this._table = normalizeTableCode(urlTable || 'PADRAO');
-            if (SCREEN_SHARE_PAGE) this._startScreenShareWatchdog();
             this._open();
         }
 
@@ -156,19 +100,8 @@
                 : this._table;
             const packet = { event, data, volatile };
 
-            if (event === 'screen_share_start') {
-                this._screenShareLocalActive = true;
-                this._screenShareRemoteActive = false;
-                this._stickyPackets.set('screen_share_start', { event, data, volatile: false, table: requestedTable });
-            } else if (event === 'screen_share_stop') {
-                this._screenShareLocalActive = false;
-                this._stickyPackets.delete('screen_share_start');
-            }
-
             if (requestedTable !== this._table) {
                 this._table = requestedTable;
-                const stickyShare = this._stickyPackets.get('screen_share_start');
-                if (stickyShare && stickyShare.table !== requestedTable) this._stickyPackets.delete('screen_share_start');
                 this._queue.push(packet);
                 this._restart();
                 return this;
@@ -194,8 +127,6 @@
             this._reconnectTimer = null;
             this._disconnectTimers.forEach(timer => clearTimeout(timer));
             this._disconnectTimers.clear();
-            if (this._screenWatchdogTimer) clearInterval(this._screenWatchdogTimer);
-            this._screenWatchdogTimer = null;
             if (this._socket) this._socket.close(1000, 'client disconnect');
             return this;
         }
@@ -205,52 +136,6 @@
             const code = normalizePlayerCode(data.codigo || data.id);
             if (!code) return '';
             return `${normalizeTableCode(data.mesa || this._table)}::${code}`;
-        }
-
-        _resetScreenProgress(video = null) {
-            this._screenLastVideo = video;
-            this._screenLastFrameCount = -1;
-            this._screenLastMediaTime = Number(video && video.currentTime) || 0;
-            this._screenLastProgressAt = Date.now();
-        }
-
-        _startScreenShareWatchdog() {
-            if (this._screenWatchdogTimer) return;
-            this._screenWatchdogTimer = global.setInterval(() => {
-                if (this._manualClose || !this.connected || this._screenShareLocalActive || !this._screenShareRemoteActive) return;
-                const video = global.document && global.document.querySelector('video');
-                if (!video || !video.srcObject || video.paused || video.readyState < 2) {
-                    this._resetScreenProgress(video || null);
-                    return;
-                }
-                if (video !== this._screenLastVideo) this._resetScreenProgress(video);
-
-                let frameCount = -1;
-                try {
-                    if (typeof video.getVideoPlaybackQuality === 'function') {
-                        const quality = video.getVideoPlaybackQuality();
-                        frameCount = Number(quality && quality.totalVideoFrames);
-                    } else if (Number.isFinite(video.webkitDecodedFrameCount)) {
-                        frameCount = Number(video.webkitDecodedFrameCount);
-                    }
-                } catch (error) {}
-
-                const mediaTime = Number(video.currentTime) || 0;
-                const framesMoved = Number.isFinite(frameCount) && frameCount >= 0 && frameCount > this._screenLastFrameCount;
-                const timeMoved = mediaTime > this._screenLastMediaTime + 0.08;
-                if (framesMoved || (frameCount < 0 && timeMoved)) {
-                    this._screenLastFrameCount = frameCount;
-                    this._screenLastMediaTime = mediaTime;
-                    this._screenLastProgressAt = Date.now();
-                    return;
-                }
-
-                const now = Date.now();
-                if (now - this._screenLastProgressAt < 6500 || now - this._screenLastRecoveryAt < 9000) return;
-                this._screenLastRecoveryAt = now;
-                this._screenLastProgressAt = now;
-                this.emit('screen_share_fallback_request', { mesa: this._table });
-            }, 2200);
         }
 
         _handlePlayerKick(data = {}) {
@@ -278,22 +163,6 @@
 
         _dispatch(event, data) {
             if (event === 'player_kicked' && this._handlePlayerKick(data)) return;
-            if (SCREEN_SHARE_PAGE) {
-                if (event === 'screen_share_available') {
-                    this._screenShareRemoteActive = true;
-                    this._screenLastProgressAt = Date.now();
-                } else if (event === 'screen_share_state') {
-                    const active = Boolean(data && data.active);
-                    this._screenShareRemoteActive = active && !this._screenShareLocalActive;
-                    if (!active) this._resetScreenProgress(null);
-                } else if (event === 'screen_share_ended') {
-                    this._screenShareRemoteActive = false;
-                    this._resetScreenProgress(null);
-                } else if (event === 'screen_share_frame' || event === 'screen_share_relay_chunk') {
-                    this._screenLastProgressAt = Date.now();
-                }
-            }
-
             const playerKey = this._playerEventKey(data);
 
             if (event === 'player_disconnected' && playerKey) {
@@ -325,12 +194,6 @@
             } catch (error) {
                 if (!packet.volatile) this._queue.unshift(packet);
             }
-        }
-
-        _replayStickyState() {
-            const share = this._stickyPackets.get('screen_share_start');
-            if (!share || share.table !== this._table || !this.connected || !this._socket || this._socket.readyState !== WebSocket.OPEN) return;
-            this._send({ event: share.event, data: share.data, volatile: false });
         }
 
         _restart() {
@@ -382,28 +245,19 @@
             url.protocol = protocol;
             url.searchParams.set('mesa', this._table);
             url.searchParams.set('client', this.id);
-            if (this.auth.screenShareMode) url.searchParams.set('screenShareMode', String(this.auth.screenShareMode));
 
             const protocols = firebaseToken ? ['ol-v1', `firebase.${firebaseToken}`] : [];
             const socket = protocols.length ? new WebSocket(url.href, protocols) : new WebSocket(url.href);
-            socket.binaryType = 'arraybuffer';
             this._socket = socket;
 
             socket.addEventListener('open', () => {
                 if (generation !== this._generation) return;
-                const reconnecting = this._hasConnectedOnce;
                 this.connected = true;
                 this._reconnectAttempts = 0;
                 const queued = this._queue.splice(0);
                 queued.forEach(packet => this._send(packet));
                 this._dispatch('connect');
-                this._hasConnectedOnce = true;
 
-                if (reconnecting && this._stickyPackets.has('screen_share_start')) {
-                    global.setTimeout(() => {
-                        if (generation === this._generation) this._replayStickyState();
-                    }, 0);
-                }
             });
 
             socket.addEventListener('message', message => {
