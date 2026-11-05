@@ -322,3 +322,19 @@
 
 /* Account and synchronization controls live inside Settings. */
 #panel #season-online{position:static;max-width:none;width:100%;box-sizing:border-box;margin:0 0 18px;padding:12px;gap:8px;font-size:12px}#panel #season-identity,#panel #season-status{flex-basis:100%;max-width:none;overflow-wrap:anywhere}#panel #season-online label{margin:0;letter-spacing:normal;font-size:12px}#panel #season-online input[type="checkbox"]{width:auto;margin:0}#panel #season-color{width:28px;height:26px;margin:0;padding:0}
+
+/* Editor de nível da temporada: o número permanece sobre a arte original. */
+#level-dialog{width:min(390px,calc(100vw - 24px));max-width:calc(100vw - 24px);padding:24px;border:1px solid #ad4a36;border-radius:12px;background:linear-gradient(145deg,#261410,#100d0d);color:#f9eee8;box-shadow:0 25px 75px #000d;font:15px/1.5 Arial,sans-serif}
+#level-dialog::backdrop{background:rgba(0,0,0,.72)}
+#level-dialog h2{margin:0 0 8px;font:700 26px Georgia,serif}
+#level-dialog p{margin:0 0 22px;color:#c6a69a}
+.level-editor{display:flex;align-items:flex-end;justify-content:center;gap:12px}
+.level-editor label{flex:1;min-width:0;text-align:center;color:#edb6a1;font:700 13px Arial,sans-serif}
+.level-editor input{display:block;width:100%;height:54px;margin-top:7px;padding:5px;border:1px solid #a8523e;border-radius:7px;appearance:textfield;background:#120c0b;color:#fff;font:900 28px Georgia,serif;text-align:center}
+.level-editor input::-webkit-inner-spin-button,.level-editor input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.level-editor button{width:48px;height:54px;border:1px solid #a8523e;border-radius:7px;background:#4d2119;color:#fff;font:700 29px Arial,sans-serif;cursor:pointer}
+.level-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.level-dialog-actions button{min-height:40px;padding:9px 14px;border:1px solid #794337;border-radius:7px;background:#2e1a16;color:#f4dfd6;font:700 13px Arial,sans-serif;cursor:pointer}
+.level-dialog-actions button.primary{border-color:#d9573c;background:#a12e20;color:#fff}
+#level-dialog button:hover{filter:brightness(1.15)}
+#level-dialog button:focus-visible,#level-dialog input:focus-visible{outline:2px solid #ffd5b9;outline-offset:3px}
