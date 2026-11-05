@@ -19,9 +19,7 @@
     if(typeof inventoryLocation!=='undefined')renderInventory();
     $('char-origin').textContent=state.origin??'Mundano';
     $('char-name').value=state.name||'';
-    $('panel-name').value=state.name||'';
     $('panel-occupation').value=state.occupation;
-    $('panel-level').value=state.level;
     $('char-level').textContent=state.level;
     $('char-level').classList.add('changed');
     $('char-nex').value=state.nex||0;
@@ -105,10 +103,8 @@
 
     el.title=el.dataset.skill+' • abrir detalhes e rolar';el.setAttribute('aria-haspopup','dialog');
   });
-  $('char-name').addEventListener('input',e=>{state.name=e.target.value.toUpperCase().slice(0,22);save();$('panel-name').value=state.name;});
-  $('panel-name').addEventListener('input',e=>{state.name=e.target.value.toUpperCase().slice(0,22);display();save()});
+  $('char-name').addEventListener('input',e=>{state.name=e.target.value.toUpperCase().slice(0,22);save();});
   $('panel-occupation').addEventListener('change',e=>{state.occupation=e.target.value;display();save()});
-  $('panel-level').addEventListener('input',e=>{state.level=Math.max(1,Math.min(20,Number(e.target.value)||1));display();save()});
   $('char-level').addEventListener('click',()=>{state.level=Math.min(20,state.level+1);display();save()});
   $('char-occupation').addEventListener('click',()=>$('occupation-dialog').showModal());
   $('char-nex').addEventListener('change',e=>{state.nex=Number(e.target.value);save();});
@@ -126,7 +122,7 @@
     card.append(title,description,skills);card.addEventListener('click',()=>choose(occupationLabels[key]));$('occupation-list').append(card);
   }
   const panel=$('panel');
-  function openPanel(){panel.classList.add('open');$('panel-name').focus();}
+  function openPanel(){panel.classList.add('open');$('season-retry').focus();}
   function closePanel(){panel.classList.remove('open')}
   $('edit').addEventListener('click',openPanel);
   $('close-panel').addEventListener('click',closePanel);

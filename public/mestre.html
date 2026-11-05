@@ -460,6 +460,7 @@
             <div class="connection-info"><span id="connection-dot" class="connection-dot"></span><span id="connection-text">Conectando ao servidor...</span></div>
         </div>
         <div class="master-top-actions">
+            <button id="master-overlay-button" class="master-invite-button" type="button" onclick="openMasterOverlay()">ABRIR OVERLAY</button>
             <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
             <button class="master-invite-button" type="button" onclick="openMasterInvite()">✉ CONVIDAR JOGADOR</button>
             <button id="combat-mode-button" class="combat-mode-button" type="button" aria-pressed="false" onclick="toggleCombatMode()">⚔ MODO DE COMBATE</button>
@@ -1049,6 +1050,12 @@
         document.getElementById('master-invite-table').addEventListener('keydown', event => {
             if (event.key === 'Enter') { event.preventDefault(); generateMasterInvite(); }
         });
+
+        function openMasterOverlay() {
+            const url = new URL('./overlay.html', window.location.href);
+            url.searchParams.set('mesa', masterTableCode);
+            window.open(url.href, '_blank', 'noopener');
+        }
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
