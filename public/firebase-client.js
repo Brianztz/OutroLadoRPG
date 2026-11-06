@@ -135,6 +135,14 @@
         return normalized || 'PADRAO';
     }
 
+    function seasonScopedTable(requestedTable, edition = null) {
+        const season = edition === 'temporada' ||
+            (edition == null && global.OLSeasonSpace && global.OLSeasonSpace.isSeasonPage());
+        if (!season) return normalizeTableCode(requestedTable);
+        if (!global.OLSeasonSpace) throw new Error('O módulo de separação das temporadas não foi carregado.');
+        return global.OLSeasonSpace.tableId(requestedTable, 'temporada');
+    }
+
     function safeDisplayName(user) {
         return String(user && user.displayName || 'Jogador').trim().slice(0, 80) || 'Jogador';
     }
@@ -245,10 +253,32 @@
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google para carregar a ficha.');
         const sdkContext = await sdkPromise;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable);
         const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, characterCollection(variant), user.uid);
         const snapshot = await sdkContext.firestoreSdk.getDoc(reference);
-        return readCharacterSnapshot(snapshot, user, tableId, sdkContext, variant);
+        if (snapshot.exists() || variant !== 'temporada' || tableId === normalizeTableCode(requestedTable)) {
+            return readCharacterSnapshot(snapshot, user, tableId, sdkContext, variant);
+        }
+        // One-time copy of earlier season sheets saved before the rooms were isolated.
+        // A missing/unauthorized legacy document must not prevent using the new table.
+        try {
+            const previousTable = normalizeTableCode(requestedTable);
+            const legacyRef = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', previousTable, 'seasonCharacters', user.uid);
+            const legacySnapshot = await sdkContext.firestoreSdk.getDoc(legacyRef);
+            const legacy = await readCharacterSnapshot(legacySnapshot, user, previousTable, sdkContext, variant);
+            if (legacy) {
+                await saveCharacter(requestedTable, legacy.sheetJson, {
+                    sheetVariant: 'temporada',
+                    playerCode: legacy.playerCode,
+                    characterName: legacy.characterName || 'Personagem',
+                    overlayColor: '#b83b25'
+                });
+                return legacy;
+            }
+        } catch (error) {
+            console.warn('A ficha anterior da temporada não pôde ser copiada; a mesa isolada continua disponível.', error);
+        }
+        return null;
     }
 
     async function saveCharacter(requestedTable, sheetData, metadata = {}) {
@@ -257,7 +287,7 @@
         if (!user) throw new Error('Entre com sua conta Google para salvar a ficha.');
         const sdkContext = await sdkPromise;
         const { db, firestoreSdk } = sdkContext;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable);
         const sheetJson = typeof sheetData === 'string' ? sheetData : JSON.stringify(sheetData || {});
         const chunks = [];
         for (let offset = 0; offset < sheetJson.length; offset += CHARACTER_CHUNK_SIZE) {
@@ -327,7 +357,7 @@
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google para acompanhar a ficha.');
         const sdkContext = await sdkPromise;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable);
         const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, characterCollection(variant), user.uid);
         return sdkContext.firestoreSdk.onSnapshot(reference, snapshot => {
             readCharacterSnapshot(snapshot, user, tableId, sdkContext, variant)
@@ -377,7 +407,7 @@
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google para carregar as pistas do mestre.');
         const sdkContext = await sdkPromise;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable);
         const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'masterContent', 'clues');
         const snapshot = await sdkContext.firestoreSdk.getDoc(reference);
         return readMasterCluesSnapshot(snapshot, tableId, sdkContext);
@@ -388,7 +418,7 @@
         if (!user) throw new Error('Entre com sua conta Google para salvar as pistas do mestre.');
         const sdkContext = await sdkPromise;
         const { db, firestoreSdk } = sdkContext;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable);
         const cluesJson = typeof cluesData === 'string' ? cluesData : JSON.stringify(Array.isArray(cluesData) ? cluesData : []);
         const chunks = [];
         for (let offset = 0; offset < cluesJson.length; offset += CHARACTER_CHUNK_SIZE) {
@@ -445,7 +475,7 @@
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google para acompanhar as pistas do mestre.');
         const sdkContext = await sdkPromise;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable);
         const reference = sdkContext.firestoreSdk.doc(sdkContext.db, 'tables', tableId, 'masterContent', 'clues');
         return sdkContext.firestoreSdk.onSnapshot(reference, snapshot => {
             readMasterCluesSnapshot(snapshot, tableId, sdkContext)
@@ -459,7 +489,7 @@
         if (!user) throw new Error('Entre com sua conta Google para remover um jogador da mesa.');
         const sdkContext = await sdkPromise;
         const { db, firestoreSdk } = sdkContext;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable);
         const playerCode = normalizePlayerCode(requestedPlayerCode);
         if (!playerCode) throw new Error('Código do jogador inválido.');
 
@@ -533,7 +563,7 @@
         await authSdk.signOut(auth);
     }
 
-    async function preparePortal(role, requestedTable) {
+    async function preparePortal(role, requestedTable, edition = null) {
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google antes de escolher a mesa.');
         updateProfilesInBackground(user);
@@ -541,7 +571,7 @@
 
         const { db, firestoreSdk } = await sdkPromise;
         const { doc, getDoc, serverTimestamp, setDoc } = firestoreSdk;
-        const tableId = normalizeTableCode(requestedTable);
+        const tableId = seasonScopedTable(requestedTable, edition);
         const tableRef = doc(db, 'tables', tableId);
         let tableSnapshot = await withTimeout(
             getDoc(tableRef),
@@ -643,6 +673,7 @@
         const url = new URL('./index.html', global.location.href);
         url.search = '';
         url.searchParams.set('mesa', normalizeTableCode(tableId));
+        if (global.OLSeasonSpace?.isSeasonPage()) url.searchParams.set('temporada', '2');
         if (message) url.searchParams.set('aviso', message.slice(0, 180));
         return url.href;
     }
@@ -650,9 +681,10 @@
     async function guardPage(role) {
         try {
             const user = await getCurrentUser();
-            const tableId = normalizeTableCode(new URL(global.location.href).searchParams.get('mesa') || localStorage.getItem(role === 'master' ? 'master_table_code' : 'player_table_code'));
+            const logicalTable = normalizeTableCode(new URL(global.location.href).searchParams.get('mesa') || localStorage.getItem(role === 'master' ? 'master_table_code' : 'player_table_code'));
+            const tableId = seasonScopedTable(logicalTable);
             if (!user) {
-                global.location.replace(portalURL(tableId, 'Entre com sua conta Google para continuar.'));
+                global.location.replace(portalURL(logicalTable, 'Entre com sua conta Google para continuar.'));
                 return false;
             }
             if (hasRecentPortalAccess(role, tableId, user)) {
@@ -675,7 +707,7 @@
             const allowed = tableSnapshot.exists() && memberSnapshot.exists()
                 && (role !== 'master' || tableSnapshot.data().ownerUid === user.uid || memberSnapshot.data().role === 'master');
             if (!allowed) {
-                global.location.replace(portalURL(tableId, 'Sua conta nao possui acesso a essa mesa.'));
+                global.location.replace(portalURL(logicalTable, 'Sua conta nao possui acesso a essa mesa.'));
                 return false;
             }
             rememberPortalAccess(role, tableId, user);
@@ -707,6 +739,7 @@
         loadCharacter,
         loadMasterClues,
         normalizeTableCode,
+        seasonScopedTable,
         onUserChanged,
         preparePortal,
         refreshRealtimeToken,
