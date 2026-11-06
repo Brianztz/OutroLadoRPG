@@ -1,0 +1,309 @@
+/* OUTRO LADO / NOVA TEMPORADA — tema do Escudo do Mestre
+   Apenas apresentação. Todos os IDs, eventos e estados originais são preservados.
+   Referência visual: public/temporada/sheet.css, preto + vermelho + pergaminho. */
+:root {
+  color-scheme: dark;
+  --bg-body: #070606;
+  --bg-card: rgba(15, 10, 9, .95);
+  --border-color: rgba(168, 58, 38, .53);
+  --text-primary: #f6ede5;
+  --text-secondary: #bda49b;
+  --accent-blue: #e5a18c;
+  --accent-yellow: #f9e9d9;
+  --accent-green: #d37d5b;
+  --accent-red: #ce3928;
+  --season-red: #c32c1b;
+  --season-ember: #ec6c48;
+  --season-dark: #0d0908;
+  --season-panel: #170e0c;
+  --season-line: #7c2c21;
+  --season-cream: #f6e6d9;
+  --season-shadow: 0 14px 34px rgba(0, 0, 0, .55);
+}
+body {
+  color:var(--text-primary);
+  font-family:Arial, Helvetica, sans-serif;
+  background-color:#050505;
+  background-image:
+    linear-gradient(180deg, rgba(9, 5, 5, .90),rgba(5, 5, 5, .98)),
+    radial-gradient(ellipse at 16% -8%, rgba(146, 31, 20, .28),transparent 48%),
+    radial-gradient(ellipse at 90% 75%, rgba(102, 21, 14, .16),transparent 55%),
+    repeating-linear-gradient(135deg, transparent 0 26px,rgba(125,34,22,.035) 26px 27px);
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+  background-blend-mode:normal,screen,screen,normal;
+}
+button, input, select, textarea { accent-color:var(--season-red); }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline:2px solid #ffc0a7;
+  outline-offset:2px;
+}
+::selection{background:#992d20;color:#fff3e9}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:#100b0a}
+::-webkit-scrollbar-thumb{background:#7d3124;border:2px solid #100b0a;border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:#bc422b}
+
+/* Barra superior: moldura, filetes e identidade da temporada. */
+.mestre-top-bar {
+  position:relative;
+  overflow:visible;
+  padding:21px 23px;
+  border:1px solid #9d3424;
+  border-radius:3px;
+  background:linear-gradient(110deg,rgba(27,12,10,.985),rgba(10,8,8,.97) 60%,rgba(29,10,9,.975));
+  box-shadow:var(--season-shadow),inset 0 0 0 3px rgba(8,5,5,.92),inset 0 0 0 4px rgba(142,34,24,.44);
+  backdrop-filter:none;
+}
+.mestre-top-bar::before,.mestre-top-bar::after {
+  content:"";position:absolute;width:25px;height:25px;pointer-events:none;
+  border:2px solid var(--season-red);z-index:2;
+}
+.mestre-top-bar::before{top:-7px;left:-7px;border-right:0;border-bottom:0}
+.mestre-top-bar::after{bottom:-7px;right:-7px;border-top:0;border-left:0}
+.master-season-kicker {
+  display:block;margin:0 0 5px;font:900 10px/1.2 Arial,sans-serif;
+  letter-spacing:.24em;text-transform:uppercase;color:#da7457;
+}
+.top-title {
+  display:inline-block;margin:0 0 5px;padding:0;
+  font:900 clamp(1.5rem,2.2vw,2.1rem)/1.15 Georgia, 'Times New Roman',serif;
+  letter-spacing:.045em;text-transform:uppercase;color:#fff5e9;
+  text-shadow:0 3px 15px rgba(185,42,25,.23);
+}
+.connection-info{color:#b8a197;font-size:.77em}
+.connection-dot.online{background:#67b98e;box-shadow:0 0 9px rgba(84,188,120,.50)}
+.master-top-actions{gap:8px;justify-content:flex-end}
+.master-top-actions button {
+  min-height:40px;border-radius:3px;
+  font:900 .74rem/1.2 Arial,sans-serif;
+  letter-spacing:.035em;
+  transition:background .18s,border-color .18s,transform .18s;
+}
+.master-table-button,.master-invite-button,.btn-create-catalog-entry {
+  border:1px solid #a7422b;
+  background:#24120e;
+  color:#f3d2c2;
+}
+.master-table-button:hover,.master-invite-button:hover,.btn-create-catalog-entry:hover{
+  border-color:#ed8060;background:#822918;color:#fff0e7;
+  box-shadow:0 0 12px rgba(178,53,28,.28);
+}
+.master-table-button span{color:#ffe9da}
+.combat-mode-button{border-color:#9a3c2a;background:#2b120f;color:#f7b5a2}
+.combat-mode-button:hover{background:#662117;box-shadow:0 0 14px rgba(178,53,28,.19)}
+.combat-mode-button.active{border-color:#ff8b63;background:linear-gradient(120deg,#8b281c,#cb3a23);box-shadow:0 0 17px rgba(205,57,31,.25)}
+
+/* Abas com linguagem de tarjas vermelhas da ficha. */
+.master-tabs{
+  margin:0 0 19px;
+  max-width:100%;padding:6px;gap:5px;flex-wrap:wrap;
+  border:1px solid #7d3022;border-radius:3px;
+  background:#110b0a;
+  box-shadow:0 8px 23px #0007;
+}
+.master-tab-button{
+  min-height:42px;border-radius:2px;padding:10px 15px;
+  background:transparent;color:#d2b1a4;
+  font:900 .75rem/1.15 Arial,sans-serif;letter-spacing:.055em;
+}
+.master-tab-button:hover{background:#432019;color:#fff0e6}
+.master-tab-button.active{
+  border-color:#c54830;
+  background:linear-gradient(100deg,#ad2b17,#7b241a);
+  color:#fff6ee;
+  box-shadow:inset 0 0 0 1px rgba(255,180,144,.10);
+}
+
+/* Títulos com a mesma marca visual das seções da ficha. */
+.section-heading,
+.monsters-toolbar-title,
+.clues-toolbar-title,
+.player-rolls-title,
+.initiative-title,
+.catalog-count {
+  color:#f6e5d8;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.section-heading{font-size:.78em;padding:4px 0 8px;border-bottom:1px solid #753021}
+.section-heading > span:first-child,
+.monsters-toolbar-title,
+.clues-toolbar-title {
+  color:#fff3e9;
+  font-family:Georgia,'Times New Roman',serif;
+  font-weight:900;
+}
+.section-heading > span:first-child{
+  padding:7px 15px 7px 10px;
+  background:#aa2b1b;
+  clip-path:polygon(0 0,100% 0,96% 100%,0 100%);
+}
+.monsters-toolbar-title,.clues-toolbar-title{
+  font-size:1.2rem;letter-spacing:.025em;
+}
+.players-count,.monsters-count,.clues-count{color:#ea9572}
+.players-empty,.monsters-empty,.catalog-empty,.master-clues-empty {
+  background:#100b0b;border:1px dashed #7b362a;
+  border-radius:4px;color:#b7a098;
+}
+.players-empty strong,.monsters-empty strong{color:#f2b498}
+
+/* Cartões / painéis — menos azul, mais material escuro e contornos vermelhos. */
+.player-card,.monster-card,.catalog-card,.master-clue-card,
+.player-rolls-container,.initiative-container,
+.monsters-toolbar,.catalog-toolbar,.clues-toolbar,
+.lumina-master-panel {
+  background:linear-gradient(140deg,rgba(29,16,13,.98),rgba(10,9,9,.98));
+  border:1px solid #713024;
+  border-radius:5px;
+  box-shadow:0 12px 28px rgba(0,0,0,.46),inset 0 1px 0 rgba(235,120,81,.055);
+  backdrop-filter:none;
+}
+.player-card{
+  border-top:3px solid #b33220;
+  padding:16px;
+}
+.player-card::before{
+  top:13px;right:13px;
+  background:#b74832;box-shadow:0 0 8px #bd38235e;
+  transform:rotate(45deg);border-radius:0;
+}
+.player-header{border-bottom-color:#5e291e}
+.player-img{
+  border:2px solid #af3a27;
+  border-radius:4px;
+  background:#080606;
+  object-position:center top;
+}
+.player-name,.monster-card-name,.catalog-card-name,.master-clue-card-name {
+  font-family:Georgia,'Times New Roman',serif;
+  color:#fff0e4;
+}
+.player-info,.bar-label{color:#bfa59b}
+.bar-label.vida{color:#e16c55}
+.bar-label.sanidade{color:#c2b1db}
+.bar-container{border-color:#633027;background:#0a0707;border-radius:2px}
+.fill-vida{background:linear-gradient(90deg,#7d1e18,#c73b2d)}
+.fill-sani{background:linear-gradient(90deg,#564365,#9b86b6)}
+.player-actions button,.btn-ver-ficha,.btn-remove-player{
+  border-radius:3px;
+}
+.btn-ver-ficha{border-color:#ad462f;background:#442016;color:#fff2e7}
+.btn-ver-ficha:hover{background:#912d1b;color:#fff}
+.btn-remove-player{border-color:#784239;background:#22120f;color:#e8b7a6}
+.btn-remove-player:hover{border-color:#d9553e;background:#692017}
+.tag{border-radius:2px}
+
+/* Rolagens / iniciativa. */
+.player-rolls-container{border-top:3px solid #a92d1d}
+.player-rolls-title,.initiative-title,.initiative-drawer-header{
+  background:linear-gradient(90deg,#471a13,#160c0a);
+  border-bottom:1px solid #772c1f;
+  color:#f3d7c8;
+}
+.player-roll-entry,.initiative-entry{
+  border-color:#5d2e24;border-radius:3px;background:#130d0b;
+}
+.initiative-drawer{
+  border:1px solid #923b2b;border-radius:5px;
+  background:#100b0a;
+  box-shadow:-15px 0 45px rgba(0,0,0,.7);
+  backdrop-filter:none;
+}
+.initiative-drawer-header strong,.initiative-round{color:#f6e3d4}
+.initiative-input{background:#100c0b;border-color:#743a2b;color:#fff1e7}
+.initiative-entry.active{border-color:#d94d30;background:linear-gradient(90deg,#512115,#1c100d)}
+.initiative-next,.initiative-add-button{background:#96301f;border-color:#c65139;color:#fff1e8}
+.initiative-next:hover,.initiative-add-button:hover{background:#ba3822}
+
+/* Monstros, equipamentos e pistas conservam suas funções originais. */
+.monster-card{border-top:3px solid #ad3020}
+.monster-card-name{color:#ffe8dd}
+.monster-attribute,.monster-skill-chip,.monster-action-summary{
+  border-color:#6c3426;background:#211411;color:#f3dbce;
+}
+.monster-attribute:hover,.monster-skill-chip:hover{border-color:#ce5537;background:#392019}
+.monster-life-meter{background:#160a09;border-color:#713025}
+.monster-life-fill{background:linear-gradient(90deg,#7e1f17,#d0442b)}
+.monster-roll-button,.monster-life-button{
+  border-color:#8b3a29;background:#3c1b15;color:#fbe9dd;
+}
+.monster-roll-button:hover,.monster-life-button:hover{background:#75281b}
+.monster-create-button,.clue-create-button,.monster-add-action,
+.catalog-filter.active,.monster-save-button,.catalog-creator-save,.catalog-recipient-send{
+  border-color:#cb4c30;background:#9e2e1f;color:#fff0e7;
+}
+.monster-create-button:hover,.clue-create-button:hover{background:#c83f28;color:#fff}
+.catalog-card{border-top:2px solid #7d3927}
+.catalog-card.weapon,.catalog-card.item{border-color:#743629}
+.catalog-card:hover,.master-clue-card:hover{border-color:#e36e49}
+.catalog-image-wrap,.master-clue-card-media{background:#120c0b}
+.catalog-type,.catalog-count{color:#e5a586}
+.catalog-search,.monster-input,.monster-textarea{
+  border:1px solid #7a3d2c;background:#100c0b;color:#fff0e7;border-radius:3px;
+}
+.catalog-filter{
+  border-color:#623326;border-radius:3px;background:#1b1110;color:#d4b9aa;
+}
+.catalog-filter:hover{border-color:#b34b31;background:#402019}
+.catalog-filter.active{color:#fff5e9}
+.master-clue-card{border-top:2px solid #a63b27}
+
+/* Modais do Mestre com o mesmo acabamento da ficha nova. */
+.master-invite-dialog,
+.monster-modal-dialog,
+.catalog-creator-dialog,
+.catalog-recipient-dialog,
+.master-dice-box,
+#modal-ficha {
+  border:1px solid #a03a29;
+  border-radius:6px;
+  background:#120c0b;
+  color:#f5e9df;
+  box-shadow:0 26px 80px rgba(0,0,0,.85);
+}
+.master-invite-dialog::backdrop{background:rgba(3,2,2,.85)}
+.master-invite-content h2,.catalog-creator-title,
+.catalog-recipient-title,.monster-modal-title{color:#ffdfca;font-family:Georgia,serif}
+.master-invite-content input,.master-invite-actions button{
+  background:#1c1110;border-color:#74362a;color:#f9e9dc;border-radius:3px;
+}
+.master-invite-actions button.primary{background:#93301e;border-color:#cf5134;color:#fff1e7}
+.master-invite-status{color:#d9a58e}
+.monster-modal-header,.catalog-creator-header,.catalog-recipient-header{
+  background:#311510;border-bottom:1px solid #853222;
+}
+.monster-form-section,.catalog-creator-section{
+  border-color:#6d3427;background:#18100e;
+}
+.monster-form-section-title,.catalog-creator-section-title{color:#f3c7ae}
+.master-dice-box{background-color:#130b0a}
+.lumina-master-panel{background:radial-gradient(circle at 85% 15%,rgba(141,35,24,.16),transparent 40%),#100c0a}
+.lumina-master-brand{color:#fff1e5;letter-spacing:-.055em}
+.lumina-master-copy{color:#c5a99c}
+.lumina-access-control{border-color:#6e3428;background:#170f0e}
+.lumina-access-status strong{color:#f6e5db}
+.lumina-toggle-button{border-color:#8b4432;background:#241511;color:#e3bbac}
+.lumina-toggle-button:hover{border-color:#d76646}
+.lumina-preview-button{border-color:#bd5338;background:#3b1b14;color:#f6dbca}
+
+/* Não altera as cores semânticas de status (verde online, vermelho erro). */
+.clues-sync-status.saved{color:#8bdab3}
+.clues-sync-status.error{color:#ff9388}
+.master-invite-status.error{color:#ff9388}
+.lumina-access-status .lumina-live-state.enabled{color:#9ce2b0}
+
+/* Respiro em telas menores, sem mudar abas e eventos. */
+@media(max-width:850px){
+  .mestre-top-bar{padding:18px 14px}
+  .master-top-actions{justify-content:flex-start}
+  .master-tabs{align-self:stretch}
+  .master-tab-button{flex:1 1 115px;min-height:40px}
+  .section-heading{gap:8px;flex-wrap:wrap}
+  .player-card{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .master-top-actions button,.master-tab-button{transition:none}
+}
