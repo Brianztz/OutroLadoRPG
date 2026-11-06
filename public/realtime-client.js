@@ -320,4 +320,5 @@
     }
 
     global.io = options => new RealtimeSocket(options);
+    global.io.__olSeasonAware = true;
 })(window);
