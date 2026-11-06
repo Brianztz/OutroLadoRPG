@@ -206,6 +206,15 @@
         global.dispatchEvent(new CustomEvent('ol:character-sync', { detail }));
     }
 
+    // Cópias validadas dos conteúdos remotos: a ficha e as pistas contêm
+    // imagens grandes que não devem ser regravadas a cada mudança pequena.
+    const cloudPayloadCache = new Map();
+    function payloadChunksToWrite(chunks, previousJson) {
+        return chunks.map((data, index) => ({ data, index }))
+            .filter(({data,index}) => previousJson === null ||
+                data !== previousJson.slice(index * CHARACTER_CHUNK_SIZE, (index + 1) * CHARACTER_CHUNK_SIZE));
+    }
+
     function characterCollection(variant) { return variant === 'temporada' ? 'seasonCharacters' : 'characters'; }
     async function readCharacterSnapshot(snapshot, user, tableId, sdkContext, variant) {
         if (!snapshot.exists()) return null;
@@ -240,6 +249,10 @@
         }
 
         if (!sheetJson) return null;
+        if (manifest.storageVersion === 2) {
+            cloudPayloadCache.set('character:' + tableId + ':' + characterCollection(variant) + ':' + user.uid,
+                { hash: manifest.sheetHash, json: sheetJson });
+        }
         return {
             sheetJson,
             sheetHash: String(manifest.sheetHash || hashCharacterSheet(sheetJson)),
@@ -315,6 +328,16 @@
         const previousChunkCount = currentData.storageVersion === 2 && Number.isInteger(currentData.chunkCount)
             ? Math.min(CHARACTER_MAX_CHUNKS, Math.max(0, currentData.chunkCount))
             : 0;
+        const cacheKey = 'character:' + tableId + ':' + characterCollection(variant) + ':' + user.uid;
+        const cached = cloudPayloadCache.get(cacheKey);
+        let previousJson = cached?.hash === currentData.sheetHash && previousChunkCount ? cached.json : null;
+        if (previousJson === null && previousChunkCount) {
+            try {
+                previousJson = (await readCharacterSnapshot(currentSnapshot, user, tableId, sdkContext, variant))?.sheetJson || null;
+            } catch (error) {
+                console.warn('Não foi possível comparar os blocos da ficha; gravando todos por segurança.', error);
+            }
+        }
         const now = firestoreSdk.serverTimestamp();
         const batch = firestoreSdk.writeBatch(db);
         batch.set(reference, {
@@ -330,7 +353,7 @@
             createdAt: currentSnapshot.exists() && currentData.createdAt ? currentData.createdAt : now,
             updatedAt: now
         });
-        chunks.forEach((data, index) => {
+        payloadChunksToWrite(chunks, previousJson).forEach(({data,index}) => {
             const chunkId = String(index).padStart(4, '0');
             batch.set(firestoreSdk.doc(db, 'tables', tableId, characterCollection(variant), user.uid, 'chunks', chunkId), {
                 uid: user.uid,
@@ -348,6 +371,7 @@
             ));
         }
         await batch.commit();
+        cloudPayloadCache.set(cacheKey, { hash: sheetHash, json: sheetJson });
         characterSyncEvent({ state: 'saved', tableId, sheetHash });
         return { sheetHash, playerCode, skipped: false };
     }
@@ -396,6 +420,7 @@
         if (Number(manifest.payloadSize) !== cluesJson.length || manifest.payloadHash !== hashCharacterSheet(cluesJson)) {
             throw new Error('O catálogo de pistas salvo na nuvem está incompleto.');
         }
+        cloudPayloadCache.set('clues:' + tableId, { hash: manifest.payloadHash, json: cluesJson });
         return {
             cluesJson,
             cluesHash: manifest.payloadHash,
@@ -438,6 +463,16 @@
         const previousChunkCount = currentData.storageVersion === 2 && Number.isInteger(currentData.chunkCount)
             ? Math.min(CHARACTER_MAX_CHUNKS, Math.max(0, currentData.chunkCount))
             : 0;
+        const cacheKey = 'clues:' + tableId;
+        const cached = cloudPayloadCache.get(cacheKey);
+        let previousJson = cached?.hash === currentData.payloadHash && previousChunkCount ? cached.json : null;
+        if (previousJson === null && previousChunkCount) {
+            try {
+                previousJson = (await readMasterCluesSnapshot(currentSnapshot, tableId, sdkContext))?.cluesJson || null;
+            } catch (error) {
+                console.warn('Não foi possível comparar os blocos das pistas; gravando todos por segurança.', error);
+            }
+        }
         const now = firestoreSdk.serverTimestamp();
         const batch = firestoreSdk.writeBatch(db);
         batch.set(reference, {
@@ -449,7 +484,7 @@
             createdAt: currentSnapshot.exists() && currentData.createdAt ? currentData.createdAt : now,
             updatedAt: now
         });
-        chunks.forEach((data, index) => {
+        payloadChunksToWrite(chunks, previousJson).forEach(({data,index}) => {
             const chunkId = String(index).padStart(4, '0');
             batch.set(firestoreSdk.doc(db, 'tables', tableId, 'masterContent', 'clues', 'chunks', chunkId), {
                 contentId: 'clues',
@@ -467,6 +502,7 @@
             ));
         }
         await batch.commit();
+        cloudPayloadCache.set(cacheKey, { hash: cluesHash, json: cluesJson });
         return { cluesHash, skipped: false };
     }
 
@@ -537,12 +573,19 @@
         };
         if (!privateSnapshot.exists()) privateData.createdAt = now;
         if (!publicSnapshot.exists()) publicData.createdAt = now;
-        await withTimeout(
-            Promise.all([
-                setDoc(privateRef, privateData, { merge: privateSnapshot.exists() }),
-                setDoc(publicRef, publicData, { merge: publicSnapshot.exists() })
-            ]),
-            FIRESTORE_TIMEOUT_MS,
+        // Não consumir gravacões apenas por abrir uma página ou trocar de aba.
+        const writes = [];
+        const currentPrivate = privateSnapshot.exists() ? privateSnapshot.data() : null;
+        const currentPublic = publicSnapshot.exists() ? publicSnapshot.data() : null;
+        if (!currentPrivate || currentPrivate.email !== privateData.email) {
+            writes.push(setDoc(privateRef, privateData, { merge: Boolean(currentPrivate) }));
+        }
+        if (!currentPublic || currentPublic.displayName !== publicData.displayName ||
+            currentPublic.photoURL !== publicData.photoURL) {
+            writes.push(setDoc(publicRef, publicData, { merge: Boolean(currentPublic) }));
+        }
+        if (writes.length) await withTimeout(
+            Promise.all(writes), FIRESTORE_TIMEOUT_MS,
             portalNetworkError('salvar seu perfil')
         );
     }
