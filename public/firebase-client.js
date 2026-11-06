@@ -563,6 +563,77 @@
         await authSdk.signOut(auth);
     }
 
+    // A gravação tradicional setDoc() pode ficar pendente quando o SDK usa
+    // transporte offline/streaming. No bootstrap da nova temporada usamos
+    // a API REST oficial do Firestore com o ID token do próprio usuário.
+    // A operação continua subordinada às mesmas Firestore Security Rules.
+    async function seasonPortalRest(user, operation, documentPath, fields = null, timestamps = []) {
+        const database = 'projects/' + FIREBASE_CONFIG.projectId + '/databases/' + DATABASE_ID;
+        const apiRoot = 'https://firestore.googleapis.com/v1/' + database + '/documents';
+        const token = await withTimeout(
+            user.getIdToken(), AUTH_TIMEOUT_MS, portalNetworkError('validar o login')
+        );
+        const isCreate = operation === 'create';
+        const path = documentPath.split('/').map(encodeURIComponent).join('/');
+        const url = isCreate ? apiRoot + ':commit' : apiRoot + '/' + path;
+        const body = isCreate ? JSON.stringify({
+            writes: [{
+                update: {
+                    name: database + '/documents/' + path,
+                    fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [
+                        key, { stringValue: String(value) }
+                    ]))
+                },
+                currentDocument: { exists: false },
+                updateTransforms: timestamps.map(fieldPath => ({
+                    fieldPath, setToServerValue: 'REQUEST_TIME'
+                }))
+            }]
+        }) : null;
+        const controller = new AbortController();
+        const timeout = global.setTimeout(() => controller.abort(), 22000);
+        let response;
+        try {
+            response = await global.fetch(url, {
+                method: isCreate ? 'POST' : 'GET',
+                headers: {
+                    Authorization: 'Bearer ' + token,
+                    ...(isCreate ? { 'Content-Type': 'application/json' } : {})
+                },
+                ...(body ? { body } : {}),
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+        } catch (error) {
+            if (error && error.name === 'AbortError') {
+                throw new Error('O Firebase demorou a confirmar a criação da mesa. Tente novamente; a operação pode ter sido concluída.');
+            }
+            throw new Error('Não foi possível conectar ao Firebase: ' + String(error?.message || error));
+        } finally {
+            global.clearTimeout(timeout);
+        }
+        if (response.status === 404 && !isCreate) return null;
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok) return isCreate ? { created: true } : payload;
+        const status = payload.error?.status || '';
+        if (isCreate && (response.status === 409 || status === 'ALREADY_EXISTS')) return { created: false };
+        if (response.status === 401) throw new Error('Seu login expirou. Entre novamente com o Google.');
+        if (response.status === 403) throw new Error('Seu login não tem permissão para criar esta mesa. Verifique se entrou com a conta do Mestre.');
+        throw new Error('Erro do Firebase (' + (status || response.status) + '): ' +
+            String(payload.error?.message || 'Não foi possível confirmar o cadastro da mesa.').slice(0, 180));
+    }
+
+    async function createSeasonPortalDocument(user, documentPath, fields, timestamps, ownershipField = 'uid') {
+        const result = await seasonPortalRest(user, 'create', documentPath, fields, timestamps);
+        if (result.created) return;
+        // Um timeout anterior pode ter completado a criação. Nunca sobrescrever
+        // createdAt/ownerUid de um documento existente para "tentar de novo".
+        const document = await seasonPortalRest(user, 'get', documentPath);
+        if (!document || document.fields?.[ownershipField]?.stringValue !== user.uid) {
+            throw new Error('Esta mesa já pertence a outra conta de Mestre.');
+        }
+    }
+
     async function preparePortal(role, requestedTable, edition = null) {
         const user = await getCurrentUser();
         if (!user) throw new Error('Entre com sua conta Google antes de escolher a mesa.');
@@ -585,18 +656,27 @@
                 if (!isBootstrapMaster(user)) {
                     throw new Error('Somente o mestre autorizado pode criar uma mesa nova.');
                 }
-                await withTimeout(
-                    setDoc(tableRef, {
+                if (edition === 'temporada' || (edition == null && global.OLSeasonSpace?.isSeasonPage())) {
+                    await createSeasonPortalDocument(user, 'tables/' + tableId, {
                         tableId,
                         displayName: `Mesa ${tableId}`.slice(0, 80),
                         ownerUid: user.uid,
-                        status: 'active',
-                        createdAt: now,
-                        updatedAt: now
-                    }),
-                    FIRESTORE_TIMEOUT_MS,
-                    portalNetworkError('criar a mesa')
-                );
+                        status: 'active'
+                    }, ['createdAt', 'updatedAt'], 'ownerUid');
+                } else {
+                    await withTimeout(
+                        setDoc(tableRef, {
+                            tableId,
+                            displayName: `Mesa ${tableId}`.slice(0, 80),
+                            ownerUid: user.uid,
+                            status: 'active',
+                            createdAt: now,
+                            updatedAt: now
+                        }),
+                        FIRESTORE_TIMEOUT_MS,
+                        portalNetworkError('criar a mesa')
+                    );
+                }
             }
 
             const memberRef = doc(db, 'tables', tableId, 'members', user.uid);
@@ -609,19 +689,31 @@
             const isMasterMember = memberSnapshot.exists() && memberSnapshot.data().role === 'master';
             if (!isOwner && !isMasterMember) throw new Error('Esta conta nao possui acesso de mestre nesta mesa.');
             if (isOwner && !isMasterMember) {
-                await withTimeout(
-                    setDoc(memberRef, {
+                if ((edition === 'temporada' || (edition == null && global.OLSeasonSpace?.isSeasonPage()))
+                    && !memberSnapshot.exists()) {
+                    await createSeasonPortalDocument(user, 'tables/' + tableId + '/members/' + user.uid, {
                         uid: user.uid,
                         role: 'master',
                         playerCode: '',
                         displayName: safeDisplayName(user),
-                        photoURL: safePhotoURL(user),
-                        joinedAt: now,
-                        updatedAt: now
-                    }),
-                    FIRESTORE_TIMEOUT_MS,
-                    portalNetworkError('liberar o acesso do mestre')
-                );
+                        photoURL: safePhotoURL(user)
+                    }, ['joinedAt', 'updatedAt']);
+                } else {
+                    const existing = memberSnapshot.exists() ? memberSnapshot.data() : null;
+                    await withTimeout(
+                        setDoc(memberRef, {
+                            uid: user.uid,
+                            role: 'master',
+                            playerCode: '',
+                            displayName: safeDisplayName(user),
+                            photoURL: safePhotoURL(user),
+                            joinedAt: existing?.joinedAt || now,
+                            updatedAt: now
+                        }),
+                        FIRESTORE_TIMEOUT_MS,
+                        portalNetworkError('liberar o acesso do mestre')
+                    );
+                }
             }
         } else {
             if (!tableSnapshot.exists() || tableSnapshot.data().status !== 'active') {
