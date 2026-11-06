@@ -660,6 +660,10 @@
         if (response.ok) return isCreate ? { created: true } : payload;
         const status = payload.error?.status || '';
         if (isCreate && (response.status === 409 || status === 'ALREADY_EXISTS' || status === 'FAILED_PRECONDITION')) return { created: false };
+        if (response.status === 429 || status === 'RESOURCE_EXHAUSTED' ||
+            /quota limit exceeded|free daily write units/i.test(String(payload.error?.message || ''))) {
+            throw new Error('A cota diária gratuita de gravações do Firebase acabou. A mesa só poderá ser criada após a renovação da cota ou com faturamento habilitado no Google Cloud.');
+        }
         if (response.status === 401) throw new Error('Seu login expirou. Entre novamente com o Google.');
         if (response.status === 403) throw new Error('Seu login não tem permissão para criar esta mesa. Verifique se entrou com a conta do Mestre.');
         throw new Error('Erro do Firebase (' + (status || response.status) + '): ' +
