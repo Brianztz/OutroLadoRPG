@@ -5,18 +5,23 @@
 @media (max-width:767px){
   html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
   body.is-mobile-season{display:block!important;width:100%;background:#060505!important}
-  body.is-mobile-season .layout#page-principal{
+  body.is-mobile-season .layout#page-principal:not([hidden]){
     display:block!important;position:relative!important;inset:auto!important;
     width:100%!important;min-height:100dvh!important;height:auto!important;
     overflow:visible!important;margin:0!important;padding:0!important;
     background:#060505!important
   }
+  /* As abas são mutuamente exclusivas: o inventário nunca mostra a Principal. */
+  body.is-mobile-season #page-principal[hidden],
+  body.is-mobile-season #page-inventario[hidden],
+  body.is-mobile-season #page-rituais[hidden],
+  body.is-mobile-season #mobile-sheet[hidden]{display:none!important}
   body.is-mobile-season #viewport{
     position:absolute!important;left:-10000px!important;top:0!important;
     width:1px!important;height:1px!important;overflow:hidden!important;
     opacity:0!important;pointer-events:none!important
   }
-  body.is-mobile-season #mobile-sheet{display:block!important}
+  body.is-mobile-season #mobile-sheet:not([hidden]){display:block!important}
   body.is-mobile-season .tip,body.is-mobile-season .mobile-note{display:none!important}
   body.is-mobile-season #sheet-tabs{
     top:0!important;left:0!important;right:0!important;width:100%!important;
