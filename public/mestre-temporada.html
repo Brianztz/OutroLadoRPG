@@ -861,6 +861,7 @@
         let masterCluesCloudSaveInFlight = false;
         let masterCluesCloudSavingHash = '';
         let masterCluesCloudRetryCount = 0;
+        let masterCluesCloudQuotaBlockedUntil = 0;
         let masterCluesCloudUnsubscribe = null;
         let masterCluesLocalStorageWarningShown = false;
         let editingMasterClueId = null;
@@ -1585,6 +1586,7 @@
             masterCluesCloudSaveInFlight = false;
             masterCluesCloudSavingHash = '';
             masterCluesCloudRetryCount = 0;
+            masterCluesCloudQuotaBlockedUntil = 0;
             if (typeof masterCluesCloudUnsubscribe === 'function') masterCluesCloudUnsubscribe();
             masterCluesCloudUnsubscribe = null;
             masterCluesCloudReady = false;
@@ -1617,8 +1619,10 @@
             }
         }
 
-        function scheduleMasterCluesCloudSave(delay = 250) {
+        function scheduleMasterCluesCloudSave(delay = 3000) {
             clearTimeout(masterCluesCloudSaveTimer);
+            const quotaBackoff = Math.max(0, masterCluesCloudQuotaBlockedUntil - Date.now());
+            delay = Math.max(delay, quotaBackoff);
             masterCluesCloudSaveTimer = setTimeout(() => {
                 masterCluesCloudSaveTimer = null;
                 flushMasterCluesCloudSave();
@@ -1629,6 +1633,10 @@
             if (!masterCluesCloudReady || masterCluesCloudApplying || masterCluesCloudSaveInFlight || !window.OLFirebase) return;
             const queuedJson = masterCluesCloudQueuedJson;
             if (!queuedJson) return;
+            if (Date.now() < masterCluesCloudQuotaBlockedUntil) {
+                scheduleMasterCluesCloudSave(masterCluesCloudQuotaBlockedUntil - Date.now());
+                return;
+            }
 
             const syncingTable = masterTableCode;
             const queuedHash = OLFirebase.hashCharacterSheet(queuedJson);
@@ -1652,6 +1660,7 @@
                 masterCluesCloudLastHash = result.cluesHash || queuedHash;
                 try { localStorage.setItem(masterCluesCloudMarkerKey(user.uid), masterCluesCloudLastHash); } catch (error) {}
                 masterCluesCloudRetryCount = 0;
+                masterCluesCloudQuotaBlockedUntil = 0;
             } catch (error) {
                 failed = true;
                 console.error('Não foi possível salvar as pistas do mestre na nuvem:', error);
@@ -1659,7 +1668,12 @@
                     masterCluesCloudQueuedJson = queuedJson;
                 }
                 masterCluesCloudRetryCount = Math.min(6, masterCluesCloudRetryCount + 1);
-                setMasterCluesSyncStatus('error', 'ERRO — TENTANDO NOVAMENTE');
+                const quota = /resource.exhausted|quota limit exceeded|cota diária/i.test(
+                    String(error?.code || '') + ' ' + String(error?.message || ''));
+                if (quota) masterCluesCloudQuotaBlockedUntil = Date.now() + 30 * 60 * 1000;
+                setMasterCluesSyncStatus('error', quota
+                    ? 'COTA FIREBASE ESGOTADA — PISTAS SALVAS LOCALMENTE'
+                    : 'ERRO — TENTANDO NOVAMENTE');
             } finally {
                 masterCluesCloudSaveInFlight = false;
                 masterCluesCloudSavingHash = '';
@@ -1676,12 +1690,12 @@
         function queueMasterCluesCloudSave(cluesJson = JSON.stringify(masterCluesState)) {
             if (masterCluesCloudApplying || !window.OLFirebase) return;
             masterCluesCloudQueuedJson = cluesJson;
-            setMasterCluesSyncStatus('saving', 'SALVANDO...');
+            if (Date.now() >= masterCluesCloudQuotaBlockedUntil) setMasterCluesSyncStatus('saving', 'SALVANDO...');
             if (!masterCluesCloudReady) {
                 masterCluesCloudDirtyBeforeReady = true;
                 return;
             }
-            if (!masterCluesCloudSaveInFlight) scheduleMasterCluesCloudSave(250);
+            if (!masterCluesCloudSaveInFlight) scheduleMasterCluesCloudSave(3000);
         }
 
         async function initializeMasterCluesCloudSync() {
