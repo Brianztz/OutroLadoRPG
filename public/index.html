@@ -300,7 +300,9 @@
             localStorage.setItem('portal_table_code', table);
             const isMaster = role === 'master';
             localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
-            const destination = new URL(isMaster ? './mestre.html' : (edition === 'temporada' ? './ficha-temporada.html' : './ficha.html'), window.location.href);
+            const destination = new URL(isMaster
+                ? (edition === 'temporada' ? './mestre-temporada.html' : './mestre.html')
+                : (edition === 'temporada' ? './ficha-temporada.html' : './ficha.html'), window.location.href);
             destination.search = '';
             destination.searchParams.set('mesa', table);
             if (edition === 'temporada') destination.searchParams.set('temporada', '2');
