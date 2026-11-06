@@ -192,7 +192,7 @@
                 </div>
             </label>
 
-            <label class="table-field" for="sheet-model"><span>Ficha do jogador</span><select id="sheet-model" style="width:100%;padding:12px;background:#101923;color:#eee;border:1px solid #426076;border-radius:8px"><option value="temporada">Nova temporada</option><option value="classic">Outro Lado — original</option></select></label><div class="role-grid">
+            <label class="table-field" for="sheet-model"><span>Temporada da mesa</span><select id="sheet-model" style="width:100%;padding:12px;background:#101923;color:#eee;border:1px solid #426076;border-radius:8px"><option value="temporada">Nova temporada</option><option value="classic">Outro Lado — original</option></select></label><div class="role-grid">
                 <button class="role-button player" type="submit" disabled>
                     <span class="role-icon" aria-hidden="true">♟</span>
                     <span class="role-copy"><strong>Entrar como jogador</strong><span>Abrir sua ficha de personagem nesta mesa.</span></span>
@@ -213,6 +213,14 @@
         const tableInput = document.getElementById('table-input');
         const params = new URLSearchParams(window.location.search);
         const isPlayerInvite = params.get('convite') === '1' && Boolean(params.get('mesa'));
+        const seasonSelect = document.getElementById('sheet-model');
+        // Legacy invitations have no "temporada" parameter and always stay classic.
+        if (isPlayerInvite) {
+            seasonSelect.value = params.get('temporada') === '2' ? 'temporada' : 'classic';
+            seasonSelect.disabled = true;
+        } else if (params.get('temporada') === '2') {
+            seasonSelect.value = 'temporada';
+        }
         let inviteJoinStarted = false;
         const authName = document.getElementById('auth-name');
         const authEmail = document.getElementById('auth-email');
@@ -286,14 +294,16 @@
             }
         }
 
-        function finishPortalEntry(role, table) {
-            rememberValidatedPortalAccess(role, table);
+        function finishPortalEntry(role, table, physicalTable) {
+            const edition = seasonSelect.value;
+            rememberValidatedPortalAccess(role, physicalTable || OLFirebase.seasonScopedTable(table, edition));
             localStorage.setItem('portal_table_code', table);
             const isMaster = role === 'master';
             localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
-            const destination = new URL(isMaster ? './mestre.html' : (document.getElementById('sheet-model').value === 'temporada' ? './ficha-temporada.html' : './ficha.html'), window.location.href);
+            const destination = new URL(isMaster ? './mestre.html' : (edition === 'temporada' ? './ficha-temporada.html' : './ficha.html'), window.location.href);
             destination.search = '';
             destination.searchParams.set('mesa', table);
+            if (edition === 'temporada') destination.searchParams.set('temporada', '2');
             window.location.assign(destination.href);
         }
 
@@ -304,8 +314,8 @@
             showAuthMessage(role === 'master' ? 'Validando acesso do mestre...' : 'Entrando na mesa...');
             setPortalBusy(true);
             try {
-                await OLFirebase.preparePortal(role, table);
-                finishPortalEntry(role, table);
+                const validated = await OLFirebase.preparePortal(role, table, seasonSelect.value);
+                finishPortalEntry(role, table, validated.tableId);
             } catch (error) {
                 const message = String(error && error.message || 'Nao foi possivel entrar nessa mesa.');
                 const harmlessExistingPlayerRefreshTimeout = role === 'player'
@@ -313,7 +323,7 @@
 
                 if (harmlessExistingPlayerRefreshTimeout) {
                     console.warn('A atualizacao do cadastro do jogador demorou, mas o acesso ja foi validado. Entrando na mesa.', error);
-                    finishPortalEntry(role, table);
+                    finishPortalEntry(role, table, OLFirebase.seasonScopedTable(table, seasonSelect.value));
                     return;
                 }
 
