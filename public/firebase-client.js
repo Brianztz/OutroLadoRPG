@@ -616,7 +616,7 @@
         const payload = await response.json().catch(() => ({}));
         if (response.ok) return isCreate ? { created: true } : payload;
         const status = payload.error?.status || '';
-        if (isCreate && (response.status === 409 || status === 'ALREADY_EXISTS')) return { created: false };
+        if (isCreate && (response.status === 409 || status === 'ALREADY_EXISTS' || status === 'FAILED_PRECONDITION')) return { created: false };
         if (response.status === 401) throw new Error('Seu login expirou. Entre novamente com o Google.');
         if (response.status === 403) throw new Error('Seu login não tem permissão para criar esta mesa. Verifique se entrou com a conta do Mestre.');
         throw new Error('Erro do Firebase (' + (status || response.status) + '): ' +
