@@ -44,26 +44,50 @@
 
     });
   }
-  // Enquadramento responsivo: padrão PREENCHE a janela; opção ENCAIXAR
-  // permite visualizar toda a moldura em telas muito largas/estreitas.
-  const viewModeKey='outrolado_offline_visualizacao_janela_v2';
-  let screenMode='cover';
-  try { if(localStorage.getItem(viewModeKey)==='contain') screenMode='contain'; } catch (_) {}
+  // Nunca achatar a arte: escala uniforme em qualquer proporção de tela.
+  // Modo padrão: toda a ficha cabe na janela. Modo leitura: escala mínima
+  // para textos pequenos, com rolagem em vez de distorção ou recorte.
+  const viewModeKey='outrolado_temporada_visualizacao_v3';
+  let screenMode='fit';
+  try { if(localStorage.getItem(viewModeKey)==='readable') screenMode='readable'; } catch (_) {}
+  function computeSheetScale(width,height,mode='fit'){
+    const safeWidth=Math.max(1,Number(width)||1);
+    const safeHeight=Math.max(1,Number(height)||1);
+    const fitScale=Math.min(safeWidth/W,safeHeight/H);
+    return mode==='readable'?Math.max(fitScale,0.82):fitScale;
+  }
   function updateScale(){
-    const width=Math.max(1,window.innerWidth);
-    const height=Math.max(1,window.innerHeight);
-    const scale=Math.min(width/W,height/H);
-    const scaleX=screenMode==='cover'?width/W:scale;
-    const scaleY=screenMode==='cover'?height/H:scale;
-    viewport.style.width=(W*scaleX)+'px';
-    viewport.style.height=(H*scaleY)+'px';
-    sheet.style.transform='scale('+scaleX+','+scaleY+')';
-    const inventoryCanvas=$('inventory-portrait-canvas');
-    inventoryCanvas.style.transform='scale('+scaleX+','+scaleY+')';
-    inventoryCanvas.style.left=((width-W*scaleX)/2)+'px';
-    inventoryCanvas.style.top=((height-H*scaleY)/2)+'px';const ritualCanvas=$('ritual-canvas');ritualCanvas.style.transform='scale('+scaleX+','+scaleY+')';ritualCanvas.style.left=((width-W*scaleX)/2)+'px';ritualCanvas.style.top=((height-H*scaleY)/2)+'px';
+    const width=Math.max(1,window.visualViewport?.width||window.innerWidth);
+    const height=Math.max(1,window.visualViewport?.height||window.innerHeight);
+    const scale=computeSheetScale(width,height,screenMode);
+    const fitScale=computeSheetScale(width,height,'fit');
+    const scaledWidth=W*scale,scaledHeight=H*scale;
+    viewport.style.width=scaledWidth+'px';
+    viewport.style.height=scaledHeight+'px';
+    sheet.style.transform='scale('+scale+')';
+    document.body.classList.toggle('season-readable-zoom',screenMode==='readable');
+    // Inventário e Rituais seguem o tamanho disponível e não são esticados.
+    // São quadros com seus próprios elementos absolutos em coordenadas 1920×909.
+    const stageWidth=W*fitScale,stageHeight=H*fitScale;
+    const stageLeft=Math.max(0,(width-stageWidth)/2);
+    const stageTop=Math.max(0,(height-stageHeight)/2);
+    for(const canvasId of ['inventory-portrait-canvas','ritual-canvas']){
+      const canvas=$(canvasId);
+      if(!canvas)continue;
+      canvas.style.transform='scale('+fitScale+')';
+      canvas.style.left=stageLeft+'px';
+      canvas.style.top=stageTop+'px';
+    }
     const fitButton=$('fit-mode');
-    if(fitButton) fitButton.textContent=screenMode==='cover'?'VISUALIZAÇÃO: AJUSTAR À JANELA':'VISUALIZAÇÃO: MOSTRAR QUADRO INTEIRO';
+    if(fitButton){
+      fitButton.textContent=screenMode==='fit'
+        ?'VISUALIZAÇÃO: ENCAIXADA · AMPLIAR'
+        :'VISUALIZAÇÃO: AMPLIADA · ENCAIXAR';
+      fitButton.title=screenMode==='fit'
+        ?'Ampliar uniformemente para facilitar a leitura; use a rolagem quando necessário.'
+        :'Encaixar toda a ficha na janela sem comprimir a imagem.';
+      fitButton.setAttribute('aria-pressed',String(screenMode==='readable'));
+    }
   }
   const toolsButton=$('tools-toggle');
   const toolsHeader=document.querySelector('.head');
@@ -76,7 +100,7 @@
     if(!toolsHeader.contains(event.target) && !toolsButton.contains(event.target))hideTools();
   });
   $('fit-mode').addEventListener('click',()=>{
-    screenMode=screenMode==='cover'?'contain':'cover';
+    screenMode=screenMode==='fit'?'readable':'fit';
     try {localStorage.setItem(viewModeKey,screenMode);} catch (_) {}
     updateScale();
   });
@@ -140,6 +164,8 @@
     toast('Prévia exportada em JSON (não é a ficha oficial).');
   });
   window.addEventListener('resize',updateScale);
+  window.visualViewport?.addEventListener?.('resize',updateScale);
+  window.addEventListener('orientationchange',updateScale);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();hideTools();}});
 
   const skillDescriptions=["Equilibrar-se, executar manobras e amortecer quedas.","Lidar com animais, acalmá-los e ensinar comandos.","Criar, interpretar e avaliar expressões artísticas.","Correr, saltar, escalar, nadar e superar desafios físicos.","Conhecer notícias, acontecimentos e assuntos do mundo atual.","Aplicar conhecimentos científicos e analisar fenômenos.","Executar ações furtivas de crime, como abrir fechaduras ou furtar objetos.","Negociar, persuadir e resolver conflitos por meio do diálogo.","Mentir, disfarçar intenções e sustentar uma história convincente.","Resistir ao cansaço, a condições adversas e a agressões ao organismo.","Mover-se silenciosamente e esconder-se sem chamar atenção.","Reagir prontamente ao início de uma situação de perigo.","Pressionar ou ameaçar alguém para influenciar suas ações.","Perceber intenções, emoções e sinais de mentira.","Examinar pistas, pesquisar e relacionar informações.","Atacar e defender-se em combate corpo a corpo.","Prestar primeiros socorros e avaliar ferimentos ou doenças.","Reconhecer fenômenos, símbolos e conhecimentos paranormais.","Notar detalhes, sons, movimentos e perigos ao redor.","Conduzir veículos e executar manobras.","Mirar e realizar ataques à distância.","Aplicar conhecimentos e técnicas de uma atividade profissional.","Reagir a ameaças repentinas e evitar perigos.","Conhecer crenças, ritos, símbolos e tradições religiosas.","Orientar-se, encontrar recursos e enfrentar ambientes hostis.","Avaliar posições, planejar estratégias e compreender situações de combate.","Operar, analisar e reparar computadores e dispositivos tecnológicos."];
