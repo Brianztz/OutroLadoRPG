@@ -322,3 +322,97 @@
 
 /* Account and synchronization controls live inside Settings. */
 #panel #season-online{position:static;max-width:none;width:100%;box-sizing:border-box;margin:0 0 18px;padding:12px;gap:8px;font-size:12px}#panel #season-identity,#panel #season-status{flex-basis:100%;max-width:none;overflow-wrap:anywhere}#panel #season-online label{margin:0;letter-spacing:normal;font-size:12px}#panel #season-online input[type="checkbox"]{width:auto;margin:0}#panel #season-color{width:28px;height:26px;margin:0;padding:0}
+
+
+/* Leitura acessível dos ataques — preserva os botões e as rolagens existentes. */
+#combat-area .combat-card.combat-card-compact{
+  grid-template-columns:76px minmax(0,1fr);
+  grid-template-rows:minmax(26px,auto) auto;
+  gap:7px 9px;
+  min-height:111px;
+  padding:10px;
+  border:1px solid #855042;
+  border-radius:5px;
+  background:linear-gradient(125deg,#27201e,#111010);
+}
+#combat-area .combat-card-compact .combat-weapon-image{
+  grid-column:1;
+  grid-row:1/3;
+  width:74px;
+  height:82px;
+  max-width:100%;
+  object-fit:contain;
+}
+#combat-area .combat-card-compact .combat-card-head{
+  grid-column:2;
+  grid-row:1;
+  min-width:0;
+  min-height:26px;
+  gap:7px;
+  align-items:center;
+}
+#combat-area .combat-card-compact .combat-card-head strong{
+  flex:1;
+  min-width:0;
+  overflow:visible;
+  white-space:normal;
+  text-overflow:clip;
+  overflow-wrap:anywhere;
+  text-align:left;
+  font:700 15px/1.25 Georgia,'Times New Roman',serif!important;
+  color:#fff3e9;
+}
+#combat-area .combat-card-compact .combat-actions summary{
+  display:grid;
+  place-items:center;
+  width:25px;
+  height:26px;
+  color:#ffe0cf;
+  font-size:17px;
+}
+#combat-area .combat-card-compact .combat-roll-row{
+  display:grid;
+  grid-column:2;
+  grid-row:2;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-self:stretch;
+  gap:5px;
+  min-width:0;
+}
+#combat-area .combat-card-compact .combat-roll-row > button,
+#combat-area .combat-card-compact .combat-roll-row > span{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:3px;
+  min-width:0;
+  min-height:48px;
+  padding:7px 5px!important;
+  border:1px solid #76574b!important;
+  border-radius:4px!important;
+  background:#352d29!important;
+  color:#fff6ec;
+  text-align:left;
+  white-space:normal;
+  box-sizing:border-box;
+  font:700 14px/1.15 Arial,sans-serif!important;
+}
+#combat-area .combat-card-compact .combat-roll-row > button:hover{
+  background:#573226!important;
+  border-color:#d86646!important;
+}
+#combat-area .combat-card-compact .combat-roll-row .combat-metric-value{
+  display:block;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  font:800 15px/1.16 Arial,sans-serif;
+  color:#fff9f1;
+  letter-spacing:0;
+}
+#combat-area .combat-card-compact .combat-roll-row .combat-metric-label{
+  display:block;
+  font:800 10px/1.2 Arial,sans-serif;
+  color:#f3b59b;
+  letter-spacing:.035em;
+}
