@@ -116,9 +116,9 @@ test('Firebase edition identifiers isolate membership, characters and master clu
 test('all season realtime entry points load the namespace first',()=>{
   for(const file of ['public/mestre-temporada.html','public/overlay.html','public/lumina/index.html','public/ficha-temporada.html']){
     const html=load(file);
-    const space=html.indexOf('/season-space.js?v=2');
-    const socket=html.indexOf('/socket.io/socket.io.js?v=season2-1');
-    const adapter=html.indexOf('/season-socket-adapter.js?v=2');
+    const space=html.indexOf('/season-space.js?v=3');
+    const socket=html.indexOf('/socket.io/socket.io.js?v=season2-2');
+    const adapter=html.indexOf('/season-socket-adapter.js?v=3');
     assert(space>=0&&socket>space&&adapter>socket, file+' missing season-aware transport');
   }
 });
