@@ -681,7 +681,13 @@
     async function guardPage(role) {
         try {
             const user = await getCurrentUser();
-            const logicalTable = normalizeTableCode(new URL(global.location.href).searchParams.get('mesa') || localStorage.getItem(role === 'master' ? 'master_table_code' : 'player_table_code'));
+            const seasonPage = Boolean(global.OLSeasonSpace?.isSeasonPage());
+            const roleKey = role === 'master' ? 'master_table_code' : 'player_table_code';
+            const seasonKey = role === 'master' ? 't2_master_table_code' : 'player_table_code';
+            const savedTable = seasonPage
+                ? (localStorage.getItem(seasonKey) || localStorage.getItem(roleKey))
+                : localStorage.getItem(roleKey);
+            const logicalTable = normalizeTableCode(new URL(global.location.href).searchParams.get('mesa') || savedTable);
             const tableId = seasonScopedTable(logicalTable);
             if (!user) {
                 global.location.replace(portalURL(logicalTable, 'Entre com sua conta Google para continuar.'));
@@ -706,6 +712,14 @@
             );
             const allowed = tableSnapshot.exists() && memberSnapshot.exists()
                 && (role !== 'master' || tableSnapshot.data().ownerUid === user.uid || memberSnapshot.data().role === 'master');
+            if (!allowed && role === 'master' && seasonPage && isBootstrapMaster(user)) {
+                // A master may open the dedicated season page directly, before
+                // creating its season-specific table through the login portal.
+                // preparePortal performs the usual Firestore owner/member checks.
+                await preparePortal('master', logicalTable, 'temporada');
+                document.documentElement.classList.remove('firebase-auth-pending');
+                return true;
+            }
             if (!allowed) {
                 global.location.replace(portalURL(logicalTable, 'Sua conta nao possui acesso a essa mesa.'));
                 return false;
