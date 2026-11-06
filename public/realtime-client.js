@@ -54,6 +54,7 @@
             this._disconnectTimers = new Map();
             const urlTable = new URL(global.location.href).searchParams.get('mesa');
             this._table = normalizeTableCode(urlTable || 'PADRAO');
+            this._season = Boolean(global.OLSeasonSpace && global.OLSeasonSpace.isSeasonPage());
             this._open();
         }
 
@@ -148,6 +149,7 @@
             const url = new URL('./index.html', global.location.href);
             url.search = '';
             url.searchParams.set('mesa', table);
+            if (this._season) url.searchParams.set('temporada', '2');
             url.searchParams.set('aviso', 'Você foi removido desta mesa pelo mestre.');
             global.setTimeout(() => global.location.replace(url.href), 0);
             return true;
@@ -161,7 +163,20 @@
             });
         }
 
-        _dispatch(event, data) {
+        _dispatch(event, originalData) {
+            // The server knows only the physical room. Expose the friendly room
+            // name to the unchanged sheet, master and overlay event handlers.
+            const translate = value => {
+                if (!this._season || !value || typeof value !== 'object') return value;
+                if (Array.isArray(value)) return value.map(translate);
+                const next = { ...value };
+                if (typeof next.mesa === 'string' &&
+                    next.mesa === global.OLSeasonSpace.tableId(this._table, 'temporada')) {
+                    next.mesa = this._table;
+                }
+                return next;
+            };
+            const data = translate(originalData);
             if (event === 'player_kicked' && this._handlePlayerKick(data)) return;
             const playerKey = this._playerEventKey(data);
 
@@ -190,7 +205,12 @@
         _send(packet) {
             try {
                 if (packet.volatile && this._socket.bufferedAmount > 2 * 1024 * 1024) return;
-                this._socket.send(encodePacket(packet.event, packet.data));
+                let data = packet.data;
+                if (this._season && data && typeof data === 'object' && !Array.isArray(data)) {
+                    const logical = normalizeTableCode(data.mesa || this._table);
+                    data = { ...data, mesa: global.OLSeasonSpace.tableId(logical, 'temporada') };
+                }
+                this._socket.send(encodePacket(packet.event, data));
             } catch (error) {
                 if (!packet.volatile) this._queue.unshift(packet);
             }
@@ -243,7 +263,9 @@
             const protocol = global.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const url = new URL('/ws', global.location.href);
             url.protocol = protocol;
-            url.searchParams.set('mesa', this._table);
+            url.searchParams.set('mesa', this._season
+                ? global.OLSeasonSpace.tableId(this._table, 'temporada')
+                : this._table);
             url.searchParams.set('client', this.id);
 
             const protocols = firebaseToken ? ['ol-v1', `firebase.${firebaseToken}`] : [];
