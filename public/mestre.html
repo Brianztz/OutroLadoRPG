@@ -820,7 +820,13 @@
         const connectedPlayers = new Map();
         let playerRollHistory = [];
         const masterUrlParams = new URLSearchParams(window.location.search);
-        let masterTableCode = normalizeTableCode(masterUrlParams.get('mesa') || localStorage.getItem('master_table_code') || 'PADRAO');
+        const isSeasonMaster = masterUrlParams.get('temporada') === '2';
+        const masterStorageKey = key => isSeasonMaster ? 't2_' + key : key;
+        let masterTableCode = normalizeTableCode(masterUrlParams.get('mesa') || localStorage.getItem(masterStorageKey('master_table_code')) || localStorage.getItem('master_table_code') || 'PADRAO');
+        if (isSeasonMaster) {
+            document.title = 'Escudo do Mestre · Nova Temporada';
+            document.querySelector('.top-title').textContent = 'Escudo do Mestre · Nova Temporada';
+        }
         let luminaEnabled = loadLuminaAccess(masterTableCode);
         let initiativeState = loadInitiativeState();
         let monstersState = loadMonstersState();
@@ -899,7 +905,7 @@
         }
 
         function luminaStorageKey(table) {
-            return `mestre_lumina_enabled_${normalizeTableCode(table)}`;
+            return masterStorageKey(`mestre_lumina_enabled_${normalizeTableCode(table)}`);
         }
 
         function loadLuminaAccess(table) {
@@ -933,6 +939,7 @@
         function openLuminaPreview() {
             const url = new URL('./lumina/index.html',window.location.href);
             url.searchParams.set('mesa',masterTableCode);
+            if (isSeasonMaster) url.searchParams.set('temporada','2');
             window.open(url.href,'_blank','noopener');
         }
 
@@ -946,7 +953,7 @@
             if (nextTable === masterTableCode) return;
             masterTableCode = nextTable;
             luminaEnabled = loadLuminaAccess(masterTableCode);
-            localStorage.setItem('master_table_code', masterTableCode);
+            localStorage.setItem(masterStorageKey('master_table_code'), masterTableCode);
             // Keep a changed table on refresh; URL parameters take priority over storage.
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set('mesa', masterTableCode);
@@ -1020,6 +1027,7 @@
                 invite.search = '';
                 invite.searchParams.set('mesa', table);
                 invite.searchParams.set('convite', '1');
+                if (isSeasonMaster) invite.searchParams.set('temporada', '2');
                 output.value = invite.href;
                 copy.disabled = false;
                 status.textContent = 'Convite pronto! Envie o link ao jogador para entrar diretamente nesta mesa.';
@@ -1057,6 +1065,7 @@
         function openMasterOverlay() {
             const url = new URL('./overlay.html', window.location.href);
             url.searchParams.set('mesa', masterTableCode);
+            if (isSeasonMaster) url.searchParams.set('temporada', '2');
             window.open(url.href, '_blank', 'noopener');
         }
 
@@ -1142,11 +1151,11 @@
             renderPlayerRollResults();
         }
 
-        let combatModeEnabled = localStorage.getItem('mestre_combat_mode') === '1';
+        let combatModeEnabled = localStorage.getItem(masterStorageKey('mestre_combat_mode')) === '1';
 
         function setCombatMode(enabled) {
             combatModeEnabled = Boolean(enabled);
-            localStorage.setItem('mestre_combat_mode', combatModeEnabled ? '1' : '0');
+            localStorage.setItem(masterStorageKey('mestre_combat_mode'), combatModeEnabled ? '1' : '0');
             const drawer = document.getElementById('initiative-drawer');
             const button = document.getElementById('combat-mode-button');
             document.body.classList.toggle('combat-mode-active', combatModeEnabled);
@@ -1170,7 +1179,7 @@
             const selectedTab = ['monsters','catalog','clues','lumina'].includes(tab) ? tab : 'combat';
             document.querySelectorAll('.master-tab-button').forEach(button => button.classList.toggle('active', button.dataset.masterTab === selectedTab));
             document.querySelectorAll('.master-tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `master-tab-${selectedTab}`));
-            localStorage.setItem('mestre_active_tab', selectedTab);
+            localStorage.setItem(masterStorageKey('mestre_active_tab'), selectedTab);
             if (selectedTab === 'catalog') renderMasterCatalog();
             if (selectedTab === 'clues') renderMasterClues();
             if (selectedTab === 'lumina') renderLuminaControl();
@@ -1206,7 +1215,7 @@
 
         function loadCustomCatalogEntries() {
             try {
-                const saved = JSON.parse(localStorage.getItem('mestre_custom_catalog_state'));
+                const saved = JSON.parse(localStorage.getItem(masterStorageKey('mestre_custom_catalog_state')));
                 return Array.isArray(saved) ? saved.map(normalizeCustomCatalogEntry) : [];
             } catch (error) {
                 return [];
@@ -1214,7 +1223,7 @@
         }
 
         function saveCustomCatalogEntries() {
-            localStorage.setItem('mestre_custom_catalog_state', JSON.stringify(customCatalogEntries));
+            localStorage.setItem(masterStorageKey('mestre_custom_catalog_state'), JSON.stringify(customCatalogEntries));
         }
 
         function openCatalogCreator() {
@@ -1513,17 +1522,17 @@
         }
 
         function masterCluesStorageKey(table = masterTableCode) {
-            return `mestre_clues_state_${normalizeTableCode(table)}`;
+            return masterStorageKey(`mestre_clues_state_${normalizeTableCode(table)}`);
         }
 
         function getStoredMasterCluesJson(table = masterTableCode) {
             const scopedValue = localStorage.getItem(masterCluesStorageKey(table));
             if (scopedValue !== null) return scopedValue;
-            return normalizeTableCode(table) === 'PADRAO' ? localStorage.getItem('mestre_clues_state') : null;
+            return !isSeasonMaster && normalizeTableCode(table) === 'PADRAO' ? localStorage.getItem('mestre_clues_state') : null;
         }
 
         function masterCluesCloudMarkerKey(uid) {
-            return `ol_master_clues_cloud_${masterTableCode}_${uid}`;
+            return masterStorageKey(`ol_master_clues_cloud_${masterTableCode}_${uid}`);
         }
 
         function loadMasterCluesState() {
@@ -2422,7 +2431,7 @@
 
         function loadMonstersState() {
             try {
-                const saved = JSON.parse(localStorage.getItem('mestre_monsters_state'));
+                const saved = JSON.parse(localStorage.getItem(masterStorageKey('mestre_monsters_state')));
                 if (!Array.isArray(saved)) return [];
                 return saved.map((monster, index) => {
                     const maxLife = Math.max(1, safeNumber(monster.maxLife, 10));
@@ -2458,7 +2467,7 @@
         }
 
         function saveMonstersState() {
-            localStorage.setItem('mestre_monsters_state', JSON.stringify(monstersState));
+            localStorage.setItem(masterStorageKey('mestre_monsters_state'), JSON.stringify(monstersState));
         }
 
         function getMonsterRanges(value, isAttribute) {
@@ -2806,8 +2815,8 @@
 
         function loadInitiativeState() {
             try {
-                const tableStorageKey = `mestre_initiative_state_${masterTableCode}`;
-                const storedState = localStorage.getItem(tableStorageKey) || (masterTableCode === 'PADRAO' ? localStorage.getItem('mestre_initiative_state') : null);
+                const tableStorageKey = masterStorageKey(`mestre_initiative_state_${masterTableCode}`);
+                const storedState = localStorage.getItem(tableStorageKey) || (!isSeasonMaster && masterTableCode === 'PADRAO' ? localStorage.getItem('mestre_initiative_state') : null);
                 const saved = JSON.parse(storedState);
                 const entries = Array.isArray(saved && saved.entries) ? saved.entries.map((entry, index) => ({
                     id: String(entry.id || `initiative_saved_${index}`),
@@ -2823,7 +2832,7 @@
         }
 
         function saveInitiativeState() {
-            localStorage.setItem(`mestre_initiative_state_${masterTableCode}`, JSON.stringify(initiativeState));
+            localStorage.setItem(masterStorageKey(`mestre_initiative_state_${masterTableCode}`), JSON.stringify(initiativeState));
             if (socket && socket.connected) socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
         }
 
@@ -2980,6 +2989,9 @@
         function renderPlayer(rawData) {
             if (!rawData || !rawData.codigo) return;
             if (normalizeTableCode(rawData.mesa) !== masterTableCode) return;
+            // Defense in depth: only show characters from the selected edition.
+            const fromSeason = rawData.sheetType === 'temporada' || rawData.fullData?.sheetType === 'temporada';
+            if (isSeasonMaster !== fromSeason) return;
             const data = rawData;
             const code = String(data.codigo);
             connectedPlayers.set(code, data);
@@ -3082,8 +3094,8 @@
 
         function abrirFicha(code) {
             const player = connectedPlayers.get(String(code));
-            const page = player?.sheetType === 'temporada' || player?.fullData?.sheetType === 'temporada' ? 'ficha-temporada.html' : 'ficha.html';
-            document.getElementById('iframe-ficha').src = `${page}?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}`;
+            const page = isSeasonMaster ? 'ficha-temporada.html' : 'ficha.html';
+            document.getElementById('iframe-ficha').src = `${page}?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}${isSeasonMaster ? '&temporada=2' : ''}`;
             document.getElementById('modal-ficha').style.display = 'flex';
         }
 
@@ -3092,7 +3104,7 @@
             document.getElementById('iframe-ficha').src = '';
         }
 
-        localStorage.setItem('master_table_code', masterTableCode);
+        localStorage.setItem(masterStorageKey('master_table_code'), masterTableCode);
         updateMasterTableUI();
 
         socket.on('connect', () => {
@@ -3139,7 +3151,7 @@
         initializeMasterCluesCloudSync();
         renderLuminaControl();
         setCombatMode(combatModeEnabled);
-        switchMasterTab(localStorage.getItem('mestre_active_tab'));
+        switchMasterTab(localStorage.getItem(masterStorageKey('mestre_active_tab')));
     </script>
 </body>
 </html>
