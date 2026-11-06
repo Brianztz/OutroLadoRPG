@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escudo do Mestre</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script>
+        // Links antigos da nova temporada continuam funcionando.
+        if (new URLSearchParams(window.location.search).get('temporada') === '2') {
+            const target = new URL('./mestre-temporada.html', window.location.href);
+            window.location.replace(target.href);
+        }
+    </script>
     <script src="/season-space.js?v=2"></script>
     <script src="firebase-client.js?v=season2-1"></script>
     <script>
@@ -453,12 +460,10 @@
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
         @media (max-width: 850px) { body, body.combat-mode-active { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 0; } .initiative-drawer { top: 10px; right: 10px; width: calc(100vw - 20px); height: calc(100vh - 20px); } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields, .clue-audio-fields { grid-template-columns: 1fr; } .clue-type-switch { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
     </style>
-    <link rel="stylesheet" href="/temporada/master-theme.css?v=1">
 </head>
 <body>
     <header class="mestre-top-bar">
         <div>
-            <span class="master-season-kicker">OUTRO LADO / NOVA TEMPORADA</span>
             <h1 class="top-title">Escudo do Mestre</h1>
             <div class="connection-info"><span id="connection-dot" class="connection-dot"></span><span id="connection-text">Conectando ao servidor...</span></div>
         </div>
