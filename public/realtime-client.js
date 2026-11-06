@@ -4,7 +4,7 @@
     if (typeof global.io === 'function') return;
 
     const PLAYER_DISCONNECT_GRACE_MS = 4500;
-    const GUARDED_PAGE = /\/(?:ficha|ficha-temporada|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
+    const GUARDED_PAGE = /\/(?:ficha|ficha-temporada|mestre|mestre-temporada)(?:\.html)?\/?$/i.test(global.location.pathname);
     const PLAYER_PAGE = /\/(?:ficha|ficha-temporada)(?:\.html)?\/?$/i.test(global.location.pathname);
 
     function normalizeTableCode(value) {
