@@ -18,7 +18,7 @@ function page(pathname) {
 
 test('same public table code has different physical IDs and does not collide at 40 characters',()=>{
   const classic = page('/mestre.html?mesa=AURORA');
-  const season = page('/mestre.html?mesa=AURORA&temporada=2');
+  const season = page('/mestre-temporada.html?mesa=AURORA');
   assert.equal(classic.window.OLSeasonSpace.isSeasonPage(),false);
   assert.equal(season.window.OLSeasonSpace.isSeasonPage(),true);
   assert.equal(classic.window.OLSeasonSpace.tableId('AURORA'),'AURORA');
@@ -65,7 +65,7 @@ test('Cloudflare websocket sends season packets only to season room and translat
 });
 
 test('native Socket.IO adapter scopes traffic on local server without changing classic',()=>{
-  const season=page('/mestre.html?mesa=AURORA&temporada=2');
+  const season=page('/mestre-temporada.html?mesa=AURORA');
   const calls=[],handlers={};
   const original=()=>({
     emit(event,data){calls.push({event,data});return this;},
@@ -87,7 +87,11 @@ test('native Socket.IO adapter scopes traffic on local server without changing c
 });
 
 test('portal and master preserve edition across login, invites and embedded player sheets',()=>{
-  const portal=load('public/index.html'),master=load('public/mestre.html');
+  const portal=load('public/index.html'),master=load('public/mestre-temporada.html'),classic=load('public/mestre.html');
+  assert(portal.includes("'./mestre-temporada.html'"));
+  assert(classic.includes("'./mestre-temporada.html'"));
+  assert(!classic.includes('href="/temporada/master-theme.css?v=1"'));
+  assert(master.includes('href="/temporada/master-theme.css?v=1"'));
   assert(portal.includes("preparePortal(role, table, seasonSelect.value)"));
   assert(portal.includes("seasonSelect.disabled = true"));
   assert(portal.includes("destination.searchParams.set('temporada', '2')"));
@@ -110,11 +114,24 @@ test('Firebase edition identifiers isolate membership, characters and master clu
 });
 
 test('all season realtime entry points load the namespace first',()=>{
-  for(const file of ['public/mestre.html','public/overlay.html','public/lumina/index.html','public/ficha-temporada.html']){
+  for(const file of ['public/mestre-temporada.html','public/overlay.html','public/lumina/index.html','public/ficha-temporada.html']){
     const html=load(file);
     const space=html.indexOf('/season-space.js?v=2');
     const socket=html.indexOf('/socket.io/socket.io.js?v=season2-1');
     const adapter=html.indexOf('/season-socket-adapter.js?v=2');
     assert(space>=0&&socket>space&&adapter>socket, file+' missing season-aware transport');
   }
+});
+
+test('season master route is guarded, authenticated and season-aware even without URL edition marker',()=>{
+ const firebase=load('public/firebase-client.js');
+ const realtime=load('public/realtime-client.js');
+ const season=page('/mestre-temporada.html?mesa=AURORA');
+ assert.equal(season.window.OLSeasonSpace.isSeasonPage(),true);
+ assert.equal(season.window.OLSeasonSpace.tableId('AURORA'),'T2_AURORA');
+ assert(firebase.includes('mestre|mestre-temporada'));
+ assert(realtime.includes('mestre|mestre-temporada'));
+ const html=load('public/mestre-temporada.html');
+ assert(html.includes('const isSeasonMaster = true;'));
+ assert(html.includes('OLFirebase.guardPage(\'master\')'));
 });
