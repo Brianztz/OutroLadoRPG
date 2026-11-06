@@ -200,6 +200,7 @@ function compactPlayer(data) {
         codigo: normalizePlayerCode(data && (data.codigo || data.id)),
         id: normalizePlayerCode(data && (data.codigo || data.id)),
         mesa: normalizeTableCode(data && data.mesa),
+        sheetType: data && data.sheetType === 'temporada' ? 'temporada' : 'classic',
         nome: String(data && data.nome || '').slice(0, 120),
         foto: String(data && data.foto || '').slice(0, 1_700_000),
         corOverlay: String(data && data.corOverlay || '#8bccf6').slice(0, 24),
