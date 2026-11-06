@@ -416,3 +416,50 @@
   color:#f3b59b;
   letter-spacing:.035em;
 }
+
+
+/* TEMPORADA RESPONSIVA — escala uniforme e enquadramento sem compressão.
+   A arte principal mantém a proporção 1920×909; o conteúdo fica centralizado
+   em monitores largos, notebooks e janelas redimensionadas. */
+#page-principal:not([hidden]){
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+  width:100%;
+  min-height:100dvh;
+  height:100dvh;
+  padding:0;
+  margin:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#853d2a #0b0908;
+  background:#070707;
+}
+#page-principal .viewport{
+  flex:0 0 auto;
+  margin:auto;
+  transition:none;
+}
+/* O desenho do Inventário e dos Rituais não deve ser esticado para
+   preencher telas 16:10, 4:3, ultrawide ou modo retrato. */
+#page-inventario:not([hidden]),
+#page-rituais:not([hidden]){
+  background-size:contain;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+/* O zoom opcional mantém proporções e fornece rolagem se a folha crescer. */
+body.season-readable-zoom #page-principal:not([hidden]){
+  overflow:auto;
+}
+#fit-mode[aria-pressed="true"]{
+  border-color:#cf694d;
+  color:#fff6ec;
+  background:#6e2519;
+}
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
+  /* A folha de 1920px é substituída pelo layout vertical mobile/tablet.
+     As regras específicas ficam em mobile.css. */
+  #page-principal .viewport{transition:none}
+}
