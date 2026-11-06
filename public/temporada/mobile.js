@@ -6,7 +6,7 @@
   'use strict';
   const root=document.getElementById('mobile-sheet');
   if(!root||!window.matchMedia)return;
-  const media=window.matchMedia('(max-width: 767px)');
+  const media=window.matchMedia('(max-width: 1199px), (max-width: 1399px) and (orientation: portrait)');
   const byId=id=>document.getElementById(id);
   const originals=new Map();
   const labels={forca:'FORÇA',agilidade:'AGILIDADE',vigor:'VIGOR',intelecto:'INTELECTO',presenca:'PRESENÇA'};
