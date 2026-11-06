@@ -795,11 +795,13 @@
         let initiativeState = { entries: [], activeId: null, round: 0, started: false };
         const overlayUrlParams = new URLSearchParams(window.location.search);
         const overlayTableFromUrl = overlayUrlParams.get('mesa');
+        const seasonOverlay = overlayUrlParams.get('temporada') === '2';
+        const overlayStorageKey = key => seasonOverlay ? 't2_' + key : key;
         let overlayTablePinned = Boolean(overlayTableFromUrl);
-        let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('overlay_table_code') || localStorage.getItem('master_table_code') || 'PADRAO');
+        let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem(overlayStorageKey('overlay_table_code')) || localStorage.getItem(overlayStorageKey('master_table_code')) || 'PADRAO');
         let stablePlayerOrder = loadPlayerOrder(tableCode);
         let manuallyHiddenPlayers = loadHiddenPlayers(tableCode);
-        localStorage.setItem('overlay_table_code', tableCode);
+        localStorage.setItem(overlayStorageKey('overlay_table_code'), tableCode);
         const ammoIcons = {
             light: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ4l-yL1koYZgphvunMSkAIAG1b5Y-kRGD1FDCa4NYXgUmnK5zd0lQ4L2rXGGR7fVcqMzyi7zeGl4uALRwnSciJTRO_RoeGpnM0MvHcQg6B8VAP9FYJXM7loiWxw5M4P1ppT3Y7fI988i66gvHyKmLwO1FXdqgIisZUkrT5t3jT4swFn2mtBU0YN_HDIlj/s320/Muni%C3%A7%C3%A3o%20de%20Pistola.png',
             long: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4Gbg5h1YE1QbOrGtbUDGne4ND4r-bblO6TSVF97zK69AzvJHlwTtM3ywhUCKpYJn8rlpjcskhnD92w9nRcNTAI7QO-1Ah_VkvT0LCr5GK-_BonkUnfQrZM9bY9rHaKWn5Pc0QiCBt5ISLZg4GiwYGd8jXoMjrkoMHCP4jzBDc_l7t9Fh3jfkj_SG8m1_E/s320/Muni%C3%A7%C3%A3o%20Longa.png',
@@ -1022,7 +1024,7 @@
         }
 
         function playerOrderStorageKey(table) {
-            return `overlay_player_order_${normalizeTableCode(table)}`;
+            return overlayStorageKey(`overlay_player_order_${normalizeTableCode(table)}`);
         }
 
         function loadPlayerOrder(table) {
@@ -1040,7 +1042,7 @@
         }
 
         function hiddenPlayersStorageKey(table) {
-            return `overlay_hidden_players_${normalizeTableCode(table)}`;
+            return overlayStorageKey(`overlay_hidden_players_${normalizeTableCode(table)}`);
         }
 
         function loadHiddenPlayers(table) {
@@ -1123,12 +1125,12 @@
             const nextTable = normalizeTableCode(value);
             overlayTableCode.textContent = nextTable;
             if (nextTable === tableCode) {
-                localStorage.setItem('overlay_table_code', nextTable);
+                localStorage.setItem(overlayStorageKey('overlay_table_code'), nextTable);
                 return;
             }
             hideClueInspection();
             tableCode = nextTable;
-            localStorage.setItem('overlay_table_code', tableCode);
+            localStorage.setItem(overlayStorageKey('overlay_table_code'), tableCode);
             stablePlayerOrder = loadPlayerOrder(tableCode);
             manuallyHiddenPlayers = loadHiddenPlayers(tableCode);
             players.clear();
