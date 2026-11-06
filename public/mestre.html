@@ -9,6 +9,7 @@
         // Links antigos da nova temporada continuam funcionando.
         if (new URLSearchParams(window.location.search).get('temporada') === '2') {
             const target = new URL('./mestre-temporada.html', window.location.href);
+            target.search = window.location.search;
             window.location.replace(target.href);
         }
     </script>
