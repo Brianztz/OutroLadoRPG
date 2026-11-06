@@ -122,3 +122,33 @@ test('mobile inventory CSS keeps the desktop untouched with a dedicated breakpoi
  assert(css.includes('body.is-mobile-season #inventory-ui .inventory-equipped'));
  assert(css.includes('body.is-mobile-season #mobile-inventory-clues'));
 });
+
+
+test('compact season combat card separates readable attack, damage and critical values',async()=>{
+  const app=await setup();
+  try{
+    const {w}=app;
+    const card=w.document.querySelector('#combat-attacks .combat-card-compact');
+    assert(card,'expected default unarmed attack card');
+    assert.equal(card.querySelector('.combat-card-head strong').textContent,'Ataque Desarmado');
+    const metrics=[...card.querySelectorAll('.combat-roll-row > *')];
+    assert.equal(metrics.length,3);
+    for(const [i,label] of ['ATAQUE','DANO','CRÍTICO'].entries()){
+      const item=metrics[i];
+      assert(item.querySelector('.combat-metric-value')?.textContent.trim(),'value missing for '+label);
+      assert.equal(item.querySelector('.combat-metric-label')?.textContent,label);
+      assert(item.getAttribute('aria-label').startsWith(label+': '));
+    }
+    assert.equal(metrics[0].tagName,'BUTTON','attack action must remain interactive');
+    assert.equal(metrics[1].tagName,'BUTTON','damage action must remain interactive');
+    assert.equal(metrics[2].tagName,'SPAN','critical is informational');
+    const sheetCSS=fs.readFileSync(path.join(root,'public/temporada/sheet.css'),'utf8');
+    const mobileCSS=fs.readFileSync(path.join(root,'public/temporada/mobile.css'),'utf8');
+    assert(sheetCSS.includes('/* Leitura acessível dos ataques'));
+    assert(sheetCSS.includes('.combat-metric-value'));
+    assert(sheetCSS.includes('white-space:normal'));
+    assert(mobileCSS.includes('/* Cartões de ataque legíveis em telas sensíveis ao toque.'));
+    assert(mobileCSS.includes('grid-column:1/-1!important'));
+    assert.equal(app.errors.length,0);
+  }finally{app.dom.window.close();}
+});
