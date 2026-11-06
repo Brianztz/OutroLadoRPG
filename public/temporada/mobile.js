@@ -10,7 +10,7 @@
   const byId=id=>document.getElementById(id);
   const originals=new Map();
   const labels={forca:'FORÇA',agilidade:'AGILIDADE',vigor:'VIGOR',intelecto:'INTELECTO',presenca:'PRESENÇA'};
-  let active=false,lastAvatar=null;
+  let active=false,lastAvatar=null,inventoryClueDrawer=null;
 
   function move(node,target){
     if(!node||!target)return;
@@ -32,6 +32,19 @@
     const img=byId('mobile-avatar-img'),placeholder=byId('mobile-avatar-placeholder');
     if(value){img.src=value;img.hidden=false;placeholder.hidden=true;}
     else{img.removeAttribute('src');img.hidden=true;placeholder.hidden=false;}
+  }
+  function mountInventoryClues(){
+    const ui=byId('inventory-ui'),clues=byId('inventory-clues');
+    if(!ui||!clues||inventoryClueDrawer)return;
+    const details=document.createElement('details');
+    details.id='mobile-inventory-clues';
+    const summary=document.createElement('summary');
+    summary.textContent='PISTAS';
+    summary.setAttribute('aria-label','Mostrar ou esconder pistas do inventário');
+    details.appendChild(summary);
+    ui.appendChild(details);
+    move(clues,details);
+    inventoryClueDrawer=details;
   }
   function mount(){
     if(active)return;
@@ -65,6 +78,7 @@
     const resources=byId('mobile-resources-mount');
     move(document.querySelector('.resource-widget[aria-label="Vida"]'),resources);
     move(document.querySelector('.resource-widget[aria-label="Sanidade"]'),resources);
+    mountInventoryClues();
     root.hidden=false;
     document.body.classList.add('is-mobile-season');
     lastAvatar=null;refreshAvatar();
@@ -75,6 +89,7 @@
     for(const [node,mark] of originals){
       if(mark.parentNode)mark.parentNode.insertBefore(node,mark);
     }
+    if(inventoryClueDrawer){inventoryClueDrawer.remove();inventoryClueDrawer=null;}
     root.hidden=true;
     active=false;
   }
