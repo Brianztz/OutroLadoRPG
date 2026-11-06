@@ -824,6 +824,12 @@
         const isSeasonMaster = masterUrlParams.get('temporada') === '2';
         const masterStorageKey = key => isSeasonMaster ? 't2_' + key : key;
         let masterTableCode = normalizeTableCode(masterUrlParams.get('mesa') || localStorage.getItem(masterStorageKey('master_table_code')) || localStorage.getItem('master_table_code') || 'PADRAO');
+        const seasonKicker = document.querySelector('.master-season-kicker');
+        if (seasonKicker) {
+            seasonKicker.textContent = isSeasonMaster
+                ? 'OUTRO LADO / NOVA TEMPORADA'
+                : 'OUTRO LADO / 1ª TEMPORADA';
+        }
         if (isSeasonMaster) {
             document.title = 'Escudo do Mestre · Nova Temporada';
             document.querySelector('.top-title').textContent = 'Escudo do Mestre · Nova Temporada';
