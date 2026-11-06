@@ -433,3 +433,67 @@
   body.is-mobile-season #inventory-ui .inventory-equipped,
   body.is-mobile-season #mobile-inventory-clues{width:min(100%,255px)!important}
 }
+
+
+/* Cartões de ataque legíveis em telas sensíveis ao toque. */
+@media (max-width:767px){
+  .mobile-sheet #combat-area .combat-card.combat-card-compact{
+    grid-template-columns:60px minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    gap:10px 9px!important;
+    min-height:0!important;
+    padding:11px!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-weapon-image{
+    grid-column:1!important;
+    grid-row:1!important;
+    width:58px!important;
+    height:58px!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-card-head{
+    grid-column:2!important;
+    grid-row:1!important;
+    min-width:0!important;
+    align-items:center;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-card-head strong{
+    font-size:17px!important;
+    line-height:1.25!important;
+    white-space:normal!important;
+    text-align:left!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row{
+    grid-column:1/-1!important;
+    grid-row:2!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:7px!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row > button,
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row > span{
+    min-height:59px!important;
+    padding:8px 7px!important;
+    align-items:center!important;
+    text-align:center!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row .combat-metric-value{
+    font:800 17px/1.13 Arial,sans-serif!important;
+    letter-spacing:0!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row .combat-metric-label{
+    font:800 11px/1.2 Arial,sans-serif!important;
+    color:#f3b59b!important;
+    letter-spacing:.04em;
+  }
+}
+@media (max-width:350px){
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row{
+    gap:4px!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row > button,
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row > span{
+    padding:7px 4px!important;
+  }
+  .mobile-sheet #combat-area .combat-card-compact .combat-roll-row .combat-metric-value{
+    font-size:15px!important;
+  }
+}
