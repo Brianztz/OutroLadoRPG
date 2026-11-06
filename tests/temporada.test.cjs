@@ -98,6 +98,9 @@ test('mobile inventory follows reference without duplicating items or losing clu
   w.document.getElementById('tab-inventario').click();
   await delay(20);
   assert.equal(w.document.getElementById('page-inventario').hidden,false);
+  assert.equal(w.document.getElementById('page-principal').hidden,true,'Principal deve ficar oculta no Inventário');
+  assert.equal(w.document.getElementById('page-rituais').hidden,true,'Rituais deve ficar oculta no Inventário');
+  assert.equal(w.document.getElementById('mobile-sheet').closest('#page-principal').hidden,true);
   narrow=false;onChange();
   assert.equal(w.document.getElementById('mobile-inventory-clues'),null);
   assert.equal(originalClues.parentElement.id,'inventory-ui');
@@ -111,6 +114,10 @@ test('mobile inventory CSS keeps the desktop untouched with a dedicated breakpoi
  const css=fs.readFileSync(path.join(root,'public/temporada/mobile.css'),'utf8');
  assert(css.includes('@media (max-width:767px)'));
  assert(css.includes('body.is-mobile-season #page-inventario:not([hidden])'));
+ assert(css.includes('body.is-mobile-season .layout#page-principal:not([hidden])'));
+ assert(css.includes('body.is-mobile-season #page-principal[hidden]'));
+ assert(css.includes('body.is-mobile-season #mobile-sheet:not([hidden])'));
+ assert(css.includes('body.is-mobile-season #mobile-sheet[hidden]'));
  assert(css.includes('body.is-mobile-season #inventory-grid .item-slot'));
  assert(css.includes('body.is-mobile-season #inventory-ui .inventory-equipped'));
  assert(css.includes('body.is-mobile-season #mobile-inventory-clues'));
