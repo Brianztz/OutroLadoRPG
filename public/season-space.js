@@ -20,7 +20,8 @@
   function isSeasonPage() {
     const path = String(global.location?.pathname || '');
     if (/\/ficha-temporada(?:\.html)?\/?$/i.test(path)) return true;
-    if (!/\/(?:mestre|overlay)(?:\.html)?\/?$/i.test(path)) return false;
+    if (!/\/(?:mestre|overlay)(?:\.html)?\/?$/i.test(path) &&
+        !/\/lumina\/index(?:\.html)?\/?$/i.test(path)) return false;
     return new URLSearchParams(global.location.search).get('temporada') === '2';
   }
   function tableId(value, edition) {
