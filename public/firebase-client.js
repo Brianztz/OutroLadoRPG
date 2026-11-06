@@ -19,7 +19,7 @@
     const PORTAL_ACCESS_TTL_MS = 2 * 60 * 1000;
     const CHARACTER_CHUNK_SIZE = 180000;
     const CHARACTER_MAX_CHUNKS = 48;
-    const guardedPage = /\/(?:ficha|ficha-temporada|mestre)(?:\.html)?\/?$/i.test(global.location.pathname);
+    const guardedPage = /\/(?:ficha|ficha-temporada|mestre|mestre-temporada)(?:\.html)?\/?$/i.test(global.location.pathname);
     if (guardedPage) document.documentElement.classList.add('firebase-auth-pending');
 
     const style = document.createElement('style');
