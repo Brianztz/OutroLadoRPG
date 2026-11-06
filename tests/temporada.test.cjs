@@ -71,3 +71,47 @@ test('mobile layout reuses original controls, preserves skills and switches back
   assert.equal(app.errors.length,0);
  }finally{app.dom.window.close();}
 });
+
+
+test('mobile inventory follows reference without duplicating items or losing clue controls on desktop',async()=>{
+ const app=await setup();
+ try{
+  const {w}=app;
+  let narrow=true,onChange;
+  w.matchMedia=()=>({get matches(){return narrow;},addEventListener(event,callback){if(event==='change')onChange=callback;}});
+  const originalClues=w.document.getElementById('inventory-clues');
+  const originalGrid=w.document.getElementById('inventory-grid');
+  const originalWeaponSlot=w.document.getElementById('inventory-slot-weapon');
+  w.eval(fs.readFileSync(path.join(root,'public/temporada/mobile.js'),'utf8'));
+  const details=w.document.getElementById('mobile-inventory-clues');
+  assert(details,'clue disclosure should exist on mobile');
+  assert.equal(details.open,false);
+  assert.equal(details.querySelector('#inventory-clues'),originalClues);
+  assert.equal(w.document.getElementById('inventory-grid'),originalGrid);
+  assert.equal(w.document.getElementById('inventory-slot-weapon'),originalWeaponSlot);
+  const state=w.SeasonSheet.getState();
+  state.inventory={items:[{id:'test-weapon',name:'Machete',type:'weapon',location:'equipment',quantity:1,weight:1,image:''}],equipped:{weapon:'test-weapon',armor:null,important:null,backpack:null}};
+  w.SeasonSheet.applyState(state);
+  assert(originalGrid.textContent.includes('Machete'),'existing inventory grid renders item name');
+  assert(originalWeaponSlot.textContent.includes('Machete'),'equipped slot reflects the same item');
+  assert(w.document.getElementById('inventory-load-text').textContent.includes('1 / 5'));
+  w.document.getElementById('tab-inventario').click();
+  await delay(20);
+  assert.equal(w.document.getElementById('page-inventario').hidden,false);
+  narrow=false;onChange();
+  assert.equal(w.document.getElementById('mobile-inventory-clues'),null);
+  assert.equal(originalClues.parentElement.id,'inventory-ui');
+  assert.equal(w.document.getElementById('inventory-grid'),originalGrid);
+  narrow=true;onChange();
+  assert.equal(w.document.getElementById('mobile-inventory-clues').querySelector('#inventory-clues'),originalClues);
+  assert.equal(app.errors.length,0);
+ }finally{app.dom.window.close();}
+});
+test('mobile inventory CSS keeps the desktop untouched with a dedicated breakpoint',()=>{
+ const css=fs.readFileSync(path.join(root,'public/temporada/mobile.css'),'utf8');
+ assert(css.includes('@media (max-width:767px)'));
+ assert(css.includes('body.is-mobile-season #page-inventario:not([hidden])'));
+ assert(css.includes('body.is-mobile-season #inventory-grid .item-slot'));
+ assert(css.includes('body.is-mobile-season #inventory-ui .inventory-equipped'));
+ assert(css.includes('body.is-mobile-season #mobile-inventory-clues'));
+});
