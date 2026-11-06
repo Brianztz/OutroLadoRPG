@@ -2,7 +2,7 @@
  * Desktop permanece com seu CSS original e todos os mesmos dados e eventos.
  */
 #mobile-sheet[hidden]{display:none!important}
-@media (max-width:767px){
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
   html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
   body.is-mobile-season{display:block!important;width:100%;background:#060505!important}
   body.is-mobile-season .layout#page-principal:not([hidden]){
@@ -216,7 +216,7 @@
 /* MOBILE INVENTORY LAYOUT — USER REFERENCE 2026-11-05
  * Mesmos controles e dados da versão desktop; apenas posição/apresentação.
  */
-@media (max-width:767px){
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
   body.is-mobile-season #page-inventario:not([hidden]){
     position:relative!important;inset:auto!important;display:flex!important;
     flex-direction:column;align-items:center;overflow:visible!important;
@@ -436,7 +436,7 @@
 
 
 /* Cartões de ataque legíveis em telas sensíveis ao toque. */
-@media (max-width:767px){
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
   .mobile-sheet #combat-area .combat-card.combat-card-compact{
     grid-template-columns:60px minmax(0,1fr)!important;
     grid-template-rows:auto auto!important;
@@ -495,5 +495,128 @@
   }
   .mobile-sheet #combat-area .combat-card-compact .combat-roll-row .combat-metric-value{
     font-size:15px!important;
+  }
+}
+
+
+/* TABLET E RITUAIS RESPONSIVOS: os elementos deixam de ser miniaturizados
+   quando uma folha 1920×909 seria pequena demais para leitura. */
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
+  body.is-mobile-season #page-rituais:not([hidden]){
+    display:block!important;
+    position:relative!important;
+    inset:auto!important;
+    width:min(100%,720px)!important;
+    min-height:100dvh!important;
+    height:auto!important;
+    margin:0 auto!important;
+    padding:94px 18px calc(46px + env(safe-area-inset-bottom,0px))!important;
+    overflow:visible!important;
+    background:#070606!important;
+    border-left:2px solid #b92b1d;
+    border-right:2px solid #b92b1d;
+    box-shadow:inset 5px 0 0 #200b09,inset -5px 0 0 #200b09;
+  }
+  body.is-mobile-season #ritual-canvas{
+    display:flex!important;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:auto!important;
+    transform:none!important;
+    flex-direction:column;
+    align-items:stretch;
+    gap:18px;
+    pointer-events:auto!important;
+  }
+  body.is-mobile-season #ritual-library,
+  body.is-mobile-season #ritual-cursed{
+    position:relative!important;
+    inset:auto!important;
+    left:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100%!important;
+    height:auto!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:14px!important;
+    background:#130c0b;
+    border:1px solid #8b3728;
+    border-radius:4px;
+    box-shadow:none!important;
+  }
+  body.is-mobile-season #ritual-library header{
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  body.is-mobile-season #ritual-total{
+    font:800 20px Georgia,serif;
+  }
+  body.is-mobile-season #ritual-acquire{
+    min-height:42px;
+    padding:10px 14px!important;
+    font-size:14px!important;
+  }
+  body.is-mobile-season #ritual-saved-list{
+    width:100%;
+    min-height:140px;
+    max-height:44dvh;
+    overflow-y:auto;
+  }
+  body.is-mobile-season #ritual-cursed{
+    text-align:left!important;
+  }
+  body.is-mobile-season #ritual-cursed h2{
+    font-size:18px!important;
+  }
+  body.is-mobile-season #ritual-cursed-slot{
+    margin:8px 0!important;
+  }
+  body.is-mobile-season #ritual-detail-panel:not(.ritual-detail-closed){
+    display:flex!important;
+    position:relative!important;
+    left:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100%!important;
+    height:auto!important;
+    max-height:none!important;
+    min-height:240px;
+    transform:none!important;
+    margin:0!important;
+    opacity:1!important;
+    visibility:visible!important;
+    box-shadow:none!important;
+  }
+  body.is-mobile-season #ritual-detail-panel.ritual-detail-closed{
+    display:none!important;
+  }
+  body.is-mobile-season #ritual-detail-content{
+    min-height:160px;
+    max-height:46dvh;
+  }
+  body.is-mobile-season #ritual-acquire-dialog{
+    max-width:calc(100vw - 20px)!important;
+  }
+}
+@media (min-width:768px) and (max-width:1199px),
+       (min-width:1200px) and (max-width:1399px) and (orientation:portrait){
+  body.is-mobile-season .mobile-sheet{
+    width:min(100%,720px);
+    padding-left:24px;
+    padding-right:24px;
+  }
+  body.is-mobile-season #page-inventario:not([hidden]){
+    width:min(100%,720px)!important;
+  }
+  body.is-mobile-season #mobile-attrs-mount{
+    gap:10px;
+  }
+  body.is-mobile-season .mobile-overview{
+    gap:20px;
   }
 }
