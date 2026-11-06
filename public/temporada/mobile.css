@@ -262,14 +262,14 @@
   }
   body.is-mobile-season #inventory-ui .inventory-bag{
     display:block!important;position:relative!important;inset:auto!important;
-    left:auto!important;top:auto!important;width:min(100%,270px)!important;
+    left:auto!important;top:auto!important;width:clamp(235px,66vw,275px)!important;
     max-width:100%!important;margin:0!important;padding:0!important;
     pointer-events:auto!important;text-align:left!important
   }
   body.is-mobile-season #inventory-load{
     display:block!important;position:relative!important;inset:auto!important;
     top:auto!important;left:auto!important;
-    width:100%!important;height:22px!important;margin:0 0 22px!important;
+    width:100%!important;height:22px!important;margin:0 0 16px!important;
     border:1px solid #a84624!important;border-radius:4px!important;
     background:#1a0a07!important;box-shadow:none!important
   }
@@ -283,14 +283,14 @@
   }
   body.is-mobile-season .inventory-bag header{
     display:flex!important;align-items:center!important;justify-content:space-between!important;
-    gap:9px;margin:0 0 8px!important
+    gap:9px;margin:0 0 6px!important
   }
   body.is-mobile-season #inventory-bag-title{
     margin:0!important;color:#f7e8e0!important;white-space:normal!important;
     font:900 17px/1.2 Georgia,serif!important
   }
   body.is-mobile-season #inventory-toggle{
-    flex:0 0 auto;min-width:42px!important;min-height:43px!important;
+    flex:0 0 auto;min-width:42px!important;min-height:38px!important;
     margin:0!important;padding:5px 8px!important;border:1px solid #8d3020!important;
     border-radius:3px!important;color:#eed0bd!important;background:#160c0b!important;
     font:900 17px/1 Arial,sans-serif!important
@@ -316,7 +316,7 @@
   body.is-mobile-season #inventory-grid .item-slot{
     display:flex!important;position:relative!important;flex-direction:column!important;
     align-items:center!important;justify-content:center!important;
-    width:100%!important;height:84px!important;min-width:0!important;min-height:0!important;
+    width:100%!important;height:77px!important;min-width:0!important;min-height:0!important;
     max-width:100%!important;margin:0!important;padding:5px 3px 4px!important;
     gap:3px!important;border:1px solid #a6331d!important;border-radius:0!important;
     background:#090707!important;color:#f3e4da!important;overflow:hidden!important;
@@ -356,16 +356,13 @@
     text-align:center
   }
   body.is-mobile-season #inventory-grid .empty-item:not(.filled){background:#080707!important}
-  body.is-mobile-season .inventory-hint{
-    margin:10px 0 0!important;color:#ab8f83!important;
-    font:11px/1.4 Arial,sans-serif!important
-  }
+  body.is-mobile-season .inventory-hint{display:none!important}
   body.is-mobile-season #inventory-ui .inventory-equipped{
     display:flex!important;position:relative!important;inset:auto!important;
     left:auto!important;top:auto!important;flex-direction:column!important;
     align-items:flex-start!important;justify-content:flex-start!important;
-    gap:33px!important;width:min(100%,270px)!important;max-width:100%!important;
-    margin:26px auto 0!important;padding:0!important;
+    gap:18px!important;width:min(100%,275px)!important;max-width:100%!important;
+    margin:20px auto 0!important;padding:0!important;
     text-align:left!important;pointer-events:auto!important
   }
   body.is-mobile-season #inventory-ui .inventory-equipped > div{
@@ -378,8 +375,8 @@
   }
   body.is-mobile-season #inventory-ui .equipped-slot{
     display:flex!important;position:relative!important;
-    width:80px!important;height:84px!important;min-width:80px!important;
-    min-height:84px!important;max-width:80px!important;
+    width:80px!important;height:78px!important;min-width:80px!important;
+    min-height:78px!important;max-width:80px!important;
     margin:0 0 0 26px!important;padding:5px 3px!important;gap:3px!important;
     border:1px solid #a6331d!important;border-radius:0!important;
     background:#0a0807!important;color:#fff!important
