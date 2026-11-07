@@ -82,3 +82,29 @@ test('adicionar monstro importa cópia editável sem sobrescrever monstros da me
   assert.notEqual(w.__saved[0].id,w.__saved[1].id);
  }finally{dom.window.close();}
 });
+
+
+test('os Escudos usam a regra de atributo 0=1d20, +1=2d20, -1=2d20 menor',()=>{
+ for(const page of screens){
+  const html=file(page);
+  const begin=html.indexOf('function rollMonsterD20PoolByAttribute(');
+  const end=html.indexOf('function resolveMonsterD20(',begin);
+  assert(begin>0&&end>begin,page+' precisa possuir regra de rolagem');
+  const poolFactory=new Function('Math',html.slice(begin,end)+';return rollMonsterD20PoolByAttribute;');
+  const fakeMath=Object.create(Math);
+  let rolls=[0.2,0.85,0.45], index=0;
+  fakeMath.random=()=>rolls[index++ % rolls.length];
+  const pool=poolFactory(fakeMath);
+  const neutral=pool(0);
+  assert.equal(neutral.quantity,1);
+  assert.equal(neutral.takesLowest,false);
+  const positive=pool(1);
+  assert.equal(positive.quantity,2);
+  assert.equal(positive.takesLowest,false);
+  const negative=pool(-1);
+  assert.equal(negative.quantity,2);
+  assert.equal(negative.takesLowest,true);
+  assert.equal(negative.selectedRoll,Math.min(...negative.rolls));
+  assert.equal(pool(3).quantity,4);
+ }
+});
