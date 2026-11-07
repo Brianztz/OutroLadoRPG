@@ -461,6 +461,7 @@
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
         @media (max-width: 850px) { body, body.combat-mode-active { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 0; } .initiative-drawer { top: 10px; right: 10px; width: calc(100vw - 20px); height: calc(100vh - 20px); } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields, .clue-audio-fields { grid-template-columns: 1fr; } .clue-type-switch { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
     </style>
+    <link rel="stylesheet" href="/bestiary-outrolado.css?v=1">
 </head>
 <body>
     <header class="mestre-top-bar">
@@ -550,6 +551,22 @@
             <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
             <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
         </div>
+        <details id="master-bestiary-library" class="master-bestiary-library" open>
+            <summary>CATÁLOGO DE CRIATURAS — ADAPTADAS AO OUTRO LADO</summary>
+            <div class="master-bestiary-content">
+                <p class="master-bestiary-description">Referências de nomes de Ordem Paranormal com fichas, danos, atributos e efeitos autorais do Outro Lado. Não são estatísticas nem descrições oficiais. Adicione uma cópia à sua mesa para editar e rolar normalmente.</p>
+                <div class="master-bestiary-filters" role="search" aria-label="Filtrar criaturas do bestiário">
+                    <input id="bestiary-search" type="search" placeholder="Pesquisar criatura..." aria-label="Pesquisar nome de criatura">
+                    <select id="bestiary-element" aria-label="Filtrar por elemento"><option value="">Todos os elementos</option></select>
+                    <select id="bestiary-source" aria-label="Filtrar por origem"><option value="">Todas as origens</option></select>
+                    <select id="bestiary-tier" aria-label="Filtrar por nível de ameaça"><option value="">Todas as ameaças</option></select>
+                </div>
+                <div class="master-bestiary-results"><span id="bestiary-results-count" aria-live="polite"></span></div>
+                <p id="bestiary-import-status" role="status" aria-live="polite"></p>
+                <div id="bestiary-reference-grid" class="bestiary-reference-grid" aria-label="Modelos de monstros para importar"></div>
+                <button id="bestiary-load-more" class="bestiary-load-more" type="button">MOSTRAR MAIS CRIATURAS</button>
+            </div>
+        </details>
         <div id="monsters-grid" class="monsters-grid"></div>
     </section>
 
@@ -818,6 +835,7 @@
         <iframe id="iframe-ficha" src="" title="Ficha completa do jogador"></iframe>
     </div>
 
+    <script src="/bestiary-outrolado.js?v=1"></script>
     <script src="catalog-data.js"></script>
     <script src="/socket.io/socket.io.js?v=season2-2"></script>
     <script src="/season-socket-adapter.js?v=3"></script>
@@ -3166,5 +3184,6 @@
         setCombatMode(combatModeEnabled);
         switchMasterTab(localStorage.getItem(masterStorageKey('mestre_active_tab')));
     </script>
+    <script src="/bestiary-master.js?v=1"></script>
 </body>
 </html>
