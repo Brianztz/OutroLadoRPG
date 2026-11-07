@@ -94,6 +94,69 @@
     horda:['Assédio','1d4','Um segundo inimigo próximo pode aproveitar a distração para se aproximar.'],
     controle:['Interferência','1d4','O alvo escolhe entre interromper um movimento ou revelar sua posição.']
   };
+  // Traços de cena ORIGINAIS para dar identidade aos inimigos mais conhecidos.
+  // Não reproduzem habilidades, dificuldades nem condições do livro original.
+  const signatures={
+    'zumbi-de-sangue':['Instinto Restante','Quando recebe dano, pode avançar um passo em direção à fonte do ferimento.'],
+    'zumbi-de-sangue-bestial':['Salto Impulsivo','Cruza um obstáculo baixo antes do ataque, deixando um rastro que revela a aproximação.'],
+    'aberracao-de-carne':['Membros Descompassados','Alcança dois objetos próximos na mesma rodada, mas expõe uma abertura investigável.'],
+    'aniquilacao':['Ruptura do Solo','Um ponto do cenário se despedaça. Avançar por ele requer um teste de mobilidade.'],
+    'dama-de-sangue':['Marca Rubra','Escolhe um objeto da cena e o deixa visivelmente alterado; a mudança funciona como uma pista.'],
+    'enpap-x':['Impulso Desmedido','Depois de um golpe, perde o equilíbrio e deixa um caminho seguro para flanqueamento.'],
+    'kerberos':['Guarda Violenta','Permanece diante de uma passagem e força os presentes a escolher outra rota ou atraí-lo para fora.'],
+    'minotauro':['Investida em Linha','Percorre uma linha reta; personagens atentos podem sair da trajetória e usar a velocidade contra ele.'],
+    'mulher-afogada':['Fôlego Pesado','O ar parece denso numa área curta. A sensação revela a aproximação antes de qualquer ataque.'],
+    'o-carente':['Voz Distante','Imita uma chamada vinda de um canto da sala; uma investigação identifica a origem real do som.'],
+    'o-diabo':['Oferta Inquietante','Apresenta uma escolha de risco narrativo. Nenhuma decisão remove a agência do jogador.'],
+    'tita-de-sangue':['Passos de Ruína','Cada movimento faz o chão vibrar. Um objeto frágil denuncia sua direção.'],
+    'a-marionete':['Fios de Movimento','Um personagem percebe resistência ao se mover; quebrar a linha de visão desfaz a pressão.'],
+    'aracnasita':['Ninho Inesperado','Deixa uma pequena marca no terreno. Observá-la evita uma emboscada na cena seguinte.'],
+    'carnical':['Faro do Silêncio','Segue rastros recentes, mas é atraído por sinais que os investigadores podem produzir.'],
+    'ceifador-espiral':['Trajeto Circular','Repete um caminho estranho. Mapear duas passagens revela um intervalo seguro para cruzá-lo.'],
+    'enraizado':['Raiz Movediça','Ocupa uma passagem estreita; retirar um obstáculo próximo abre uma rota alternativa.'],
+    'escutado':['Eco Acusador','Um som retorna de direção inesperada; os personagens podem localizar a origem por repetição.'],
+    'esqueleto-de-lodo':['Juntas Soltas','Ao sofrer impacto, perde parte da estrutura; fica mais fácil passar por ele até seu próximo turno.'],
+    'nidere':['Rastreador Cego','Segue um padrão repetido no chão. Despistar a trilha permite separar o grupo sem combate.'],
+    'o-deus-da-morte':['Segundo Ausente','Um relógio ou mecanismo para por um instante. Observar a falha antecipa sua próxima manifestação.'],
+    'sempiternal':['Ciclo Incompleto','Retorna à posição anterior ao final da rodada; bloquear aquele espaço altera sua rota.'],
+    'succ':['Sinal Persistente','O alvo passa a ouvir um ruído breve quando a criatura se aproxima novamente.'],
+    'anjo':['Luz Incoerente','Uma sombra aponta contra a luz. Resolver a contradição revela por onde a criatura se desloca.'],
+    'bicho-papao':['Porta Entreaberta','Um esconderijo infantil se torna desconfortável. Iluminar o local desfaz a vantagem de surpresa.'],
+    'estrangeiro':['Mensagem Deslocada','Transmite sinais sem sentido imediato. Associar dois sinais permite prever sua próxima posição.'],
+    'existido':['Memória Repetida','Aparece no mesmo lugar em momentos diferentes; identificar o padrão oferece uma pista.'],
+    'mascara-do-desespero':['Verdade Partida','Cada jogador percebe um detalhe diferente. Compartilhar observações esclarece a cena.'],
+    'o-espreitador':['Olhar de Canto','Só avança quando está fora do campo de atenção de um personagem específico.'],
+    'ocioso':['Lentidão Induzida','Uma distração banal toma o espaço. Reagir a um som familiar interrompe a hesitação.'],
+    'parasita-de-culpa':['Lembrança Intrusa','Apresenta uma memória incerta; confrontá-la com uma pista física reduz sua influência.'],
+    'rastejador-sombrio':['Rastro Oculto','Deixa vestígios em superfícies que parecem intocadas. Segui-los revela uma rota de fuga.'],
+    'silhueta':['Borda da Sombra','Uma sombra não corresponde à origem da luz; mover a iluminação expõe sua posição.'],
+    'vulto':['Reflexo Rápido','Surge em superfícies refletivas antes de aparecer no corredor correspondente.'],
+    'anomalia':['Regra Invertida','Um objeto se comporta ao contrário do esperado durante uma rodada.'],
+    'ciborgue':['Mira Instável','Identifica o último alvo que se moveu; mudar deliberadamente o ritmo atrapalha a perseguição.'],
+    'infecticidio':['Marca de Contágio','Uma superfície contaminada brilha por instantes; examiná-la revela como evitar o contato.'],
+    'o-anfitriao':['Desafio do Acaso','Escolha dois efeitos narrativos possíveis e sorteie um. Os jogadores conhecem as opções antes.'],
+    'sukkalgir':['Ruído Metálico','Um som denuncia sua passagem por uma parede fina; escutá-lo indica a direção.'],
+    'tempestuoso':['Descarga Errática','Escolhe um ponto exposto do cenário. Abrigos podem bloquear a trajetória da descarga.'],
+    'telopsia':['Imagem Interferida','Um monitor exibe um detalhe de outro local. A transmissão ajuda a localizar a criatura.'],
+    'viajante':['Passo Improvável','Troca de posição ao atravessar uma área escura; objetos deixados no caminho denunciam a troca.'],
+    'degolificada':['Silêncio Visível','Uma área fica sem eco. Jogadores atentos reconhecem a borda antes de entrar.'],
+    'amigo-imaginario':['Companhia Ausente','Um objeto muda de lugar quando ninguém o observa; registrar o ambiente esclarece o fenômeno.'],
+    'derretido':['Piso Maleável','A superfície cede sob peso concentrado; distribuir a carga permite atravessá-la.'],
+    'medusa':['Visão Fixa','Quem sustenta o olhar precisa escolher entre observar e se deslocar com segurança.'],
+    'melancolia':['Silêncio Denso','Um ambiente parece mais lento. Uma voz familiar pode orientar o grupo novamente.'],
+    'memento-mori':['Último Sinal','Um objeto marca o tempo restante de uma ameaça; investigar o objeto revela o padrão.'],
+    'o-uivar':['Chamado Distante','O grito vem de uma direção falsa. Conferir pegadas oferece um trajeto alternativo.'],
+    'rascunho':['Traço Inacabado','Parte da criatura desaparece em uma sombra; desenhar sua posição ajuda a encontrá-la.'],
+    'o-terminal':['Última Parada','Anuncia um percurso que se fecha. Descobrir qual placa mudou permite interromper o ciclo.']
+  };
+  const investigativeWeakness={
+    Sangue:'Pista sugerida: ferimentos e vestígios físicos revelam o ritmo da aproximação.',
+    Morte:'Pista sugerida: ciclos e alterações de movimento mostram quando agir.',
+    Conhecimento:'Pista sugerida: comparar testemunhos e detalhes contraditórios expõe o padrão.',
+    Energia:'Pista sugerida: isolar fontes de energia ou sinais evidencia a trajetória.',
+    Medo:'Pista sugerida: verificar a percepção em grupo reduz ambiguidades da cena.',
+    Realidade:'Pista sugerida: terreno, instinto e rotas de fuga ajudam a conter a ameaça.'
+  };
   function makeMonster(id,overrideId){
     const e=entries.find(x=>x.id===id);
     if(!e)return null;
@@ -122,13 +185,13 @@
     const damage=['','1d4+1','1d6+2','2d6+3','3d8+4','4d10+6'][tier];
     const actions=[
       {id:'basic',name:actionName,test:'Luta '+Math.min(20,base+attrs.for),damage:role==='entidade'?damage:baseDamage+'+'+tier,description:tip},
-      {id:'special',name:'Perturbação de '+e.element,test:'Vontade '+Math.min(20,base+attrs.pre),damage:'',description:descriptions[e.element]+' Esta ação não causa dano automático.'}
+      {id:'special',name:signatures[e.id]?signatures[e.id][0]:'Perturbação de '+e.element,test:'Vontade '+Math.min(20,base+attrs.pre),damage:'',description:signatures[e.id]?signatures[e.id][1]:descriptions[e.element]+' Esta ação não causa dano automático.'}
     ];
     return {
       id:overrideId||'bestiario_'+e.id+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6),
       name:e.name,life:hp,maxLife:hp,
       resistance:'Defesa sugerida '+(9+tier*2),
-      vulnerabilities:'Pistas e fraquezas a definir durante a investigação.',
+      vulnerabilities:investigativeWeakness[e.element],
       attrs,skills,
       presence:e.element==='Realidade'?'Sem efeito paranormal':'Vontade sugerida '+(3+tier*2)+' · efeito narrativo.',
       damage:e.element==='Realidade'?'':tier>=3?'1d4':'',
