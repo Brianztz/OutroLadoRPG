@@ -22,7 +22,7 @@ test('os dois escudos incluem exatamente a mesma biblioteca de referências',()=
   const html=file(name);
   const ids=['master-bestiary-library','bestiary-search','bestiary-element','bestiary-source','bestiary-tier','bestiary-reference-grid','bestiary-results-count'];
   for(const id of ids)assert(html.includes('id="'+id+'"'),name+' ausente '+id);
-  assert(html.includes('bestiary-outrolado.js?v=1'));
+  assert(html.includes('bestiary-outrolado.js?v=2'));
   assert(html.includes('bestiary-master.js?v=1'));
   assert(html.includes('bestiary-outrolado.css?v=1'));
  }
@@ -44,6 +44,7 @@ test('131 modelos diferentes de criatura com mecânica autoral válida do Outro 
    assert(m.actions.length>=2);
    for(const a of m.actions){if(a.damage) assert.match(a.damage,/^\d+d\d+(?:\+\d+)?$/);}
    assert(m.bestiary.unofficial);
+   assert(m.vulnerabilities.length>30,'investigative clue missing');
   }
  }finally{dom.window.close();}
 });
@@ -107,4 +108,26 @@ test('os Escudos usam a regra de atributo 0=1d20, +1=2d20, -1=2d20 menor',()=>{
   assert.equal(negative.selectedRoll,Math.min(...negative.rolls));
   assert.equal(pool(3).quantity,4);
  }
+});
+
+
+test('criaturas notáveis recebem traços narrativos autorais sem alterar as rolagens básicas',()=>{
+ const {w,dom}=openPage('mestre.html');
+ try{
+  const specific={
+   'zumbi-de-sangue':'Instinto Restante',
+   'o-diabo':'Oferta Inquietante',
+   'o-deus-da-morte':'Segundo Ausente',
+   'o-anfitriao':'Desafio do Acaso',
+   'degolificada':'Silêncio Visível',
+   'o-terminal':'Última Parada'
+  };
+  for(const [id,ability] of Object.entries(specific)){
+   const monster=w.OLBestiary.makeMonster(id,'sample_'+id);
+   assert(monster,'missing '+id);
+   assert.equal(monster.actions[1].name,ability);
+   assert(monster.actions[1].description.length>35);
+   assert.equal(monster.actions[1].damage,'');
+  }
+ }finally{dom.window.close();}
 });
