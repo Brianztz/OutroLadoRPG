@@ -2529,8 +2529,10 @@
         };
 
         function rollMonsterD20PoolByAttribute(attributeValue) {
-            const attribute = Math.trunc(Number(attributeValue) || 0);
-            const quantity = attribute === 0 ? 1 : Math.abs(attribute);
+            const attribute = Math.max(-20, Math.min(20, Math.trunc(Number(attributeValue) || 0)));
+            // Regra do Outro Lado: 0 = 1d20; ±1 = 2d20, ±2 = 3d20 etc.
+            // Atributos negativos escolhem o menor resultado.
+            const quantity = 1 + Math.abs(attribute);
             const rolls = Array.from({ length: quantity }, () => Math.floor(Math.random() * 20) + 1);
             const selectedRoll = attribute < 0 ? Math.min(...rolls) : Math.max(...rolls);
             return { attribute, quantity, rolls, selectedRoll, takesLowest: attribute < 0 };
