@@ -1,0 +1,100 @@
+/* Biblioteca de referência — herda a identidade de cada Escudo. */
+.master-bestiary-library{
+  margin:14px 0 20px;padding:0;
+  border:1px solid var(--border-color,#744032);
+  border-radius:6px;
+  background:var(--bg-card,#120c0c);
+  box-shadow:0 8px 24px #0005;
+}
+.master-bestiary-library > summary{
+  cursor:pointer;
+  padding:15px 18px;
+  color:var(--text-primary,#f9e9df);
+  font:900 15px/1.4 Arial,sans-serif;
+  letter-spacing:.06em;
+}
+.master-bestiary-library > summary::marker{color:var(--accent-red,#bb3823)}
+.master-bestiary-content{padding:0 16px 18px}
+.master-bestiary-description{
+  font:12px/1.5 Arial,sans-serif;
+  color:var(--text-secondary,#b99f96);
+  margin:0 0 14px;
+}
+.master-bestiary-filters{
+  display:grid;
+  grid-template-columns:minmax(190px,2fr) repeat(3,minmax(120px,1fr));
+  align-items:center;
+  gap:10px;
+}
+.master-bestiary-filters input,.master-bestiary-filters select{
+  min-width:0;max-width:100%;width:100%;height:40px;
+  padding:8px 11px;border-radius:4px;
+  color:var(--text-primary,#f6e5da);
+  background:#100c0b;border:1px solid var(--border-color,#653327);
+  font:13px Arial,sans-serif;
+}
+.master-bestiary-filters input:focus-visible,
+.master-bestiary-filters select:focus-visible,
+.bestiary-reference-import:focus-visible{
+  outline:2px solid var(--accent-blue,#faaf93);outline-offset:3px;
+}
+.master-bestiary-results{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 0 8px;color:var(--text-secondary,#bba397);
+  font:12px/1.4 Arial,sans-serif;
+}
+#bestiary-import-status:empty{display:none}
+#bestiary-import-status{margin:5px 0 12px;color:#b5e7c4;font:12px/1.5 Arial,sans-serif}
+.bestiary-reference-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(215px,1fr));
+  gap:10px;
+}
+.bestiary-reference-card{
+  display:flex;flex-direction:column;align-items:stretch;
+  min-width:0;gap:9px;padding:12px;
+  border-radius:5px;border:1px solid var(--border-color,#753526);
+  background:linear-gradient(150deg,rgba(41,22,18,.88),rgba(12,11,12,.96));
+}
+.bestiary-reference-name{
+  font:900 17px/1.25 Georgia,serif;
+  color:var(--text-primary,#f8ece5);
+  overflow-wrap:anywhere;
+}
+.bestiary-reference-tags{display:flex;gap:5px;flex-wrap:wrap}
+.bestiary-reference-tags span{
+  padding:4px 7px;border-radius:3px;
+  background:#2a2020;color:#f1dacb;
+  border:1px solid #634133;
+  font:800 10px/1.1 Arial,sans-serif;
+}
+.bestiary-reference-element[data-element="Sangue"]{color:#ffad9a;background:#481913}
+.bestiary-reference-element[data-element="Morte"]{color:#d3c5b5;background:#282721}
+.bestiary-reference-element[data-element="Conhecimento"]{color:#f6dc9c;background:#46381a}
+.bestiary-reference-element[data-element="Energia"]{color:#ccb5ff;background:#2c2048}
+.bestiary-reference-element[data-element="Medo"]{color:#f0e6ff;background:#37303e}
+.bestiary-reference-element[data-element="Realidade"]{color:#d9d5ca;background:#35322c}
+.bestiary-reference-origin{font:11px/1.4 Arial,sans-serif;color:var(--text-secondary,#b8a094)}
+.bestiary-reference-stats{font:12px/1.5 Arial,sans-serif;color:var(--text-primary,#e9dacf);margin:0;flex:1;overflow-wrap:anywhere}
+.bestiary-reference-import,.bestiary-load-more{
+  border:1px solid var(--border-color,#a44730);
+  background:#432218;color:#ffeadc;
+  padding:10px 12px;border-radius:4px;cursor:pointer;
+  font:800 11px/1.25 Arial,sans-serif;min-height:39px;
+}
+.bestiary-reference-import:hover,.bestiary-load-more:hover{
+  border-color:var(--accent-blue,#f8ab92);background:#743624;
+}
+.bestiary-load-more{display:block;margin:14px auto 0;padding:10px 22px}
+.bestiary-load-more[hidden]{display:none!important}
+.bestiary-reference-empty{color:var(--text-secondary,#a99587);padding:18px;font:13px Arial,sans-serif}
+@media(max-width:850px){
+  .master-bestiary-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .master-bestiary-filters input{grid-column:1/-1}
+}
+@media(max-width:470px){
+  .master-bestiary-filters{grid-template-columns:minmax(0,1fr)}
+  .master-bestiary-filters input{grid-column:auto}
+  .master-bestiary-content{padding:0 10px 14px}
+  .bestiary-reference-grid{grid-template-columns:minmax(0,1fr)}
+}
