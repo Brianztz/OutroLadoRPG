@@ -464,13 +464,12 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     $('exilio-abilities-panel').querySelector('.exilio-ability-notes').hidden=occupationTab;
     if(occupationTab){
       $('exilio-ability-count').textContent='OCUPAÇÃO';
-      $('exilio-abilities-status').textContent=oc?oc.name+' · '+oc.domains:'Nenhuma ocupação selecionada';
+      $('exilio-abilities-status').textContent=oc?oc.name+' · Vivência disponível':'Nenhuma ocupação selecionada';
       if(oc){
-        addAbilityCard({ip:0,klass:'Ocupação',category:'OCUPAÇÃO',name:oc.name,description:oc.description},list,true);
-        addAbilityCard({ip:0,klass:'Ocupação',category:'VIVÊNCIA',name:oc.vivenciaName,description:oc.vivencia+'\nDomínios (Praticante +2): '+oc.domains},list,true);
+        addAbilityCard({ip:0,klass:'Ocupação',category:'VIVÊNCIA',name:oc.vivenciaName,description:oc.vivencia},list,true);
       }else{
         const empty=document.createElement('p');empty.className='exilio-ability-empty';
-        empty.textContent='Escolha uma das 30 ocupações do Exílio para ver sua descrição, Domínios e Vivência.';
+        empty.textContent='Escolha uma das 30 ocupações do Exílio para liberar sua Vivência.';
         list.append(empty);
       }
     }else{
