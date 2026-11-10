@@ -733,3 +733,53 @@ body.season-rulebook-v3 #page-rituais:not([hidden]){
 /* Livro Exílio 3.0: testes oficiais usam sempre 2d10, sem dado extra de vantagem universal. */
 body.season-rulebook-v3 #skill-edge-toolbar{display:none!important}
 body.season-rulebook-v3 #sheet > #sheet-skills-grid{top:454px!important;height:388px!important}
+
+/* Exílio 3.0 — PD do Analista e Modulações, fora do painel de cards. */
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd:not([hidden]){
+  display:block;padding:12px;margin:12px 0;border:1px solid #83513e;
+  border-left:3px solid #c97850;background:#241713;color:#f6e4db
+}
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd h3{
+  margin:0 0 6px;color:#f5bc95;font:800 18px Georgia,serif
+}
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd p{
+  margin:4px 0 10px;font:12px/1.45 Arial,sans-serif;color:#d4b9ac
+}
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd>div{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap
+}
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd strong{
+  font:900 21px Georgia,serif;color:#ffe7d8;font-variant-numeric:tabular-nums
+}
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd button{
+  padding:7px 10px;min-height:32px;cursor:pointer;
+  background:#4d281a;color:#ffeadc;border:1px solid #99583c;
+  font:800 13px Arial,sans-serif
+}
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd button:disabled{opacity:.4;cursor:default}
+body.season-rulebook-v3 .exilio-ritual-mod-label{
+  display:block;margin:13px 0 6px;font:700 12px Arial,sans-serif;color:#f4c6a4
+}
+body.season-rulebook-v3 .exilio-ritual-modulation{
+  display:block;width:100%;max-width:450px;min-height:35px;
+  padding:6px;background:#211510;color:#ffe6d6;border:1px solid #9c583f;
+  font:700 12px Arial,sans-serif
+}
+body.season-rulebook-v3 #origin-dialog #exilio-analyst-pd button:focus-visible,
+body.season-rulebook-v3 .exilio-ritual-modulation:focus-visible{
+  outline:2px solid #ffd2a0;outline-offset:2px
+}
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
+  body.season-rulebook-v3 .mobile-sheet .mobile-attr-row{
+    grid-template-columns:minmax(0,1fr) 24px 33px 34px!important
+  }
+  body.season-rulebook-v3 .mobile-sheet .v3-attribute-tools{
+    position:static!important;inset:auto!important;display:flex!important;
+    visibility:visible!important;opacity:1!important;pointer-events:auto!important;
+    width:33px!important;height:30px!important;margin:0!important
+  }
+  body.season-rulebook-v3 .mobile-sheet .v3-attribute-tools button:first-child{display:none!important}
+  body.season-rulebook-v3 .mobile-sheet .v3-attribute-tools button:last-child{
+    width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important
+  }
+}
