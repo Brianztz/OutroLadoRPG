@@ -1,0 +1,161 @@
+/* Exílio 3.0 — elementos sobre a arte ORIGINAL 1920x909 da ficha nova.
+   Nenhuma regra deste arquivo afeta ficha.html (primeira temporada). */
+body.season-rulebook-v3 #sheet > .v3-game-ui{
+ position:absolute!important;inset:0!important;z-index:70!important;
+ display:block!important;visibility:visible!important;pointer-events:none!important;
+ background:none!important;box-shadow:none!important;color:#f5e8e0;
+ font-family:Arial,Helvetica,sans-serif;font-size:14px;
+}
+body.season-rulebook-v3 .v3-game-ui *{box-sizing:border-box}
+body.season-rulebook-v3 .v3-game-ui > *{pointer-events:auto;visibility:visible}
+body.season-rulebook-v3 .v3-game-ui input,
+body.season-rulebook-v3 .v3-game-ui select,
+body.season-rulebook-v3 .v3-game-ui button{
+ font:inherit;box-sizing:border-box;color:#fff0e9;
+}
+body.season-rulebook-v3 .v3-game-ui button{
+ border:1px solid #9b4535;border-radius:3px;
+ background:linear-gradient(160deg,#4b2119,#1a1110);
+ box-shadow:inset 0 1px 0 #ffffff14,0 2px 4px #0008;
+ cursor:pointer;touch-action:manipulation;
+}
+body.season-rulebook-v3 .v3-game-ui button:hover{background:#7f301f;border-color:#ef7e5b}
+body.season-rulebook-v3 .v3-game-ui button:active{transform:translateY(1px)}
+body.season-rulebook-v3 .v3-game-ui button:focus-visible,
+body.season-rulebook-v3 .v3-game-ui select:focus-visible,
+body.season-rulebook-v3 .v3-game-ui input:focus-visible{
+ outline:2px solid #ffd0ac;outline-offset:2px;
+}
+body.season-rulebook-v3 .v3-game-ui button:disabled,
+body.season-rulebook-v3 .v3-game-ui select:disabled{opacity:.45;cursor:not-allowed}
+body.season-rulebook-v3 .v3-top-bar{
+ position:absolute;left:153px;top:62px;width:1324px;height:69px;
+ display:flex;align-items:center;gap:14px;padding:5px 12px;
+ background:linear-gradient(90deg,#120c0be0,#0505058c);
+ border:1px solid #8b301f;border-top:0;
+}
+body.season-rulebook-v3 .v3-field{
+ display:flex;flex-direction:column;min-width:0;gap:4px;
+ font:800 11px/1.1 Arial,sans-serif;letter-spacing:.07em;color:#f6ac91;
+}
+body.season-rulebook-v3 .v3-field input,
+body.season-rulebook-v3 .v3-field select{
+ min-height:33px;padding:6px 9px;max-width:100%;
+ background:#0e0c0df2;border:1px solid #914331;border-radius:2px;
+ color:#fff4e9;font:700 14px Arial,sans-serif;outline:none;
+}
+body.season-rulebook-v3 .v3-name-field{width:405px;flex:0 0 405px}
+body.season-rulebook-v3 .v3-top-bar>.v3-field:nth-child(2){width:200px;flex:0 0 200px}
+body.season-rulebook-v3 .v3-ip-control{
+ display:flex;align-items:center;gap:6px;margin-top:13px;
+ color:#ffd1b9;font:900 16px Georgia,serif;
+}
+body.season-rulebook-v3 .v3-ip-control button,
+body.season-rulebook-v3 .v3-rd button{
+ width:29px;height:31px;padding:0;font:bold 18px Arial,sans-serif;
+}
+body.season-rulebook-v3 .v3-ip-control strong{min-width:27px;text-align:center;font:900 20px Georgia,serif}
+body.season-rulebook-v3 #v3-budget{
+ padding:7px 12px;margin:13px 0 0 auto;white-space:nowrap;
+ border:1px solid #9b3824;background:#2b120fc9;
+ color:#eecaad;font:800 12px Arial,sans-serif;
+}
+body.season-rulebook-v3 #v3-budget[data-over="true"]{color:#ff6f6f;border-color:#e33e3e}
+body.season-rulebook-v3 .v3-resource{
+ position:absolute;width:212px;min-height:66px;
+ padding:5px 7px 6px;background:#090807c9;border:1px solid #653527;
+ border-left:3px solid #b83c27;border-radius:2px;
+}
+body.season-rulebook-v3 .v3-resource-pv{left:1185px;top:175px}
+body.season-rulebook-v3 .v3-resource-pm{left:1185px;top:249px}
+body.season-rulebook-v3 .v3-resource-numbers{
+ display:flex;align-items:center;justify-content:center;gap:7px;
+ color:#ffefe6;font:800 19px Georgia,serif;
+}
+body.season-rulebook-v3 .v3-resource-numbers strong{font:900 22px Georgia,serif;min-width:26px;text-align:center}
+body.season-rulebook-v3 .v3-resource-numbers button{width:26px;height:26px;padding:0;font-weight:900}
+body.season-rulebook-v3 .v3-resource-actions{display:flex;justify-content:center;gap:6px;margin-top:5px}
+body.season-rulebook-v3 .v3-resource-actions button{
+ min-height:21px;padding:2px 7px;font:800 10px Arial,sans-serif;letter-spacing:.02em;
+}
+body.season-rulebook-v3 .v3-warning{color:#ff6666!important;text-shadow:0 0 6px #d22c2899}
+body.season-rulebook-v3 .v3-skills{
+ position:absolute;left:150px;top:420px;width:850px;height:350px;padding:6px 10px;
+ border-left:1px solid #782e24;
+ background:linear-gradient(110deg,#0a0909d9,#1010107c);
+}
+body.season-rulebook-v3 .v3-section-intro{
+ margin:0 0 10px;padding:0 2px 5px;
+ font:800 12px/1.3 Arial,sans-serif;letter-spacing:.05em;
+ color:#ebaa93;border-bottom:1px solid #7f3427;
+}
+body.season-rulebook-v3 .v3-domain-grid{
+ display:grid;grid-auto-flow:column;grid-template-rows:repeat(8,36px);
+ grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;row-gap:4px;
+}
+body.season-rulebook-v3 .v3-domain-row{
+ display:flex;align-items:center;min-width:0;height:36px;gap:5px;
+ padding:2px 6px;background:#181616bc;border:1px solid #41271f;border-radius:3px;
+}
+body.season-rulebook-v3 .v3-domain-name{
+ flex:1;min-width:0;white-space:nowrap;font:700 12px Arial,sans-serif;
+ overflow:hidden;text-overflow:ellipsis;color:#f0e4db;
+}
+body.season-rulebook-v3 .v3-domain-grade{
+ width:37px;height:29px;flex:0 0 37px;padding:0!important;
+ font:900 12px Arial,sans-serif!important;color:#ffc19e!important;
+}
+body.season-rulebook-v3 .v3-domain-attr{
+ width:91px;height:29px;flex:0 0 91px;min-width:0;padding:3px 2px;
+ font:700 11px Arial,sans-serif!important;color:#f8e7df!important;
+ background:#0d0b0b;border:1px solid #764132;
+}
+body.season-rulebook-v3 .v3-domain-roll{
+ flex:0 0 30px;width:30px;height:29px;padding:0!important;
+ color:#ffddbd!important;font:900 18px Arial,sans-serif!important;
+}
+body.season-rulebook-v3 .v3-combat{
+ position:absolute;left:1390px;top:337px;width:268px;min-height:408px;
+ padding:11px 10px;background:#0c090ae9;
+ border:1px solid #843425;border-radius:2px;
+ box-shadow:0 5px 20px #0008;
+}
+body.season-rulebook-v3 .v3-combat-note{
+ color:#eeb69c;margin:0 0 8px;font:800 10px/1.4 Arial,sans-serif;
+ text-align:center;letter-spacing:.035em;
+}
+body.season-rulebook-v3 .v3-melee-attr{
+ flex-direction:row;align-items:center;justify-content:space-between;
+ gap:6px;margin-bottom:9px;font-size:10px;
+}
+body.season-rulebook-v3 .v3-melee-attr select{
+ width:115px;height:30px;min-height:30px;padding:4px 6px;font-size:11px;
+}
+body.season-rulebook-v3 .v3-combat-actions{display:flex;flex-direction:column;gap:5px}
+body.season-rulebook-v3 .v3-combat-actions button{
+ display:flex;align-items:center;justify-content:space-between;gap:5px;
+ width:100%;min-height:36px;padding:5px 8px;text-align:left;
+ font:900 11px/1.2 Arial,sans-serif;
+}
+body.season-rulebook-v3 .v3-combat-actions small{
+ font:700 8px/1.2 Arial,sans-serif;color:#e7a993;text-align:right;max-width:110px;
+}
+body.season-rulebook-v3 .v3-rd{
+ display:flex;align-items:center;justify-content:center;gap:7px;margin:10px 0;
+ color:#eed6c8;font:800 12px Arial,sans-serif;
+}
+body.season-rulebook-v3 .v3-rd strong{font:900 18px Georgia,serif;min-width:24px;text-align:center}
+body.season-rulebook-v3 .v3-combat .v3-combat-note:last-child{margin:6px 0 0;font-size:9px}
+body.season-rulebook-v3 .v3-roll-output{
+ position:absolute;left:1057px;top:758px;width:610px;min-height:68px;
+ display:flex;align-items:start;flex-direction:column;gap:5px;padding:8px 12px;
+ background:#130c0de5;border:1px solid #a23c29;border-left:4px solid #da4b2b;
+ color:#ffefdf;font:700 13px/1.25 Arial,sans-serif;
+}
+body.season-rulebook-v3 .v3-roll-heading{
+ color:#d8a994;font:900 10px Arial,sans-serif;letter-spacing:.08em;
+}
+body.season-rulebook-v3 .v3-roll-output #v3-roll-result{overflow-wrap:anywhere}
+body.season-rulebook-v3 .v3-flash{animation:v3pulse .35s ease-out}
+@keyframes v3pulse{0%{color:#ffba61}100%{color:#ffefdf}}
+@media (prefers-reduced-motion:reduce){body.season-rulebook-v3 .v3-flash{animation:none}}
