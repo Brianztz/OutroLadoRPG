@@ -403,7 +403,8 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
   function classUnlocked(klass){
     const book=exilioBook[klass];if(!book)return [];
     const p=progression(),ip=ipLevel(),branch=p.branch[klass],enh=p.choice[klass]||{};
-    const entries=book.base.filter(x=>x.ip<=ip).map(x=>({...x,klass}));
+    const posture=klass==='Vanguarda'?(p.posture||'Guarda'):null;
+    const entries=book.base.filter(x=>x.ip<=ip&&(!x.postura||x.postura===posture)).map(x=>({...x,klass}));
     for(const x of book.branches[branch]||[])if(x.ip<=ip)entries.push({...x,klass,branch});
     for(const [level,options] of Object.entries(book.choices)){
       if(Number(level)>ip)continue;
@@ -809,11 +810,26 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
 
   $('char-origin').addEventListener('click',()=>{renderOrigins();$('origin-dialog').showModal();});
   $('origin-close').addEventListener('click',()=>$('origin-dialog').close());
-  $('origin-none').addEventListener('click',()=>{state.origin='Mundano';display();save();$('origin-dialog').close();});
+  $('origin-none').addEventListener('click',()=>{
+    if(ipLevel()!==0){toast('Mundano é o estágio de IP 0.');return;}
+    state.origin='Mundano';display();save();$('origin-dialog').close();
+  });
+  document.querySelectorAll('#exilio-posture-picker [data-posture]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      if(state.origin!=='Vanguarda'||ipLevel()===0)return;
+      progression().posture=button.dataset.posture;
+      display();save();renderOrigins();
+    });
+  });
 
 
   const originRules=[{"name":"Mundano","page":5,"description":"Pessoa comum antes do primeiro contato com o Exílio, no IP 0. Ainda não possui uma classe especializada.","rules":["Começa no IP 0 e escolhe uma classe ao atingir o IP 1.","PV iniciais: 3d6 + 8 + (Constituição × 2).","PM iniciais: 3d6 + 14 + (Consciência × 2)."],"progress":{},"cost":"Mundano é o estágio inicial, anterior a Vanguarda, Analista e Canalizador."},{"name":"Vanguarda","page":5,"description":"Classe focada em combate, Posturas e proteção dos aliados.","rules":["Ganha +5 PV máximos e +3 PM máximos por IP, incluindo IP 1.","Especializações: Sentinela, Ruptor e Batedor."],"progress":{},"cost":"O avanço de IP não restaura pontos de vida ou mentais já gastos."},{"name":"Analista","page":5,"description":"Classe de investigação, interpretação de pistas e planejamento, que utiliza Pontos de Dedução (PD).","rules":["Ganha +3 PV máximos e +5 PM máximos por IP, incluindo IP 1.","Especializações: Reconstrutor, Estrategista e Perfilador."],"progress":{},"cost":"PD são um recurso próprio, independente dos Pontos Mentais."},{"name":"Canalizador","page":5,"description":"Classe voltada aos rituais, Modulações e manifestações do Exílio.","rules":["Ganha +2 PV máximos e +6 PM máximos por IP, incluindo IP 1.","Especializações: Tecelão, Âncora e Dissonante."],"progress":{},"cost":"Os rituais utilizam Pontos Mentais conforme as regras do livro."}];
   function renderOrigins(){
+    const posturePicker=$('exilio-posture-picker');
+    posturePicker.hidden=!(state.origin==='Vanguarda'&&ipLevel()>=1);
+    for(const button of posturePicker.querySelectorAll('[data-posture]')){
+      button.setAttribute('aria-pressed',String((progression().posture||'Guarda')===button.dataset.posture));
+    }
     const list=$('origin-options');list.replaceChildren();
     for(const entry of originRules){
       const card=document.createElement('article');card.className='origin-card';
@@ -822,7 +838,11 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
       if(Object.keys(entry.progress).length){const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Progressão por IP';details.append(summary);for(const [nex,power] of Object.entries(entry.progress)){const row=document.createElement('p');row.textContent=nex+'% — '+power;if(Number(nex)<=Number(state.nex||0))row.className='origin-unlocked';details.append(row);}card.append(details);}
       const cost=document.createElement('p');cost.className='origin-cost';cost.textContent=entry.cost;card.append(cost);
       const source=document.createElement('small');source.textContent='EXÍLIO 3.0 — Livro Básico de Regras, p. '+entry.page+'.';card.append(source);
-      const select=document.createElement('button');select.type='button';select.className='origin-select';const active=(state.origin??'Mundano')===entry.name;select.textContent=active?'Selecionado':'Escolher '+entry.name;select.setAttribute('aria-pressed',String(active));select.addEventListener('click',()=>{state.origin=entry.name;display();save();$('origin-dialog').close();});card.append(select);list.append(card);
+      const select=document.createElement('button');select.type='button';select.className='origin-select';const active=(state.origin??'Mundano')===entry.name;select.textContent=active?'Selecionado':'Escolher '+entry.name;select.setAttribute('aria-pressed',String(active));select.addEventListener('click',()=>{
+        if(entry.name!=='Mundano'&&ipLevel()<1){toast('No IP 0 o personagem é Mundano. A classe é escolhida a partir do IP 1.');return;}
+        if(entry.name==='Mundano'&&ipLevel()>=1){toast('Mundano pertence ao IP 0. Reduza o IP para 0 antes de voltar.');return;}
+        state.origin=entry.name;display();save();$('origin-dialog').close();
+      });card.append(select);list.append(card);
     }
   }
 
