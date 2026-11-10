@@ -6,6 +6,7 @@
   const sheet=document.getElementById('sheet');
   const $=id=>document.getElementById(id);
   const attrIds=['forca','agilidade','vigor','intelecto','presenca'];
+  const newAttributeNames={potencia:'POTÊNCIA',destreza:'DESTREZA',constituicao:'CONSTITUIÇÃO',raciocinio:'RACIOCÍNIO',consciencia:'CONSCIÊNCIA',expressao:'EXPRESSÃO'};
   const skillNames=["ACROBACIA", "ADESTRAMENTO", "ARTES", "ATLETISMO", "ATUALIDADES", "CIÊNCIAS", "CRIME", "DIPLOMACIA", "ENGANAÇÃO", "FORTITUDE", "FURTIVIDADE", "INICIATIVA", "INTIMIDAÇÃO", "INTUIÇÃO", "INVESTIGAÇÃO", "LUTA", "MEDICINA", "OCULTISMO", "PERCEPÇÃO", "PILOTAGEM", "PONTARIA", "PROFISSÃO", "REFLEXOS", "RELIGIÃO", "SOBREVIVÊNCIA", "TÁTICA", "TECNOLOGIA", "VONTADE"];
   const initial={name:'',occupation:'Nenhum',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{}};
   let state=JSON.parse(JSON.stringify(initial));
@@ -28,7 +29,10 @@
     document.querySelectorAll('[data-attr]').forEach(el=>{
       const v=Number(state.attrs[el.dataset.attr])||0;
       el.querySelector('.attr-number').textContent=(el.classList.contains('v3-attributes')||v!==0)?String(v):'';
-      el.setAttribute('aria-label',el.dataset.attr+', valor '+v);
+      const newName=newAttributeNames[el.dataset.attr];
+      el.setAttribute('aria-label',newName
+        ? newName+', valor '+v+'. Clique para aumentar, botão direito para diminuir; Shift e clique ou R para rolar.'
+        : el.dataset.attr+', valor '+v);
     });
     document.querySelectorAll('[data-skill]').forEach(el=>{
       const n=Number(state.skills[el.dataset.skill]||0);
@@ -111,9 +115,48 @@
 
   function toast(s){const el=$('toast');el.textContent=s;el.classList.add('visible');clearTimeout(toastHandle);toastHandle=setTimeout(()=>el.classList.remove('visible'),2500)}
   document.querySelectorAll('[data-attr]').forEach(el=>{
-    const change=delta=>{const id=el.dataset.attr;state.attrs[id]=Math.max(-1,Math.min(5,Number(state.attrs[id]||0)+delta));display();save();};
-    el.addEventListener('click',()=>change(1));
-    el.addEventListener('contextmenu',e=>{e.preventDefault();change(-1)});
+    const id=el.dataset.attr;
+    const isNew=el.classList.contains('v3-attributes');
+    const change=delta=>{
+      const current=Number(state.attrs[id])||0;
+      const next=Math.max(-1,Math.min(5,current+delta));
+      if(next===current)return;
+      state.attrs[id]=next;
+      display();save();
+    };
+    const roll=()=>{
+      const value=Number(state.attrs[id])||0;
+      const pool=rollSkillPool(value);
+      showSkillDice(pool,'ATRIBUTO',newAttributeNames[id]||id.toUpperCase());
+    };
+    el.addEventListener('click',event=>{
+      if(isNew&&event.shiftKey){roll();return;}
+      change(1);
+    });
+    el.addEventListener('contextmenu',event=>{event.preventDefault();change(-1);});
+    if(!isNew)return;
+    // Os mesmos controles também são usáveis por toque e teclado.
+    el.addEventListener('keydown',event=>{
+      if(event.key==='ArrowUp'||event.key==='ArrowRight'){event.preventDefault();change(1);}
+      if(event.key==='ArrowDown'||event.key==='ArrowLeft'){event.preventDefault();change(-1);}
+      if(event.key.toLowerCase()==='r'){event.preventDefault();roll();}
+    });
+    const buttons=document.createElement('span');
+    buttons.className='v3-attribute-tools';
+    buttons.style.left=(parseFloat(el.style.left)+35)+'px';
+    buttons.style.top=(parseFloat(el.style.top)+1)+'px';
+    const decrease=document.createElement('button');
+    decrease.type='button';decrease.className='v3-attribute-minus';
+    decrease.textContent='−';decrease.title='Diminuir '+newAttributeNames[id];
+    decrease.setAttribute('aria-label','Diminuir '+newAttributeNames[id]);
+    decrease.addEventListener('click',()=>change(-1));
+    const dice=document.createElement('button');
+    dice.type='button';dice.className='v3-attribute-roll';
+    dice.textContent='⚄';dice.title='Rolar '+newAttributeNames[id]+' no sistema Exílio';
+    dice.setAttribute('aria-label','Rolar '+newAttributeNames[id]);
+    dice.addEventListener('click',roll);
+    buttons.append(decrease,dice);
+    el.after(buttons);
   });
   document.querySelectorAll('[data-skill]').forEach(el=>{
     el.addEventListener('click',()=>openSkill(el));
