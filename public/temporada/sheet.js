@@ -951,7 +951,7 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
     const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const query=normalize($('item-catalog-search').value.trim()),category=$('item-catalog-category').value;
     const items=itemCatalog.filter(i=>i.book3&&(!category||i.category===category)&&normalize(i.name+' '+i.category+' '+(i.desc||'')).includes(query));
-    $('item-catalog-count').textContent=items.length+' de '+itemCatalog.length+' itens';const list=$('item-catalog-list');list.replaceChildren();
+    $('item-catalog-count').textContent=items.length+' de '+itemCatalog.filter(i=>i.book3).length+' itens do Exílio 3.0';const list=$('item-catalog-list');list.replaceChildren();
     for(const item of items){const card=document.createElement('article');card.className='item-catalog-card';if(item.image){const image=document.createElement('img');image.src=item.image;image.alt='';image.loading='lazy';card.append(image);}const name=document.createElement('h3');name.textContent=item.name;const cat=document.createElement('small');cat.textContent=item.category;const desc=document.createElement('p');desc.textContent=catalogDescription(item);const add=document.createElement('button');add.type='button';add.textContent='Adicionar ao inventário';add.addEventListener('click',()=>chooseCatalogItem(item));card.append(name,cat,desc,add);list.append(card);}
     if(!items.length){const empty=document.createElement('p');empty.textContent='Nenhum item encontrado.';list.append(empty);}
   }
