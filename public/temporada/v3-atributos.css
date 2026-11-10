@@ -268,14 +268,14 @@ body.season-rulebook-v3 #sheet > section.resource-widget[aria-label]{
   filter:drop-shadow(0 3px 8px rgba(0,0,0,.8));
 }
 body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Vida"]{
-  left:1270px!important;top:170px!important;width:244px!important;
+  left:1310px!important;top:197px!important;width:244px!important;
   --exilio-meter-border:#a6452c;
   --exilio-meter-glow:#af31232b;
   --exilio-meter-start:#67130f;
   --exilio-meter-end:#ee5433;
 }
 body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Sanidade"]{
-  left:1310px!important;top:247px!important;width:244px!important;
+  left:1310px!important;top:271px!important;width:244px!important;
   --exilio-meter-border:#735189;
   --exilio-meter-glow:#7a5ab133;
   --exilio-meter-start:#342354;
