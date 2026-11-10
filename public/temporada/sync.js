@@ -3,7 +3,7 @@ window.startSeasonSync=async function startSeasonSync(){
   const {table,view,user,prefix,stateKey}=window.SeasonContext;
   const api=window.SeasonSheet,portrait=window.SeasonPortrait,$=id=>document.getElementById(id);
   const socket=window.io();window.SeasonSocket=socket;
-  let ready=false,applying=false,dirty=false,busy=false,timer=null,realtimeTimer=null,lastHash='',closed=false;
+  let ready=false,cloudReady=false,applying=false,dirty=false,busy=false,timer=null,realtimeTimer=null,lastHash='',closed=false;
   let preferences={color:'#b83b25',combat:false,status:{}};
   const metadataKey=prefix+'presentation',markerKey=prefix+'cloudHash',dirtyKey=prefix+'dirty';
   try{preferences={...preferences,...JSON.parse(localStorage.getItem(metadataKey)||'{}')};}catch(_){}
@@ -18,7 +18,7 @@ window.startSeasonSync=async function startSeasonSync(){
   function broadcast(){if(ready&&socket.connected)socket.emit(view?'master_update_player':'status_change',packet());}
   function storePreferences(){localStorage.setItem(metadataKey,JSON.stringify(preferences));$('season-color').value=preferences.color;$('season-combat').checked=preferences.combat;}
   async function applySnapshot(value){if(value?.version!==1||!value.state)throw Error('Formato de ficha incompatível.');applying=true;try{api.applyState(value.state);await portrait.apply(value.portrait);preferences={...preferences,...value.presentation};storePreferences();}finally{applying=false;}}
-  async function flush(){clearTimeout(timer);if(!ready||applying||busy||closed)return;busy=true;try{do{dirty=false;const value=snapshot();broadcast();if(view){status('Alterações enviadas ao jogador');break;}const json=JSON.stringify(value),hash=OLFirebase.hashCharacterSheet(json);if(hash!==lastHash){status('Salvando…');const result=await OLFirebase.saveCharacter(table,json,{sheetVariant:'temporada',playerCode:code,characterName:value.state.name||'Personagem',overlayColor:preferences.color});lastHash=result.sheetHash;localStorage.setItem(markerKey,lastHash);}if(!dirty)localStorage.removeItem(dirtyKey);status(socket.connected?'Salvo · conectado':'Salvo · reconectando');}while(dirty&&!closed);}catch(error){
+  async function flush(){clearTimeout(timer);if(!ready||applying||busy||closed)return;if(!cloudReady){broadcast();status('MODO LOCAL · atributos salvos neste dispositivo; tente sincronizar depois.');return;}busy=true;try{do{dirty=false;const value=snapshot();broadcast();if(view){status('Alterações enviadas ao jogador');break;}const json=JSON.stringify(value),hash=OLFirebase.hashCharacterSheet(json);if(hash!==lastHash){status('Salvando…');const result=await OLFirebase.saveCharacter(table,json,{sheetVariant:'temporada',playerCode:code,characterName:value.state.name||'Personagem',overlayColor:preferences.color});lastHash=result.sheetHash;localStorage.setItem(markerKey,lastHash);}if(!dirty)localStorage.removeItem(dirtyKey);status(socket.connected?'Salvo · conectado':'Salvo · reconectando');}while(dirty&&!closed);}catch(error){
     dirty=true;
     const quota=/resource.exhausted|quota limit exceeded|cota diária/i.test(String(error?.code||'')+' '+String(error?.message||''));
     status(quota?'COTA FIREBASE ESGOTADA — alterações locais preservadas. Tente após a renovação.':'Não salvo na nuvem: '+error.message);
@@ -56,9 +56,13 @@ window.startSeasonSync=async function startSeasonSync(){
   async function initialize(){
     if(view){if(socket.connected)socket.emit('request_player',{codigo:code,mesa:table});return;}
     status('Carregando a ficha da temporada…');
-    try{const cloud=await OLFirebase.loadCharacter(table,'temporada');const marker=localStorage.getItem(markerKey);if(cloud){const locallyDirty=localStorage.getItem(dirtyKey)==='1';if(locallyDirty&&marker&&marker!==cloud.sheetHash){status('Há alterações locais e na nuvem. Exporte as locais antes de recarregar.');return;}if(!locallyDirty)await applySnapshot(JSON.parse(cloud.sheetJson));lastHash=cloud.sheetHash;localStorage.setItem(markerKey,lastHash);}ready=true;lock(false);broadcast();if(!unsubscribe)unsubscribe=await OLFirebase.watchCharacter(table,(next,error)=>{if(error){status('Falha ao acompanhar a nuvem: '+error.message);return;}if(!next||next.sheetHash===lastHash||busy||dirty||applying)return;inbound=inbound.then(async()=>{if(busy||dirty)return;await applySnapshot(JSON.parse(next.sheetJson));lastHash=next.sheetHash;localStorage.setItem(markerKey,lastHash);broadcast();}).catch(error=>status('Ficha remota inválida: '+error.message));},'temporada');await flush();}catch(error){ready=false;status('Nuvem indisponível: '+error.message+' · clique Salvar para tentar novamente.');}
+    try{const cloud=await OLFirebase.loadCharacter(table,'temporada');const marker=localStorage.getItem(markerKey);if(cloud){const locallyDirty=localStorage.getItem(dirtyKey)==='1';if(locallyDirty&&(!marker||marker!==cloud.sheetHash)){
+        ready=true;cloudReady=false;lock(false);
+        status('Alterações locais e da nuvem diferem. Exporte o backup antes de sincronizar; seus atributos continuam editáveis.');
+        return;
+      }if(!locallyDirty)await applySnapshot(JSON.parse(cloud.sheetJson));lastHash=cloud.sheetHash;localStorage.setItem(markerKey,lastHash);}ready=true;cloudReady=true;lock(false);broadcast();if(!unsubscribe)unsubscribe=await OLFirebase.watchCharacter(table,(next,error)=>{if(error){status('Falha ao acompanhar a nuvem: '+error.message);return;}if(!next||next.sheetHash===lastHash||busy||dirty||applying)return;inbound=inbound.then(async()=>{if(busy||dirty)return;await applySnapshot(JSON.parse(next.sheetJson));lastHash=next.sheetHash;localStorage.setItem(markerKey,lastHash);broadcast();}).catch(error=>status('Ficha remota inválida: '+error.message));},'temporada');await flush();}catch(error){cloudReady=false;ready=true;lock(false);broadcast();status('MODO LOCAL · Firebase indisponível. Atributos liberados e preservados neste dispositivo. Abra os ajustes e clique em Tentar novamente quando a nuvem voltar.');}
   }
-  $('season-retry').onclick=()=>ready?flush():initialize();
+  $('season-retry').onclick=()=>cloudReady?flush():initialize();
   window.addEventListener('beforeunload',event=>{if(dirty&&!view){event.preventDefault();event.returnValue='';}});
   window.addEventListener('pagehide',()=>{closed=true;clearTimeout(timer);clearTimeout(realtimeTimer);unsubscribe?.();});
   let inspecting=null,inspectionTimer=null;
