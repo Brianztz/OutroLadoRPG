@@ -409,11 +409,25 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     state.exilioResourceLedger={...wanted,ip,klass};
     return true;
   }
+  const exilioPostureNames=['Guarda','Pressão','Investida'];
+  function currentExilioPosture(){
+    const selected=progression().posture;
+    return exilioPostureNames.includes(selected)?selected:'Guarda';
+  }
+  function exilioPostureAbility(){
+    const name=currentExilioPosture();
+    return {
+      ip:1,klass:'Vanguarda',kind:'posture-choice',name:'Posturas de Combate',
+      category:'POSTURA · '+name.toUpperCase(),
+      description:'Postura ativa: '+name+'. Clique para conhecer Guarda, Pressão e Investida e escolher qual usar.'
+    };
+  }
   function classUnlocked(klass){
     const book=exilioBook[klass];if(!book)return [];
     const p=progression(),ip=ipLevel(),branch=p.branch[klass],enh=p.choice[klass]||{};
-    const posture=klass==='Vanguarda'?(p.posture||'Guarda'):null;
-    const entries=book.base.filter(x=>x.ip<=ip&&(!x.postura||x.postura===posture)).map(x=>({...x,klass}));
+    // Uma única habilidade selecionável reúne todas as Posturas, não uma ficha para cada técnica.
+    const entries=book.base.filter(x=>x.ip<=ip&&!x.postura).map(x=>({...x,klass}));
+    if(klass==='Vanguarda'&&ip>=1)entries.unshift(exilioPostureAbility());
     for(const x of book.branches[branch]||[])if(x.ip<=ip)entries.push({...x,klass,branch});
     for(const [level,options] of Object.entries(book.choices)){
       if(Number(level)>ip)continue;
@@ -424,18 +438,59 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
   }
   function allClassAbilities(klass){
     const book=exilioBook[klass];if(!book)return [];
-    const entries=book.base.map(x=>({...x,klass}));
+    const entries=book.base.filter(x=>!x.postura).map(x=>({...x,klass}));
+    if(klass==='Vanguarda')entries.unshift(exilioPostureAbility());
     for(const [branch,items] of Object.entries(book.branches))for(const x of items)entries.push({...x,klass,branch});
     for(const items of Object.values(book.choices))for(const x of items)entries.push({...x,klass});
     return entries.sort((a,b)=>a.ip-b.ip||a.name.localeCompare(b.name,'pt-BR'));
   }
   function showAbility(entry,owned){
+    const isPosture=entry.kind==='posture-choice';
+    const mayChoose=isPosture&&owned&&state.origin==='Vanguarda'&&ipLevel()>=1;
+    const selectedPosture=currentExilioPosture();
     $('exilio-detail-title').textContent=entry.name;
     $('exilio-detail-tag').textContent=entry.klass==='Ocupação'?'OCUPAÇÃO · EXÍLIO 3.0':(entry.klass||'EXÍLIO')+' · IP '+entry.ip;
-    $('exilio-detail-description').textContent=entry.description;
-    $('exilio-detail-status').textContent=entry.uncertain?'Nome e IP confirmados; números completos não constam da edição compilada.':
-      owned?'Adquirida e disponível conforme o livro.':'Prévia. Para adquirir, avance IP e faça as escolhas necessárias.';
-    $('exilio-detail-dialog').showModal();
+    $('exilio-detail-description').textContent=isPosture
+      ?'Só uma Postura fica ativa por vez. A troca gratuita ocorre no seu turno; a partir do IP 6, Adaptação Instintiva permite também uma troca reativa por rodada ao perceber ação inimiga.'
+      :entry.description;
+    const options=$('exilio-detail-choices');
+    options.replaceChildren();
+    options.hidden=!isPosture;
+    if(isPosture){
+      for(const name of exilioPostureNames){
+        const effects=exilioBook.Vanguarda.base.filter(ability=>ability.postura===name);
+        const button=document.createElement('button');
+        button.type='button';button.className='exilio-posture-option';
+        const active=name===selectedPosture;
+        button.setAttribute('aria-pressed',String(active));
+        button.disabled=!mayChoose;
+        const heading=document.createElement('span');heading.className='exilio-posture-option-head';
+        const title=document.createElement('strong');title.textContent=name;
+        const stateLabel=document.createElement('small');stateLabel.textContent=active?'ATIVA':mayChoose?'SELECIONAR':'PRÉVIA';
+        heading.append(title,stateLabel);button.append(heading);
+        for(const ability of effects){
+          const effect=document.createElement('span');effect.className='exilio-posture-effect';
+          const strong=document.createElement('b');strong.textContent=ability.name.replace(name+' · ','')+': ';
+          effect.append(strong,document.createTextNode(ability.description));button.append(effect);
+        }
+        if(mayChoose)button.addEventListener('click',()=>{
+          if(currentExilioPosture()===name)return;
+          progression().posture=name;
+          display();save();
+          // Atualiza o card e o conteúdo da janela, preservando a seleção registrada.
+          showAbility(exilioPostureAbility(),true);
+          const focused=options.querySelectorAll('.exilio-posture-option')[exilioPostureNames.indexOf(name)];
+          focused?.focus();
+        });
+        options.append(button);
+      }
+    }
+    $('exilio-detail-status').textContent=isPosture
+      ?(mayChoose?'Postura ativa: '+selectedPosture+'. Clique em outra opção para alternar. A ficha salva a escolha.':'Prévia de Posturas. Escolha Vanguarda no IP 1 para habilitar a troca.')
+      :entry.uncertain?'Nome e IP confirmados; números completos não constam da edição compilada.'
+      :owned?'Adquirida e disponível conforme o livro.':'Prévia. Para adquirir, avance IP e faça as escolhas necessárias.';
+    const dialog=$('exilio-detail-dialog');
+    if(!dialog.open)dialog.showModal();
   }
   function addAbilityCard(entry,target,owned){
     const b=document.createElement('button');b.type='button';b.className='exilio-ability-card'+(owned?'':' locked');
@@ -861,13 +916,6 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
     if(ipLevel()!==0){toast('Mundano é o estágio de IP 0.');return;}
     state.origin='Mundano';display();save();$('origin-dialog').close();
   });
-  document.querySelectorAll('#exilio-posture-picker [data-posture]').forEach(button=>{
-    button.addEventListener('click',()=>{
-      if(state.origin!=='Vanguarda'||ipLevel()===0)return;
-      progression().posture=button.dataset.posture;
-      display();save();renderOrigins();
-    });
-  });
 
 
   const originRules=[{"name":"Mundano","page":5,"description":"Pessoa comum antes do primeiro contato com o Exílio, no IP 0. Ainda não possui uma classe especializada.","rules":["Começa no IP 0 e escolhe uma classe ao atingir o IP 1.","PV iniciais: 3d6 + 8 + (Constituição × 2).","PM iniciais: 3d6 + 14 + (Consciência × 2)."],"progress":{},"cost":"Mundano é o estágio inicial, anterior a Vanguarda, Analista e Canalizador."},{"name":"Vanguarda","page":5,"description":"Classe focada em combate, Posturas e proteção dos aliados.","rules":["Ganha +5 PV máximos e +3 PM máximos por IP, incluindo IP 1.","Especializações: Sentinela, Ruptor e Batedor."],"progress":{},"cost":"O avanço de IP não restaura pontos de vida ou mentais já gastos."},{"name":"Analista","page":5,"description":"Classe de investigação, interpretação de pistas e planejamento, que utiliza Pontos de Dedução (PD).","rules":["Ganha +3 PV máximos e +5 PM máximos por IP, incluindo IP 1.","Especializações: Reconstrutor, Estrategista e Perfilador."],"progress":{},"cost":"PD são um recurso próprio, independente dos Pontos Mentais."},{"name":"Canalizador","page":5,"description":"Classe voltada aos rituais, Modulações e manifestações do Exílio.","rules":["Ganha +2 PV máximos e +6 PM máximos por IP, incluindo IP 1.","Especializações: Tecelão, Âncora e Dissonante."],"progress":{},"cost":"Os rituais utilizam Pontos Mentais conforme as regras do livro."}];
@@ -921,11 +969,6 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
 
   function renderOrigins(){
     refreshAnalystPD();
-    const posturePicker=$('exilio-posture-picker');
-    posturePicker.hidden=!(state.origin==='Vanguarda'&&ipLevel()>=1);
-    for(const button of posturePicker.querySelectorAll('[data-posture]')){
-      button.setAttribute('aria-pressed',String((progression().posture||'Guarda')===button.dataset.posture));
-    }
     const list=$('origin-options');list.replaceChildren();
     for(const entry of originRules){
       const card=document.createElement('article');card.className='origin-card';
