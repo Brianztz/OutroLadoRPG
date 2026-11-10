@@ -26,7 +26,7 @@
     }
   }
   buildExilioSkillTable();
-  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0,exilioBackground:'',exilioAbilitiesNotes:'',exilioProgression:null,exilioResourceLedger:null};
+  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0,exilioBackground:'',exilioAbilitiesNotes:'',exilioProgression:null,exilioResourceLedger:null,exilioPD:null,exilioShortRests:0};
   let state=JSON.parse(JSON.stringify(initial));
   let toastHandle=null;
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
@@ -48,6 +48,7 @@
     $('char-origin').textContent=state.origin;
     $('char-origin').dataset.exilioClass=state.origin;
     $('char-origin').title='Classe: '+state.origin+' · clique para escolher';
+    refreshAnalystPD();
     $('char-name').value=state.name||'';
     keepLegacyOccupation();
     $('panel-occupation').value=state.occupation||'Nenhum';
@@ -824,7 +825,56 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
 
 
   const originRules=[{"name":"Mundano","page":5,"description":"Pessoa comum antes do primeiro contato com o Exílio, no IP 0. Ainda não possui uma classe especializada.","rules":["Começa no IP 0 e escolhe uma classe ao atingir o IP 1.","PV iniciais: 3d6 + 8 + (Constituição × 2).","PM iniciais: 3d6 + 14 + (Consciência × 2)."],"progress":{},"cost":"Mundano é o estágio inicial, anterior a Vanguarda, Analista e Canalizador."},{"name":"Vanguarda","page":5,"description":"Classe focada em combate, Posturas e proteção dos aliados.","rules":["Ganha +5 PV máximos e +3 PM máximos por IP, incluindo IP 1.","Especializações: Sentinela, Ruptor e Batedor."],"progress":{},"cost":"O avanço de IP não restaura pontos de vida ou mentais já gastos."},{"name":"Analista","page":5,"description":"Classe de investigação, interpretação de pistas e planejamento, que utiliza Pontos de Dedução (PD).","rules":["Ganha +3 PV máximos e +5 PM máximos por IP, incluindo IP 1.","Especializações: Reconstrutor, Estrategista e Perfilador."],"progress":{},"cost":"PD são um recurso próprio, independente dos Pontos Mentais."},{"name":"Canalizador","page":5,"description":"Classe voltada aos rituais, Modulações e manifestações do Exílio.","rules":["Ganha +2 PV máximos e +6 PM máximos por IP, incluindo IP 1.","Especializações: Tecelão, Âncora e Dissonante."],"progress":{},"cost":"Os rituais utilizam Pontos Mentais conforme as regras do livro."}];
+  // Pontos de Dedução não são Pontos Mentais: o Analista começa cenas com 2 PD
+  // (máximo 3); no IP 6 passa a começar com 3 PD (máximo 5).
+  function refreshAnalystPD(){
+    const panel=$('exilio-analyst-pd');if(!panel)return;
+    const eligible=state.origin==='Analista'&&ipLevel()>=1;
+    panel.hidden=!eligible;
+    if(!eligible)return;
+    const max=ipLevel()>=6?5:3;
+    const initialPD=ipLevel()>=6?3:2;
+    if(!state.exilioPD||!Number.isFinite(Number(state.exilioPD.current)))state.exilioPD={current:initialPD};
+    state.exilioPD.current=Math.max(0,Math.min(max,Math.trunc(Number(state.exilioPD.current)||0)));
+    $('exilio-pd-current').textContent=String(state.exilioPD.current);
+    $('exilio-pd-max').textContent=String(max);
+    $('exilio-pd-guide').textContent='Início de cena: '+initialPD+' PD · máximo '+max+' PD. Pontos de Dedução não substituem PM.';
+    $('exilio-pd-minus').disabled=state.exilioPD.current===0;
+    $('exilio-pd-plus').disabled=state.exilioPD.current===max;
+  }
+  for(const [id,delta] of [['exilio-pd-minus',-1],['exilio-pd-plus',1]]){
+    $(id).addEventListener('click',()=>{
+      if(state.origin!=='Analista')return;
+      refreshAnalystPD();
+      state.exilioPD.current=Math.max(0,Math.min(ipLevel()>=6?5:3,state.exilioPD.current+delta));
+      refreshAnalystPD();save();
+    });
+  }
+  $('exilio-pd-new-scene').addEventListener('click',()=>{
+    if(state.origin!=='Analista')return;
+    state.exilioPD={current:ipLevel()>=6?3:2};
+    refreshAnalystPD();save();toast('PD preparados para uma nova cena.');
+  });
+  // Recuperação Curta e Longa: rolagens independentes de PV e PM.
+  const exilioRoll=(sides,count)=>Array.from({length:count},()=>Math.floor(Math.random()*sides)+1).reduce((a,b)=>a+b,0);
+  function applyExilioRest(long){
+    if(!state.resources?.life||!state.resources?.sanity)return;
+    const shortCount=Math.max(0,Math.trunc(Number(state.exilioShortRests)||0));
+    if(!long&&shortCount>=2){toast('O livro permite no máximo duas recuperações curtas entre longas.');return;}
+    const life=state.resources.life,mental=state.resources.sanity;
+    const pv=long?exilioRoll(6,2)+(Number(state.attrs.constituicao)||0):Math.max(1,exilioRoll(6,1)+(Number(state.attrs.constituicao)||0));
+    const pm=long?exilioRoll(6,2)+(Number(state.attrs.consciencia)||0):Math.max(1,exilioRoll(6,1)+(Number(state.attrs.consciencia)||0));
+    life.current=Math.min(life.max,(Number(life.current)||0)+Math.max(0,pv));
+    mental.current=Math.min(mental.max,(Number(mental.current)||0)+Math.max(0,pm));
+    state.exilioShortRests=long?0:shortCount+1;
+    display();save();hideTools();
+    toast((long?'Recuperação longa':'Recuperação curta')+': +'+pv+' PV / +'+pm+' PM (limitados pelos máximos).');
+  }
+  $('exilio-rest-short').addEventListener('click',()=>applyExilioRest(false));
+  $('exilio-rest-long').addEventListener('click',()=>applyExilioRest(true));
+
   function renderOrigins(){
+    refreshAnalystPD();
     const posturePicker=$('exilio-posture-picker');
     posturePicker.hidden=!(state.origin==='Vanguarda'&&ipLevel()>=1);
     for(const button of posturePicker.querySelectorAll('[data-posture]')){
