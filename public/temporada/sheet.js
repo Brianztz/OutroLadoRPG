@@ -12,17 +12,22 @@
   const exilioDefaultAttributes={"ATLETISMO":"potencia","CONFRONTO":"potencia","PRECISÃO":"destreza","MOBILIDADE":"destreza","DISCRIÇÃO":"destreza","RESISTÊNCIA":"constituicao","OBSERVAÇÃO":"consciencia","INVESTIGAÇÃO":"raciocinio","CONHECIMENTO":"raciocinio","TECNOLOGIA":"raciocinio","MEDICINA":"raciocinio","INFLUÊNCIA":"expressao","SENSIBILIDADE":"consciencia","SOBREVIVÊNCIA":"consciencia","OFÍCIO":"raciocinio","ANOMALIAS":"consciencia"};
   const exilioAttributeLabels={"potencia":"POT","destreza":"DES","constituicao":"CON","raciocinio":"RAC","consciencia":"CNS","expressao":"EXP"};
   function buildExilioSkillTable(){
-    const grid=$('sheet-skills-grid');grid.classList.add('exilio-skill-tables');grid.replaceChildren();
+    const grid=$('sheet-skills-grid');
+    grid.classList.add('exilio-skill-tables','exilio-skill-tiles');
+    grid.setAttribute('aria-label','Perícias do Exílio. Clique em um card para ver, configurar e rolar.');
+    grid.replaceChildren();
     for(const name of skillNames){
-      const row=document.createElement('article');row.className='sheet-skill-card';row.dataset.skill=name;
-      const btn=document.createElement('button');btn.className='sheet-skill-details';btn.type='button';btn.setAttribute('aria-label','Configurar '+name);
-      const label=document.createElement('strong');label.textContent=name;btn.append(label);
-      const domain=document.createElement('span');domain.className='sheet-skill-dom';domain.title='Domínio da perícia';domain.textContent='0';
-      const select=document.createElement('select');select.className='sheet-skill-attribute';select.setAttribute('aria-label','Atributo de '+name);select.title='Escolha o atributo conforme a abordagem';
-      for(const [value,text] of [["potencia","POT"],["destreza","DES"],["constituicao","CON"],["raciocinio","RAC"],["consciencia","CNS"],["expressao","EXP"]]){const o=document.createElement('option');o.value=value;o.textContent=text;select.append(o);}
-      const die=document.createElement('button');die.className='sheet-skill-roll';die.type='button';die.textContent='⚄';die.setAttribute('aria-label','Rolar '+name);die.title='Teste de Exílio: 2d10 + Atributo + Domínio';
-      const indicator=document.createElement('span');indicator.className='skill-indicator';indicator.hidden=true;
-      row.append(btn,domain,select,die,indicator);grid.append(row);
+      const row=document.createElement('article');
+      row.className='sheet-skill-card';row.dataset.skill=name;
+      const btn=document.createElement('button');
+      btn.className='sheet-skill-details';btn.type='button';
+      btn.setAttribute('aria-label','Abrir perícia '+name);
+      btn.title='Abrir '+name+' para configurar Domínio, atributo e rolar 2d10';
+      const label=document.createElement('strong');label.textContent=name;
+      const rank=document.createElement('span');rank.className='sheet-skill-training';rank.textContent='SEM TREINAMENTO';
+      const modifier=document.createElement('span');modifier.className='sheet-skill-score';modifier.textContent='0';
+      btn.append(label,rank,modifier);
+      row.append(btn);grid.append(row);
     }
   }
   buildExilioSkillTable();
@@ -67,10 +72,18 @@
         : el.dataset.attr+', valor '+v);
     });
     document.querySelectorAll('[data-skill]').forEach(el=>{
-      const name=el.dataset.skill,domain=Number(state.skillDomains?.[name])||0;
+      const name=el.dataset.skill;
+      const domain=Number(state.skillDomains?.[name])||0;
+      const attributeName=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
+      const attribute=Number(state.attrs[attributeName])||0;
+      const bonus=Number(state.skillBonuses?.[name])||0;
+      const modifier=attribute+domain+bonus;
+      const rank={0:'SEM TREINAMENTO',2:'PRATICANTE +2',4:'EXPERIENTE +4',6:'REFERÊNCIA +6'}[domain]||'DOMÍNIO '+(domain>=0?'+':'')+domain;
       el.classList.toggle('trained',domain>0);
-      el.querySelector('.sheet-skill-dom').textContent=domain>0?'+'+domain:'0';
-      el.querySelector('.sheet-skill-attribute').value=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
+      el.querySelector('.sheet-skill-training').textContent=rank;
+      el.querySelector('.sheet-skill-score').textContent=(modifier>0?'+':'')+modifier;
+      const button=el.querySelector('.sheet-skill-details');
+      button.setAttribute('aria-label',name+', '+rank+', modificador '+(modifier>=0?'+':'')+modifier+'. Abrir detalhes e rolar.');
       updateSkillEdgeBadge(el);
     });
   }
@@ -190,12 +203,7 @@
     el.after(buttons);
   });
   document.querySelectorAll('[data-skill]').forEach(el=>{
-    el.addEventListener('click',event=>{if(event.target.closest('.sheet-skill-attribute,.sheet-skill-roll'))return;openSkill(el);});
-    const select=el.querySelector('.sheet-skill-attribute');
-    select.addEventListener('click',event=>event.stopPropagation());
-    select.addEventListener('change',event=>{event.stopPropagation();state.skillAttributes=state.skillAttributes||{};state.skillAttributes[el.dataset.skill]=select.value;save();display();});
-    el.querySelector('.sheet-skill-roll').addEventListener('click',event=>{event.stopPropagation();const name=el.dataset.skill;showSkillDice(rollExilioSkill(name),'TOTAL',name);});
-    el.title=el.dataset.skill+' • configurar ou rolar';
+    el.querySelector('.sheet-skill-details').addEventListener('click',()=>openSkill(el));
   });
   $('char-name').addEventListener('input',e=>{state.name=e.target.value.toUpperCase().slice(0,22);save();});
   $('panel-occupation').addEventListener('change',e=>{state.occupation=e.target.value;display();save()});
@@ -493,15 +501,16 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     if(!dialog.open)dialog.showModal();
   }
   function addAbilityCard(entry,target,owned){
-    const b=document.createElement('button');b.type='button';b.className='exilio-ability-card'+(owned?'':' locked');
-    const header=document.createElement('span');header.className='ability-card-header';
-    const title=document.createElement('strong');title.textContent=entry.name;
-    const tag=document.createElement('small');tag.textContent=entry.category||(entry.ip?'IP '+entry.ip:'VIVÊNCIA');
-    header.append(title,tag);
-    const teaser=document.createElement('span');teaser.textContent=entry.uncertain?'Detalhes pendentes no livro original':entry.description;
-    teaser.className='ability-card-teaser';
-    const foot=document.createElement('small');foot.textContent=owned?'VER HABILIDADE':'BLOQUEADA · VER DETALHES';
-    b.append(header,teaser,foot);b.addEventListener('click',()=>showAbility(entry,owned));target.append(b);
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='exilio-ability-card exilio-name-only'+(owned?'':' locked');
+    const title=document.createElement('strong');
+    title.textContent=entry.name;
+    b.append(title);
+    b.title=owned?'Clique para ver a habilidade':'Habilidade bloqueada · clique para consultar';
+    b.setAttribute('aria-label',entry.name+(owned?'. Abrir descrição da habilidade.':'. Bloqueada; consultar descrição.'));
+    b.addEventListener('click',()=>showAbility(entry,owned));
+    target.append(b);
   }
   function pendingIP(){
     const klass=state.origin,ip=ipLevel(),p=progression();
