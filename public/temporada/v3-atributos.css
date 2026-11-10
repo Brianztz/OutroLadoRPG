@@ -828,3 +828,18 @@ body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-effect{
 body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-effect b{
   color:#f8c9ad
 }
+
+/* Exílio 3.0, 2ª temporada: ilustrações individuais em preto e branco no catálogo. */
+body.season-rulebook-v3 #item-catalog-dialog .item-catalog-photo{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  height:140px;
+  max-height:140px;
+  object-fit:contain;
+  object-position:center center;
+  margin:0 auto 10px;
+  padding:0;
+  background:transparent;
+  filter:grayscale(1) contrast(1.13) brightness(1.04);
+}
