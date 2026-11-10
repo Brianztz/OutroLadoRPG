@@ -33,8 +33,9 @@
   try{const value=localStorage.getItem(window.SeasonContext.stateKey);if(value){const loaded=JSON.parse(value);if(loaded&&loaded.attrs&&loaded.skills){state={...initial,...loaded,attrs:{...initial.attrs,...loaded.attrs}};}}}catch(e){}
   function display(){
     const newResources=ensureExilioCreationResources();
+    const creationChanged=reconcileExilioCreationAttributes();
     reconcileIPBonuses();
-    if(newResources)save();
+    if(newResources||creationChanged)save();
     displayExilioArtAndAbilities();
     displayParanormalInfluence();
     displayResources();
@@ -675,7 +676,30 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     const sanity=Math.max(1,pm.reduce((sum,n)=>sum+n,0)+14+2*(Number(state.attrs.consciencia)||0));
     state.resources={...state.resources,life:state.resources?.life||{current:life,max:life},sanity:state.resources?.sanity||{current:sanity,max:sanity}};
     state.exilioCreationRolls={pv,pm};
+    state.exilioCreationAttrBase={constituicao:Number(state.attrs.constituicao)||0,consciencia:Number(state.attrs.consciencia)||0};
     return true;
+  }
+  function reconcileExilioCreationAttributes(){
+    // Recalcula somente a parcela +2×CON/CNS da CRIAÇÃO, com os 3d6 já salvos.
+    // Após IP 1, ganhos de atributo seguem a regra de avanço sem retroatividade.
+    if(!state.exilioCreationRolls||ipLevel()!==0)return false;
+    if(!state.exilioCreationAttrBase){
+      state.exilioCreationAttrBase={constituicao:Number(state.attrs.constituicao)||0,consciencia:Number(state.attrs.consciencia)||0};
+      return false; // não modificar ficha salva anterior que ainda não tinha registro do atributo base
+    }
+    let changed=false;
+    for(const [key,resource] of [['constituicao','life'],['consciencia','sanity']]){
+      const previous=Number(state.exilioCreationAttrBase[key])||0;
+      const current=Number(state.attrs[key])||0;
+      if(previous===current)continue;
+      const existing=state.resources[resource],oldMax=Number(existing.max)||1;
+      const max=Math.max(1,Math.min(9999,oldMax+(current-previous)*2));
+      existing.max=max;
+      existing.current=Number(existing.current)===oldMax?max:Math.max(0,Math.min(max,Number(existing.current)||0));
+      state.exilioCreationAttrBase[key]=current;
+      changed=true;
+    }
+    return changed;
   }
   function normalizeResource(value){
     const max=Math.max(1,Math.min(9999,Math.trunc(Number(value?.max)||1)));
