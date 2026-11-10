@@ -729,3 +729,7 @@ body.season-rulebook-v3 #page-rituais:not([hidden]){
   }
   body.season-rulebook-v3.is-mobile-season #sheet-tabs button{flex:1;min-width:0!important}
 }
+
+/* Livro Exílio 3.0: testes oficiais usam sempre 2d10, sem dado extra de vantagem universal. */
+body.season-rulebook-v3 #skill-edge-toolbar{display:none!important}
+body.season-rulebook-v3 #sheet > #sheet-skills-grid{top:454px!important;height:388px!important}
