@@ -498,10 +498,8 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     }
     $('exilio-detail-status').textContent=isPosture
       ?(mayChoose?'Postura ativa: '+selectedPosture+'. Clique em outra opção para alternar. A ficha salva a escolha.':'Prévia de Posturas. Escolha Vanguarda no IP 1 para habilitar a troca.')
-      :entry.legacyChoice?'Escolha salva anteriormente pelo jogador; o efeito não faz parte das opções recuperadas.'
-      :entry.recovered?'Efeito recuperado de regras aprovadas anteriormente para o Exílio 3.0. O PDF atual registra os nomes e os IP, mas não transcreve estes detalhes.'
-      :entry.uncertain?'Detalhes não confirmados pelo material disponível.'
-      :owned?'Adquirida e disponível conforme o livro.':'Prévia. Para adquirir, avance IP e faça as escolhas necessárias.';
+      :entry.legacyChoice?'Escolha personalizada do personagem.'
+      :owned?'Habilidade adquirida.':'Prévia. Para adquirir, avance IP e faça as escolhas necessárias.';
     const dialog=$('exilio-detail-dialog');
     if(!dialog.open)dialog.showModal();
   }
@@ -659,7 +657,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     }
 
     const other=block(root,'Habilidades adquiridas automaticamente','Os cards são liberados nos IP correspondentes. O Catálogo também mostra técnicas de níveis futuros.');
-    if(klass==='Canalizador'){const p=document.createElement('p');p.textContent='Efeitos e opções de Tecelão, Âncora, Dissonante e das habilidades básicas recuperados das definições anteriores do Exílio 3.0. Esta edição do PDF mantém apenas seus nomes e IP.';other.append(p);}
+
   }
   $('exilio-catalog-open').addEventListener('click',()=>{
     $('exilio-catalog-class').value=exilioBook[state.origin]?state.origin:'Vanguarda';
