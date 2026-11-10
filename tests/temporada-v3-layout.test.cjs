@@ -53,7 +53,9 @@ test('tela deixa de bloquear os atributos em falha de Firebase e preserva modo l
   const sync=fs.readFileSync(path.join(root,'public/temporada/sync.js'),'utf8');
   assert(sync.includes('ready=true;lock(false);broadcast();status('));
   assert(sync.includes('cloudReady=false;ready=true;lock(false);broadcast();'));
+  assert(sync.includes("const alwaysEditableAttributes=!view && document.body.classList.contains('season-rulebook-v3')"));
+  assert(sync.includes("const editable=alwaysEditableAttributes && id==='page-principal'"));
   assert(sync.includes("if(!cloudReady){broadcast();status('MODO LOCAL"));
   assert(sync.includes("()=>cloudReady?flush():initialize()"));
-  assert(h.includes('/temporada/sync.js?v=attributes-restore-1'));
+  assert(h.includes('/temporada/sync.js?v=attributes-restore-2'));
 });
