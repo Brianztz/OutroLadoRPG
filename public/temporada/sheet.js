@@ -119,15 +119,35 @@
     const isNew=el.classList.contains('v3-attributes');
     const change=delta=>{
       const current=Number(state.attrs[id])||0;
-      const next=Math.max(-1,Math.min(5,current+delta));
+      const ip=Number(state.exilio3?.ip)||0;
+      const maxAttribute=isNew?(ip>=3?5:3):5;
+      const next=Math.max(-1,Math.min(maxAttribute,current+delta));
       if(next===current)return;
+      if(isNew){
+        const points=Object.keys(newAttributeNames).reduce((n,key)=>
+          n+(key===id?next:Number(state.attrs[key])||0),0);
+        const available=6+[3,6,9].filter(level=>ip>=level).length;
+        if(points>available){
+          toast('Exílio 3.0: você já distribuiu todos os '+available+' pontos disponíveis.');
+          return;
+        }
+      }
       state.attrs[id]=next;
       display();save();
     };
     const roll=()=>{
+      if(isNew){
+        if(window.ExilioV3?.rollAttribute){window.ExilioV3.rollAttribute(id);return;}
+        const dice=[1+Math.floor(Math.random()*10),1+Math.floor(Math.random()*10)];
+        const value=dice[0]+dice[1]+(Number(state.attrs[id])||0);
+        window.dispatchEvent(new CustomEvent('season:roll',{detail:{
+          pool:{dice,value,lowest:false},label:'ATRIBUTO',name:newAttributeNames[id]
+        }}));
+        toast(newAttributeNames[id]+': '+dice.join(' + ')+' + atributo = '+value);
+        return;
+      }
       const value=Number(state.attrs[id])||0;
-      const pool=rollSkillPool(value);
-      showSkillDice(pool,'ATRIBUTO',newAttributeNames[id]||id.toUpperCase());
+      showSkillDice(rollSkillPool(value),'ATRIBUTO',newAttributeNames[id]||id.toUpperCase());
     };
     el.addEventListener('click',event=>{
       if(isNew&&event.shiftKey){roll();return;}
@@ -701,6 +721,7 @@ renderRituals();
   };
 
   display();updateScale();
+  window.dispatchEvent(new Event('season:v3-ready'));
 })();
 (function(){
   'use strict';
