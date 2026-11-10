@@ -783,3 +783,9 @@ body.season-rulebook-v3 .exilio-ritual-modulation:focus-visible{
     width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important
   }
 }
+
+/* Livro Exílio 3.0: o IP é o único indicador de progressão, ocultando o nível legado no mobile. */
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
+  body.season-rulebook-v3 .mobile-sheet .mobile-level-field{display:none!important}
+  body.season-rulebook-v3 .mobile-sheet .mobile-topline{grid-template-columns:minmax(0,1fr)!important}
+}
