@@ -7,7 +7,7 @@
   const $=id=>document.getElementById(id);
   const attrIds=['forca','agilidade','vigor','intelecto','presenca'];
   const skillNames=["ACROBACIA", "ADESTRAMENTO", "ARTES", "ATLETISMO", "ATUALIDADES", "CIÊNCIAS", "CRIME", "DIPLOMACIA", "ENGANAÇÃO", "FORTITUDE", "FURTIVIDADE", "INICIATIVA", "INTIMIDAÇÃO", "INTUIÇÃO", "INVESTIGAÇÃO", "LUTA", "MEDICINA", "OCULTISMO", "PERCEPÇÃO", "PILOTAGEM", "PONTARIA", "PROFISSÃO", "REFLEXOS", "RELIGIÃO", "SOBREVIVÊNCIA", "TÁTICA", "TECNOLOGIA", "VONTADE"];
-  const initial={name:'',occupation:'Nenhum',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0},skills:{}};
+  const initial={name:'',occupation:'Nenhum',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{}};
   let state=JSON.parse(JSON.stringify(initial));
   let toastHandle=null;
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
@@ -27,7 +27,7 @@
     $('char-occupation').classList.add('changed');
     document.querySelectorAll('[data-attr]').forEach(el=>{
       const v=Number(state.attrs[el.dataset.attr])||0;
-      el.querySelector('.attr-number').textContent=v===0?'':String(v);
+      el.querySelector('.attr-number').textContent=(el.classList.contains('v3-attributes')||v!==0)?String(v):'';
       el.setAttribute('aria-label',el.dataset.attr+', valor '+v);
     });
     document.querySelectorAll('[data-skill]').forEach(el=>{

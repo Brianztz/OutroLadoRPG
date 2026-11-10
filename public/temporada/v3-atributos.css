@@ -1,0 +1,125 @@
+/* NOVO LIVRO DE REGRAS — Ficha da 2ª temporada, etapa 1.
+   Usa como fundo a arte enviada pelo Mestre. Apenas os seis atributos
+   permanecem na tela: dados/controles antigos não são apagados. */
+body.season-rulebook-v3{background:#030303;min-height:100dvh}
+body.season-rulebook-v3 .sheet{
+  width:1920px!important;
+  height:909px!important;
+  background:#030303 url('/temporada/assets/novo-fundo-enviado.webp') left top/1920px 909px no-repeat!important;
+  box-shadow:none!important;
+}
+/* Renderizar exclusivamente os atributos, preservando os nós do jogo
+   para a futura migração das outras mecânicas. */
+body.season-rulebook-v3 #sheet > :not(.v3-attributes){
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+body.season-rulebook-v3 #sheet > button.attr.v3-attributes{
+  position:absolute!important;
+  display:grid!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  z-index:50!important;
+  width:30px!important;
+  height:30px!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  transform:none!important;
+  place-items:center!important;
+  cursor:pointer;
+  color:#fff!important;
+  text-shadow:0 1px 3px #110000;
+}
+body.season-rulebook-v3 #sheet > button.v3-attributes .attr-number{
+  display:block!important;
+  transform:none!important;
+  color:#fff!important;
+  font:900 15px/1 Arial,sans-serif!important;
+  text-shadow:0 1px 3px #280500!important;
+}
+body.season-rulebook-v3 #sheet > button.v3-attributes:hover{
+  background:rgba(255,238,219,.18)!important;
+}
+body.season-rulebook-v3 #sheet > button.v3-attributes:focus-visible{
+  outline:2px solid #fff1bf!important;
+  outline-offset:2px!important;
+  filter:drop-shadow(0 0 3px #fff);
+}
+body.season-rulebook-v3 #sheet-tabs,
+body.season-rulebook-v3 .mobile-note,
+body.season-rulebook-v3 .tip,
+body.season-rulebook-v3 #mobile-sheet,
+body.season-rulebook-v3 #page-inventario,
+body.season-rulebook-v3 #page-rituais{
+  display:none!important;
+}
+body.season-rulebook-v3 #page-principal{
+  display:flex!important;
+  width:100%!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:auto!important;
+  background:#030303!important;
+}
+body.season-rulebook-v3 #viewport{
+  position:relative!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  opacity:1!important;
+  margin:auto!important;
+}
+/* Apenas o botão de ajustes fica fora da arte, para manter a conexão. */
+body.season-rulebook-v3 #tools-toggle{
+  position:fixed!important;
+  top:9px!important;
+  right:10px!important;
+  z-index:250!important;
+  min-width:36px!important;
+  height:32px!important;
+  padding:4px 9px!important;
+  font:700 11px Arial,sans-serif!important;
+  background:rgba(23,11,9,.9)!important;
+  color:#f8d9cc!important;
+  border:1px solid #7e2b1e!important;
+}
+body.season-rulebook-v3 #tools-toggle[aria-expanded="false"] + .head{
+  display:none!important;
+}
+body.season-rulebook-v3 #tools-toggle[aria-expanded="true"] + .head{
+  position:fixed!important;
+  display:block!important;
+  top:48px!important;
+  right:10px!important;
+  left:auto!important;
+  z-index:249!important;
+  width:min(330px,calc(100vw - 20px))!important;
+  padding:9px!important;
+  border:1px solid #843426!important;
+  border-radius:4px!important;
+  background:#100807f5!important;
+}
+body.season-rulebook-v3 .head .brand{display:none!important}
+body.season-rulebook-v3 .head .actions{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:6px!important;
+  align-items:stretch!important;
+  width:100%!important;
+  position:static!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+body.season-rulebook-v3 .head .actions button{
+  min-height:34px!important;
+}
+@media (max-width:767px){
+  body.season-rulebook-v3 #page-principal{overflow:auto!important}
+  body.season-rulebook-v3 #viewport{margin:0!important}
+}
