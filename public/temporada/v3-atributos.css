@@ -843,3 +843,119 @@ body.season-rulebook-v3 #item-catalog-dialog .item-catalog-photo{
   background:transparent;
   filter:grayscale(1) contrast(1.13) brightness(1.04);
 }
+
+/* EXÍLIO 3.0 — COMBATE: referência visual do escudo original, somente ficha da 2ª temporada.
+   Mantém 2d10 e crítico por par natural de d10 iguais. */
+body.season-rulebook-v3 #sheet > #combat-area {
+  display:block!important; visibility:visible!important; pointer-events:auto!important;
+  position:absolute!important; left:1226px!important; top:466px!important;
+  width:328px!important; height:373px!important; box-sizing:border-box!important;
+  padding:8px!important; border:0!important; border-top:1px solid #ae3725!important;
+  border-radius:0!important; background:rgba(7,8,10,.37)!important; box-shadow:none!important;
+  color:#f2f0ef!important; overflow-x:hidden!important; overflow-y:auto!important;
+  scrollbar-width:thin; scrollbar-color:#784332 #111315;
+}
+body.season-rulebook-v3 #combat-area #combat-add{
+  display:block!important; width:144px!important; min-width:0!important; height:28px!important;
+  margin:0 0 9px auto!important; padding:0 8px!important;
+  border:1px solid #555658!important; border-radius:3px!important;
+  background:linear-gradient(#2a2b2d,#141517)!important; color:#efefef!important;
+  font:700 11px Arial,sans-serif!important;
+}
+body.season-rulebook-v3 #combat-area .combat-stats{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 65px!important;
+  align-items:center!important;justify-content:stretch!important;
+  gap:10px!important;min-height:67px!important;margin:0 0 14px!important;
+  padding:0!important;
+}
+body.season-rulebook-v3 #combat-area .combat-stats label.combat-move-field{
+  display:flex!important;flex-wrap:nowrap!important;align-items:center!important;
+  justify-content:center!important;gap:3px!important;min-width:0!important;
+  padding:9px 5px!important;border-radius:3px!important;
+  background:linear-gradient(#252729,#121316)!important;border:1px solid #55575b!important;
+  font:700 11px Arial,sans-serif!important;white-space:nowrap!important;
+}
+body.season-rulebook-v3 #combat-area .combat-stats .combat-move-field input{
+  width:28px!important;height:21px!important;min-width:20px!important;padding:0!important;
+  border:0!important;background:transparent!important;
+  font:700 13px Arial,sans-serif!important;
+}
+body.season-rulebook-v3 #combat-area #combat-move-squares{
+  font:700 10px Arial,sans-serif;color:#c7c6c7;white-space:nowrap;
+}
+body.season-rulebook-v3 #combat-area .combat-stats .combat-defense{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:4px!important;margin:0!important;padding:1px 5px 6px!important;
+  min-width:0!important;border:0!important;
+  background:linear-gradient(150deg,#333437,#0b0c0e)!important;
+  font:700 16px Georgia,serif!important;
+}
+body.season-rulebook-v3 #combat-area .combat-stats .combat-defense input{
+  box-sizing:border-box!important;width:47px!important;height:47px!important;
+  border:4px double #dbdadb!important;outline:1px solid #737477!important;outline-offset:2px!important;
+  border-radius:50%!important;color:#fff!important;background:#171819!important;
+  font:800 19px Georgia,serif!important;text-align:center!important;
+}
+body.season-rulebook-v3 #combat-area #combat-attacks{
+  display:flex!important;flex-direction:column;gap:8px!important;
+  padding:0!important;margin:0!important;max-height:none!important;overflow:visible!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card.combat-card-compact{
+  display:grid!important;grid-template-columns:65px minmax(0,1fr)!important;
+  grid-template-rows:19px auto!important;gap:4px 7px!important;
+  min-height:83px!important;max-width:100%!important;
+  padding:8px!important;margin:0!important;
+  box-sizing:border-box!important;
+  background:linear-gradient(120deg,#282b2eec,#0f1114f5)!important;
+  border:1px solid #626468!important;border-radius:4px!important;
+  box-shadow:inset 0 1px 1px #ffffff17!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-weapon-image{
+  grid-column:1!important;grid-row:1/3!important;align-self:center!important;
+  width:65px!important;height:58px!important;max-width:100%!important;
+  object-fit:contain!important;object-position:center!important;filter:grayscale(1);
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-card-head{
+  grid-column:2!important;grid-row:1!important;align-items:center!important;
+  min-width:0!important;min-height:19px!important;margin:0!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-card-head strong{
+  font:700 12px/1.2 Arial,sans-serif!important;color:#eee!important;
+  text-align:center!important;white-space:nowrap!important;overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-actions summary{
+  width:20px!important;height:20px!important;color:#c9cbd0!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-roll-row{
+  grid-column:2!important;grid-row:2!important;
+  display:grid!important;grid-template-columns:1.1fr .9fr .7fr!important;
+  gap:3px!important;min-width:0!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-roll-row > button,
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-roll-row > span{
+  display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;
+  min-width:0!important;min-height:39px!important;
+  padding:4px 5px!important;border:0!important;border-radius:1px!important;
+  background:#45484b!important;color:#f1f2f3!important;text-align:left!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-roll-row .combat-metric-value{
+  font:800 12px/1.15 Arial,sans-serif!important;color:#fafafa!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-roll-row .combat-metric-label{
+  font:800 9px/1.15 Arial,sans-serif!important;color:#d0d0d0!important;
+  letter-spacing:0!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-roll-row > button:hover{
+  background:#61656a!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card-compact .combat-ammo{
+  grid-column:1/-1!important;min-width:0!important;
+}
+/* Também permite consultar o painel no layout mobile, sem o posicionamento absoluto do desktop. */
+body.season-rulebook-v3 .mobile-sheet #combat-area{
+  display:block!important;visibility:visible!important;pointer-events:auto!important;
+  position:relative!important;inset:auto!important;
+  width:100%!important;height:auto!important;min-height:0!important;
+  padding:9px!important;margin:0!important;
+}
