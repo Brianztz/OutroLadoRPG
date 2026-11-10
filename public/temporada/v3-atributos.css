@@ -258,3 +258,92 @@ body.season-rulebook-v3 #sheet > #portrait-stage .portrait-replace[hidden],
 body.season-rulebook-v3 #sheet > #portrait-stage .portrait-image[hidden]{
   display:none!important;
 }
+
+/* Exílio 3.0 — barras funcionais de PV e PM encaixadas na arte. */
+body.season-rulebook-v3 #sheet > section.resource-widget[aria-label]{
+  position:absolute!important;display:block!important;visibility:visible!important;
+  pointer-events:auto!important;z-index:45!important;isolation:isolate;
+  height:38px!important;margin:0!important;padding:0!important;
+  font-family:Georgia,'Times New Roman',serif!important;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.8));
+}
+body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Vida"]{
+  left:1270px!important;top:170px!important;width:244px!important;
+  --exilio-meter-border:#a6452c;
+  --exilio-meter-glow:#af31232b;
+  --exilio-meter-start:#67130f;
+  --exilio-meter-end:#ee5433;
+}
+body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Sanidade"]{
+  left:1310px!important;top:247px!important;width:244px!important;
+  --exilio-meter-border:#735189;
+  --exilio-meter-glow:#7a5ab133;
+  --exilio-meter-start:#342354;
+  --exilio-meter-end:#9b78d8;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-bar{
+  position:absolute!important;inset:0!important;
+  box-sizing:border-box!important;width:100%!important;height:38px!important;
+  overflow:hidden!important;border:1px solid var(--exilio-meter-border)!important;
+  border-radius:2px!important;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  background:linear-gradient(180deg,#24171b,#09080b 80%)!important;
+  box-shadow:inset 0 0 0 1px #ffffff13,inset 0 4px 11px #0009,0 0 15px var(--exilio-meter-glow)!important;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-fill{
+  position:relative!important;display:block!important;height:100%!important;
+  background:linear-gradient(180deg,var(--exilio-meter-end),var(--exilio-meter-start))!important;
+  box-shadow:inset 0 1px 0 #ffffff60,inset 0 -3px 8px #0005,0 0 18px var(--exilio-meter-glow)!important;
+  transition:width .25s ease!important;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-fill::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(110deg,transparent 0 17px,#ffffff16 17px 19px,transparent 19px 36px);
+  opacity:.65;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-bar::after{
+  content:'';position:absolute;inset:1px 1px auto;height:44%;pointer-events:none;
+  background:linear-gradient(180deg,#ffffff27,transparent);
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-controls{
+  display:grid!important;position:absolute!important;inset:0!important;
+  grid-template-columns:24px minmax(0,1fr) 9px minmax(0,1fr) 24px;
+  align-items:center!important;justify-items:center!important;
+  box-sizing:border-box!important;width:100%!important;height:38px!important;
+  margin:0!important;padding:0 6px!important;gap:3px!important;
+  z-index:2!important;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-controls input{
+  box-sizing:border-box!important;display:block!important;
+  width:100%!important;min-width:0!important;height:27px!important;
+  padding:0 2px!important;margin:0!important;
+  background:#100c12a8!important;border:1px solid #ffffff22!important;
+  border-radius:2px!important;color:#fff7f3!important;
+  font:900 17px/27px Georgia,'Times New Roman',serif!important;
+  text-align:center!important;text-shadow:0 1px 3px #000!important;
+  appearance:textfield!important;
+  font-variant-numeric:tabular-nums;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-controls span{
+  color:#ffede4!important;font:700 15px/1 Georgia,serif!important;
+  text-shadow:0 1px 3px #000!important;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-controls button{
+  display:grid!important;place-items:center!important;
+  box-sizing:border-box!important;width:24px!important;height:25px!important;
+  min-width:0!important;min-height:0!important;
+  padding:0!important;margin:0!important;
+  border:1px solid #ffffff3b!important;border-radius:2px!important;
+  background:#120d10db!important;color:#fff0e8!important;
+  font:800 18px/1 Arial,sans-serif!important;
+  box-shadow:inset 0 1px 0 #ffffff1c!important;cursor:pointer!important;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-controls button:hover{
+  background:var(--exilio-meter-start)!important;border-color:var(--exilio-meter-end)!important;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-controls :is(button,input):focus-visible{
+  outline:2px solid #ffe0bb!important;outline-offset:2px!important;
+}
+@media(prefers-reduced-motion:reduce){
+  body.season-rulebook-v3 #sheet .resource-widget .resource-fill{transition:none!important}
+}
