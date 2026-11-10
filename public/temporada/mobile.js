@@ -9,7 +9,7 @@
   const media=window.matchMedia('(max-width: 1199px), (max-width: 1399px) and (orientation: portrait)');
   const byId=id=>document.getElementById(id);
   const originals=new Map();
-  const labels={forca:'FORÇA',agilidade:'AGILIDADE',vigor:'VIGOR',intelecto:'INTELECTO',presenca:'PRESENÇA'};
+  const labels={potencia:'POTÊNCIA',destreza:'DESTREZA',constituicao:'CONSTITUIÇÃO',raciocinio:'RACIOCÍNIO',consciencia:'CONSCIÊNCIA',expressao:'EXPRESSÃO'};
   let active=false,lastAvatar=null,inventoryClueDrawer=null;
 
   function move(node,target){
@@ -49,7 +49,7 @@
   function mount(){
     if(active)return;
     active=true;
-    move(byId('char-nex'),byId('mobile-nex-mount'));
+    move(byId('influence-value'),byId('mobile-nex-mount'));
     move(byId('char-level'),byId('mobile-level-mount'));
     move(byId('char-name'),byId('mobile-name-mount'));
     move(byId('char-origin'),byId('mobile-origin-mount'));
@@ -74,6 +74,7 @@
     }
     move(byId('skill-edge-toolbar'),byId('mobile-edges-mount'));
     move(byId('sheet-skills-grid'),byId('mobile-skills-mount'));
+    move(byId('exilio-abilities-panel'),byId('mobile-abilities-mount'));
     move(byId('combat-area'),byId('mobile-combat-mount'));
     const resources=byId('mobile-resources-mount');
     move(document.querySelector('.resource-widget[aria-label="Vida"]'),resources);
