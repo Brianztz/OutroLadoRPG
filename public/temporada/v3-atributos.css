@@ -242,8 +242,9 @@ body.season-rulebook-v3 #sheet > #portrait-stage{
 body.season-rulebook-v3 #sheet > #portrait-stage .portrait-hint{
   visibility:visible!important;
   pointer-events:auto!important;
-  left:50%!important;
-  top:50%!important;
+  /* Centro da arte 1920×909; não deslocar o PNG carregado. */
+  left:calc(50% - 140px)!important;
+  top:calc(50% - 18px)!important;
 }
 body.season-rulebook-v3 #sheet > #portrait-stage .portrait-replace{
   visibility:visible!important;
