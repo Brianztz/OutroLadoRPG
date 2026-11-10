@@ -5,7 +5,7 @@ const j=fs.readFileSync(path.join(root,'public/temporada/sheet.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'public/temporada/v3-atributos.css'),'utf8');
 test('nova ficha usa a arte enviada e mostra só seis controles de atributo',()=>{
   assert(h.includes('class="season-rulebook-v3"'));
-  assert(h.includes('/temporada/v3-atributos.css?v=2'));
+  assert(h.includes('/temporada/v3-atributos.css?v=3'));
   assert(css.includes("/temporada/assets/fundo-original-1920x909.jpg"));
   assert(!css.includes("novo-fundo-enviado.webp"),'não reutilizar imagem antiga de baixa qualidade');
   const original=fs.readFileSync(path.join(root,'public/temporada/assets/fundo-original-1920x909.jpg'));
@@ -20,7 +20,7 @@ test('nova ficha usa a arte enviada e mostra só seis controles de atributo',()=
   }
   assert.equal((h.match(/class="attr v3-attributes"/g)||[]).length,6);
   assert(!h.includes('src="/temporada/mobile.js?v=responsive-1"'));
-  assert(h.includes('src="/temporada/sheet.js?v=v3-atributos-1"'));
+  assert(h.includes('src="/temporada/sheet.js?v=v3-atributos-2"'));
 });
 test('coordenadas dos losangos na arte correspondem aos seis atributos',()=>{
  const values=[['potencia',802,201],['destreza',773,232],['constituicao',743,262],['raciocinio',711,293],['consciencia',681,323],['expressao',649,355]];
@@ -34,4 +34,26 @@ test('outros dados e histórico permanecem no HTML e nas rotinas',()=>{
   assert(h.includes('id="'+id+'"'),id);
  }
  assert(j.includes("window.dispatchEvent(new Event('season:change'))"));
+});
+
+
+test('atributos visíveis preservam aumentar, diminuir, rolar e salvar',()=>{
+  assert(j.includes("const newAttributeNames={potencia:'POTÊNCIA'"));
+  assert(j.includes("const next=Math.max(-1,Math.min(5,current+delta))"));
+  assert(j.includes("el.addEventListener('contextmenu'"));
+  assert(j.includes("showSkillDice(pool,'ATRIBUTO'"));
+  assert(j.includes("el.addEventListener('keydown'"));
+  assert(j.includes("v3-attribute-minus"));
+  assert(j.includes("v3-attribute-roll"));
+  assert(css.includes("#sheet > :not(.v3-attributes):not(.v3-attribute-tools)"));
+  assert(css.includes(".v3-attribute-tools:focus-within"));
+  assert(css.includes("@media (hover:none), (pointer:coarse)"));
+});
+test('tela deixa de bloquear os atributos em falha de Firebase e preserva modo local',()=>{
+  const sync=fs.readFileSync(path.join(root,'public/temporada/sync.js'),'utf8');
+  assert(sync.includes('ready=true;lock(false);broadcast();status('));
+  assert(sync.includes('cloudReady=false;ready=true;lock(false);broadcast();'));
+  assert(sync.includes("if(!cloudReady){broadcast();status('MODO LOCAL"));
+  assert(sync.includes("()=>cloudReady?flush():initialize()"));
+  assert(h.includes('/temporada/sync.js?v=attributes-restore-1'));
 });
