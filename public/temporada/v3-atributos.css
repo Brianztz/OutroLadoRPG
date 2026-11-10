@@ -632,3 +632,20 @@ body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top [role="tab
 body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-tools button:focus-visible{
   outline:2px solid #ffd7a3;outline-offset:2px;
 }
+
+/* Catálogo e evolução ficam na janela de Classe; nenhum botão extra no painel Habilidades. */
+body.season-rulebook-v3 #origin-dialog .exilio-origin-actions{
+  display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;padding:10px;
+  border:1px solid #6e3929;background:#1d100e;
+}
+body.season-rulebook-v3 #origin-dialog .exilio-origin-actions button{
+  flex:1;min-width:112px;min-height:35px;padding:7px 10px;
+  background:#472317;border:1px solid #a3583c;border-radius:3px;
+  color:#fbe7dc;font:800 12px Arial,sans-serif;cursor:pointer;
+}
+body.season-rulebook-v3 #origin-dialog .exilio-origin-actions button:hover{
+  background:#783722;border-color:#e3a17c;
+}
+body.season-rulebook-v3 #origin-dialog .exilio-origin-actions button:focus-visible{
+  outline:2px solid #ffddb2;outline-offset:2px;
+}
