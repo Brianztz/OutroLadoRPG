@@ -32,7 +32,9 @@
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
   try{const value=localStorage.getItem(window.SeasonContext.stateKey);if(value){const loaded=JSON.parse(value);if(loaded&&loaded.attrs&&loaded.skills){state={...initial,...loaded,attrs:{...initial.attrs,...loaded.attrs}};}}}catch(e){}
   function display(){
+    const newResources=ensureExilioCreationResources();
     reconcileIPBonuses();
+    if(newResources)save();
     displayExilioArtAndAbilities();
     displayParanormalInfluence();
     displayResources();
@@ -141,10 +143,15 @@
     const isNew=el.classList.contains('v3-attributes');
     const change=delta=>{
       const current=Number(state.attrs[id])||0;
-      const next=Math.max(-1,Math.min(5,current+delta));
-      if(next===current)return;
-      state.attrs[id]=next;
-      display();save();
+      const creation=clampParanormalInfluence(state.paranormalInfluence)===0&&state.origin==='Mundano'&&Boolean(newAttributeNames[id]);
+      const next=Math.max(-1,Math.min(creation?3:5,current+delta));
+      if(next===current){if(creation&&delta>0)toast('Na criação, atributo máximo +3.');return;}
+      if(creation){
+        const values=Object.keys(newAttributeNames).map(key=>key===id?next:(Number(state.attrs[key])||0));
+        if(values.reduce((sum,v)=>sum+v,0)>6){toast('Na criação, distribua até 6 pontos. Um atributo em −1 concede 1 ponto extra.');return;}
+        if(values.filter(v=>v===-1).length>1){toast('Na criação, apenas um atributo pode ser reduzido a −1.');return;}
+      }
+      state.attrs[id]=next;display();save();
     };
     const roll=()=>{
       const value=Number(state.attrs[id])||0;
@@ -249,18 +256,18 @@
   const skillAttributeKeys={FOR:'forca',AGI:'agilidade',VIG:'vigor',INT:'intelecto',PRE:'presenca'};
   let selectedSkill=null;
   function skillValues(attribute,training,bonus){
-    const natural=Math.floor(Math.max(0,Number(attribute)||0)*2);
-    const total=natural+training+bonus;
-    return {natural,total,targets:tabelaD20[Math.max(1,Math.min(20,Math.floor(total)))]};
+    const total=(Number(attribute)||0)+(Number(training)||0)+(Number(bonus)||0);
+    return {natural:total,total,targets:{n:11,b:16,e:21}};
   }
   function rollSkillPool(attribute,random=Math.random,modifier=0){
-    const a=Math.max(-20,Math.min(20,Math.trunc(Number(attribute)||0)));
-    const extra=Math.abs(Math.trunc(Number(modifier)||0));
-    const dice=Array.from({length:1+Math.abs(a)+extra},()=>Math.floor(random()*20)+1);
-    const lowest=a<0||modifier<0;
-    return {dice,value:lowest?Math.min(...dice):Math.max(...dice),lowest};
+    const bonus=Math.trunc(Number(attribute)||0),edge=Math.sign(Number(modifier)||0);
+    const dice=Array.from({length:edge?3:2},()=>Math.floor(random()*10)+1),kept=[...dice];
+    if(edge>0)kept.sort((a,b)=>b-a).splice(2);
+    if(edge<0)kept.sort((a,b)=>a-b).splice(2);
+    const value=kept.reduce((sum,v)=>sum+v,0)+bonus;
+    return {dice,kept,value,lowest:edge<0,detail:(edge?'3d10 ['+dice.join(', ')+'] → 2 '+(edge>0?'maiores':'menores')+' ['+kept.join(', ')+']':'2d10 ['+dice.join(', ')+']')+' + '+bonus+' = '+value};
   }
-  function classifySkill(value,t){return value>=t.e&&t.e!==99?'EXTREMO':value>=t.b&&t.b!==99?'BOM':value>=t.n?'NORMAL':'FALHA';}
+  function classifySkill(value){return value>=21?'EXTREMO':value>=16?'BOM':value>=11?'NORMAL':'FALHA';}
   function selectedValues(){
     const attribute=Number(state.attrs[$('skill-attribute').value])||0;
     const domain=Number($('skill-training').value)||0;
@@ -636,8 +643,18 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     displayExilioArtAndAbilities();save();
     toast('Fundo padrão restaurado.');
   });
+  function ensureExilioCreationResources(){
+    if(state.resources?.life&&state.resources?.sanity)return false;
+    const roll=()=>Array.from({length:3},()=>Math.floor(Math.random()*6)+1);
+    const pv=roll(),pm=roll();
+    const life=Math.max(1,pv.reduce((sum,n)=>sum+n,0)+8+2*(Number(state.attrs.constituicao)||0));
+    const sanity=Math.max(1,pm.reduce((sum,n)=>sum+n,0)+14+2*(Number(state.attrs.consciencia)||0));
+    state.resources={...state.resources,life:state.resources?.life||{current:life,max:life},sanity:state.resources?.sanity||{current:sanity,max:sanity}};
+    state.exilioCreationRolls={pv,pm};
+    return true;
+  }
   function normalizeResource(value){
-    const max=Math.max(1,Math.min(9999,Math.trunc(Number(value?.max)||100)));
+    const max=Math.max(1,Math.min(9999,Math.trunc(Number(value?.max)||1)));
     const current=Math.max(0,Math.min(max,Math.trunc(Number(value?.current) || 0)));
     return {current,max};
   }
@@ -647,6 +664,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
       const value=normalizeResource(state.resources[id]||{current:100,max:100});state.resources[id]=value;
       $(id+'-current').value=value.current;$(id+'-max').value=value.max;
       $(id+'-fill').style.width=(100*value.current/value.max)+'%';
+      if(id==='sanity')$(id+'-bar').title=value.current===0?'COLAPSO MENTAL · incapacitado até recuperar PM':value.current*4<=value.max?'PERTURBADO · PM ≤25%':'PM: '+value.current+'/'+value.max;
       $(id+'-bar').setAttribute('aria-valuemin','0');$(id+'-bar').setAttribute('aria-valuemax',String(value.max));$(id+'-bar').setAttribute('aria-valuenow',String(value.current));$(id+'-bar').setAttribute('aria-valuetext',value.current+' de '+value.max);
     }
   }
