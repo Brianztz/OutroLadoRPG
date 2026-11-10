@@ -261,12 +261,10 @@
     return {natural:total,total,targets:{n:11,b:16,e:21}};
   }
   function rollSkillPool(attribute,random=Math.random,modifier=0){
-    const bonus=Math.trunc(Number(attribute)||0),edge=Math.sign(Number(modifier)||0);
-    const dice=Array.from({length:edge?3:2},()=>Math.floor(random()*10)+1),kept=[...dice];
-    if(edge>0)kept.sort((a,b)=>b-a).splice(2);
-    if(edge<0)kept.sort((a,b)=>a-b).splice(2);
-    const value=kept.reduce((sum,v)=>sum+v,0)+bonus;
-    return {dice,kept,value,lowest:edge<0,detail:(edge?'3d10 ['+dice.join(', ')+'] → 2 '+(edge>0?'maiores':'menores')+' ['+kept.join(', ')+']':'2d10 ['+dice.join(', ')+']')+' + '+bonus+' = '+value};
+    const bonus=Math.trunc(Number(attribute)||0);
+    const dice=[Math.floor(random()*10)+1,Math.floor(random()*10)+1];
+    const value=dice[0]+dice[1]+bonus;
+    return {dice,kept:dice,value,lowest:false,detail:'2d10 ['+dice.join(', ')+'] + '+bonus+' = '+value};
   }
   function classifySkill(value){return value>=21?'EXTREMO':value>=16?'BOM':value>=11?'NORMAL':'FALHA';}
   function selectedValues(){
@@ -291,26 +289,35 @@
   }
   function saveSkillSettings(){
     if(!selectedSkill)return;
-    const name=selectedSkill.dataset.skill,domain=Number($('skill-training').value)||0;
+    const name=selectedSkill.dataset.skill;
+    const requested=Number($('skill-training').value)||0;
+    const previous=Number(state.skillDomains?.[name])||0;
+    const ip=clampParanormalInfluence(state.paranormalInfluence);
+    if((requested===4&&ip<4)||(requested===6&&ip<7)){
+      toast(requested===4?'Domínio Experiente (+4) exige IP 4.':'Domínio Referência (+6) exige IP 7.');
+      $('skill-training').value=String(previous);refreshSkill();return;
+    }
+    const refs=skillNames.filter(n=>n!==name&&(Number(state.skillDomains?.[n])||0)===6).length;
+    if(requested===6&&refs>=2){
+      toast('O livro permite no máximo duas perícias em Referência (+6).');
+      $('skill-training').value=String(previous);refreshSkill();return;
+    }
     const bonus=Math.max(-99,Math.min(99,Math.trunc(Number($('skill-bonus').value)||0)));
     state.skillDomains=state.skillDomains||{};state.skillAttributes=state.skillAttributes||{};state.skillBonuses=state.skillBonuses||{};
-    state.skillDomains[name]=[0,2,4,6].includes(domain)?domain:0;
-    state.skillAttributes[name]=$('skill-attribute').value;state.skillBonuses[name]=bonus;
-    state.skills[name]=state.skillDomains[name];$('skill-bonus').value=bonus;
+    state.skillDomains[name]=[0,2,4,6].includes(requested)?requested:previous;
+    state.skillAttributes[name]=$('skill-attribute').value;
+    state.skillBonuses[name]=bonus;
+    state.skills[name]=state.skillDomains[name];
+    $('skill-bonus').value=bonus;
     save();display();refreshSkill();$('skill-result').textContent='';
   }
   function rollExilioSkill(name,random=Math.random){
     const key=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
     const attribute=Number(state.attrs[key])||0,domain=Number(state.skillDomains?.[name])||0,bonus=Number(state.skillBonuses?.[name])||0;
-    const edge=pendingSkillEdge(name);
-    const dice=Array.from({length:edge?3:2},()=>Math.floor(random()*10)+1);
-    const selected=[...dice];
-    if(edge===1)selected.sort((a,b)=>b-a).splice(2);
-    if(edge===-1)selected.sort((a,b)=>a-b).splice(2);
-    const total=selected.reduce((sum,d)=>sum+d,0)+attribute+domain+bonus;
-    const detail=(edge?'3d10 ['+dice.join(', ')+'] → 2 '+(edge>0?'maiores':'menores')+' ['+selected.join(', ')+']':'2d10 ['+dice.join(', ')+']')+' + Atributo '+attribute+' + Domínio '+domain+(bonus?' + bônus '+bonus:'')+' = '+total;
-    if(edge){delete state.nextSkillDice[name];save();refreshSkillEdgeBadges();}
-    return {dice,value:total,lowest:edge<0,detail};
+    const dice=[Math.floor(random()*10)+1,Math.floor(random()*10)+1];
+    const total=dice[0]+dice[1]+attribute+domain+bonus;
+    const detail='2d10 ['+dice.join(', ')+'] + Atributo '+attribute+' + Domínio '+domain+(bonus?' + bônus '+bonus:'')+' = '+total;
+    return {dice,kept:dice,value:total,lowest:false,detail};
   }
   $('skill-training').addEventListener('change',saveSkillSettings);
   $('skill-attribute').addEventListener('change',saveSkillSettings);
@@ -1132,7 +1139,7 @@ $('clue-stage').addEventListener('dblclick',()=>{resetClueView();});
 function pendingSkillEdge(name){const value=state.nextSkillDice?.[name];return value===1?1:value===-1?-1:0;}
 function updateSkillEdgeBadge(el){let badge=el.querySelector('.skill-edge-badge');const edge=pendingSkillEdge(el.dataset.skill);if(!badge){badge=document.createElement('span');badge.className='skill-edge-badge';el.append(badge);}badge.hidden=!edge;badge.textContent=edge>0?'+1 · maior':'+1 · menor';badge.title=(edge>0?'Vantagem: +1 dado, usar o maior.':'Desvantagem: +1 dado, usar o menor.')+' Somente na próxima rolagem.';}
 function refreshSkillEdgeBadges(){document.querySelectorAll('[data-skill]').forEach(updateSkillEdgeBadge);}
-function rollPendingSkill(name,attribute,random=Math.random){const edge=pendingSkillEdge(name);const pool=rollSkillPool(attribute,random,edge);if(edge){delete state.nextSkillDice[name];save();refreshSkillEdgeBadges();if(selectedSkill&&selectedSkill.dataset.skill===name)refreshSkill();}return pool;}
+function rollPendingSkill(name,attribute,random=Math.random){const pool=rollSkillPool(attribute,random);if(state.nextSkillDice?.[name]){delete state.nextSkillDice[name];save();refreshSkillEdgeBadges();}return pool;}
 let choosingSkillEdge=0;
 function chooseSkillEdge(edge){choosingSkillEdge=choosingSkillEdge===edge?0:edge;updateSkillEdgeSelection();}
 function updateSkillEdgeSelection(){const active=choosingSkillEdge!==0;$('skill-advantage').setAttribute('aria-pressed',String(choosingSkillEdge===1));$('skill-disadvantage').setAttribute('aria-pressed',String(choosingSkillEdge===-1));$('sheet-skills-grid').classList.toggle('choosing-edge',active);$('skill-edge-status').textContent=active?'Clique na perícia para aplicar '+(choosingSkillEdge>0?'vantagem':'desvantagem')+'. Esc cancela.':'';}
