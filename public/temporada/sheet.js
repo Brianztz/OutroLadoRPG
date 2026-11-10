@@ -7,8 +7,26 @@
   const $=id=>document.getElementById(id);
   const attrIds=['forca','agilidade','vigor','intelecto','presenca'];
   const newAttributeNames={potencia:'POTÊNCIA',destreza:'DESTREZA',constituicao:'CONSTITUIÇÃO',raciocinio:'RACIOCÍNIO',consciencia:'CONSCIÊNCIA',expressao:'EXPRESSÃO'};
-  const skillNames=["ACROBACIA", "ADESTRAMENTO", "ARTES", "ATLETISMO", "ATUALIDADES", "CIÊNCIAS", "CRIME", "DIPLOMACIA", "ENGANAÇÃO", "FORTITUDE", "FURTIVIDADE", "INICIATIVA", "INTIMIDAÇÃO", "INTUIÇÃO", "INVESTIGAÇÃO", "LUTA", "MEDICINA", "OCULTISMO", "PERCEPÇÃO", "PILOTAGEM", "PONTARIA", "PROFISSÃO", "REFLEXOS", "RELIGIÃO", "SOBREVIVÊNCIA", "TÁTICA", "TECNOLOGIA", "VONTADE"];
-  const initial={name:'',occupation:'Nenhum',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{}};
+  const skillNames=["ATLETISMO","CONFRONTO","PRECISÃO","MOBILIDADE","DISCRIÇÃO","RESISTÊNCIA","OBSERVAÇÃO","INVESTIGAÇÃO","CONHECIMENTO","TECNOLOGIA","MEDICINA","INFLUÊNCIA","SENSIBILIDADE","SOBREVIVÊNCIA","OFÍCIO","ANOMALIAS"];
+  const exilioDescriptions=["Correr, saltar, escalar, nadar e superar obstáculos físicos.","Combate corpo a corpo, agarrões e golpes.","Disparos, arremessos e mira.","Equilíbrio, acrobacias, esquivas e deslocamento.","Furtividade, infiltração e ocultação.","Resistir a pressão física e mental.","Identificar sinais, movimentos e detalhes.","Examinar evidências e reconstruir acontecimentos.","Ciências, cultura, história e teoria.","Computadores, eletrônica e sistemas.","Diagnóstico, tratamentos e primeiros socorros.","Persuadir, negociar, intimidar e enganar.","Interpretar emoções, atitudes e contradições.","Orientação, rastreamento e adaptação.","Atividade profissional ou artística; requer especialidade.","Fenômenos e manifestações do Exílio."];
+  const exilioDefaultAttributes={"ATLETISMO":"potencia","CONFRONTO":"potencia","PRECISÃO":"destreza","MOBILIDADE":"destreza","DISCRIÇÃO":"destreza","RESISTÊNCIA":"constituicao","OBSERVAÇÃO":"consciencia","INVESTIGAÇÃO":"raciocinio","CONHECIMENTO":"raciocinio","TECNOLOGIA":"raciocinio","MEDICINA":"raciocinio","INFLUÊNCIA":"expressao","SENSIBILIDADE":"consciencia","SOBREVIVÊNCIA":"consciencia","OFÍCIO":"raciocinio","ANOMALIAS":"consciencia"};
+  const exilioAttributeLabels={"potencia":"POT","destreza":"DES","constituicao":"CON","raciocinio":"RAC","consciencia":"CNS","expressao":"EXP"};
+  function buildExilioSkillTable(){
+    const grid=$('sheet-skills-grid');grid.classList.add('exilio-skill-tables');grid.replaceChildren();
+    for(const name of skillNames){
+      const row=document.createElement('article');row.className='sheet-skill-card';row.dataset.skill=name;
+      const btn=document.createElement('button');btn.className='sheet-skill-details';btn.type='button';btn.setAttribute('aria-label','Configurar '+name);
+      const label=document.createElement('strong');label.textContent=name;btn.append(label);
+      const domain=document.createElement('span');domain.className='sheet-skill-dom';domain.title='Domínio da perícia';domain.textContent='0';
+      const select=document.createElement('select');select.className='sheet-skill-attribute';select.setAttribute('aria-label','Atributo de '+name);select.title='Escolha o atributo conforme a abordagem';
+      for(const [value,text] of [["potencia","POT"],["destreza","DES"],["constituicao","CON"],["raciocinio","RAC"],["consciencia","CNS"],["expressao","EXP"]]){const o=document.createElement('option');o.value=value;o.textContent=text;select.append(o);}
+      const die=document.createElement('button');die.className='sheet-skill-roll';die.type='button';die.textContent='⚄';die.setAttribute('aria-label','Rolar '+name);die.title='Teste de Exílio: 2d10 + Atributo + Domínio';
+      const indicator=document.createElement('span');indicator.className='skill-indicator';indicator.hidden=true;
+      row.append(btn,domain,select,die,indicator);grid.append(row);
+    }
+  }
+  buildExilioSkillTable();
+  const initial={name:'',occupation:'Nenhum',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{}};
   let state=JSON.parse(JSON.stringify(initial));
   let toastHandle=null;
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
@@ -35,17 +53,11 @@
         : el.dataset.attr+', valor '+v);
     });
     document.querySelectorAll('[data-skill]').forEach(el=>{
-      const n=Number(state.skills[el.dataset.skill]||0);
-      el.classList.toggle('active',n>0);
-      el.querySelector('.skill-indicator').textContent=n>0?'+'+n:'';
-      const settings=state.skillSettings?.[el.dataset.skill];
-      const bonus=settings?(settings.trained?5:0)+Number(settings.bonus||0):n;
-      const attribute=Number(state.attrs[skillAttributeKeys[el.dataset.skillAttr]])||0;
-      const targets=skillValues(attribute,0,bonus).targets;
-      for(const [suffix,key,label] of [['normal','n','Normal'],['good','b','Bom'],['extreme','e','Extremo']])el.querySelector('.sheet-target-'+suffix).textContent=label+': '+(targets[key]===99?'—':targets[key]);
-      el.classList.toggle('trained',Boolean(settings?settings.trained:n>=5));
+      const name=el.dataset.skill,domain=Number(state.skillDomains?.[name])||0;
+      el.classList.toggle('trained',domain>0);
+      el.querySelector('.sheet-skill-dom').textContent=domain>0?'+'+domain:'0';
+      el.querySelector('.sheet-skill-attribute').value=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
       updateSkillEdgeBadge(el);
-
     });
   }
   // Nunca achatar a arte: escala uniforme em qualquer proporção de tela.
@@ -159,16 +171,12 @@
     el.after(buttons);
   });
   document.querySelectorAll('[data-skill]').forEach(el=>{
-    el.addEventListener('click',()=>openSkill(el));
-    el.querySelector('.sheet-skill-roll').addEventListener('click',e=>{
-      e.stopPropagation();const name=el.dataset.skill;const settings=state.skillSettings?.[name];
-      const bonus=settings?(settings.trained?5:0)+Number(settings.bonus||0):Number(state.skills[name]||0);
-      const attribute=Number(state.attrs[skillAttributeKeys[el.dataset.skillAttr]])||0;
-      const targets=skillValues(attribute,0,bonus).targets;const pool=rollPendingSkill(name,attribute);
-      showSkillDice(pool,classifySkill(pool.value,targets),name);
-    });
-
-    el.title=el.dataset.skill+' • abrir detalhes e rolar';el.setAttribute('aria-haspopup','dialog');
+    el.addEventListener('click',event=>{if(event.target.closest('.sheet-skill-attribute,.sheet-skill-roll'))return;openSkill(el);});
+    const select=el.querySelector('.sheet-skill-attribute');
+    select.addEventListener('click',event=>event.stopPropagation());
+    select.addEventListener('change',event=>{event.stopPropagation();state.skillAttributes=state.skillAttributes||{};state.skillAttributes[el.dataset.skill]=select.value;save();display();});
+    el.querySelector('.sheet-skill-roll').addEventListener('click',event=>{event.stopPropagation();const name=el.dataset.skill;showSkillDice(rollExilioSkill(name),'TOTAL',name);});
+    el.title=el.dataset.skill+' • configurar ou rolar';
   });
   $('char-name').addEventListener('input',e=>{state.name=e.target.value.toUpperCase().slice(0,22);save();});
   $('panel-occupation').addEventListener('change',e=>{state.occupation=e.target.value;display();save()});
@@ -211,8 +219,7 @@
   window.addEventListener('orientationchange',updateScale);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();hideTools();}});
 
-  const skillDescriptions=["Equilibrar-se, executar manobras e amortecer quedas.","Lidar com animais, acalmá-los e ensinar comandos.","Criar, interpretar e avaliar expressões artísticas.","Correr, saltar, escalar, nadar e superar desafios físicos.","Conhecer notícias, acontecimentos e assuntos do mundo atual.","Aplicar conhecimentos científicos e analisar fenômenos.","Executar ações furtivas de crime, como abrir fechaduras ou furtar objetos.","Negociar, persuadir e resolver conflitos por meio do diálogo.","Mentir, disfarçar intenções e sustentar uma história convincente.","Resistir ao cansaço, a condições adversas e a agressões ao organismo.","Mover-se silenciosamente e esconder-se sem chamar atenção.","Reagir prontamente ao início de uma situação de perigo.","Pressionar ou ameaçar alguém para influenciar suas ações.","Perceber intenções, emoções e sinais de mentira.","Examinar pistas, pesquisar e relacionar informações.","Atacar e defender-se em combate corpo a corpo.","Prestar primeiros socorros e avaliar ferimentos ou doenças.","Reconhecer fenômenos, símbolos e conhecimentos paranormais.","Notar detalhes, sons, movimentos e perigos ao redor.","Conduzir veículos e executar manobras.","Mirar e realizar ataques à distância.","Aplicar conhecimentos e técnicas de uma atividade profissional.","Reagir a ameaças repentinas e evitar perigos.","Conhecer crenças, ritos, símbolos e tradições religiosas.","Orientar-se, encontrar recursos e enfrentar ambientes hostis.","Avaliar posições, planejar estratégias e compreender situações de combate.","Operar, analisar e reparar computadores e dispositivos tecnológicos."];
-  skillDescriptions.push('Resistir à pressão mental, ao medo e à influência paranormal.');
+  const skillDescriptions=exilioDescriptions;
   const tabelaD20={1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
   const skillAttributeKeys={FOR:'forca',AGI:'agilidade',VIG:'vigor',INT:'intelecto',PRE:'presenca'};
   let selectedSkill=null;
@@ -230,42 +237,62 @@
   }
   function classifySkill(value,t){return value>=t.e&&t.e!==99?'EXTREMO':value>=t.b&&t.b!==99?'BOM':value>=t.n?'NORMAL':'FALHA';}
   function selectedValues(){
-    const attribute=Number(state.attrs[skillAttributeKeys[selectedSkill.dataset.skillAttr]])||0;
-    const training=Number($('skill-training').value)||0;
+    const attribute=Number(state.attrs[$('skill-attribute').value])||0;
+    const domain=Number($('skill-training').value)||0;
     const bonus=Math.trunc(Number($('skill-bonus').value)||0);
-    return {attribute,...skillValues(attribute,training,bonus)};
+    return {attribute,domain,bonus,total:attribute+domain+bonus};
   }
   function refreshSkill(){
-    const v=selectedValues();
-    for(const [id,key] of [['skill-normal','n'],['skill-good','b'],['skill-extreme','e']])$(id).textContent=v.targets[key]===99?'Indisponível':String(v.targets[key]);
-    $('skill-formula').textContent=selectedSkill.dataset.skillAttr+' '+v.attribute+' · Natural '+v.natural+' · Total '+v.total;
-    $('skill-dice-rule').textContent=(1+Math.abs(v.attribute)+Math.abs(pendingSkillEdge(selectedSkill.dataset.skill)))+'d20 · usar o '+(v.attribute<0||pendingSkillEdge(selectedSkill.dataset.skill)<0?'menor':'maior')+' resultado';
+    if(!selectedSkill)return;
+    const v=selectedValues(),key=$('skill-attribute').value;
+    $('skill-formula').textContent='2d10 + '+exilioAttributeLabels[key]+' ('+v.attribute+') + Domínio '+v.domain+(v.bonus?' + bônus '+v.bonus:'');
+    $('skill-dice-rule').textContent='Modificador: '+(v.total>=0?'+':'')+v.total+' · O atributo depende da abordagem.';
   }
   function openSkill(el){
-    selectedSkill=el;const name=el.dataset.skill;const legacy=Number(state.skills[name])||0;
-    const settings=state.skillSettings?.[name]||{trained:legacy>=5,bonus:legacy>=5?legacy-5:legacy};
-    $('skill-name').textContent=name;$('skill-description').textContent=skillDescriptions[skillNames.indexOf(name)];
-    $('skill-training').value=settings.trained?'5':'0';$('skill-bonus').value=settings.bonus;
+    selectedSkill=el;const name=el.dataset.skill;
+    $('skill-name').textContent=name;$('skill-description').textContent=skillDescriptions[skillNames.indexOf(name)]||'';
+    $('skill-training').value=String(Number(state.skillDomains?.[name])||0);
+    $('skill-attribute').value=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
+    $('skill-bonus').value=Number(state.skillBonuses?.[name])||0;
     $('skill-result').textContent='';refreshSkill();$('skill-drawer').showModal();
   }
   function saveSkillSettings(){
     if(!selectedSkill)return;
-    const name=selectedSkill.dataset.skill;const trained=$('skill-training').value==='5';
+    const name=selectedSkill.dataset.skill,domain=Number($('skill-training').value)||0;
     const bonus=Math.max(-99,Math.min(99,Math.trunc(Number($('skill-bonus').value)||0)));
-    $('skill-bonus').value=bonus;state.skillSettings=state.skillSettings||{};state.skillSettings[name]={trained,bonus};
-    state.skills[name]=(trained?5:0)+bonus;save();display();refreshSkill();$('skill-result').textContent='';
+    state.skillDomains=state.skillDomains||{};state.skillAttributes=state.skillAttributes||{};state.skillBonuses=state.skillBonuses||{};
+    state.skillDomains[name]=[0,2,4,6].includes(domain)?domain:0;
+    state.skillAttributes[name]=$('skill-attribute').value;state.skillBonuses[name]=bonus;
+    state.skills[name]=state.skillDomains[name];$('skill-bonus').value=bonus;
+    save();display();refreshSkill();$('skill-result').textContent='';
   }
-  $('skill-training').addEventListener('change',saveSkillSettings);$('skill-bonus').addEventListener('change',saveSkillSettings);
+  function rollExilioSkill(name,random=Math.random){
+    const key=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
+    const attribute=Number(state.attrs[key])||0,domain=Number(state.skillDomains?.[name])||0,bonus=Number(state.skillBonuses?.[name])||0;
+    const edge=pendingSkillEdge(name);
+    const dice=Array.from({length:edge?3:2},()=>Math.floor(random()*10)+1);
+    const selected=[...dice];
+    if(edge===1)selected.sort((a,b)=>b-a).splice(2);
+    if(edge===-1)selected.sort((a,b)=>a-b).splice(2);
+    const total=selected.reduce((sum,d)=>sum+d,0)+attribute+domain+bonus;
+    const detail=(edge?'3d10 ['+dice.join(', ')+'] → 2 '+(edge>0?'maiores':'menores')+' ['+selected.join(', ')+']':'2d10 ['+dice.join(', ')+']')+' + Atributo '+attribute+' + Domínio '+domain+(bonus?' + bônus '+bonus:'')+' = '+total;
+    if(edge){delete state.nextSkillDice[name];save();refreshSkillEdgeBadges();}
+    return {dice,value:total,lowest:edge<0,detail};
+  }
+  $('skill-training').addEventListener('change',saveSkillSettings);
+  $('skill-attribute').addEventListener('change',saveSkillSettings);
+  $('skill-bonus').addEventListener('change',saveSkillSettings);
   $('skill-close').addEventListener('click',()=>$('skill-drawer').close());
-  $('skill-drawer').addEventListener('click',e=>{if(e.target===$('skill-drawer')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
-  $('skill-roll').addEventListener('click',()=>{
-    saveSkillSettings();const v=selectedValues();const pool=rollPendingSkill(selectedSkill.dataset.skill,v.attribute);const label=classifySkill(pool.value,v.targets);
-    const result=$('skill-result');result.dataset.result=label;
-    result.textContent=pool.value+' — '+label+'\nDados: '+pool.dice.join(', ')+'\n'+(pool.lowest?'Menor':'Maior')+' resultado escolhido.';
-    showSkillDice(pool,label,selectedSkill.dataset.skill);
+  $('skill-drawer').addEventListener('click',event=>{
+    if(event.target!==$('skill-drawer'))return;
+    const r=event.target.getBoundingClientRect();
+    if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.close();
   });
-
-
+  $('skill-roll').addEventListener('click',()=>{
+    saveSkillSettings();const name=selectedSkill.dataset.skill,pool=rollExilioSkill(name);
+    const output=$('skill-result');output.dataset.result='TOTAL';output.textContent=pool.detail;
+    showSkillDice(pool,'TOTAL',name);
+  });
   
   let diceTimer=null,diceURL=null;
   function cleanupSkillDice(){clearTimeout(diceTimer);diceTimer=null;$('skill-dice-animation').onload=null;$('skill-dice-animation').onerror=null;if(diceURL){URL.revokeObjectURL(diceURL);diceURL=null;}$('skill-dice-animation').removeAttribute('src');}

@@ -183,3 +183,51 @@ body.season-rulebook-v3 #sheet > .v3-attribute-tools button:focus-visible{
 @media(prefers-reduced-motion:reduce){
   body.season-rulebook-v3 #sheet > .v3-attribute-tools{transition:none}
 }
+
+/* Exílio 3.0 — tabelinhas de perícias reativadas exclusivamente na segunda temporada. */
+body.season-rulebook-v3 #sheet > #sheet-skills-grid,
+body.season-rulebook-v3 #sheet > #skill-edge-toolbar{visibility:visible!important;pointer-events:auto!important;z-index:70!important}
+body.season-rulebook-v3 #sheet > #sheet-skills-grid{
+  position:absolute!important;left:102px!important;top:482px!important;width:670px!important;height:360px!important;
+  display:grid!important;box-sizing:border-box;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-auto-rows:39px!important;gap:5px 9px!important;align-content:start!important;padding:7px!important;
+  overflow-y:auto!important;overflow-x:hidden!important;background:rgba(12,8,7,.88)!important;
+  border:1px solid #844332!important;border-radius:3px!important;scrollbar-width:thin
+}
+body.season-rulebook-v3 #sheet > #skill-edge-toolbar{left:106px!important;top:448px!important;width:652px!important;height:27px!important}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-card{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 35px 57px 30px!important;
+  box-sizing:border-box;align-items:center!important;min-width:0!important;min-height:0!important;height:39px!important;
+  gap:5px!important;padding:3px 5px 3px 8px!important;margin:0!important;
+  border:1px solid #634235!important;border-left:2px solid #7b3c28!important;border-radius:2px!important;
+  background:rgba(33,20,17,.94)!important;box-shadow:none!important
+}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-card.trained{border-left-color:#e18959!important}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-card:hover{background:#342016!important;border-color:#ba7654!important}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-details{
+  display:block!important;width:100%!important;min-width:0!important;min-height:0!important;
+  padding:0!important;margin:0!important;text-align:left!important;overflow:hidden!important;
+  border:0!important;background:transparent!important;color:#f4e7de!important
+}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-details strong{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:800 12px/22px Arial,sans-serif!important;letter-spacing:.015em
+}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-dom{
+  display:block;text-align:center;padding:3px 0;color:#f5d3b6;
+  font:800 12px/18px Arial,sans-serif;border:1px solid #674232;background:#261710
+}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-attribute{
+  display:block;width:57px;height:27px;padding:0 2px;box-sizing:border-box;cursor:pointer;
+  background:#1b1110;color:#ead0bd;border:1px solid #72503d;border-radius:2px;
+  font:700 11px Arial,sans-serif
+}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-roll{
+  display:grid!important;place-items:center!important;width:28px!important;height:28px!important;min-height:0!important;
+  padding:0!important;border:1px solid #874a34!important;border-radius:2px!important;
+  background:#341b13!important;color:#efdfd4!important;font:800 19px/1 Arial,sans-serif!important;cursor:pointer
+}
+body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-roll:hover{background:#773721!important;color:#fff!important}
+body.season-rulebook-v3 #sheet-skills-grid .skill-indicator{display:none!important}
+body.season-rulebook-v3 #sheet-skills-grid .skill-edge-badge{right:0;top:-10px;padding:1px 3px;font-size:8px;z-index:3}
+body.season-rulebook-v3 #sheet-skills-grid :is(button,select):focus-visible{outline:2px solid #eab28b;outline-offset:0}
