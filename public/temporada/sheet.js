@@ -63,6 +63,14 @@
   function updateScale(){
     const width=Math.max(1,window.visualViewport?.width||window.innerWidth);
     const height=Math.max(1,window.visualViewport?.height||window.innerHeight);
+    if(document.body.classList.contains('season-rulebook-v3') && width<=1199){
+      // Ficha do novo livro em formato fluido; jamais reduzir a 1920px no celular.
+      viewport.style.width='100%';
+      viewport.style.height='auto';
+      sheet.style.transform='none';
+      document.body.classList.remove('season-readable-zoom');
+      return;
+    }
     const scale=computeSheetScale(width,height,screenMode);
     const fitScale=computeSheetScale(width,height,'fit');
     const scaledWidth=W*scale,scaledHeight=H*scale;
