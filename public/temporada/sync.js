@@ -9,7 +9,16 @@ window.startSeasonSync=async function startSeasonSync(){
   try{preferences={...preferences,...JSON.parse(localStorage.getItem(metadataKey)||'{}')};}catch(_){}
   let code=view||localStorage.getItem('player_sync_code');
   if(!code){code=crypto.randomUUID().replace(/-/g,'').slice(0,8).toUpperCase();localStorage.setItem('player_sync_code',code);}
-  const lock=locked=>{for(const id of ['page-principal','page-inventario','page-rituais','tools-toggle','sheet-tabs'])document.getElementById(id).inert=locked;document.getElementById('season-import').disabled=locked;};lock(true);
+  const alwaysEditableAttributes=!view && document.body.classList.contains('season-rulebook-v3');
+  const lock=locked=>{
+    for(const id of ['page-principal','page-inventario','page-rituais','tools-toggle','sheet-tabs']){
+      // Os atributos do novo livro devem funcionar até durante a leitura inicial da nuvem.
+      const editable=alwaysEditableAttributes && id==='page-principal';
+      document.getElementById(id).inert=Boolean(locked && !editable);
+    }
+    document.getElementById('season-import').disabled=locked;
+  };
+  lock(true);
   const status=text=>$('season-status').textContent=text;
   $('season-identity').textContent=(view?'Editando ':'Temporada · ')+code+' · '+table;
   $('season-color').value=preferences.color;$('season-combat').checked=preferences.combat;
