@@ -26,12 +26,13 @@
     }
   }
   buildExilioSkillTable();
-  const initial={name:'',occupation:'Nenhum',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{}};
+  const initial={name:'',occupation:'Nenhum',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0};
   let state=JSON.parse(JSON.stringify(initial));
   let toastHandle=null;
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
   try{const value=localStorage.getItem(window.SeasonContext.stateKey);if(value){const loaded=JSON.parse(value);if(loaded&&loaded.attrs&&loaded.skills){state={...initial,...loaded,attrs:{...initial.attrs,...loaded.attrs}};}}}catch(e){}
   function display(){
+    displayParanormalInfluence();
     displayResources();
     renderClues();
     displayCombat();
@@ -311,6 +312,35 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
   $('skill-dice-popup').addEventListener('click',e=>{if(e.target===$('skill-dice-popup')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 
 
+
+  // Influência Paranormal (Exílio): valor inteiro entre 0 e 10.
+  function clampParanormalInfluence(value){
+    const number=Number(value);
+    return Number.isFinite(number)?Math.max(0,Math.min(10,Math.trunc(number))):0;
+  }
+  function displayParanormalInfluence(){
+    const value=clampParanormalInfluence(state.paranormalInfluence);
+    state.paranormalInfluence=value;
+    $('influence-value').value=String(value);
+    $('influence-fill').style.width=(value*10)+'%';
+    $('influence-meter').setAttribute('aria-valuenow',String(value));
+    $('influence-meter').setAttribute('aria-valuetext',value+' de 10');
+    $('influence-minus').disabled=value===0;
+    $('influence-plus').disabled=value===10;
+  }
+  function setParanormalInfluence(value){
+    const next=clampParanormalInfluence(value);
+    if(next===clampParanormalInfluence(state.paranormalInfluence)){
+      displayParanormalInfluence();
+      return;
+    }
+    state.paranormalInfluence=next;
+    displayParanormalInfluence();
+    save();
+  }
+  $('influence-minus').addEventListener('click',()=>setParanormalInfluence(Number(state.paranormalInfluence||0)-1));
+  $('influence-plus').addEventListener('click',()=>setParanormalInfluence(Number(state.paranormalInfluence||0)+1));
+  $('influence-value').addEventListener('change',event=>setParanormalInfluence(event.target.value));
   function normalizeResource(value){
     const max=Math.max(1,Math.min(9999,Math.trunc(Number(value?.max)||100)));
     const current=Math.max(0,Math.min(max,Math.trunc(Number(value?.current) || 0)));
