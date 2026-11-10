@@ -231,3 +231,29 @@ body.season-rulebook-v3 #sheet-skills-grid .sheet-skill-roll:hover{background:#7
 body.season-rulebook-v3 #sheet-skills-grid .skill-indicator{display:none!important}
 body.season-rulebook-v3 #sheet-skills-grid .skill-edge-badge{right:0;top:-10px;padding:1px 3px;font-size:8px;z-index:3}
 body.season-rulebook-v3 #sheet-skills-grid :is(button,select):focus-visible{outline:2px solid #eab28b;outline-offset:0}
+
+/* Exílio · Temporada 2: trazer de volta o botão central de PNG.
+   Preserva os controles e o enquadramento já existentes da foto. */
+body.season-rulebook-v3 #sheet > #portrait-stage{
+  visibility:visible!important;
+  pointer-events:none!important;
+  z-index:12!important;
+}
+body.season-rulebook-v3 #sheet > #portrait-stage .portrait-hint{
+  visibility:visible!important;
+  pointer-events:auto!important;
+  left:50%!important;
+  top:50%!important;
+}
+body.season-rulebook-v3 #sheet > #portrait-stage .portrait-replace{
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+body.season-rulebook-v3 #sheet > #portrait-stage .portrait-image{
+  visibility:visible!important;
+}
+body.season-rulebook-v3 #sheet > #portrait-stage .portrait-hint[hidden],
+body.season-rulebook-v3 #sheet > #portrait-stage .portrait-replace[hidden],
+body.season-rulebook-v3 #sheet > #portrait-stage .portrait-image[hidden]{
+  display:none!important;
+}
