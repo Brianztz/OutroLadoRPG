@@ -959,3 +959,54 @@ body.season-rulebook-v3 .mobile-sheet #combat-area{
   width:100%!important;height:auto!important;min-height:0!important;
   padding:9px!important;margin:0!important;
 }
+
+/* EXÍLIO 3.0: botão de Adicionar Ataque alinhado ao lado do título COMBATE
+   pintado no fundo da ficha (coordenadas da arte 1920×909).
+   Escopo exclusivo da 2ª temporada; mantém o mesmo id/evento de clique. */
+body.season-rulebook-v3 #sheet > #combat-add{
+  position:absolute!important;
+  left:1290px!important;
+  top:379px!important;
+  z-index:46!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:164px!important;
+  height:30px!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0 12px!important;
+  background:linear-gradient(180deg,#292b2d,#131516)!important;
+  border:1px solid #606166!important;
+  border-radius:3px!important;
+  box-shadow:inset 0 1px 0 #ffffff15,0 3px 8px #0008!important;
+  color:#f4f0ed!important;
+  font:700 12px Arial,sans-serif!important;
+  cursor:pointer!important;
+}
+body.season-rulebook-v3 #sheet > #combat-add:hover{
+  background:linear-gradient(180deg,#44474b,#252729)!important;
+  border-color:#bc6750!important;
+}
+body.season-rulebook-v3 #sheet > #combat-add:focus-visible{
+  outline:2px solid #fbc19d!important;
+  outline-offset:2px!important;
+}
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
+  body.season-rulebook-v3 .mobile-sheet #combat-area > #combat-add{
+    position:static!important;
+    inset:auto!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:175px!important;
+    height:32px!important;
+    margin:0 0 11px auto!important;
+    background:linear-gradient(180deg,#292b2d,#131516)!important;
+    border:1px solid #606166!important;
+    color:#f4f0ed!important;
+    font:700 12px Arial,sans-serif!important;
+    cursor:pointer!important;
+  }
+}
