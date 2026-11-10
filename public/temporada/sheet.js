@@ -322,11 +322,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     const value=clampParanormalInfluence(state.paranormalInfluence);
     state.paranormalInfluence=value;
     $('influence-value').value=String(value);
-    $('influence-fill').style.width=(value*10)+'%';
-    $('influence-meter').setAttribute('aria-valuenow',String(value));
-    $('influence-meter').setAttribute('aria-valuetext',value+' de 10');
-    $('influence-minus').disabled=value===0;
-    $('influence-plus').disabled=value===10;
+    $('influence-value').title='Influência Paranormal: '+value+'/10';
   }
   function setParanormalInfluence(value){
     const next=clampParanormalInfluence(value);
@@ -338,8 +334,6 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     displayParanormalInfluence();
     save();
   }
-  $('influence-minus').addEventListener('click',()=>setParanormalInfluence(Number(state.paranormalInfluence||0)-1));
-  $('influence-plus').addEventListener('click',()=>setParanormalInfluence(Number(state.paranormalInfluence||0)+1));
   $('influence-value').addEventListener('change',event=>setParanormalInfluence(event.target.value));
   function normalizeResource(value){
     const max=Math.max(1,Math.min(9999,Math.trunc(Number(value?.max)||100)));
