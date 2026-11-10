@@ -821,7 +821,7 @@ const field=label=>String(item.description||'').split('\n').find(l=>l.startsWith
 const skill=/PONTARIA|PRECISÃO/i.test(String(field('Perícia')||catalog?.skill||'Confronto'))?'PRECISÃO':'CONFRONTO';
 const criticalText=field('Crítico')||catalog?.crit||'×2';const equipmentMultiplier=criticalMultiplierFromText(criticalText);
 const settings=combatState().weaponSettings?.[item.id]||{};
-return {skill,damage:field('Dano')||catalog?.dmg||'',attr:skill==='CONFRONTO'?'potencia':'none',critical:0,mult:equipmentMultiplier,attacks:Math.max(1,Number(catalog?.atk)||1),range:catalog?.range||'',...settings,id:'equipped:'+item.id,itemId:item.id,name:item.name,image:item.image?.startsWith('catalog:')?(catalog?.image||''):(item.image||''),equipped:true};
+return {skill,damage:field('Dano')||catalog?.dmg||'',attr:skill==='CONFRONTO'?'potencia':'none',critical:0,mult:equipmentMultiplier,attacks:Math.max(1,Number(catalog?.atk)||1),range:catalog?.range||'',...settings,id:'equipped:'+item.id,itemId:item.id,name:item.name,image:inventoryArtworkSource(item),equipped:true};
 }
 
 function combatFallbackImage(unarmed){const shape=unarmed?'<path d="M10 32V19q0-6 6-6h2V9q0-5 5-5t5 5V7q0-5 5-5t5 5v2q0-5 5-5t5 5v5q0-5 5-5t5 5v19l-8 14H23L12 40Z"/><path d="M24 47h27v13H24Z"/>':'<path d="m48 5 8 8-28 28-8-8Z M15 30l20 20-5 5-20-20Z M17 43l7 7-12 12-7-7Z"/>';return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#ececec" stroke="#777" stroke-width="1.5">'+shape+'</svg>');}
@@ -1036,6 +1036,27 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
       item.illustrationName=reference;
     }
   }
+  // Exílio · temporadas: resolve artes pelo catálogo mesmo para itens salvos antes da inclusão dos PNGs.
+  // Não altera os dados armazenados. Imagens personalizadas do jogador sempre têm prioridade.
+  const normalizeItemArtworkName=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  function inventoryCatalogEntry(item){
+    if(!item)return null;
+    const marker=String(item.image||'');
+    const catalogId=marker.startsWith('catalog:')?marker.slice(8):'';
+    const byId=catalogId?itemCatalog.find(entry=>entry.id===catalogId):null;
+    if(byId)return byId;
+    const name=normalizeItemArtworkName(item.name);
+    if(!name)return null;
+    return itemCatalog.find(entry=>!entry.book3&&entry.type===item.type&&normalizeItemArtworkName(entry.name)===name)||
+           itemCatalog.find(entry=>entry.type===item.type&&normalizeItemArtworkName(entry.name)===name)||
+           null;
+  }
+  function inventoryArtworkSource(item){
+    if(!item)return '';
+    const stored=String(item.image||'');
+    if(stored&&!stored.startsWith('catalog:'))return stored;
+    return inventoryCatalogEntry(item)?.image||'';
+  }
   function inventoryState(){
     if(!state.inventory)state.inventory={items:[],equipped:{weapon:null,armor:null,important:null}};
     state.inventory.equipped.backpack ??= null;
@@ -1064,7 +1085,9 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
   function inventoryPaintSlot(button,item,emptyLabel){
     button.replaceChildren();button.classList.toggle('filled',Boolean(item));
     if(!item){const plus=document.createElement('span');plus.className='slot-empty';plus.textContent='+';button.append(plus);button.title=emptyLabel;return;}
-    if(item.image){const img=document.createElement('img');img.src=item.image.startsWith('catalog:')?(itemCatalog.find(c=>c.id===item.image.slice(8))?.image||''):item.image;img.alt='';button.append(img);}else{const icon=document.createElement('span');icon.className='slot-icon';icon.textContent=inventoryIcon(item);button.append(icon);}
+    const artwork=inventoryArtworkSource(item);
+    if(artwork){const img=document.createElement('img');img.src=artwork;img.alt='Ilustração de '+item.name;img.loading='eager';button.append(img);}
+    else{const icon=document.createElement('span');icon.className='slot-icon';icon.textContent=inventoryIcon(item);button.append(icon);}
     const name=document.createElement('span');name.className='slot-name';name.textContent=item.name;button.append(name);button.title=item.name;
     if(item.quantity>1){const amount=document.createElement('span');amount.className='slot-quantity';amount.textContent='×'+item.quantity;button.append(amount);}
   }
@@ -1150,7 +1173,7 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
     const query=normalize($('item-catalog-search').value.trim()),category=$('item-catalog-category').value;
     const items=itemCatalog.filter(i=>!i.book3&&(!category||i.category===category)&&normalize(i.name+' '+i.category+' '+(i.desc||'')).includes(query));
     $('item-catalog-count').textContent=items.length+' de '+itemCatalog.filter(i=>!i.book3).length+' equipamentos · regras de Outro Lado';const list=$('item-catalog-list');list.replaceChildren();
-    for(const item of items){const card=document.createElement('article');card.className='item-catalog-card';if(item.image){const image=document.createElement('img');image.src=item.image;image.alt='';image.loading='lazy';card.append(image);}const name=document.createElement('h3');name.textContent=item.name;const cat=document.createElement('small');cat.textContent=item.category;const desc=document.createElement('p');desc.textContent=catalogDescription(item);const add=document.createElement('button');add.type='button';add.textContent='Adicionar ao inventário';add.addEventListener('click',()=>chooseCatalogItem(item));card.append(name,cat,desc,add);list.append(card);}
+    for(const item of items){const card=document.createElement('article');card.className='item-catalog-card';if(item.image){const image=document.createElement('img');image.src=item.image;image.alt='Ilustração de '+item.name;image.loading='eager';image.decoding='async';card.append(image);}const name=document.createElement('h3');name.textContent=item.name;const cat=document.createElement('small');cat.textContent=item.category;const desc=document.createElement('p');desc.textContent=catalogDescription(item);const add=document.createElement('button');add.type='button';add.textContent='Adicionar ao inventário';add.addEventListener('click',()=>chooseCatalogItem(item));card.append(name,cat,desc,add);list.append(card);}
     if(!items.length){const empty=document.createElement('p');empty.textContent='Nenhum item encontrado.';list.append(empty);}
   }
   function openItemCatalog(){renderItemCatalog();$('item-catalog-dialog').showModal();}
@@ -1163,7 +1186,7 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
   let inventoryDetailsId=null;
   function showInventoryDetails(item){
     inventoryDetailsId=item.id;$('inventory-details-name').textContent=item.name;
-    const image=$('inventory-details-image');const src=item.image?.startsWith('catalog:')?(itemCatalog.find(c=>c.id===item.image.slice(8))?.image||''):(item.image||'');
+    const image=$('inventory-details-image');const src=inventoryArtworkSource(item);
     image.hidden=!src;if(src){image.src=src;image.alt=item.name;}else image.removeAttribute('src');
     const meta=$('inventory-details-meta');meta.replaceChildren();
     for(const [label,value] of [['Tipo',{weapon:'Arma',armor:'Proteção',gear:'Equipamento',important:'Item importante',backpack:'Mochila'}[item.type]||item.type],['Quantidade',item.quantity],['Guardado em',item.location==='backpack'?'Mochila':'Equipamento']]){const row=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;row.append(dt,dd);meta.append(row);}
@@ -1364,7 +1387,7 @@ renderRituals();
     applyState(next){if(!next||typeof next!=='object'||!next.attrs||!next.skills)throw Error('Ficha da temporada inválida.');state={...JSON.parse(JSON.stringify(initial)),...next};display();save();},
     project(){
       const inv=inventoryState(),weapon=equippedWeaponAttack(),ammo=weapon&&weaponAmmoSpec(weapon);
-      const inventory=inv.items.map(item=>{const c=itemCatalog.find(c=>c.id===String(item.image||'').replace(/^catalog:/,''))||itemCatalog.find(c=>c.name===item.name);return {id:item.id,n:item.name,w:inventoryItemWeight(item),d:item.description||'',eq:Object.values(inv.equipped).includes(item.id),type:item.type==='weapon'?'arma':c?.category==='Munições'?'municao':'comum',img:item.image?.startsWith('catalog:')?(c?.image||''):item.image||'',dmg:c?.dmg||'',crit:c?.crit||'20/x2',skill:c?.skill||'Luta',ammo:c?.ammo||'',capacity:c?.capacity||0,currentShots:state.combat?.ammunition?.['equipped:'+item.id]??c?.capacity??0};});
+      const inventory=inv.items.map(item=>{const c=itemCatalog.find(c=>c.id===String(item.image||'').replace(/^catalog:/,''))||itemCatalog.find(c=>c.name===item.name);return {id:item.id,n:item.name,w:inventoryItemWeight(item),d:item.description||'',eq:Object.values(inv.equipped).includes(item.id),type:item.type==='weapon'?'arma':c?.category==='Munições'?'municao':'comum',img:inventoryArtworkSource(item),dmg:c?.dmg||'',crit:c?.crit||'20/x2',skill:c?.skill||'Luta',ammo:c?.ammo||'',capacity:c?.capacity||0,currentShots:state.combat?.ammunition?.['equipped:'+item.id]??c?.capacity??0};});
       const attributes={};for(const [native,legacy] of [['forca','for'],['agilidade','agi'],['vigor','vig'],['intelecto','int'],['presenca','pre']])attributes['attr_'+legacy]=state.attrs[native]||0;
       return {sheetType:'temporada',info:{char_nome:state.name||'',char_nex:state.nex||0,char_ocupacao:state.occupation||'Nenhum',vida_atual:state.resources.life.current,vida_max:state.resources.life.max,sani_atual:state.resources.sanity.current,sani_max:state.resources.sanity.max},attrs:attributes,skills:{...state.skills},inv:inventory,defense:totalCombatDefense(),clues:clueState().map(c=>({...c,desc:c.text||'',img:c.image||'',pages:(c.pages||[]).map(img=>typeof img==='string'?{img}:img)})),activeWeaponId:weapon?.itemId||'',armaDisparoAtiva:ammo?{id:weapon.itemId,nome:weapon.name,municao:ammo.type,atual:ammoRemaining(weapon,ammo),capacidade:ammo.capacity}:null};
     },
