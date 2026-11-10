@@ -347,3 +347,138 @@ body.season-rulebook-v3 #sheet .resource-widget .resource-controls :is(button,in
 @media(prefers-reduced-motion:reduce){
   body.season-rulebook-v3 #sheet .resource-widget .resource-fill{transition:none!important}
 }
+
+/* Exílio 3.0 — Influência Paranormal sobre o letreiro vermelho da arte.
+   Apenas a ficha da segunda temporada: o valor é salvo no estado existente. */
+body.season-rulebook-v3 #sheet > #paranormal-influence{
+  position:absolute!important;
+  left:1169px!important;
+  top:143px!important;
+  width:356px!important;
+  height:43px!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  z-index:76!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  color:#f9eee8!important;
+  font-family:Georgia,'Times New Roman',serif;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-heading{
+  flex:none;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-sizing:border-box;
+  width:135px;
+  height:34px;
+  padding:1px 5px 0 4px;
+  text-align:center;
+  font:900 12px/13px Georgia,'Times New Roman',serif;
+  letter-spacing:.015em;
+  text-shadow:0 1px 3px #270702;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-body{
+  flex:none;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  box-sizing:border-box;
+  width:196px;
+  height:43px;
+  padding:2px 3px 0;
+  background:transparent;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-controls{
+  display:grid;
+  grid-template-columns:25px 1fr 25px;
+  gap:5px;
+  align-items:center;
+  height:29px;
+  background:#140b0aea;
+  border:1px solid #853523;
+  box-shadow:inset 0 1px 0 #fbe3ca16,0 2px 7px #000b;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+  padding:1px 4px;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-controls button{
+  display:grid;
+  place-items:center;
+  box-sizing:border-box;
+  height:23px;
+  width:25px;
+  min-width:25px;
+  margin:0;
+  padding:0;
+  border:1px solid #82432e;
+  border-radius:1px;
+  background:#2c1510;
+  color:#f6d9c9;
+  font:900 18px/1 Arial,sans-serif;
+  cursor:pointer;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-controls button:hover:not(:disabled){
+  background:#853320;
+  border-color:#e58b61;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-controls button:disabled{
+  opacity:.35;
+  cursor:default;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-numbers{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  height:27px;
+  color:#c9aaa0;
+  font:800 14px/1 Georgia,'Times New Roman',serif;
+}
+body.season-rulebook-v3 #paranormal-influence #influence-value{
+  display:block;
+  box-sizing:border-box;
+  width:37px;
+  height:24px;
+  padding:0;
+  margin:0;
+  border:0;
+  background:transparent;
+  color:#fff0e6;
+  text-align:right;
+  font:900 19px/1 Georgia,'Times New Roman',serif;
+  font-variant-numeric:tabular-nums;
+  appearance:textfield;
+  -moz-appearance:textfield;
+}
+body.season-rulebook-v3 #paranormal-influence input::-webkit-inner-spin-button,
+body.season-rulebook-v3 #paranormal-influence input::-webkit-outer-spin-button{
+  appearance:none;
+  margin:0;
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-meter{
+  box-sizing:border-box;
+  height:6px;
+  width:100%;
+  overflow:hidden;
+  border:1px solid #742b20;
+  background:repeating-linear-gradient(90deg,#100b0a 0,#100b0a calc(10% - 2px),#54231a calc(10% - 2px),#54231a 10%);
+}
+body.season-rulebook-v3 #paranormal-influence .paranormal-influence-fill{
+  width:0;
+  height:100%;
+  background:linear-gradient(90deg,#88301b,#ed5534);
+  box-shadow:0 0 8px #ed553480;
+  transition:width .18s ease;
+}
+body.season-rulebook-v3 #paranormal-influence :is(button,input):focus-visible{
+  outline:2px solid #ffd5a5;
+  outline-offset:1px;
+}
+@media(prefers-reduced-motion:reduce){
+  body.season-rulebook-v3 #paranormal-influence .paranormal-influence-fill{transition:none}
+}
