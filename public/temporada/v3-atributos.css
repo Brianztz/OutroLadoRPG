@@ -965,14 +965,17 @@ body.season-rulebook-v3 .mobile-sheet #combat-area{
    Escopo exclusivo da 2ª temporada; mantém o mesmo id/evento de clique. */
 body.season-rulebook-v3 #sheet > #combat-add{
   position:absolute!important;
-  left:1290px!important;
+  left:1390px!important;
   top:379px!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  opacity:1!important;
   z-index:46!important;
   box-sizing:border-box!important;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  width:164px!important;
+  width:150px!important;
   height:30px!important;
   min-width:0!important;
   margin:0!important;
