@@ -409,3 +409,96 @@ body.season-rulebook-v3 #sheet > #char-origin.origin-hit:focus-visible,
 body.season-rulebook-v3 #sheet > #char-occupation.class-hit:focus-visible{
   outline:2px solid #ffdbb9!important;outline-offset:2px!important
 }
+
+/* ARTE PSD EXÍLIO 3.0 — 1920 x 909. Espaços da composição respeitados.
+   Somente esta ficha (body.season-rulebook-v3); a original não é alterada. */
+body.season-rulebook-v3 #sheet > #combat-area,
+body.season-rulebook-v3 #sheet > #exilio-abilities-panel{
+  position:absolute!important;
+  display:block!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  z-index:36!important;
+  box-sizing:border-box!important;
+  background:rgba(9,8,9,.76)!important;
+  border:1px solid #57271f!important;
+  border-top:2px solid #922e1e!important;
+  border-radius:3px!important;
+  box-shadow:0 6px 24px #0008!important;
+  color:#e9d8cf!important;
+}
+body.season-rulebook-v3 #sheet > #combat-area{
+  left:1226px!important;top:466px!important;width:328px!important;height:373px!important;
+  padding:10px!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  scrollbar-width:thin;scrollbar-color:#8e3423 #160e0c
+}
+body.season-rulebook-v3 #combat-area #combat-add{
+  box-sizing:border-box!important;display:block!important;margin:0 0 8px auto!important;
+  width:auto!important;min-width:128px!important;height:30px!important;padding:0 9px!important;
+  background:#421d16!important;border:1px solid #8d402d!important;border-radius:2px!important;
+  font:700 11px Arial,sans-serif!important;color:#f9dfd2!important
+}
+body.season-rulebook-v3 #combat-area .combat-stats{
+  display:flex!important;gap:7px!important;align-items:center!important;
+  justify-content:space-between!important;margin:6px 0 12px!important;
+  min-height:52px!important;flex-wrap:wrap
+}
+body.season-rulebook-v3 #combat-area .combat-stats label{
+  padding:6px!important;border:1px solid #573025!important;
+  background:#1d1413!important;font:700 11px Arial,sans-serif!important;
+}
+body.season-rulebook-v3 #combat-area .combat-stats .combat-defense{
+  flex-direction:row!important;font:700 11px Arial,sans-serif!important;
+}
+body.season-rulebook-v3 #combat-area .combat-stats input{
+  width:34px!important;height:26px!important;border:1px solid #68473a!important;
+  background:#120d0c!important;font:700 13px Arial,sans-serif!important;
+}
+body.season-rulebook-v3 #combat-area .combat-card{
+  margin:0 0 7px!important;padding:7px!important;background:#170f0e!important;
+  border:1px solid #583126!important;box-shadow:none!important;max-width:100%!important
+}
+body.season-rulebook-v3 #combat-area #combat-attacks{
+  max-height:none!important;overflow:visible!important;padding:0!important
+}
+body.season-rulebook-v3 #sheet > #exilio-abilities-panel{
+  left:1570px!important;top:466px!important;width:306px!important;height:373px!important;
+  padding:12px!important;overflow-y:auto!important;
+  scrollbar-width:thin;scrollbar-color:#8e3423 #160e0c
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-entry{
+  padding:0 0 9px;margin:0 0 10px;border-bottom:1px solid #5e2d23
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-entry strong{
+  display:block;color:#eeb398;font:900 11px/1.4 Arial,sans-serif;letter-spacing:.055em
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-entry p{
+  margin:5px 0 0;font:12px/1.45 Arial,sans-serif;color:#ddd0c9
+}
+body.season-rulebook-v3 #exilio-abilities-panel label{
+  display:block;margin:0 0 7px;color:#d9a48b;
+  font:800 10px Arial,sans-serif;letter-spacing:.05em
+}
+body.season-rulebook-v3 #exilio-abilities-panel textarea{
+  box-sizing:border-box;width:100%;min-height:76px;max-height:185px;resize:vertical;
+  padding:9px;border:1px solid #633629;border-radius:2px;
+  background:#100c0bd9;color:#f8e5db;font:12px/1.45 Arial,sans-serif
+}
+body.season-rulebook-v3 #exilio-abilities-panel textarea:focus-visible{
+  outline:2px solid #e4a381;outline-offset:1px
+}
+.exilio-art-controls{
+  display:flex;gap:7px;flex-wrap:wrap;align-items:center;
+  padding:9px;margin:8px 0;background:#1a0e0b;border:1px solid #713729;
+}
+.exilio-art-controls button{
+  flex:1;min-height:32px;padding:6px!important;
+  font:700 11px Arial,sans-serif!important
+}
+.exilio-art-controls small{
+  flex-basis:100%;color:#bdaba2;font:11px/1.4 Arial,sans-serif
+}
+body.season-rulebook-v3 #sheet > #portrait-stage{
+  z-index:30!important;
+}
