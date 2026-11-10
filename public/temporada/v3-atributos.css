@@ -11,7 +11,7 @@ body.season-rulebook-v3 .sheet{
 }
 /* Renderizar exclusivamente os atributos, preservando os nós do jogo
    para a futura migração das outras mecânicas. */
-body.season-rulebook-v3 #sheet > :not(.v3-attributes):not(.v3-attribute-tools){
+body.season-rulebook-v3 #sheet > :not(.v3-attributes):not(.v3-attribute-tools):not(.v3-game-ui){
   visibility:hidden!important;
   pointer-events:none!important;
 }
