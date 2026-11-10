@@ -6,7 +6,7 @@ body.season-rulebook-v3{background:#030303;min-height:100dvh}
 body.season-rulebook-v3 .sheet{
   width:1920px!important;
   height:909px!important;
-  background:#030303 url('/temporada/assets/fundo-original-1920x909.jpg') left top/1920px 909px no-repeat!important;
+  background:#030303 url('/temporada/assets/fundo-exilio-t2-20261110.webp') left top/1920px 909px no-repeat!important;
   box-shadow:none!important;
 }
 /* Renderizar exclusivamente os atributos, preservando os nós do jogo
@@ -501,4 +501,10 @@ body.season-rulebook-v3 #exilio-abilities-panel textarea:focus-visible{
 }
 body.season-rulebook-v3 #sheet > #portrait-stage{
   z-index:30!important;
+}
+
+/* Fundo oficial enviado em 10/11/2026: manter a aba principal limpa.
+   Ocultar somente o painel extra de combate, preservando seus dados e lógica. */
+body.season-rulebook-v3 #sheet > #combat-area{
+ display:none!important;visibility:hidden!important;pointer-events:none!important;
 }

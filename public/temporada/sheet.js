@@ -360,10 +360,10 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
   $('influence-value').addEventListener('change',event=>setParanormalInfluence(event.target.value));
 
   // Arte do Photoshop: mantém a imagem vinculada ao estado da ficha e sincronizável.
-  // O fundo nativo permanece até o usuário importar o JPG exportado do PSD.
+  // O fundo padrão é a imagem do Mestre; imports novos podem substituí-la.
   let appliedSeasonBackground=null;
   function displayExilioArtAndAbilities(){
-    const picture=typeof state.exilioBackground==='string'&&/^data:image\/(?:jpeg|png|webp);base64,/.test(state.exilioBackground)
+    const picture=state.exilioBackgroundVersion==='20261110'&&typeof state.exilioBackground==='string'&&/^data:image\/(?:jpeg|png|webp);base64,/.test(state.exilioBackground)
       ? state.exilioBackground : '';
     if(picture!==appliedSeasonBackground){
       const sheet=$('sheet');
@@ -424,18 +424,18 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
         img.onerror=reject;img.src=url;
       });
       if(dims[0]!==1920||dims[1]!==909){toast('O fundo precisa ter 1920 × 909 pixels.');return;}
-      const previous=state.exilioBackground||'';
-      state.exilioBackground=url;displayExilioArtAndAbilities();
+      const previous=state.exilioBackground||'';const previousVersion=state.exilioBackgroundVersion;
+      state.exilioBackground=url;state.exilioBackgroundVersion='20261110';displayExilioArtAndAbilities();
       try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}
       catch(error){
-        state.exilioBackground=previous;displayExilioArtAndAbilities();
+        state.exilioBackground=previous;state.exilioBackgroundVersion=previousVersion;displayExilioArtAndAbilities();
         toast('Sem espaço para salvar o fundo. Tente o JPG otimizado.');return;
       }
       toast('Novo fundo do Exílio aplicado e salvo!');
     }catch(error){toast('Não foi possível carregar o JPG.');}
   });
   $('exilio-background-clear').addEventListener('click',()=>{
-    state.exilioBackground='';
+    state.exilioBackground='';state.exilioBackgroundVersion='20261110';
     displayExilioArtAndAbilities();save();
     toast('Fundo padrão restaurado.');
   });
