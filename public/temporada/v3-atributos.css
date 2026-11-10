@@ -789,3 +789,42 @@ body.season-rulebook-v3 .exilio-ritual-modulation:focus-visible{
   body.season-rulebook-v3 .mobile-sheet .mobile-level-field{display:none!important}
   body.season-rulebook-v3 .mobile-sheet .mobile-topline{grid-template-columns:minmax(0,1fr)!important}
 }
+
+/* Exílio 3.0: seleção das Posturas dentro do card na aba CLASSE. */
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-options:not([hidden]){
+  display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:14px 0
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option{
+  display:flex;flex-direction:column;gap:8px;width:100%;
+  padding:12px 14px;background:#20130f;color:#f1dccf;
+  border:1px solid #75412f;border-left:3px solid #9d4c30;
+  border-radius:4px;text-align:left;cursor:pointer
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option[aria-pressed="true"]{
+  border-color:#d18458;border-left-color:#ffc090;
+  background:#3c2017;box-shadow:inset 0 0 0 1px #a75d3d
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option:hover:not(:disabled){
+  background:#512a1c;border-color:#e69b68
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option:focus-visible{
+  outline:2px solid #fbd6a3;outline-offset:2px
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option:disabled{
+  cursor:default;opacity:.72
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option-head strong{
+  font:800 17px Georgia,serif;color:#ffe8d8
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-option-head small{
+  font:800 10px Arial,sans-serif;letter-spacing:.07em;color:#fac099
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-effect{
+  font:12px/1.5 Arial,sans-serif;color:#dbc6b9
+}
+body.season-rulebook-v3 #exilio-detail-dialog .exilio-posture-effect b{
+  color:#f8c9ad
+}
