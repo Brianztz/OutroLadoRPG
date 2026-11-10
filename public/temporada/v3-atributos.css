@@ -11,7 +11,7 @@ body.season-rulebook-v3 .sheet{
 }
 /* Renderizar exclusivamente os atributos, preservando os nós do jogo
    para a futura migração das outras mecânicas. */
-body.season-rulebook-v3 #sheet > :not(.v3-attributes){
+body.season-rulebook-v3 #sheet > :not(.v3-attributes):not(.v3-attribute-tools){
   visibility:hidden!important;
   pointer-events:none!important;
 }
@@ -123,4 +123,63 @@ body.season-rulebook-v3 .head .actions button{
 @media (max-width:767px){
   body.season-rulebook-v3 #page-principal{overflow:auto!important}
   body.season-rulebook-v3 #viewport{margin:0!important}
+}
+
+
+/* Controles restaurados dos seis atributos. A arte permanece limpa:
+   os botões de diminuir e rolar aparecem ao passar/focar e no toque. */
+body.season-rulebook-v3 #sheet > .v3-attribute-tools{
+  position:absolute!important;
+  z-index:80!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  gap:4px!important;
+  height:30px!important;
+  width:auto!important;
+  visibility:visible!important;
+  opacity:0;
+  pointer-events:none!important;
+  transition:opacity .12s ease;
+}
+body.season-rulebook-v3 #sheet > button.v3-attributes:hover + .v3-attribute-tools,
+body.season-rulebook-v3 #sheet > button.v3-attributes:focus + .v3-attribute-tools,
+body.season-rulebook-v3 #sheet > .v3-attribute-tools:hover,
+body.season-rulebook-v3 #sheet > .v3-attribute-tools:focus-within{
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+body.season-rulebook-v3 #sheet > .v3-attribute-tools button{
+  box-sizing:border-box;
+  width:29px!important;
+  height:29px!important;
+  min-width:29px!important;
+  min-height:29px!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid #9a3b2b!important;
+  border-radius:4px!important;
+  background:rgba(23,9,8,.94)!important;
+  color:#fff0e6!important;
+  text-align:center!important;
+  font:800 18px/1 Arial,sans-serif!important;
+  cursor:pointer!important;
+  pointer-events:auto!important;
+  box-shadow:0 1px 6px rgba(0,0,0,.8)!important;
+}
+body.season-rulebook-v3 #sheet > .v3-attribute-tools button:hover,
+body.season-rulebook-v3 #sheet > .v3-attribute-tools button:focus-visible{
+  background:#822919!important;
+  border-color:#eb9578!important;
+  outline:2px solid #fff1bf!important;
+  outline-offset:1px;
+}
+@media (hover:none), (pointer:coarse){
+  body.season-rulebook-v3 #sheet > .v3-attribute-tools{
+    opacity:1!important;
+    pointer-events:auto!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  body.season-rulebook-v3 #sheet > .v3-attribute-tools{transition:none}
 }
