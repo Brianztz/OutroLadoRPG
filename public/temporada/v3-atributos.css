@@ -508,3 +508,91 @@ body.season-rulebook-v3 #sheet > #portrait-stage{
 body.season-rulebook-v3 #sheet > #combat-area{
  display:none!important;visibility:hidden!important;pointer-events:none!important;
 }
+
+/* EXÍLIO 3.0: cards de habilidades de classe e catálogo interativo. */
+body.season-rulebook-v3 #sheet > #exilio-abilities-panel{
+  display:flex!important;flex-direction:column!important;gap:7px!important;
+  padding:9px!important;overflow-y:auto!important
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top{
+  display:flex;flex-direction:column;gap:6px;padding-bottom:7px;border-bottom:1px solid #693326
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top strong{
+  font:900 12px Arial,sans-serif;color:#f0b89a
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top>div{display:flex;gap:6px}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top button{
+  flex:1;height:27px;padding:4px;background:#3c1b14;color:#f7dfd2;
+  border:1px solid #8b422f;font:800 10px Arial,sans-serif;cursor:pointer
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top button:hover{background:#733020}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top .has-pending{
+  border-color:#ffe0ad;color:#ffe4b6
+}
+body.season-rulebook-v3 #exilio-abilities-status{
+  margin:0!important;font:11px/1.4 Arial,sans-serif;color:#d1b3a4
+}
+.exilio-ability-list{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;align-content:start}
+.exilio-ability-card{
+  box-sizing:border-box;display:flex;flex-direction:column;gap:5px;
+  width:100%;min-height:65px;padding:8px;text-align:left;cursor:pointer;
+  background:linear-gradient(130deg,#291712,#120d0d);color:#f4e1d5;
+  border:1px solid #613528;border-left:3px solid #ce6240;border-radius:2px
+}
+.exilio-ability-card:hover{background:#3d2119;border-color:#cc6948}
+.exilio-ability-card.locked{opacity:.65;border-left-color:#746761}
+.ability-card-header{display:flex;justify-content:space-between;gap:6px}
+.ability-card-header strong{font:800 12px/1.3 Arial,sans-serif;color:#ffe8da}
+.ability-card-header small{flex-shrink:0;color:#efad8d;font:800 10px Arial,sans-serif}
+.ability-card-teaser{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  color:#d7bfb4;font:11px/1.45 Arial,sans-serif
+}
+.exilio-ability-card>small{color:#ed9c78;font:800 9px Arial,sans-serif;letter-spacing:.06em}
+.exilio-ability-empty{color:#cfafa0;font:12px/1.5 Arial,sans-serif}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-notes{
+  border-top:1px solid #5b3024;margin-top:4px;padding-top:8px
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-notes summary{
+  color:#f1b295;font:800 10px Arial,sans-serif;cursor:pointer
+}
+.exilio-ability-modal{
+  box-sizing:border-box;width:min(720px,94vw);max-height:86dvh;overflow-y:auto;
+  padding:20px;color:#f5e9e0;background:#160e0c;
+  border:1px solid #a24e35;border-radius:8px;box-shadow:0 15px 70px #000d;
+  font:14px/1.5 Arial,sans-serif
+}
+.exilio-ability-modal::backdrop{background:#000c}
+.exilio-ability-modal>header{
+  display:flex;align-items:start;justify-content:space-between;gap:12px;
+  margin-bottom:13px;padding-bottom:10px;border-bottom:1px solid #633126
+}
+.exilio-ability-modal header small{display:block;color:#da8964;font:800 11px Arial,sans-serif}
+.exilio-ability-modal header h2{margin:4px 0 0;font:800 23px/1.25 Georgia,serif;color:#fbe2d3}
+.exilio-ability-modal header button{
+  padding:6px 11px;background:#401d14;color:#fff;border:1px solid #97523b;
+  font-size:18px;cursor:pointer
+}
+.exilio-ability-modal label{display:block;font-weight:700;color:#edbfa4;margin:10px 0 5px}
+.exilio-ability-modal select{
+  box-sizing:border-box;width:100%;max-width:340px;height:34px;background:#241511;
+  border:1px solid #8d4631;color:#f8ece5;padding:4px
+}
+.exilio-ability-modal #exilio-catalog-list{
+  grid-template-columns:repeat(2,minmax(0,1fr));max-height:57vh;overflow-y:auto;padding:3px
+}
+.exilio-ability-modal #exilio-catalog-summary,
+.exilio-ability-modal #exilio-progress-summary{color:#d7b9aa;font-size:13px}
+.exilio-progress-card{margin:12px 0;padding:11px;background:#21130f;border:1px solid #68382a;border-left:3px solid #bc5334}
+.exilio-progress-card h3{margin:0 0 7px;color:#facdb9;font:800 16px Georgia,serif}
+.exilio-progress-card p{margin:6px 0;color:#d8bfb3}
+.exilio-progress-action{
+  display:inline-block;margin:4px 5px 3px 0;padding:7px 10px;cursor:pointer;
+  background:#522616;color:#fff0e5;border:1px solid #965038;
+  font:800 12px Arial,sans-serif
+}
+.exilio-progress-action:hover{background:#813d24}
+.exilio-progress-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.exilio-progress-row select{min-width:190px;flex:1}
+.exilio-ability-modal :is(button,select):focus-visible,.exilio-ability-card:focus-visible{outline:2px solid #ffe2b1;outline-offset:2px}
+@media(max-width:520px){.exilio-ability-modal #exilio-catalog-list{grid-template-columns:minmax(0,1fr)}}

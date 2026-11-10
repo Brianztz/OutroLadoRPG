@@ -26,12 +26,13 @@
     }
   }
   buildExilioSkillTable();
-  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0,exilioBackground:'',exilioAbilitiesNotes:''};
+  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0,exilioBackground:'',exilioAbilitiesNotes:'',exilioProgression:null,exilioResourceLedger:null};
   let state=JSON.parse(JSON.stringify(initial));
   let toastHandle=null;
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
   try{const value=localStorage.getItem(window.SeasonContext.stateKey);if(value){const loaded=JSON.parse(value);if(loaded&&loaded.attrs&&loaded.skills){state={...initial,...loaded,attrs:{...initial.attrs,...loaded.attrs}};}}}catch(e){}
   function display(){
+    reconcileIPBonuses();
     displayExilioArtAndAbilities();
     displayParanormalInfluence();
     displayResources();
@@ -354,10 +355,203 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
       return;
     }
     state.paranormalInfluence=next;
-    displayParanormalInfluence();
+    display();
     save();
+    if($('exilio-progress-dialog').open)renderProgressChoices();
   }
   $('influence-value').addEventListener('change',event=>setParanormalInfluence(event.target.value));
+
+
+  // Regras de Exílio 3.0. O ledger registra apenas bônus automáticos fixos por IP.
+  const exilioGrowth={Vanguarda:[5,3],Analista:[3,5],Canalizador:[2,6]};
+  const exilioBook={"Vanguarda":{"base":[{"ip":1,"name":"Guarda · Corpo Firme","description":"+2 em Resistência física para suportar impacto, empurrão, queda ou derrubada.","postura":"Guarda"},{"ip":1,"name":"Guarda · Interposição","description":"Uma vez por rodada, use a reação para receber ataque físico direcionado a aliado próximo e alcançável.","postura":"Guarda"},{"ip":1,"name":"Pressão · Presença Ameaçadora","description":"+2 em Confronto para agarrar, empurrar, desarmar e impedir movimento. Não beneficia dano direto.","postura":"Pressão"},{"ip":1,"name":"Pressão · Marcação","description":"Ao acertar ataque corpo a corpo, marque um alvo até o próximo turno. Ao seu alcance, primeiro ataque do alvo contra outra pessoa sofre −2.","postura":"Pressão"},{"ip":1,"name":"Investida · Passos Decididos","description":"+2 em Mobilidade em aproximações, obstáculos e reposicionamento durante combate.","postura":"Investida"},{"ip":1,"name":"Investida · Avanço Impetuoso","description":"Uma vez por turno, ao avançar 3 m antes de ataque corpo a corpo, recebe +2 nesse ataque.","postura":"Investida"},{"ip":3,"name":"Instinto de Combate","description":"Uma vez por rodada, em empate numérico de teste oposto de combate, gaste 1 PM para somar +2 ao próprio resultado."},{"ip":6,"name":"Adaptação Instintiva","description":"Uma vez por rodada, além da troca normal, pode mudar Postura ao perceber ação inimiga antes de sua resolução, sem gastar reação."},{"ip":7,"name":"Determinação Inabalável","description":"Uma vez por cena, após falhar em Resistência durante combate, gaste 3 PM e repita um d10, mantendo o novo resultado."},{"ip":10,"name":"Domínio Absoluto","description":"Uma vez por cena, gaste 5 PM para ativar por três turnos. Pode alternar Posturas livremente, usar técnica inicial de outra Postura e receber +2 em um teste de combate uma vez durante a ativação."}],"branches":{"Sentinela":[{"ip":2,"name":"Proteção Instintiva","description":"+2 na defesa ao interceptar ataque com Interposição; 0 PM."},{"ip":5,"name":"Dividir o Fardo","description":"Ao sofrer dano por Interposição, gaste 2 PM para reduzir 1d6 + CON do dano, uma vez por rodada."},{"ip":9,"name":"Última Barreira","description":"Uma vez por cena, gaste 4 PM em Interposição para +4 na defesa, metade do dano restante e +2 contra efeitos secundários."}],"Ruptor":[{"ip":2,"name":"Domínio de Espaço","description":"Ao alvo marcado tentar sair de seu alcance, reação de Confronto contra Mobilidade pode impedir deslocamento; 0 PM."},{"ip":5,"name":"Golpe Desestabilizador","description":"Após ataque acertado, 2 PM e Confronto contra Resistência para empurrar 2 m ou travar deslocamento voluntário."},{"ip":9,"name":"Cerco Implacável","description":"Uma vez por cena, 4 PM intensificam Marcação por duas rodadas: penalidade −4 e bônus +2 em Domínio de Espaço."}],"Batedor":[{"ip":2,"name":"Movimento Contínuo","description":"Após Avanço Impetuoso, desloque até 2 m extras mesmo errando o ataque, uma vez por turno; 0 PM."},{"ip":5,"name":"Mudança de Trajetória","description":"Gaste 2 PM para elevar Passos Decididos a +4 em contornos e obstáculos, uma vez por turno."},{"ip":9,"name":"Investida Fantasma","description":"Uma vez por cena, 4 PM concedem +6 m no turno, impedem reações por passagem e elevam Avanço Impetuoso a +4."}]},"choices":{"4":[{"ip":4,"name":"Proteção Estendida","description":"Interposição protege aliado até 3 m, desde que alcançável."},{"ip":4,"name":"Ameaça Persistente","description":"Mantém Marcação após o primeiro ataque falho contra inimigo já marcado, nas condições previstas."},{"ip":4,"name":"Impulso Controlado","description":"+2 no próximo teste de Mobilidade após Avanço Impetuoso, até o fim do turno."}],"8":[{"ip":8,"name":"Amparo Firme","description":"Com Interposição, gaste 2 PM para reduzir mais 3 do dano recebido, uma vez por rodada."},{"ip":8,"name":"Abertura Forçada","description":"Ao vencer Confronto oposto contra alvo marcado, dá +2 ao próximo ataque de aliado contra ele."},{"ip":8,"name":"Arrancada Decisiva","description":"Gaste 2 PM antes de Avanço Impetuoso para receber mais 3 m de deslocamento no turno."}]}},"Analista":{"base":[{"ip":1,"name":"Mente Investigativa","description":"Inicia cada cena com 2 Pontos de Dedução (PD), máximo 3; uma descoberta nova relevante recupera 1 PD uma vez por cena."},{"ip":1,"name":"Leitura de Cena","description":"Gaste 1 PD para fazer uma pergunta objetiva e fundamentada ao mestre após observar pessoa, objeto ou local."},{"ip":1,"name":"Conexão de Pistas","description":"Gaste 2 PD para solicitar conexão plausível entre ao menos duas evidências relevantes."},{"ip":1,"name":"Antecipação","description":"Gaste 1 PD para alertar aliado de perigo iminente e conceder +2 a teste diretamente destinado a evitá-lo."},{"ip":3,"name":"Raciocínio Adaptativo","description":"Uma vez por cena, gaste 1 PD para repetir um d10 após falha em investigação, observação ou análise. O novo resultado vale."},{"ip":6,"name":"Mente Expandida","description":"Inicia cenas com 3 PD, máximo 5; recupera 1 PD até duas vezes por cena após descobertas novas e distintas."},{"ip":7,"name":"Hipótese Confirmada","description":"Uma vez por cena, gaste 2 PD para avaliar hipótese com duas evidências. Se sustentada, recupere 1 PD ou conceda +2 em teste ligado a ela."},{"ip":10,"name":"Consciência Analítica","description":"Uma vez por cena, por 3 PD, ativa análise por três rodadas ou sequência de investigação. Reduz custos de técnicas, permite pergunta gratuita e bônus +4 conforme condições do livro."}],"branches":{"Reconstrutor":[{"ip":2,"name":"Reconstrução de Cena","description":"1 PD: obtenha sequência parcial provável fundamentada nas evidências da cena."},{"ip":5,"name":"Vestígios Ocultos","description":"1 PD: identifique indício discreto ou contradição; se não existir evidência adequada, não gasta PD."},{"ip":9,"name":"Reconstrução Definitiva","description":"Uma vez por cena, por 3 PD e com três evidências, obtenha sequência, conexão e lacuna ainda não esclarecida."}],"Estrategista":[{"ip":2,"name":"Plano de Contingência","description":"1 PD: plano específico concede +2 em teste relacionado de até dois aliados até o fim da cena."},{"ip":5,"name":"Análise de Vulnerabilidade","description":"2 PD: encontre limitação sustentada e dê +2 uma vez a aliado que a explore."},{"ip":9,"name":"Estratégia Magistral","description":"3 PD: até três aliados recebem benefício único de +2 em teste do plano ou repetição de d10 para evitar perigo previsto."}],"Perfilador":[{"ip":2,"name":"Leitura Comportamental","description":"1 PD: inferência fundamentada sobre emoções, motivações ou padrões observados; não lê pensamentos."},{"ip":5,"name":"Padrão Previsível","description":"2 PD: uma vez por cena, receba +4 em teste contra padrão ou +2 a aliado alertado."},{"ip":9,"name":"Perfil Psicológico","description":"3 PD: infira motivação, padrão e vulnerabilidade; a Intervenção Calculada dá +4 a teste apropriado."}]},"choices":{"4":[{"ip":4,"name":"Olhar Minucioso","description":"Por 1 PD, Leitura de Cena permite duas perguntas sobre o mesmo alvo."},{"ip":4,"name":"Associação Brilhante","description":"Uma vez por cena, Conexão de Pistas custa 1 PD, em vez de 2."},{"ip":4,"name":"Aviso Preciso","description":"Antecipação alerta até dois aliados com +2 para evitar o mesmo perigo."}],"8":[{"ip":8,"name":"Olhar Revelador","description":"Uma vez por cena, gaste +1 PD em Leitura de Cena para obter detalhe relevante para investigar."},{"ip":8,"name":"Síntese Analítica","description":"Uma vez por cena, Conexão de Pistas também oferece próximo rumo ou +2 em teste ligado à conexão."},{"ip":8,"name":"Antevisão Tática","description":"Uma vez por cena, gaste +1 PD em Antecipação e permita +4 ou repetir um d10 em teste de aliado."}]}},"Canalizador":{"base":[{"ip":1,"name":"Três Modulações iniciais","description":"Concede acesso às três Modulações iniciais. Os efeitos específicos precisam ser conferidos no original.","uncertain":true},{"ip":3,"name":"Economia","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":4,"name":"Aprimoramento de Modulação I","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":6,"name":"Ressonância Profunda","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":7,"name":"Consciência Resiliente","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":8,"name":"Aprimoramento de Modulação II","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":10,"name":"Consciência em Ressonância","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true}],"branches":{"Tecelão":[{"ip":2,"name":"Tecelagem Precisa","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":5,"name":"Trama Dupla","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":9,"name":"Trama Magistral","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true}],"Âncora":[{"ip":2,"name":"Estabilidade Compartilhada","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":5,"name":"Campo de Estabilidade","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":9,"name":"Bastião da Consciência","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true}],"Dissonante":[{"ip":2,"name":"Interferência de Ressonância","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":5,"name":"Fratura de Padrão","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true},{"ip":9,"name":"Colapso de Padrão","description":"A edição consolidada informa o nome e o IP, mas não preserva a descrição e os custos exatos desta técnica. Consulte o livro original com o mestre.","uncertain":true}]},"choices":{}}};
+  const exilioAttr=['potencia','destreza','constituicao','raciocinio','consciencia','expressao'];
+  const exilioAttrNames={potencia:'Potência',destreza:'Destreza',constituicao:'Constituição',raciocinio:'Raciocínio',consciencia:'Consciência',expressao:'Expressão'};
+  function ipLevel(){return clampParanormalInfluence(state.paranormalInfluence);}
+  function progression(){
+    if(!state.exilioProgression||typeof state.exilioProgression!=='object')state.exilioProgression={};
+    const p=state.exilioProgression;
+    p.branch=p.branch||{};p.choice=p.choice||{};p.attrs=p.attrs||{};p.domains=p.domains||{};
+    return p;
+  }
+  function reconcileIPBonuses(){
+    const ip=ipLevel();
+    const alias={Combatente:'Vanguarda',Especialista:'Analista',Ocultista:'Canalizador'};
+    const klass=alias[state.origin]||state.origin;
+    const rate=exilioGrowth[klass]||[0,0];
+    const wanted={life:rate[0]*ip,sanity:rate[1]*ip};
+    const previous=state.exilioResourceLedger||{life:0,sanity:0};
+    const dl=wanted.life-(Number(previous.life)||0),dm=wanted.sanity-(Number(previous.sanity)||0);
+    if(!dl&&!dm)return false;
+    state.resources=state.resources||{};
+    for(const [key,diff] of [['life',dl],['sanity',dm]]){
+      const old=state.resources[key]||{current:100,max:100};
+      const max=Math.max(1,Math.min(9999,(Number(old.max)||100)+diff));
+      const current=Math.max(0,Math.min(max,Number(old.current)||0));
+      state.resources[key]={current,max};
+    }
+    state.exilioResourceLedger={...wanted,ip,klass};
+    return true;
+  }
+  function classUnlocked(klass){
+    const book=exilioBook[klass];if(!book)return [];
+    const p=progression(),ip=ipLevel(),branch=p.branch[klass],enh=p.choice[klass]||{};
+    const entries=book.base.filter(x=>x.ip<=ip).map(x=>({...x,klass}));
+    for(const x of book.branches[branch]||[])if(x.ip<=ip)entries.push({...x,klass,branch});
+    for(const [level,options] of Object.entries(book.choices)){
+      if(Number(level)>ip)continue;
+      const selected=options.find(x=>x.name===enh[level]);
+      if(selected)entries.push({...selected,klass});
+    }
+    return entries;
+  }
+  function allClassAbilities(klass){
+    const book=exilioBook[klass];if(!book)return [];
+    const entries=book.base.map(x=>({...x,klass}));
+    for(const [branch,items] of Object.entries(book.branches))for(const x of items)entries.push({...x,klass,branch});
+    for(const items of Object.values(book.choices))for(const x of items)entries.push({...x,klass});
+    return entries.sort((a,b)=>a.ip-b.ip||a.name.localeCompare(b.name,'pt-BR'));
+  }
+  function showAbility(entry,owned){
+    $('exilio-detail-title').textContent=entry.name;
+    $('exilio-detail-tag').textContent=(entry.klass||'EXÍLIO')+' · IP '+entry.ip;
+    $('exilio-detail-description').textContent=entry.description;
+    $('exilio-detail-status').textContent=entry.uncertain?'Nome e IP confirmados; números completos não constam da edição compilada.':
+      owned?'Adquirida e disponível conforme o livro.':'Prévia. Para adquirir, avance IP e faça as escolhas necessárias.';
+    $('exilio-detail-dialog').showModal();
+  }
+  function addAbilityCard(entry,target,owned){
+    const b=document.createElement('button');b.type='button';b.className='exilio-ability-card'+(owned?'':' locked');
+    const header=document.createElement('span');header.className='ability-card-header';
+    const title=document.createElement('strong');title.textContent=entry.name;
+    const tag=document.createElement('small');tag.textContent=entry.ip?'IP '+entry.ip:'VIVÊNCIA';
+    header.append(title,tag);
+    const teaser=document.createElement('span');teaser.textContent=entry.uncertain?'Detalhes pendentes no livro original':entry.description;
+    teaser.className='ability-card-teaser';
+    const foot=document.createElement('small');foot.textContent=owned?'VER HABILIDADE':'BLOQUEADA · VER DETALHES';
+    b.append(header,teaser,foot);b.addEventListener('click',()=>showAbility(entry,owned));target.append(b);
+  }
+  function pendingIP(){
+    const klass=state.origin,ip=ipLevel(),p=progression();
+    if(!ip)return 0;
+    if(!exilioBook[klass])return 1;
+    let n=ip>=2&&!p.branch[klass]?1:0;
+    for(const level of [3,6,9])if(level<=ip&&!p.attrs[level])n++;
+    for(const level of [2,4,7,10])if(level<=ip)n+=Math.max(0,2-(p.domains[level]||[]).length);
+    for(const level of [4,8])if(level<=ip&&exilioBook[klass].choices[level]&&!p.choice[klass]?.[level])n++;
+    return n;
+  }
+  function renderAbilities(){
+    const list=$('exilio-abilities-cards');list.replaceChildren();
+    const klass=state.origin||'Mundano',active=classUnlocked(klass);
+    for(const entry of active)addAbilityCard(entry,list,true);
+    const oc=occupations.find(x=>x.name===state.occupation);
+    if(oc)addAbilityCard({ip:0,klass:'Ocupação',name:'Vivência · '+oc.vivenciaName,description:oc.vivencia+'\nDomínios da ocupação: '+oc.domains},list,true);
+    if(!active.length&&!oc){
+      const p=document.createElement('p');p.textContent='Escolha uma ocupação e uma classe para adquirir habilidades.';p.className='exilio-ability-empty';list.append(p);
+    }
+    const pending=pendingIP();
+    $('exilio-ability-count').textContent='HABILIDADES · '+active.length;
+    $('exilio-abilities-status').textContent=klass+' · IP '+ipLevel()+(pending?' · '+pending+' escolha(s) pendente(s)':' · ganhos automáticos aplicados');
+    $('exilio-progress-open').classList.toggle('has-pending',pending>0);
+  }
+  function renderAbilityCatalog(){
+    const klass=$('exilio-catalog-class').value,items=allClassAbilities(klass);
+    const owned=new Set(classUnlocked(klass).map(e=>e.name));
+    const list=$('exilio-catalog-list');list.replaceChildren();
+    $('exilio-catalog-summary').textContent=klass+' · '+items.length+' técnicas e opções. Clique para ver a descrição.';
+    for(const entry of items)addAbilityCard(entry,list,state.origin===klass&&owned.has(entry.name));
+  }
+  function block(root,name,description){
+    const article=document.createElement('section');article.className='exilio-progress-card';
+    const h=document.createElement('h3');h.textContent=name;article.append(h);
+    if(description){const p=document.createElement('p');p.textContent=description;article.append(p);}
+    root.append(article);return article;
+  }
+  function action(parent,title,fn){
+    const b=document.createElement('button');b.type='button';b.textContent=title;b.className='exilio-progress-action';
+    b.addEventListener('click',fn);parent.append(b);
+  }
+  function chooseAttribute(level,key){
+    const p=progression(),value=Number(state.attrs[key])||0;
+    if(p.attrs[level]||level>ipLevel()||value>=5)return;
+    state.attrs[key]=value+1;p.attrs[level]=key;
+    if(key==='constituicao'||key==='consciencia'){
+      const id=key==='constituicao'?'life':'sanity';
+      const old=state.resources?.[id]||{current:100,max:100};
+      state.resources[id]={...old,max:Math.min(9999,Number(old.max)+2)};
+    }
+    display();save();renderProgressChoices();
+  }
+  function chooseDomain(level,name){
+    const p=progression(),chosen=p.domains[level]||[],value=Number(state.skillDomains?.[name])||0;
+    if(level>ipLevel()||chosen.length>=2||chosen.some(x=>x.name===name)||!skillNames.includes(name))return;
+    if(value===6||value===2&&level<4||value===4&&level<7)return;
+    if(value===4&&skillNames.filter(n=>Number(state.skillDomains?.[n])===6).length>=2)return;
+    p.domains[level]=[...chosen,{name,from:value,to:value+2}];
+    state.skillDomains=state.skillDomains||{};state.skills=state.skills||{};
+    state.skillDomains[name]=value+2;state.skills[name]=value+2;
+    display();save();renderProgressChoices();
+  }
+  function renderProgressChoices(){
+    const root=$('exilio-progress-choices');root.replaceChildren();
+    const ip=ipLevel(),klass=state.origin,p=progression();
+    const l=state.exilioResourceLedger||{life:0,sanity:0};
+    $('exilio-progress-summary').textContent=klass+' · IP '+ip+' · bônus fixos acumulados: +'+l.life+' PV máximos / +'+l.sanity+' PM máximos. IP não cura pontos perdidos.';
+    if(ip===0){block(root,'IP 0 · Mundano','O primeiro contato abre a escolha da classe no IP 1.');return;}
+    if(!exilioBook[klass]){
+      const area=block(root,'Classe pendente','Escolha Vanguarda, Analista ou Canalizador para receber os ganhos de classe.');
+      action(area,'ESCOLHER CLASSE',()=>{$('exilio-progress-dialog').close();renderOrigins();$('origin-dialog').showModal();});
+      return;
+    }
+    if(ip>=2){
+      const selected=p.branch[klass],area=block(root,'IP 2 · Especialização',selected?'Escolhida: '+selected:'Escolha sua especialização.');
+      if(!selected)for(const name of Object.keys(exilioBook[klass].branches))action(area,name,()=>{p.branch[klass]=name;display();save();renderProgressChoices();});
+    }
+    for(const level of [3,6,9]){
+      if(level>ip)continue;
+      const current=p.attrs[level],area=block(root,'IP '+level+' · +1 atributo',current?'Escolhido: '+exilioAttrNames[current]:'Escolha um atributo. Constituição concede +2 PV máximos; Consciência, +2 PM máximos.');
+      if(!current)for(const key of exilioAttr)if((Number(state.attrs[key])||0)<5)action(area,exilioAttrNames[key]+' ('+(Number(state.attrs[key])||0)+')',()=>chooseAttribute(level,key));
+    }
+    for(const level of [2,4,7,10]){
+      if(level>ip)continue;
+      const list=p.domains[level]||[],area=block(root,'IP '+level+' · 2 melhorias de Domínio',list.length+'/2 recebidas. Cada perícia só pode avançar uma vez por marco.');
+      for(const item of list){const line=document.createElement('p');line.textContent=item.name+' · +'+item.from+' → +'+item.to;area.append(line);}
+      if(list.length<2){
+        const row=document.createElement('div');row.className='exilio-progress-row';
+        const select=document.createElement('select');select.setAttribute('aria-label','Melhoria de Domínio no IP '+level);
+        for(const name of skillNames){
+          const value=Number(state.skillDomains?.[name])||0;
+          if(value===6||value===2&&level<4||value===4&&level<7||list.some(x=>x.name===name))continue;
+          if(value===4&&skillNames.filter(n=>Number(state.skillDomains?.[n])===6).length>=2)continue;
+          const option=document.createElement('option');option.value=name;option.textContent=name+' (+ '+value+' → '+(value+2)+')';select.append(option);
+        }
+        if(select.options.length){row.append(select);action(row,'APLICAR',()=>chooseDomain(level,select.value));area.append(row);}
+        else{const hint=document.createElement('p');hint.textContent='Sem perícia elegível para melhoria neste momento.';area.append(hint);}
+      }
+    }
+    for(const level of [4,8]){
+      if(level>ip)continue;
+      const options=exilioBook[klass].choices[level]||[];
+      if(!options.length)continue;
+      const selected=p.choice[klass]?.[level],area=block(root,'IP '+level+' · Aprimoramento',selected?'Escolhido: '+selected:'Escolha um aprimoramento permanente.');
+      if(!selected)for(const ability of options)action(area,ability.name,()=>{
+        p.choice[klass]=p.choice[klass]||{};p.choice[klass][level]=ability.name;
+        display();save();renderProgressChoices();
+      });
+    }
+    const other=block(root,'Habilidades adquiridas automaticamente','Os cards são liberados nos IP correspondentes. O Catálogo também mostra técnicas de níveis futuros.');
+    if(klass==='Canalizador'){const p=document.createElement('p');p.textContent='Custos e efeitos completos de algumas técnicas não constam no livro compilado.';other.append(p);}
+  }
+  $('exilio-catalog-open').addEventListener('click',()=>{
+    $('exilio-catalog-class').value=exilioBook[state.origin]?state.origin:'Vanguarda';
+    renderAbilityCatalog();$('exilio-catalog-dialog').showModal();
+  });
+  $('exilio-catalog-class').addEventListener('change',renderAbilityCatalog);
+  $('exilio-catalog-close').addEventListener('click',()=>$('exilio-catalog-dialog').close());
+  $('exilio-detail-close').addEventListener('click',()=>$('exilio-detail-dialog').close());
+  $('exilio-progress-open').addEventListener('click',()=>{renderProgressChoices();$('exilio-progress-dialog').showModal();});
+  $('exilio-progress-close').addEventListener('click',()=>$('exilio-progress-dialog').close());
 
   // Arte do Photoshop: mantém a imagem vinculada ao estado da ficha e sincronizável.
   // O fundo padrão é a imagem do Mestre; imports novos podem substituí-la.
@@ -374,29 +568,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
       }
       appliedSeasonBackground=picture;
     }
-    const className=state.origin||'Mundano';
-    const selectedOccupation=occupations.find(o=>o.name===state.occupation);
-    const klass=$('exilio-abilities-class');
-    const occupation=$('exilio-abilities-occupation');
-    klass.replaceChildren();
-    occupation.replaceChildren();
-    const makeLine=(label,description,parent)=>{
-      const title=document.createElement('strong');title.textContent=label;
-      const detail=document.createElement('p');detail.textContent=description;
-      parent.append(title,detail);
-    };
-    const classSummaries={
-      Mundano:'IP 0 · Sem habilidades de classe. No IP 1, escolha Vanguarda, Analista ou Canalizador.',
-      Vanguarda:'Combate e Posturas. Consulte suas habilidades e especialização no livro Exílio 3.0.',
-      Analista:'Investigação e Pontos de Dedução (PD). Consulte as habilidades e especialização no livro Exílio 3.0.',
-      Canalizador:'Rituais e Modulações. Consulte as habilidades e especialização no livro Exílio 3.0.'
-    };
-    makeLine('CLASSE · '+className,classSummaries[className]||'Consulte as regras da classe no livro.',klass);
-    if(selectedOccupation){
-      makeLine('VIVÊNCIA · '+selectedOccupation.vivenciaName,selectedOccupation.vivencia,occupation);
-    }else{
-      makeLine('OCUPAÇÃO','Escolha uma ocupação para visualizar a Vivência correspondente.',occupation);
-    }
+    renderAbilities();
     const notes=$('exilio-abilities-notes');
     if(document.activeElement!==notes)notes.value=state.exilioAbilitiesNotes||'';
   }
@@ -567,7 +739,7 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
 
   $('char-origin').addEventListener('click',()=>{renderOrigins();$('origin-dialog').showModal();});
   $('origin-close').addEventListener('click',()=>$('origin-dialog').close());
-  $('origin-none').addEventListener('click',()=>{state.origin='Mundano';save();display();$('origin-dialog').close();});
+  $('origin-none').addEventListener('click',()=>{state.origin='Mundano';display();save();$('origin-dialog').close();});
 
 
   const originRules=[{"name":"Mundano","page":5,"description":"Pessoa comum antes do primeiro contato com o Exílio, no IP 0. Ainda não possui uma classe especializada.","rules":["Começa no IP 0 e escolhe uma classe ao atingir o IP 1.","PV iniciais: 3d6 + 8 + (Constituição × 2).","PM iniciais: 3d6 + 14 + (Consciência × 2)."],"progress":{},"cost":"Mundano é o estágio inicial, anterior a Vanguarda, Analista e Canalizador."},{"name":"Vanguarda","page":5,"description":"Classe focada em combate, Posturas e proteção dos aliados.","rules":["Ganha +5 PV máximos e +3 PM máximos por IP, incluindo IP 1.","Especializações: Sentinela, Ruptor e Batedor."],"progress":{},"cost":"O avanço de IP não restaura pontos de vida ou mentais já gastos."},{"name":"Analista","page":5,"description":"Classe de investigação, interpretação de pistas e planejamento, que utiliza Pontos de Dedução (PD).","rules":["Ganha +3 PV máximos e +5 PM máximos por IP, incluindo IP 1.","Especializações: Reconstrutor, Estrategista e Perfilador."],"progress":{},"cost":"PD são um recurso próprio, independente dos Pontos Mentais."},{"name":"Canalizador","page":5,"description":"Classe voltada aos rituais, Modulações e manifestações do Exílio.","rules":["Ganha +2 PV máximos e +6 PM máximos por IP, incluindo IP 1.","Especializações: Tecelão, Âncora e Dissonante."],"progress":{},"cost":"Os rituais utilizam Pontos Mentais conforme as regras do livro."}];
@@ -580,7 +752,7 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
       if(Object.keys(entry.progress).length){const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Progressão por IP';details.append(summary);for(const [nex,power] of Object.entries(entry.progress)){const row=document.createElement('p');row.textContent=nex+'% — '+power;if(Number(nex)<=Number(state.nex||0))row.className='origin-unlocked';details.append(row);}card.append(details);}
       const cost=document.createElement('p');cost.className='origin-cost';cost.textContent=entry.cost;card.append(cost);
       const source=document.createElement('small');source.textContent='EXÍLIO 3.0 — Livro Básico de Regras, p. '+entry.page+'.';card.append(source);
-      const select=document.createElement('button');select.type='button';select.className='origin-select';const active=(state.origin??'Mundano')===entry.name;select.textContent=active?'Selecionado':'Escolher '+entry.name;select.setAttribute('aria-pressed',String(active));select.addEventListener('click',()=>{state.origin=entry.name;save();display();$('origin-dialog').close();});card.append(select);list.append(card);
+      const select=document.createElement('button');select.type='button';select.className='origin-select';const active=(state.origin??'Mundano')===entry.name;select.textContent=active?'Selecionado':'Escolher '+entry.name;select.setAttribute('aria-pressed',String(active));select.addEventListener('click',()=>{state.origin=entry.name;display();save();$('origin-dialog').close();});card.append(select);list.append(card);
     }
   }
 
