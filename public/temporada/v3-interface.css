@@ -159,3 +159,93 @@ body.season-rulebook-v3 .v3-roll-output #v3-roll-result{overflow-wrap:anywhere}
 body.season-rulebook-v3 .v3-flash{animation:v3pulse .35s ease-out}
 @keyframes v3pulse{0%{color:#ffba61}100%{color:#ffefdf}}
 @media (prefers-reduced-motion:reduce){body.season-rulebook-v3 .v3-flash{animation:none}}
+
+/* Mobile e tablets: a arte permanece como textura, mas os controles viram
+   cartões fluidos — nenhum texto reduzido a uma miniatura de 1920px. */
+body.season-rulebook-v3 .v3-mobile-attributes{display:none}
+@media (max-width:1199px){
+ body.season-rulebook-v3 #page-principal{
+  height:auto!important;min-height:100dvh!important;overflow:auto!important;
+  padding:0!important;display:block!important;
+ }
+ body.season-rulebook-v3 #viewport{
+  width:100%!important;height:auto!important;
+  min-height:100dvh!important;margin:0 auto!important;transform:none!important;
+ }
+ body.season-rulebook-v3 .sheet{
+  position:relative!important;transform:none!important;
+  width:min(100%,820px)!important;height:auto!important;
+  min-height:100dvh!important;
+  margin:0 auto!important;
+  border-left:2px solid #ba321e!important;border-right:2px solid #ba321e!important;
+  background:#0a0808 url('/temporada/assets/fundo-original-1920x909.jpg') center top/100% auto repeat-y!important;
+ }
+ body.season-rulebook-v3 #sheet > button.attr.v3-attributes,
+ body.season-rulebook-v3 #sheet > .v3-attribute-tools{display:none!important}
+ body.season-rulebook-v3 #sheet > .v3-game-ui{
+  position:relative!important;inset:auto!important;display:flex!important;
+  flex-direction:column;gap:13px;width:100%!important;height:auto!important;
+  padding:60px 14px 22px!important;
+  background:#08080855!important;
+ }
+ body.season-rulebook-v3 .v3-game-ui > *{
+  position:relative!important;inset:auto!important;left:auto!important;top:auto!important;
+  width:100%!important;height:auto!important;min-height:0!important;max-width:100%!important;
+  margin:0!important;padding:12px!important;
+  background:#0b0909ec!important;border:1px solid #873321!important;
+  box-shadow:0 3px 14px #0009!important;
+ }
+ body.season-rulebook-v3 .v3-top-bar{
+  display:flex!important;align-items:stretch!important;flex-wrap:wrap!important;
+  gap:10px!important;
+ }
+ body.season-rulebook-v3 .v3-top-bar .v3-name-field{flex:1 1 100%!important;width:100%!important}
+ body.season-rulebook-v3 .v3-top-bar>.v3-field:nth-child(2){flex:1 1 170px!important;width:auto!important}
+ body.season-rulebook-v3 .v3-top-bar #v3-budget{margin:0!important;align-self:center}
+ body.season-rulebook-v3 .v3-top-bar .v3-ip-control{margin:0!important;align-self:center}
+ body.season-rulebook-v3 .v3-mobile-attributes{display:block!important}
+ body.season-rulebook-v3 .v3-mobile-attributes h2{
+  margin:0 0 9px;font:bold 20px Georgia,serif;color:#fff1e5;
+ }
+ body.season-rulebook-v3 #v3-mobile-attr-grid{display:grid;gap:5px;grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.season-rulebook-v3 .v3-mobile-attr-row{
+  display:flex;align-items:center;gap:7px;min-height:44px;
+  padding:5px;border:1px solid #653429;background:#1c1110;
+ }
+ body.season-rulebook-v3 .v3-mobile-attr-row strong{
+  flex:1;min-width:0;overflow-wrap:anywhere;
+  font:bold 11px Arial,sans-serif;color:#f7e7dd;
+ }
+ body.season-rulebook-v3 .v3-mobile-attr-row button{
+  width:28px;min-width:28px;height:33px;min-height:33px;padding:0;font:bold 16px Arial,sans-serif;
+ }
+ body.season-rulebook-v3 .v3-mobile-attr-row output{
+  min-width:16px;text-align:center;font:bold 17px Georgia,serif;
+ }
+ body.season-rulebook-v3 .v3-resource{display:flex;align-items:center;justify-content:space-between;gap:8px}
+ body.season-rulebook-v3 .v3-resource-numbers{flex:0 1 auto}
+ body.season-rulebook-v3 .v3-resource-actions{flex:0 0 auto;flex-wrap:wrap;margin:0}
+ body.season-rulebook-v3 .v3-domain-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-flow:row;grid-template-rows:none;gap:7px;
+ }
+ body.season-rulebook-v3 .v3-domain-row{height:auto;min-height:43px;padding:5px}
+ body.season-rulebook-v3 .v3-domain-attr{flex:0 1 95px}
+ body.season-rulebook-v3 .v3-combat-actions{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+ }
+ body.season-rulebook-v3 .v3-combat-actions button{min-height:51px}
+ body.season-rulebook-v3 .v3-rd{margin:12px 0}
+ body.season-rulebook-v3 .v3-roll-output{min-height:80px!important}
+}
+@media (max-width:540px){
+ body.season-rulebook-v3 .v3-game-ui > *{padding:10px!important}
+ body.season-rulebook-v3 #v3-mobile-attr-grid{grid-template-columns:minmax(0,1fr)}
+ body.season-rulebook-v3 .v3-mobile-attr-row strong{font-size:13px}
+ body.season-rulebook-v3 .v3-domain-grid{grid-template-columns:minmax(0,1fr)}
+ body.season-rulebook-v3 .v3-domain-row{min-height:46px}
+ body.season-rulebook-v3 .v3-domain-name{font-size:13px}
+ body.season-rulebook-v3 .v3-combat-actions{grid-template-columns:minmax(0,1fr)}
+ body.season-rulebook-v3 .v3-resource{flex-direction:column;align-items:stretch}
+ body.season-rulebook-v3 .v3-resource-actions{justify-content:center}
+}
