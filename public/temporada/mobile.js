@@ -76,6 +76,9 @@
     move(byId('sheet-skills-grid'),byId('mobile-skills-mount'));
     move(byId('exilio-abilities-panel'),byId('mobile-abilities-mount'));
     move(byId('combat-area'),byId('mobile-combat-mount'));
+    // O mesmo botão é recolocado no painel em telas móveis.
+    move(byId('combat-add'),byId('combat-area'));
+    byId('combat-area').prepend(byId('combat-add'));
     const resources=byId('mobile-resources-mount');
     move(document.querySelector('.resource-widget[aria-label="Vida"]'),resources);
     move(document.querySelector('.resource-widget[aria-label="Sanidade"]'),resources);
