@@ -75,6 +75,7 @@ function build(){
  '<div class="v3-ip-control"><span>IP</span><button type="button" data-ip="-1">−</button><strong id="v3-ip-value">0</strong><button type="button" data-ip="1">+</button></div>',
  '<output id="v3-budget" title="6 pontos iniciais; +1 atributo nos IP 3, 6 e 9">ATRIBUTOS 0 / 6</output>',
  '</section>',
+ '<section class="v3-mobile-attributes" aria-label="Atributos do Exílio"><h2>ATRIBUTOS</h2><div id="v3-mobile-attr-grid"></div></section>',
  '<section class="v3-resource v3-resource-pv" aria-label="Pontos de Vida">',
  '<div class="v3-resource-numbers"><button type="button" data-resource="pv" data-delta="-1" aria-label="Diminuir PV">−</button><strong id="v3-pv-current">—</strong><span>/</span><span id="v3-pv-max">—</span><button type="button" data-resource="pv" data-delta="1" aria-label="Aumentar PV">+</button></div>',
  '<div class="v3-resource-actions"><button type="button" data-generate="pv">GERAR 3d6</button><button type="button" data-stat-bonus="pv" title="CON +1 numa progressão concede +2 PV máximos">CON +2</button></div>',
@@ -105,6 +106,19 @@ function build(){
  '</section>',
  '<aside class="v3-roll-output" aria-live="polite"><span class="v3-roll-heading">RESULTADO</span><div id="v3-roll-result">Escolha uma perícia ou ação para rolar 2d10.</div></aside>'
  ].join('');
+ const mobileGrid=$('v3-mobile-attr-grid');
+ for(const [key,name] of Object.entries(attrs)){
+  const row=document.createElement('div');row.className='v3-mobile-attr-row';
+  const label=document.createElement('strong');label.textContent=name.toUpperCase();
+  const minus=document.createElement('button');minus.type='button';minus.dataset.mobileAttr=key;minus.dataset.mobileDelta='-1';
+  minus.textContent='−';minus.setAttribute('aria-label','Diminuir '+name);
+  const value=document.createElement('output');value.dataset.mobileValue=key;value.textContent='0';
+  const plus=document.createElement('button');plus.type='button';plus.dataset.mobileAttr=key;plus.dataset.mobileDelta='1';
+  plus.textContent='+';plus.setAttribute('aria-label','Aumentar '+name);
+  const roll=document.createElement('button');roll.type='button';roll.dataset.mobileRoll=key;roll.textContent='⚄';
+  roll.setAttribute('aria-label','Rolar '+name);
+  row.append(label,minus,value,plus,roll);mobileGrid.append(row);
+ }
  const grid=$('v3-domains');
  for(const [name,suggested] of skills){
   const row=document.createElement('div');row.className='v3-domain-row';row.dataset.domain=name;
@@ -133,6 +147,7 @@ function render(){
  const max=6+[3,6,9].filter(n=>ex.ip>=n).length;
  $('v3-budget').textContent='ATRIBUTOS '+spent+' / '+max;
  $('v3-budget').dataset.over=String(spent>max);
+ for(const value of root.querySelectorAll('[data-mobile-value]'))value.textContent=sheet.attrs?.[value.dataset.mobileValue]||0;
  for(const key of ['pv','pm']){
   $('v3-'+key+'-current').textContent=ex[key].current===null?'—':ex[key].current;
   $('v3-'+key+'-max').textContent=ex[key].max===null?'—':ex[key].max;
@@ -208,7 +223,14 @@ function combat(action){
 function bind(){
  root.addEventListener('click',event=>{
   const b=event.target.closest('button');if(!b)return;
-  if(b.dataset.ip!==undefined){
+  if(b.dataset.mobileAttr){
+   const key=b.dataset.mobileAttr,el=document.querySelector('.v3-attributes[data-attr="'+key+'"]');
+   if(!el)return;
+   if(Number(b.dataset.mobileDelta)>0)el.click();
+   else el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}));
+  }else if(b.dataset.mobileRoll){
+   rollAttribute(b.dataset.mobileRoll);
+  }else if(b.dataset.ip!==undefined){
    const delta=Number(b.dataset.ip);
    save(ex=>{ex.ip=clamp(ex.ip+delta,0,10);if(ex.ip===0)ex.classe='mundano';});
    if(current().ex.ip===1&&current().ex.classe==='mundano')notify('No IP 1, escolha sua classe: Vanguarda, Analista ou Canalizador.');
@@ -221,7 +243,10 @@ function bind(){
    const {ex}=current();
    if(ex.ip<3){notify('O primeiro aumento de atributo ocorre no IP 3.');return;}
    if(!ex[name].dice){notify('Gere os valores iniciais de '+name.toUpperCase()+' primeiro.');return;}
-   if(ex[name].bonus>=6){notify('Limite de três avanços (+6) atingido.');return;}
+   const allowed=2*[3,6,9].filter(ip=>ex.ip>=ip).length;
+   if(ex[name].bonus>=allowed){
+    notify('Só é possível aplicar +2 uma vez por marco IP 3, 6 e 9.');return;
+   }
    save(next=>{next[name].bonus+=2;});
    notify(name.toUpperCase()+': +2 ao valor máximo pelo aumento de CON/CNS, sem retroatividade.');
   }else if(b.dataset.grade)changeDomain(b.dataset.grade,1);
