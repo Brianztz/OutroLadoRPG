@@ -26,12 +26,13 @@
     }
   }
   buildExilioSkillTable();
-  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0};
+  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0,exilioBackground:'',exilioAbilitiesNotes:''};
   let state=JSON.parse(JSON.stringify(initial));
   let toastHandle=null;
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
   try{const value=localStorage.getItem(window.SeasonContext.stateKey);if(value){const loaded=JSON.parse(value);if(loaded&&loaded.attrs&&loaded.skills){state={...initial,...loaded,attrs:{...initial.attrs,...loaded.attrs}};}}}catch(e){}
   function display(){
+    displayExilioArtAndAbilities();
     displayParanormalInfluence();
     displayResources();
     renderClues();
@@ -357,6 +358,87 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     save();
   }
   $('influence-value').addEventListener('change',event=>setParanormalInfluence(event.target.value));
+
+  // Arte do Photoshop: mantém a imagem vinculada ao estado da ficha e sincronizável.
+  // O fundo nativo permanece até o usuário importar o JPG exportado do PSD.
+  let appliedSeasonBackground=null;
+  function displayExilioArtAndAbilities(){
+    const picture=typeof state.exilioBackground==='string'&&/^data:image\/(?:jpeg|png|webp);base64,/.test(state.exilioBackground)
+      ? state.exilioBackground : '';
+    if(picture!==appliedSeasonBackground){
+      const sheet=$('sheet');
+      if(picture){
+        sheet.style.setProperty('background','#030303 url("'+picture+'") left top / 1920px 909px no-repeat','important');
+      }else{
+        sheet.style.removeProperty('background');
+      }
+      appliedSeasonBackground=picture;
+    }
+    const className=state.origin||'Mundano';
+    const selectedOccupation=occupations.find(o=>o.name===state.occupation);
+    const klass=$('exilio-abilities-class');
+    const occupation=$('exilio-abilities-occupation');
+    klass.replaceChildren();
+    occupation.replaceChildren();
+    const makeLine=(label,description,parent)=>{
+      const title=document.createElement('strong');title.textContent=label;
+      const detail=document.createElement('p');detail.textContent=description;
+      parent.append(title,detail);
+    };
+    const classSummaries={
+      Mundano:'IP 0 · Sem habilidades de classe. No IP 1, escolha Vanguarda, Analista ou Canalizador.',
+      Vanguarda:'Combate e Posturas. Consulte suas habilidades e especialização no livro Exílio 3.0.',
+      Analista:'Investigação e Pontos de Dedução (PD). Consulte as habilidades e especialização no livro Exílio 3.0.',
+      Canalizador:'Rituais e Modulações. Consulte as habilidades e especialização no livro Exílio 3.0.'
+    };
+    makeLine('CLASSE · '+className,classSummaries[className]||'Consulte as regras da classe no livro.',klass);
+    if(selectedOccupation){
+      makeLine('VIVÊNCIA · '+selectedOccupation.vivenciaName,selectedOccupation.vivencia,occupation);
+    }else{
+      makeLine('OCUPAÇÃO','Escolha uma ocupação para visualizar a Vivência correspondente.',occupation);
+    }
+    const notes=$('exilio-abilities-notes');
+    if(document.activeElement!==notes)notes.value=state.exilioAbilitiesNotes||'';
+  }
+  $('exilio-abilities-notes').addEventListener('change',event=>{
+    state.exilioAbilitiesNotes=String(event.target.value).slice(0,1300);
+    save();
+  });
+  $('exilio-background-choose').addEventListener('click',()=>$('exilio-background-file').click());
+  $('exilio-background-file').addEventListener('change',async event=>{
+    const file=event.target.files?.[0];event.target.value='';
+    if(!file)return;
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)){
+      toast('Escolha uma imagem JPG, PNG ou WebP.');return;
+    }
+    if(file.size>400000){
+      toast('O fundo deve ter no máximo 400 KB. Use o JPG otimizado exportado do PSD.');return;
+    }
+    try{
+      const url=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));
+        reader.onerror=()=>reject(reader.error||new Error('Falha ao ler imagem'));reader.readAsDataURL(file);
+      });
+      const dims=await new Promise((resolve,reject)=>{
+        const img=new Image();img.onload=()=>resolve([img.naturalWidth,img.naturalHeight]);
+        img.onerror=reject;img.src=url;
+      });
+      if(dims[0]!==1920||dims[1]!==909){toast('O fundo precisa ter 1920 × 909 pixels.');return;}
+      const previous=state.exilioBackground||'';
+      state.exilioBackground=url;displayExilioArtAndAbilities();
+      try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}
+      catch(error){
+        state.exilioBackground=previous;displayExilioArtAndAbilities();
+        toast('Sem espaço para salvar o fundo. Tente o JPG otimizado.');return;
+      }
+      toast('Novo fundo do Exílio aplicado e salvo!');
+    }catch(error){toast('Não foi possível carregar o JPG.');}
+  });
+  $('exilio-background-clear').addEventListener('click',()=>{
+    state.exilioBackground='';
+    displayExilioArtAndAbilities();save();
+    toast('Fundo padrão restaurado.');
+  });
   function normalizeResource(value){
     const max=Math.max(1,Math.min(9999,Math.trunc(Number(value?.max)||100)));
     const current=Math.max(0,Math.min(max,Math.trunc(Number(value?.current) || 0)));
