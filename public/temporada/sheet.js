@@ -459,27 +459,17 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     classTab.tabIndex=occupationTab?-1:0;
     jobTab.tabIndex=occupationTab?0:-1;
     list.setAttribute('aria-labelledby',occupationTab?'exilio-occupation-tab':'exilio-class-tab');
-    $('exilio-abilities-panel').querySelector('.exilio-ability-notes').hidden=occupationTab;
     if(occupationTab){
       $('exilio-ability-count').textContent='OCUPAÇÃO';
       $('exilio-abilities-status').textContent=oc?oc.name+' · Vivência disponível':'Nenhuma ocupação selecionada';
       if(oc){
         addAbilityCard({ip:0,klass:'Ocupação',category:'VIVÊNCIA',name:oc.vivenciaName,description:oc.vivencia},list,true);
-      }else{
-        const empty=document.createElement('p');empty.className='exilio-ability-empty';
-        empty.textContent='Escolha uma das 30 ocupações do Exílio para liberar sua Vivência.';
-        list.append(empty);
       }
     }else{
       $('exilio-ability-count').textContent='HABILIDADES · '+active.length;
       const pending=pendingIP();
       $('exilio-abilities-status').textContent=klass+' · IP '+ipLevel()+(pending?' · '+pending+' escolha(s) pendente(s)':' · ganhos automáticos aplicados');
       for(const entry of active)addAbilityCard(entry,list,true);
-      if(!active.length){
-        const empty=document.createElement('p');empty.className='exilio-ability-empty';
-        empty.textContent='Escolha sua classe e avance a Influência Paranormal para desbloquear habilidades.';
-        list.append(empty);
-      }
       $('exilio-progress-open').classList.toggle('has-pending',pending>0);
     }
   }
@@ -610,13 +600,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
       appliedSeasonBackground=picture;
     }
     renderAbilities();
-    const notes=$('exilio-abilities-notes');
-    if(document.activeElement!==notes)notes.value=state.exilioAbilitiesNotes||'';
   }
-  $('exilio-abilities-notes').addEventListener('change',event=>{
-    state.exilioAbilitiesNotes=String(event.target.value).slice(0,1300);
-    save();
-  });
   $('exilio-background-choose').addEventListener('click',()=>$('exilio-background-file').click());
   $('exilio-background-file').addEventListener('change',async event=>{
     const file=event.target.files?.[0];event.target.value='';
