@@ -459,8 +459,6 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     classTab.tabIndex=occupationTab?-1:0;
     jobTab.tabIndex=occupationTab?0:-1;
     list.setAttribute('aria-labelledby',occupationTab?'exilio-occupation-tab':'exilio-class-tab');
-    $('exilio-class-tools').hidden=occupationTab;
-    $('exilio-occupation-tools').hidden=!occupationTab;
     $('exilio-abilities-panel').querySelector('.exilio-ability-notes').hidden=occupationTab;
     if(occupationTab){
       $('exilio-ability-count').textContent='OCUPAÇÃO';
@@ -497,7 +495,6 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
       }
     });
   }
-  $('exilio-occupation-change').addEventListener('click',()=>$('occupation-dialog').showModal());
   function renderAbilityCatalog(){
     const klass=$('exilio-catalog-class').value,items=allClassAbilities(klass);
     const owned=new Set(classUnlocked(klass).map(e=>e.name));
@@ -588,12 +585,13 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
   }
   $('exilio-catalog-open').addEventListener('click',()=>{
     $('exilio-catalog-class').value=exilioBook[state.origin]?state.origin:'Vanguarda';
+    $('origin-dialog').close();
     renderAbilityCatalog();$('exilio-catalog-dialog').showModal();
   });
   $('exilio-catalog-class').addEventListener('change',renderAbilityCatalog);
   $('exilio-catalog-close').addEventListener('click',()=>$('exilio-catalog-dialog').close());
   $('exilio-detail-close').addEventListener('click',()=>$('exilio-detail-dialog').close());
-  $('exilio-progress-open').addEventListener('click',()=>{renderProgressChoices();$('exilio-progress-dialog').showModal();});
+  $('exilio-progress-open').addEventListener('click',()=>{$('origin-dialog').close();renderProgressChoices();$('exilio-progress-dialog').showModal();});
   $('exilio-progress-close').addEventListener('click',()=>$('exilio-progress-dialog').close());
 
   // Arte do Photoshop: mantém a imagem vinculada ao estado da ficha e sincronizável.
