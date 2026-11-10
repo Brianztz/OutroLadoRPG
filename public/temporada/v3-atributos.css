@@ -649,3 +649,53 @@ body.season-rulebook-v3 #origin-dialog .exilio-origin-actions button:hover{
 body.season-rulebook-v3 #origin-dialog .exilio-origin-actions button:focus-visible{
   outline:2px solid #ffddb2;outline-offset:2px;
 }
+
+/* Exílio 3.0 — Posturas e mobile com seis atributos e habilidades. */
+body.season-rulebook-v3 #origin-dialog #exilio-posture-picker:not([hidden]){
+  display:block;padding:12px;margin:10px 0;border:1px solid #a74e35;
+  background:#24140f;color:#f8ddce
+}
+body.season-rulebook-v3 #origin-dialog #exilio-posture-picker h3{margin:0 0 6px;color:#f5b28d;font:800 17px Georgia,serif}
+body.season-rulebook-v3 #origin-dialog #exilio-posture-picker p{font:12px/1.5 Arial,sans-serif}
+body.season-rulebook-v3 #origin-dialog #exilio-posture-picker > div{display:flex;gap:6px}
+body.season-rulebook-v3 #origin-dialog #exilio-posture-picker button{
+ flex:1;padding:8px 4px;background:#301914;color:#ffe5d9;border:1px solid #7d4435;cursor:pointer
+}
+body.season-rulebook-v3 #origin-dialog #exilio-posture-picker button[aria-pressed="true"]{
+ background:#9f432b;color:#fff;border-color:#e5a27b
+}
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
+  body.season-rulebook-v3 .mobile-nex-field #influence-value{
+    position:static!important;inset:auto!important;width:110px!important;height:42px!important;
+    display:block!important;visibility:visible!important;pointer-events:auto!important;
+    padding:4px!important;background:#b9301e!important;color:#fff!important;border:1px solid #a7422c!important;
+    font:900 21px Georgia,serif!important;text-align:center!important;text-align-last:center!important;appearance:auto!important
+  }
+  body.season-rulebook-v3 .mobile-sheet #exilio-abilities-panel{
+    position:relative!important;inset:auto!important;width:100%!important;height:auto!important;
+    max-height:420px!important;display:flex!important;visibility:visible!important;pointer-events:auto!important;
+    margin:8px 0 0!important;padding:8px!important;background:#100907!important;
+    border:1px solid #8c3421!important;overflow-y:auto!important;z-index:auto!important
+  }
+  body.season-rulebook-v3 .mobile-sheet #sheet-skills-grid .sheet-skill-card{
+    box-sizing:border-box!important;display:grid!important;
+    grid-template-columns:minmax(0,1fr) 34px 57px 29px!important;
+    min-height:46px!important;height:auto!important;gap:4px!important;padding:5px!important
+  }
+  body.season-rulebook-v3 .mobile-sheet #sheet-skills-grid .sheet-skill-details{
+    width:100%!important;min-height:0!important;overflow:hidden!important
+  }
+  body.season-rulebook-v3 .mobile-sheet #sheet-skills-grid .sheet-skill-details strong{
+    font:800 11px Arial,sans-serif!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+  }
+  body.season-rulebook-v3 .mobile-sheet #sheet-skills-grid .sheet-skill-dom{
+    text-align:center;color:#f3d7c7;font:800 12px Arial,sans-serif
+  }
+  body.season-rulebook-v3 .mobile-sheet #sheet-skills-grid .sheet-skill-attribute{
+    width:57px!important;height:28px!important;color:#f9e1cf;background:#241510;border:1px solid #75402d;font:700 11px Arial,sans-serif
+  }
+  body.season-rulebook-v3 .mobile-sheet #sheet-skills-grid .sheet-skill-roll{
+    width:29px!important;height:29px!important;min-height:29px!important;border-radius:2px!important;
+    font:800 18px Arial,sans-serif!important
+  }
+}
