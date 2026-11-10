@@ -699,3 +699,33 @@ body.season-rulebook-v3 #origin-dialog #exilio-posture-picker button[aria-presse
     font:800 18px Arial,sans-serif!important
   }
 }
+
+/* Exílio 3.0: voltar a permitir acesso a Inventário e Rituais sem alterar o fundo da aba Principal. */
+body.season-rulebook-v3 #sheet-tabs{
+  display:flex!important;position:fixed!important;left:12px!important;right:auto!important;
+  top:9px!important;z-index:220!important;gap:3px!important;padding:3px!important;
+  background:#160b09ee!important;border:1px solid #702919!important;border-radius:5px!important;
+}
+body.season-rulebook-v3 #sheet-tabs button{
+  min-height:29px!important;padding:5px 8px!important;font:700 10px Arial,sans-serif!important;
+}
+body.season-rulebook-v3 #page-principal[hidden],
+body.season-rulebook-v3 #page-inventario[hidden],
+body.season-rulebook-v3 #page-rituais[hidden]{display:none!important}
+body.season-rulebook-v3 #page-inventario:not([hidden]),
+body.season-rulebook-v3 #page-rituais:not([hidden]){
+  display:block!important;visibility:visible!important;pointer-events:auto!important;
+}
+@media (max-width:1199px), (max-width:1399px) and (orientation:portrait){
+  body.season-rulebook-v3.is-mobile-season #mobile-sheet:not([hidden]){
+    display:block!important;visibility:visible!important;pointer-events:auto!important
+  }
+  body.season-rulebook-v3.is-mobile-season #page-principal:not([hidden]){
+    display:block!important;height:auto!important;min-height:100dvh!important;overflow:visible!important
+  }
+  body.season-rulebook-v3.is-mobile-season #sheet-tabs{
+    top:0!important;left:0!important;right:0!important;width:100%!important;
+    justify-content:center!important;border-radius:0!important
+  }
+  body.season-rulebook-v3.is-mobile-season #sheet-tabs button{flex:1;min-width:0!important}
+}
