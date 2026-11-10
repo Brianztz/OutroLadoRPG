@@ -385,3 +385,27 @@ body.season-rulebook-v3 #sheet > #influence-value.influence-nex-hit:focus-visibl
   outline:2px solid #fff0c5!important;
   outline-offset:2px!important;
 }
+
+/* Exílio 3.0: Classe (segundo retângulo) e Ocupação (terceiro) na faixa superior. */
+body.season-rulebook-v3 #sheet > #char-origin.origin-hit,
+body.season-rulebook-v3 #sheet > #char-occupation.class-hit{
+  position:absolute!important;display:block!important;visibility:visible!important;pointer-events:auto!important;
+  box-sizing:border-box!important;z-index:82!important;top:110px!important;height:32px!important;
+  margin:0!important;padding:0 4px!important;border:0!important;border-radius:0!important;
+  background:transparent!important;color:#fff2e9!important;
+  text-align:center!important;text-shadow:0 1px 3px #140403!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;cursor:pointer!important
+}
+body.season-rulebook-v3 #sheet > #char-origin.origin-hit{
+  left:1310px!important;width:95px!important;font:700 14px/32px Georgia,'Times New Roman',serif!important
+}
+body.season-rulebook-v3 #sheet > #char-origin.origin-hit[data-exilio-class="Canalizador"]{font-size:12px!important}
+body.season-rulebook-v3 #sheet > #char-occupation.class-hit{
+  left:1420px!important;width:120px!important;font:700 14px/32px Georgia,'Times New Roman',serif!important
+}
+body.season-rulebook-v3 #sheet > #char-origin.origin-hit:is(:hover,:focus-visible),
+body.season-rulebook-v3 #sheet > #char-occupation.class-hit:is(:hover,:focus-visible){filter:brightness(1.25)}
+body.season-rulebook-v3 #sheet > #char-origin.origin-hit:focus-visible,
+body.season-rulebook-v3 #sheet > #char-occupation.class-hit:focus-visible{
+  outline:2px solid #ffdbb9!important;outline-offset:2px!important
+}
