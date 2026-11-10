@@ -63,14 +63,6 @@
   function updateScale(){
     const width=Math.max(1,window.visualViewport?.width||window.innerWidth);
     const height=Math.max(1,window.visualViewport?.height||window.innerHeight);
-    if(document.body.classList.contains('season-rulebook-v3') && width<=1199){
-      // Ficha do novo livro em formato fluido; jamais reduzir a 1920px no celular.
-      viewport.style.width='100%';
-      viewport.style.height='auto';
-      sheet.style.transform='none';
-      document.body.classList.remove('season-readable-zoom');
-      return;
-    }
     const scale=computeSheetScale(width,height,screenMode);
     const fitScale=computeSheetScale(width,height,'fit');
     const scaledWidth=W*scale,scaledHeight=H*scale;
@@ -127,35 +119,15 @@
     const isNew=el.classList.contains('v3-attributes');
     const change=delta=>{
       const current=Number(state.attrs[id])||0;
-      const ip=Number(state.exilio3?.ip)||0;
-      const maxAttribute=isNew?(ip>=3?5:3):5;
-      const next=Math.max(-1,Math.min(maxAttribute,current+delta));
+      const next=Math.max(-1,Math.min(5,current+delta));
       if(next===current)return;
-      if(isNew){
-        const points=Object.keys(newAttributeNames).reduce((n,key)=>
-          n+(key===id?next:Number(state.attrs[key])||0),0);
-        const available=6+[3,6,9].filter(level=>ip>=level).length;
-        if(points>available){
-          toast('Exílio 3.0: você já distribuiu todos os '+available+' pontos disponíveis.');
-          return;
-        }
-      }
       state.attrs[id]=next;
       display();save();
     };
     const roll=()=>{
-      if(isNew){
-        if(window.ExilioV3?.rollAttribute){window.ExilioV3.rollAttribute(id);return;}
-        const dice=[1+Math.floor(Math.random()*10),1+Math.floor(Math.random()*10)];
-        const value=dice[0]+dice[1]+(Number(state.attrs[id])||0);
-        window.dispatchEvent(new CustomEvent('season:roll',{detail:{
-          pool:{dice,value,lowest:false},label:'ATRIBUTO',name:newAttributeNames[id]
-        }}));
-        toast(newAttributeNames[id]+': '+dice.join(' + ')+' + atributo = '+value);
-        return;
-      }
       const value=Number(state.attrs[id])||0;
-      showSkillDice(rollSkillPool(value),'ATRIBUTO',newAttributeNames[id]||id.toUpperCase());
+      const pool=rollSkillPool(value);
+      showSkillDice(pool,'ATRIBUTO',newAttributeNames[id]||id.toUpperCase());
     };
     el.addEventListener('click',event=>{
       if(isNew&&event.shiftKey){roll();return;}
@@ -707,27 +679,18 @@ renderRituals();
 
   window.SeasonSheet={
     getState:()=>JSON.parse(JSON.stringify(state)),
-    applyState(next){if(!next||typeof next!=='object'||!next.attrs||!next.skills)throw Error('Ficha da temporada inválida.');state={...JSON.parse(JSON.stringify(initial)),...next,attrs:{...initial.attrs,...next.attrs},skills:{...initial.skills,...next.skills}};display();save();},
+    applyState(next){if(!next||typeof next!=='object'||!next.attrs||!next.skills)throw Error('Ficha da temporada inválida.');state={...JSON.parse(JSON.stringify(initial)),...next};display();save();},
     project(){
       const inv=inventoryState(),weapon=equippedWeaponAttack(),ammo=weapon&&weaponAmmoSpec(weapon);
-      const life=state.exilio3?.pv?.max!=null?state.exilio3.pv:state.resources.life;
-      const sanity=state.exilio3?.pm?.max!=null?state.exilio3.pm:state.resources.sanity;
       const inventory=inv.items.map(item=>{const c=itemCatalog.find(c=>c.id===String(item.image||'').replace(/^catalog:/,''))||itemCatalog.find(c=>c.name===item.name);return {id:item.id,n:item.name,w:inventoryItemWeight(item),d:item.description||'',eq:Object.values(inv.equipped).includes(item.id),type:item.type==='weapon'?'arma':c?.category==='Munições'?'municao':'comum',img:item.image?.startsWith('catalog:')?(c?.image||''):item.image||'',dmg:c?.dmg||'',crit:c?.crit||'20/x2',skill:c?.skill||'Luta',ammo:c?.ammo||'',capacity:c?.capacity||0,currentShots:state.combat?.ammunition?.['equipped:'+item.id]??c?.capacity??0};});
       const attributes={};for(const [native,legacy] of [['forca','for'],['agilidade','agi'],['vigor','vig'],['intelecto','int'],['presenca','pre']])attributes['attr_'+legacy]=state.attrs[native]||0;
-      return {sheetType:'temporada',info:{char_nome:state.name||'',char_nex:state.nex||0,char_ocupacao:state.occupation||'Nenhum',vida_atual:life.current,vida_max:life.max,sani_atual:sanity.current,sani_max:sanity.max,char_ip:state.exilio3?.ip??0},attrs:attributes,skills:{...state.skills},inv:inventory,defense:totalCombatDefense(),clues:clueState().map(c=>({...c,desc:c.text||'',img:c.image||'',pages:(c.pages||[]).map(img=>typeof img==='string'?{img}:img)})),activeWeaponId:weapon?.itemId||'',armaDisparoAtiva:ammo?{id:weapon.itemId,nome:weapon.name,municao:ammo.type,atual:ammoRemaining(weapon,ammo),capacidade:ammo.capacity}:null};
+      return {sheetType:'temporada',info:{char_nome:state.name||'',char_nex:state.nex||0,char_ocupacao:state.occupation||'Nenhum',vida_atual:state.resources.life.current,vida_max:state.resources.life.max,sani_atual:state.resources.sanity.current,sani_max:state.resources.sanity.max},attrs:attributes,skills:{...state.skills},inv:inventory,defense:totalCombatDefense(),clues:clueState().map(c=>({...c,desc:c.text||'',img:c.image||'',pages:(c.pages||[]).map(img=>typeof img==='string'?{img}:img)})),activeWeaponId:weapon?.itemId||'',armaDisparoAtiva:ammo?{id:weapon.itemId,nome:weapon.name,municao:ammo.type,atual:ammoRemaining(weapon,ammo),capacidade:ammo.capacity}:null};
     },
     applyMaster(data){
       if(data.sheetType!=='temporada'||!data.temporada?.state)throw Error('Esta não é uma ficha da temporada.');
       state=JSON.parse(JSON.stringify(data.temporada.state));const info=data.info||{};
       if(info.char_nome!==undefined)state.name=String(info.char_nome);if(info.char_nex!==undefined)state.nex=Number(info.char_nex)||0;
       state.resources=state.resources||{};for(const [key,prefix] of [['life','vida'],['sanity','sani']])state.resources[key]=normalizeResource({current:info[prefix+'_atual']??state.resources[key]?.current??100,max:info[prefix+'_max']??state.resources[key]?.max??100});
-      if(state.exilio3){
-        for(const [resource,prefix] of [['pv','vida'],['pm','sani']]){
-          const item=state.exilio3[resource];
-          if(item&&item.max!=null&&info[prefix+'_atual']!==undefined)
-            item.current=Math.max(0,Math.min(Number(item.max)||0,Math.trunc(Number(info[prefix+'_atual'])||0)));
-        }
-      }
       const inv=inventoryState();if(Array.isArray(data.inv)){const previous=new Map(inv.items.map(i=>[i.id,i]));const accepted=[];for(const item of data.inv){const existing=previous.get(item.id);if(existing){accepted.push({...existing,name:String(item.n||existing.name),description:String(item.d??existing.description),weight:Number(item.w??existing.weight)});continue;}const c=itemCatalog.find(c=>c.name===item.n);const converted={id:item.id||crypto.randomUUID(),name:String(item.n||'Item'),description:String(item.d||'').replace(/<[^>]*>/g,' '),weight:Number(item.w)||0,quantity:1,location:'equipment',type:c?.type||(item.type==='arma'?'weapon':'gear'),image:c?.image?'catalog:'+c.id:(item.img||'')};if(item.type==='arma')converted.description+='\nDano: '+item.dmg+'\nCrítico: '+item.crit+'\nPerícia: '+item.skill+'\nMunição: '+item.ammo+'\nCapacidade: '+item.capacity;inv.items=Array.from(new Map([...previous.values(),...accepted].map(i=>[i.id,i])).values());let fits=false;for(const location of ['equipment','backpack']){converted.location=location;try{validateBackpackItem(converted);fits=true;break;}catch(_){}}if(fits)accepted.push(converted);else toast('Sem espaço para receber '+converted.name+'.');}inv.items=accepted;for(const key of Object.keys(inv.equipped))if(!inv.items.some(i=>i.id===inv.equipped[key]))inv.equipped[key]=null;}
       if(Array.isArray(data.clues))state.clues=data.clues.map(c=>({...c,title:c.title||'Pista',text:c.desc??c.text??'',image:c.img??c.image??'',pages:(c.pages||[]).map(p=>typeof p==='string'?p:p.img).filter(Boolean)}));
       if(data.defense!==undefined)combatState().defense=Math.max(0,Number(data.defense)-equippedArmorDefense().bonus||0);
@@ -738,7 +701,6 @@ renderRituals();
   };
 
   display();updateScale();
-  window.dispatchEvent(new Event('season:v3-ready'));
 })();
 (function(){
   'use strict';

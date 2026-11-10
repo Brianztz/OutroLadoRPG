@@ -5,7 +5,7 @@ const j=fs.readFileSync(path.join(root,'public/temporada/sheet.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'public/temporada/v3-atributos.css'),'utf8');
 test('nova ficha usa a arte enviada e mostra só seis controles de atributo',()=>{
   assert(h.includes('class="season-rulebook-v3"'));
-  assert(h.includes('/temporada/v3-atributos.css?v=4'));
+  assert(h.includes('/temporada/v3-atributos.css?v=3'));
   assert(css.includes("/temporada/assets/fundo-original-1920x909.jpg"));
   assert(!css.includes("novo-fundo-enviado.webp"),'não reutilizar imagem antiga de baixa qualidade');
   const original=fs.readFileSync(path.join(root,'public/temporada/assets/fundo-original-1920x909.jpg'));
@@ -20,7 +20,7 @@ test('nova ficha usa a arte enviada e mostra só seis controles de atributo',()=
   }
   assert.equal((h.match(/class="attr v3-attributes"/g)||[]).length,6);
   assert(!h.includes('src="/temporada/mobile.js?v=responsive-1"'));
-  assert(h.includes('src="/temporada/sheet.js?v=v3-atributos-3"'));
+  assert(h.includes('src="/temporada/sheet.js?v=v3-atributos-2"'));
 });
 test('coordenadas dos losangos na arte correspondem aos seis atributos',()=>{
  const values=[['potencia',802,201],['destreza',773,232],['constituicao',743,262],['raciocinio',711,293],['consciencia',681,323],['expressao',649,355]];
@@ -39,13 +39,13 @@ test('outros dados e histórico permanecem no HTML e nas rotinas',()=>{
 
 test('atributos visíveis preservam aumentar, diminuir, rolar e salvar',()=>{
   assert(j.includes("const newAttributeNames={potencia:'POTÊNCIA'"));
-  assert(j.includes("const next=Math.max(-1,Math.min(maxAttribute,current+delta))"));
+  assert(j.includes("const next=Math.max(-1,Math.min(5,current+delta))"));
   assert(j.includes("el.addEventListener('contextmenu'"));
-  assert(j.includes('window.ExilioV3.rollAttribute(id)'));
+  assert(j.includes("showSkillDice(pool,'ATRIBUTO'"));
   assert(j.includes("el.addEventListener('keydown'"));
   assert(j.includes("v3-attribute-minus"));
   assert(j.includes("v3-attribute-roll"));
-  assert(css.includes("#sheet > :not(.v3-attributes):not(.v3-attribute-tools):not(.v3-game-ui)"));
+  assert(css.includes("#sheet > :not(.v3-attributes):not(.v3-attribute-tools)"));
   assert(css.includes(".v3-attribute-tools:focus-within"));
   assert(css.includes("@media (hover:none), (pointer:coarse)"));
 });
@@ -58,21 +58,4 @@ test('tela deixa de bloquear os atributos em falha de Firebase e preserva modo l
   assert(sync.includes("if(!cloudReady){broadcast();status('MODO LOCAL"));
   assert(sync.includes("()=>cloudReady?flush():initialize()"));
   assert(h.includes('/temporada/sync.js?v=attributes-restore-2'));
-});
-
-
-test('novos controles foram montados somente na ficha da nova temporada',()=>{
- const ui=fs.readFileSync(path.join(root,'public/temporada/v3-interface.js'),'utf8');
- const styles=fs.readFileSync(path.join(root,'public/temporada/v3-interface.css'),'utf8');
- const original=fs.readFileSync(path.join(root,'public/ficha.html'),'utf8');
- assert(h.includes('id="exilio-v3-ui"'));
- assert(h.includes('/temporada/v3-interface.js?v=1'));
- assert(h.includes('/temporada/v3-interface.css?v=1'));
- assert(!original.includes('exilio-v3-ui'));
- assert(ui.includes('const skills=['));
- assert(ui.includes("['Anomalias','consciencia']"));
- assert(ui.includes("const classGain={mundano:[0,0],vanguarda:[5,3],analista:[3,5],canalizador:[2,6]}"));
- assert(ui.includes("rollDice(2,10)"));
- assert(styles.includes('@media (max-width:1199px)'));
- assert(j.includes("window.dispatchEvent(new Event('season:v3-ready'))"));
 });
