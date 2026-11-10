@@ -5,8 +5,13 @@ const j=fs.readFileSync(path.join(root,'public/temporada/sheet.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'public/temporada/v3-atributos.css'),'utf8');
 test('nova ficha usa a arte enviada e mostra só seis controles de atributo',()=>{
   assert(h.includes('class="season-rulebook-v3"'));
-  assert(h.includes('/temporada/v3-atributos.css?v=1'));
-  assert(css.includes("/temporada/assets/novo-fundo-enviado.webp"));
+  assert(h.includes('/temporada/v3-atributos.css?v=2'));
+  assert(css.includes("/temporada/assets/fundo-original-1920x909.jpg"));
+  assert(!css.includes("novo-fundo-enviado.webp"),'não reutilizar imagem antiga de baixa qualidade');
+  const original=fs.readFileSync(path.join(root,'public/temporada/assets/fundo-original-1920x909.jpg'));
+  assert.equal(original.byteLength,797950,'fundo deve manter tamanho original sem recompressão');
+  assert.equal(original.readUInt16BE(0),0xffd8,'arquivo deve ser JPEG válido');
+  assert.equal(original.readUInt16BE(original.length-2),0xffd9,'marcador final JPEG deve estar presente');
   assert(css.includes("#sheet > :not(.v3-attributes)"));
   const keys=['potencia','destreza','constituicao','raciocinio','consciencia','expressao'];
   for(const key of keys){
