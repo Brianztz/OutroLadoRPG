@@ -596,3 +596,39 @@ body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-notes summary{
 .exilio-progress-row select{min-width:190px;flex:1}
 .exilio-ability-modal :is(button,select):focus-visible,.exilio-ability-card:focus-visible{outline:2px solid #ffe2b1;outline-offset:2px}
 @media(max-width:520px){.exilio-ability-modal #exilio-catalog-list{grid-template-columns:minmax(0,1fr)}}
+
+/* Separar os cards de Ocupação e Classe em duas abas; ferramentas dentro da aba Classe. */
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top [role="tab"]{
+  border:1px solid #703a2c!important;
+  background:#261410!important;
+  color:#d7b6a9!important;
+  cursor:pointer;
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top [role="tab"][aria-selected="true"]{
+  background:#7d3322!important;
+  border-color:#e29c73!important;
+  color:#fff6eb!important;
+  box-shadow:inset 0 -2px 0 #ffb38a;
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-tools{
+  display:flex;gap:5px;align-items:center;
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-tools[hidden],
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-notes[hidden]{
+  display:none!important;
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-tools button{
+  box-sizing:border-box;flex:1;min-height:25px;padding:4px 5px;
+  background:#24130e;border:1px solid #653729;border-radius:2px;
+  color:#ddb4a1;font:800 9px Arial,sans-serif;cursor:pointer;
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-tools button:hover{
+  background:#583022;border-color:#be6444;color:#fff1e2;
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-tools button.has-pending{
+  border-color:#f3bb85;color:#ffdfb4;
+}
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-abilities-top [role="tab"]:focus-visible,
+body.season-rulebook-v3 #exilio-abilities-panel .exilio-ability-tools button:focus-visible{
+  outline:2px solid #ffd7a3;outline-offset:2px;
+}

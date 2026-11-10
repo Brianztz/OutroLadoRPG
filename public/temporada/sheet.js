@@ -414,7 +414,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
   }
   function showAbility(entry,owned){
     $('exilio-detail-title').textContent=entry.name;
-    $('exilio-detail-tag').textContent=(entry.klass||'EXÍLIO')+' · IP '+entry.ip;
+    $('exilio-detail-tag').textContent=entry.klass==='Ocupação'?'OCUPAÇÃO · EXÍLIO 3.0':(entry.klass||'EXÍLIO')+' · IP '+entry.ip;
     $('exilio-detail-description').textContent=entry.description;
     $('exilio-detail-status').textContent=entry.uncertain?'Nome e IP confirmados; números completos não constam da edição compilada.':
       owned?'Adquirida e disponível conforme o livro.':'Prévia. Para adquirir, avance IP e faça as escolhas necessárias.';
@@ -424,7 +424,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     const b=document.createElement('button');b.type='button';b.className='exilio-ability-card'+(owned?'':' locked');
     const header=document.createElement('span');header.className='ability-card-header';
     const title=document.createElement('strong');title.textContent=entry.name;
-    const tag=document.createElement('small');tag.textContent=entry.ip?'IP '+entry.ip:'VIVÊNCIA';
+    const tag=document.createElement('small');tag.textContent=entry.category||(entry.ip?'IP '+entry.ip:'VIVÊNCIA');
     header.append(title,tag);
     const teaser=document.createElement('span');teaser.textContent=entry.uncertain?'Detalhes pendentes no livro original':entry.description;
     teaser.className='ability-card-teaser';
@@ -441,20 +441,64 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     for(const level of [4,8])if(level<=ip&&exilioBook[klass].choices[level]&&!p.choice[klass]?.[level])n++;
     return n;
   }
+  // Duas abas independentes no painel: ocupação e classe, sem misturar os cards.
+  let exilioAbilitySection='classe';
+  function setExilioAbilitySection(section){
+    exilioAbilitySection=section==='ocupacao'?'ocupacao':'classe';
+    renderAbilities();
+  }
   function renderAbilities(){
     const list=$('exilio-abilities-cards');list.replaceChildren();
-    const klass=state.origin||'Mundano',active=classUnlocked(klass);
-    for(const entry of active)addAbilityCard(entry,list,true);
+    const occupationTab=exilioAbilitySection==='ocupacao';
+    const klass=state.origin||'Mundano';
     const oc=occupations.find(x=>x.name===state.occupation);
-    if(oc)addAbilityCard({ip:0,klass:'Ocupação',name:'Vivência · '+oc.vivenciaName,description:oc.vivencia+'\nDomínios da ocupação: '+oc.domains},list,true);
-    if(!active.length&&!oc){
-      const p=document.createElement('p');p.textContent='Escolha uma ocupação e uma classe para adquirir habilidades.';p.className='exilio-ability-empty';list.append(p);
+    const active=classUnlocked(klass);
+    const classTab=$('exilio-class-tab'),jobTab=$('exilio-occupation-tab');
+    classTab.setAttribute('aria-selected',String(!occupationTab));
+    jobTab.setAttribute('aria-selected',String(occupationTab));
+    classTab.tabIndex=occupationTab?-1:0;
+    jobTab.tabIndex=occupationTab?0:-1;
+    list.setAttribute('aria-labelledby',occupationTab?'exilio-occupation-tab':'exilio-class-tab');
+    $('exilio-class-tools').hidden=occupationTab;
+    $('exilio-occupation-tools').hidden=!occupationTab;
+    $('exilio-abilities-panel').querySelector('.exilio-ability-notes').hidden=occupationTab;
+    if(occupationTab){
+      $('exilio-ability-count').textContent='OCUPAÇÃO';
+      $('exilio-abilities-status').textContent=oc?oc.name+' · '+oc.domains:'Nenhuma ocupação selecionada';
+      if(oc){
+        addAbilityCard({ip:0,klass:'Ocupação',category:'OCUPAÇÃO',name:oc.name,description:oc.description},list,true);
+        addAbilityCard({ip:0,klass:'Ocupação',category:'VIVÊNCIA',name:oc.vivenciaName,description:oc.vivencia+'\nDomínios (Praticante +2): '+oc.domains},list,true);
+      }else{
+        const empty=document.createElement('p');empty.className='exilio-ability-empty';
+        empty.textContent='Escolha uma das 30 ocupações do Exílio para ver sua descrição, Domínios e Vivência.';
+        list.append(empty);
+      }
+    }else{
+      $('exilio-ability-count').textContent='HABILIDADES · '+active.length;
+      const pending=pendingIP();
+      $('exilio-abilities-status').textContent=klass+' · IP '+ipLevel()+(pending?' · '+pending+' escolha(s) pendente(s)':' · ganhos automáticos aplicados');
+      for(const entry of active)addAbilityCard(entry,list,true);
+      if(!active.length){
+        const empty=document.createElement('p');empty.className='exilio-ability-empty';
+        empty.textContent='Escolha sua classe e avance a Influência Paranormal para desbloquear habilidades.';
+        list.append(empty);
+      }
+      $('exilio-progress-open').classList.toggle('has-pending',pending>0);
     }
-    const pending=pendingIP();
-    $('exilio-ability-count').textContent='HABILIDADES · '+active.length;
-    $('exilio-abilities-status').textContent=klass+' · IP '+ipLevel()+(pending?' · '+pending+' escolha(s) pendente(s)':' · ganhos automáticos aplicados');
-    $('exilio-progress-open').classList.toggle('has-pending',pending>0);
   }
+  $('exilio-occupation-tab').addEventListener('click',()=>setExilioAbilitySection('ocupacao'));
+  $('exilio-class-tab').addEventListener('click',()=>setExilioAbilitySection('classe'));
+  for(const [button,other,target] of [
+    ['exilio-occupation-tab','exilio-class-tab','classe'],
+    ['exilio-class-tab','exilio-occupation-tab','ocupacao']
+  ]){
+    $(button).addEventListener('keydown',event=>{
+      if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
+        event.preventDefault();setExilioAbilitySection(target);$(other).focus();
+      }
+    });
+  }
+  $('exilio-occupation-change').addEventListener('click',()=>$('occupation-dialog').showModal());
   function renderAbilityCatalog(){
     const klass=$('exilio-catalog-class').value,items=allClassAbilities(klass);
     const owned=new Set(classUnlocked(klass).map(e=>e.name));
