@@ -790,16 +790,20 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     if(terms.length>10)throw Error('Use no máximo 10 termos.');
     return terms.map(t=>{const sign=t.startsWith('-')?-1:1;const raw=t.replace(/^[+-]/,'');if(raw.includes('d')){const [q,s]=raw.split('d');const count=Number(q||1),sides=Number(s);if(count<1||count>30||sides<2||sides>100)throw Error('Use de 1 a 30 dados, com 2 a 100 faces.');return {sign,count,sides};}return {sign,flat:Number(raw)};});
   }
-  function rollDamage(formula,critical,bonus,random=Math.random){
-    let total=bonus;const dice=[];let extraType=null;
+  function rollDamage(formula,critical,bonus,random=Math.random,multiplier=2){
+    let total=Number(bonus)||0;
+    const dice=[];
+    const times=critical?Math.max(1,Math.min(10,Math.trunc(Number(multiplier)||1))):1;
     for(const term of damageTerms(formula)){
       if(term.sides){
-        if(!extraType)extraType={sides:term.sides,sign:term.sign};
-        for(let i=0;i<term.count;i++){const v=1+Math.floor(random()*term.sides);dice.push(v);total+=term.sign*v;}
+        // Multiplica a quantidade dos dados de dano, nunca o bônus fixo.
+        for(let i=0;i<term.count*times;i++){
+          const die=1+Math.floor(random()*term.sides);
+          dice.push(die);total+=term.sign*die;
+        }
       }else total+=term.sign*term.flat;
     }
-    if(critical&&extraType){const extra=1+Math.floor(random()*extraType.sides);dice.push(extra);total+=extraType.sign*extra;}
-    return {value:total,dice,lowest:false};
+    return {value:total,dice,lowest:false,multiplier:times};
   }
   function attackValues(a){
     const distance=/PRECISÃO|PONTARIA/i.test(String(a.skill||''))||a.ranged===true;
@@ -815,23 +819,28 @@ const inv=inventoryState(),item=inv.items.find(i=>i.id===inv.equipped.weapon&&i.
 const catalog=itemCatalog.find(c=>c.id===String(item.image||'').replace(/^catalog:/,''))||itemCatalog.find(c=>c.type==='weapon'&&c.name===item.name);
 const field=label=>String(item.description||'').split('\n').find(l=>l.startsWith(label+':'))?.slice(label.length+1).trim();
 const skill=/PONTARIA|PRECISÃO/i.test(String(field('Perícia')||catalog?.skill||'Confronto'))?'PRECISÃO':'CONFRONTO';
-const criticalText=field('Crítico')||catalog?.crit||'20/x2',match=criticalText.match(/(\d+)\s*\/\s*[x×](\d+)/i);const noCritical=/nenhum/i.test(criticalText);
+const criticalText=field('Crítico')||catalog?.crit||'×2';const equipmentMultiplier=criticalMultiplierFromText(criticalText);
 const settings=combatState().weaponSettings?.[item.id]||{};
-return {skill,damage:field('Dano')||catalog?.dmg||'',attr:skill==='CONFRONTO'?'potencia':'none',critical:noCritical?21:Number(match?.[1]||20),mult:noCritical?1:Number(match?.[2]||2),...settings,id:'equipped:'+item.id,itemId:item.id,name:item.name,image:item.image?.startsWith('catalog:')?(catalog?.image||''):(item.image||''),equipped:true};
+return {skill,damage:field('Dano')||catalog?.dmg||'',attr:skill==='CONFRONTO'?'potencia':'none',critical:0,mult:equipmentMultiplier,attacks:Math.max(1,Number(catalog?.atk)||1),range:catalog?.range||'',...settings,id:'equipped:'+item.id,itemId:item.id,name:item.name,image:item.image?.startsWith('catalog:')?(catalog?.image||''):(item.image||''),equipped:true};
 }
 
 function combatFallbackImage(unarmed){const shape=unarmed?'<path d="M10 32V19q0-6 6-6h2V9q0-5 5-5t5 5V7q0-5 5-5t5 5v2q0-5 5-5t5 5v5q0-5 5-5t5 5v19l-8 14H23L12 40Z"/><path d="M24 47h27v13H24Z"/>':'<path d="m48 5 8 8-28 28-8-8Z M15 30l20 20-5 5-20-20Z M17 43l7 7-12 12-7-7Z"/>';return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#ececec" stroke="#777" stroke-width="1.5">'+shape+'</svg>');}
 
 function equippedArmorDefense(){
-const inv=inventoryState(),item=inv.items.find(i=>i.id===inv.equipped.armor&&i.type==='armor');if(!item)return {bonus:0,name:''};
-const catalog=itemCatalog.find(c=>c.type==='armor'&&c.id===String(item.image||'').replace(/^catalog:/,''))||itemCatalog.find(c=>c.type==='armor'&&c.name===item.name);
-const read=text=>{const m=String(text||'').match(/\bRD(?:\s+física)?\s*[:+]?\s*(\d+)\b/i);return m?Number(m[1]):null;};
-const bonus=Number(catalog?.rd??read(item.description)??read(catalog?.desc)??0);
-return {bonus:Math.max(0,Math.min(4,bonus)),name:item.name};
+  const inv=inventoryState(),item=inv.items.find(i=>i.id===inv.equipped.armor&&i.type==='armor');
+  if(!item)return {bonus:0,rd:0,name:''};
+  const catalog=itemCatalog.find(c=>c.type==='armor'&&c.id===String(item.image||'').replace(/^catalog:/,''))||
+                itemCatalog.find(c=>c.type==='armor'&&c.name===item.name);
+  const parseDef=text=>{const m=String(text||'').match(/(?:fornece|concede)\s*\+?(\d+)\s*(?:de\s+)?defesa\b/i)||
+                      String(text||'').match(/\bdefesa:\s*\+?(\d+)\b/i);return m?Number(m[1]):null;};
+  const parseRD=text=>{const m=String(text||'').match(/\bRD(?:\s+física)?\s*[:+]?\s*(\d+)\b/i);return m?Number(m[1]):null;};
+  const isLegacyRD=Boolean(catalog?.book3);
+  const bonus=isLegacyRD?0:Math.max(0,Math.min(999,parseDef(item.description)??parseDef(catalog?.desc)??0));
+  const rd=isLegacyRD?Math.max(0,Math.min(4,Number(catalog?.rd??parseRD(item.description)??0))):0;
+  return {bonus,rd,name:item.name};
 }
-function totalCombatDefense(){return Math.max(0,Number(combatState().defense)||0); /* RD física não se soma à defesa */}
-
-
+function totalCombatDefense(){return Math.max(0,(Number(combatState().defense)||0)+equippedArmorDefense().bonus);}
+ 
 function ammoNormalize(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
 function weaponAmmoSpec(a){const item=a.itemId?inventoryState().items.find(i=>i.id===a.itemId):null;const catalog=itemCatalog.find(c=>c.type==='weapon'&&c.id===String(item?.image||'').replace(/^catalog:/,''))||itemCatalog.find(c=>c.type==='weapon'&&c.name===a.name);const field=label=>String(item?.description||'').split('\n').find(l=>l.startsWith(label+':'))?.slice(label.length+1).trim();const type=a.ammoType??field('Munição')??catalog?.ammo??'';const capacity=Math.max(0,Math.min(999,Math.trunc(Number(a.ammoCapacity??field('Capacidade')??catalog?.capacity)||0)));return type&&capacity?{type,capacity}:null;}
 function ammoRemaining(a,spec){const value=combatState().ammunition?.[a.id];return value===undefined?spec.capacity:Math.max(0,Math.min(spec.capacity,Math.trunc(Number(value)||0)));}
@@ -840,7 +849,7 @@ function changeWeaponAmmo(a,reload){const spec=weaponAmmoSpec(a);if(!spec)return
 function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;const current=ammoRemaining(a,spec),row=document.createElement('div');row.className='combat-ammo';const minus=document.createElement('button');minus.type='button';minus.textContent='−';minus.title='Gastar 1 munição';minus.setAttribute('aria-label',minus.title+' de '+a.name);minus.disabled=current===0;minus.onclick=()=>changeWeaponAmmo(a,false);const bar=document.createElement('div');bar.className='combat-ammo-bar';bar.setAttribute('role','progressbar');bar.setAttribute('aria-label','Munição de '+a.name);bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax',String(spec.capacity));bar.setAttribute('aria-valuenow',String(current));bar.title='Munição '+spec.type;const bullets=document.createElement('span');bullets.className='combat-ammo-bullets';bullets.setAttribute('aria-hidden','true');for(let i=0;i<spec.capacity;i++){const bullet=document.createElement('span');bullet.className='combat-ammo-bullet'+(i>=current?' spent':'');bullets.append(bullet);}const text=document.createElement('span');text.className='combat-ammo-count';text.textContent=current+' / '+spec.capacity;bar.append(bullets,text);const reload=document.createElement('button');reload.type='button';reload.textContent='↻';reload.title='Recarregar — consome 1 pacote de munição '+spec.type.toLowerCase();reload.setAttribute('aria-label',reload.title);reload.disabled=current===spec.capacity;reload.onclick=()=>changeWeaponAmmo(a,true);row.append(minus,bar,reload);card.append(row);}
 
   function displayCombat(){
-    const combat=combatState();$('combat-move').value=combat.move;$('combat-defense').value=totalCombatDefense();const protection=equippedArmorDefense();$('combat-defense').max=999;$('combat-defense').min=0;$('combat-defense').title='Defesa situacional registrada: '+(Number(combat.defense)||0)+(protection.bonus?' · '+protection.name+': RD '+protection.bonus+' (reduz dano físico, não se soma à defesa)':'');
+    const combat=combatState();$('combat-move').value=combat.move;$('combat-defense').value=totalCombatDefense();const protection=equippedArmorDefense();$('combat-defense').max=999;$('combat-defense').min=0;$('combat-defense').title='Defesa base: '+(Number(combat.defense)||0)+(protection.bonus?' · '+protection.name+': +'+protection.bonus+' Defesa':protection.rd?' · '+protection.name+': RD '+protection.rd:'');
     const list=$('combat-attacks');list.replaceChildren();
     for(const a of [...combat.attacks,...[equippedWeaponAttack()].filter(Boolean)]){
       const card=document.createElement('article');card.className='combat-card';
@@ -855,22 +864,23 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
         element.setAttribute('aria-label',label+': '+value);
       };
       const attack=document.createElement('button');attack.type='button';
-       const v=attackValues(a);setCombatMetric(attack,'2d10 '+(v.total>=0?'+ ':'− ')+Math.abs(v.total),'ATAQUE');
+       const v=attackValues(a);setCombatMetric(attack,'2d10 '+(v.total>=0?'+ ':'− ')+Math.abs(v.total),(Number(a.attacks)||1)>1?'ATAQUE · '+a.attacks+' POR AÇÃO':'ATAQUE');
        attack.addEventListener('click',()=>{
          const current=attackValues(a),pool=rollPendingSkill(current.skill,current.total);
          const kept=pool.kept||pool.dice;
-         const matched=kept.length===2&&kept[0]===kept[1];
-         attackCriticalState[a.id]=matched;
-         showSkillDice(pool,matched?'PAR IGUAL · +1 DADO SE ACERTAR':classifySkill(pool.value),a.name);
+         const equal=kept.length===2&&kept[0]===kept[1];
+         const mult=Math.max(1,Number(a.mult)||1);
+         attackCriticalState[a.id]=equal&&mult>1;
+         showSkillDice(pool,equal?(mult>1?'PAR IGUAL · CRÍTICO ×'+mult+' SE ACERTAR':'PAR IGUAL · SEM MULTIPLICADOR'):classifySkill(pool.value),a.name);
        });
-      const damage=document.createElement('button');damage.type='button';const bonus=a.attr==='none'||attackValues(a).distance?0:Number(state.attrs.potencia)||0;setCombatMetric(damage,a.damage?a.damage+(bonus>=0?' +':' ')+bonus:'Configurar','DANO');damage.addEventListener('click',()=>{if(!a.damage){openAttack(a);return;}try{const crit=Boolean(attackCriticalState[a.id]);const b=a.attr==='none'||attackValues(a).distance?0:Number(state.attrs.potencia)||0;const pool=rollDamage(a.damage,crit,b);pool.detail='Dados: '+pool.dice.join(', ')+' · '+a.damage+' · bônus POT '+b+(crit?' · dado extra somente se o ataque acertou':'');showSkillDice(pool,crit?'PAR IGUAL · DANO':'DANO',a.name);delete attackCriticalState[a.id];}catch(e){toast(e.message);}});
-      const critical=document.createElement('span');setCombatMetric(critical,'d10 iguais','SE ACERTAR');row.append(attack,damage,critical);card.append(row);appendWeaponAmmo(card,a);list.append(card);
+      const damage=document.createElement('button');damage.type='button';const bonus=a.attr==='none'||attackValues(a).distance?0:Number(state.attrs.potencia)||0;setCombatMetric(damage,a.damage?a.damage+(bonus>=0?' +':' ')+bonus:'Configurar','DANO');damage.addEventListener('click',()=>{if(!a.damage){openAttack(a);return;}try{const crit=Boolean(attackCriticalState[a.id]);const b=a.attr==='none'||attackValues(a).distance?0:Number(state.attrs.potencia)||0;const mult=Math.max(1,Number(a.mult)||1);const pool=rollDamage(a.damage,crit,b,Math.random,mult);pool.detail='Dados: '+pool.dice.join(', ')+' · '+a.damage+' · bônus POT '+b+(crit?' · crítico ×'+mult+' nos dados, se o ataque acertou':'');showSkillDice(pool,crit?'DANO CRÍTICO ×'+mult:'DANO',a.name);delete attackCriticalState[a.id];}catch(e){toast(e.message);}});
+      const critical=document.createElement('span');setCombatMetric(critical,'×'+Math.max(1,Math.trunc(Number(a.mult)||1)),'CRÍTICO');row.append(attack,damage,critical);card.append(row);appendWeaponAmmo(card,a);list.append(card);
     }
   }
   function openAttack(a=null){editingAttack=a?.id||null;$('attack-editor-title').textContent=a?'Editar ataque':'Adicionar ataque';$('attack-name').value=a?.name||'';$('attack-name').readOnly=Boolean(a?.equipped);$('attack-skill').value=/PRECISÃO|PONTARIA/.test(a?.skill||'')?'PRECISÃO':'CONFRONTO';$('attack-damage').value=a?.damage||'1d3';$('attack-attr').value=a?.attr==='none'?'none':'potencia';$('attack-critical').value=a?.critical||20;$('attack-mult').value=a?.mult||2;const ammo=a?weaponAmmoSpec(a):null;$('attack-ammo-type').value=ammo?.type||'';$('attack-ammo-capacity').value=ammo?.capacity||'';$('attack-error').textContent='';$('attack-editor').showModal();}
   $('combat-add').addEventListener('click',()=>openAttack());$('attack-close').addEventListener('click',()=>$('attack-editor').close());
-  $('attack-form').addEventListener('submit',e=>{e.preventDefault();try{damageTerms($('attack-damage').value);const name=$('attack-name').value.trim();if(!name)throw Error('Digite o nome do ataque.');const a={id:editingAttack||'a'+Date.now()+Math.random().toString(36).slice(2),name,skill:$('attack-skill').value,damage:$('attack-damage').value.trim(),attr:$('attack-attr').value,critical:0,mult:1,ammoType:$('attack-ammo-type').value||undefined,ammoCapacity:$('attack-ammo-capacity').value?Math.max(1,Math.min(999,Number($('attack-ammo-capacity').value))):undefined};const c=combatState();if(editingAttack?.startsWith('equipped:')){const itemId=editingAttack.slice(9);c.weaponSettings=c.weaponSettings||{};c.weaponSettings[itemId]={skill:a.skill,damage:a.damage,attr:a.attr,critical:a.critical,mult:a.mult,ammoType:a.ammoType,ammoCapacity:a.ammoCapacity};}else if(editingAttack)c.attacks=c.attacks.map(w=>w.id===editingAttack?a:w);else c.attacks.push(a);delete attackCriticalState[a.id];save();displayCombat();$('attack-editor').close();}catch(error){$('attack-error').textContent=error.message;}});
-  for(const [id,key] of [['combat-move','move'],['combat-defense','defense']])$(id).addEventListener('change',()=>{combatState()[key]=Math.max(0,Math.min(999,Number($(id).value)||0));save();displayCombat();});
+  $('attack-form').addEventListener('submit',e=>{e.preventDefault();try{damageTerms($('attack-damage').value);const name=$('attack-name').value.trim();if(!name)throw Error('Digite o nome do ataque.');const a={id:editingAttack||'a'+Date.now()+Math.random().toString(36).slice(2),name,skill:$('attack-skill').value,damage:$('attack-damage').value.trim(),attr:$('attack-attr').value,critical:0,mult:Math.max(1,Math.min(4,Number($('attack-mult').value)||1)),ammoType:$('attack-ammo-type').value||undefined,ammoCapacity:$('attack-ammo-capacity').value?Math.max(1,Math.min(999,Number($('attack-ammo-capacity').value))):undefined};const c=combatState();if(editingAttack?.startsWith('equipped:')){const itemId=editingAttack.slice(9);c.weaponSettings=c.weaponSettings||{};c.weaponSettings[itemId]={skill:a.skill,damage:a.damage,attr:a.attr,critical:a.critical,mult:a.mult,ammoType:a.ammoType,ammoCapacity:a.ammoCapacity};}else if(editingAttack)c.attacks=c.attacks.map(w=>w.id===editingAttack?a:w);else c.attacks.push(a);delete attackCriticalState[a.id];save();displayCombat();$('attack-editor').close();}catch(error){$('attack-error').textContent=error.message;}});
+  for(const [id,key] of [['combat-move','move'],['combat-defense','defense']])$(id).addEventListener('change',()=>{const bonus=key==='defense'?equippedArmorDefense().bonus:0;combatState()[key]=Math.max(0,Math.min(999,(Number($(id).value)||0)-bonus));save();displayCombat();});
 
 
   $('combat-defense').addEventListener('input',()=>{if($('combat-defense').value.trim()!=='')return;combatState().defense=0;$('combat-defense').value=0;save();displayCombat();});
@@ -1105,10 +1115,24 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
   renderInventory();
 
 
+  function criticalMultiplierFromText(critical){
+    // No Exílio, o limiar 19/20 do Outro Lado não existe: só importa ×2, ×3, ×4.
+    const match=String(critical||'').match(/[x×]\s*(\d+)/i);
+    return /nenhum/i.test(String(critical||''))?1:Math.max(1,Math.min(10,Number(match?.[1])||1));
+  }
   function catalogDescription(item){
-    const lines=[item.desc||''];
-    if(item.type==='backpack')lines.push('Nesta ficha: mochila equipada libera 15 slots.');
-    if(item.dmg)lines.push('Dano: '+item.dmg,'Crítico: '+item.crit,'Ataques: '+item.atk,'Alcance: '+item.range,'Perícia: '+item.skill);
+    let base=item.desc||'';
+    // A capacidade 5+15 do Exílio permanece; não mostrar o antigo bônus +2 da mochila.
+    if(item.type==='backpack')base=base.replace(/aumenta sua capacidade de carga em 2 espaços\.?/i,'permite guardar 15 espaços adicionais no Exílio.');
+    const lines=[base];
+    if(item.type==='backpack')lines.push('Capacidade: 5 espaços básicos + 15 na mochila equipada.');
+    if(item.dmg){
+      lines.push('Dano: '+item.dmg);
+      lines.push('Crítico: ×'+criticalMultiplierFromText(item.crit));
+      lines.push('Ataques: '+(Number(item.atk)||1));
+      lines.push('Alcance: '+(item.range||'—'));
+      lines.push('Perícia: '+(/pontaria|precisão/i.test(item.skill)?'PRECISÃO':'CONFRONTO'));
+    }
     if(item.ammo)lines.push('Munição: '+item.ammo);
     if(item.capacity)lines.push('Capacidade: '+item.capacity);
     lines.push('Espaços: '+item.weight);
@@ -1124,8 +1148,8 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
   function renderItemCatalog(){
     const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const query=normalize($('item-catalog-search').value.trim()),category=$('item-catalog-category').value;
-    const items=itemCatalog.filter(i=>i.book3&&(!category||i.category===category)&&normalize(i.name+' '+i.category+' '+(i.desc||'')).includes(query));
-    $('item-catalog-count').textContent=items.length+' de '+itemCatalog.filter(i=>i.book3).length+' itens do Exílio 3.0';const list=$('item-catalog-list');list.replaceChildren();
+    const items=itemCatalog.filter(i=>!i.book3&&(!category||i.category===category)&&normalize(i.name+' '+i.category+' '+(i.desc||'')).includes(query));
+    $('item-catalog-count').textContent=items.length+' de '+itemCatalog.filter(i=>!i.book3).length+' equipamentos · regras de Outro Lado';const list=$('item-catalog-list');list.replaceChildren();
     for(const item of items){const card=document.createElement('article');card.className='item-catalog-card';if(item.image){const image=document.createElement('img');image.src=item.image;image.alt='';image.loading='lazy';card.append(image);}const name=document.createElement('h3');name.textContent=item.name;const cat=document.createElement('small');cat.textContent=item.category;const desc=document.createElement('p');desc.textContent=catalogDescription(item);const add=document.createElement('button');add.type='button';add.textContent='Adicionar ao inventário';add.addEventListener('click',()=>chooseCatalogItem(item));card.append(name,cat,desc,add);list.append(card);}
     if(!items.length){const empty=document.createElement('p');empty.textContent='Nenhum item encontrado.';list.append(empty);}
   }
