@@ -1199,10 +1199,10 @@ body.season-rulebook-v3 #combat-area #combat-move-squares{
 /* Nome visível no espaço superior da arte, com o mesmo campo e salvamento já existentes. */
 body.season-rulebook-v3 #sheet > #char-name{
   position:absolute!important;
-  left:150px!important;
-  top:34px!important;
-  width:674px!important;
-  height:82px!important;
+  left:181px!important;
+  top:75px!important;
+  width:653px!important;
+  height:84px!important;
   box-sizing:border-box!important;
   display:block!important;
   visibility:visible!important;
@@ -1220,14 +1220,14 @@ body.season-rulebook-v3 #sheet > #char-name{
   caret-color:#e66e4c!important;
   text-align:center!important;
   text-transform:uppercase!important;
-  font:900 42px/82px Georgia,'Times New Roman',serif!important;
+  font:900 42px/84px Georgia,'Times New Roman',serif!important;
   letter-spacing:.035em!important;
   text-shadow:0 2px 4px #000!important;
 }
 body.season-rulebook-v3 #sheet > #char-name::placeholder{
   color:#be9e91!important;
   opacity:.76!important;
-  font:700 27px/82px Georgia,'Times New Roman',serif!important;
+  font:700 27px/84px Georgia,'Times New Roman',serif!important;
   letter-spacing:.06em!important;
   text-shadow:0 1px 3px #000!important;
 }
@@ -1249,5 +1249,6 @@ body.season-rulebook-v3 #sheet > #sheet-skills-grid.exilio-skill-tiles .sheet-sk
   width:100%!important;
   box-sizing:border-box!important;
   text-align:center!important;
-  padding:0 0 8px!important;
+  padding:0!important;
+  transform:translateY(-9px)!important;
 }
