@@ -6,8 +6,26 @@ body.season-rulebook-v3{background:#030303;min-height:100dvh}
 body.season-rulebook-v3 .sheet{
   width:1920px!important;
   height:909px!important;
-  background:#030303 url('/temporada/assets/fundo-exilio-t2-20261111.webp') left top/1920px 909px no-repeat!important;
+  background:#030303 url('/temporada/assets/fundo-exilio-t2-20261110.webp') left top/1920px 909px no-repeat!important;
   box-shadow:none!important;
+}
+/* Ajuste da arte nova: recobre apenas os rótulos antigos de PV/PM
+   com a região correspondente da imagem enviada, sem perder nitidez no restante. */
+body.season-rulebook-v3 #sheet::after{
+  content:"";
+  position:absolute;
+  left:1028px;
+  top:160px;
+  width:192px;
+  height:155px;
+  background-image:url('/temporada/assets/fundo-exilio-t2-20261111.webp');
+  background-size:1920px 909px;
+  background-position:-1028px -160px;
+  background-repeat:no-repeat;
+  -webkit-mask-image:radial-gradient(ellipse closest-side at center,#000 55%,transparent 100%);
+  mask-image:radial-gradient(ellipse closest-side at center,#000 55%,transparent 100%);
+  pointer-events:none;
+  z-index:2;
 }
 /* Renderizar exclusivamente os atributos, preservando os nós do jogo
    para a futura migração das outras mecânicas. */
