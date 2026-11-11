@@ -984,6 +984,12 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
     for(const entry of originRules){
       const card=document.createElement('article');card.className='origin-card';
       const title=document.createElement('h3');title.textContent=entry.name;const desc=document.createElement('p');desc.textContent=entry.description;card.append(title,desc);
+      // Exílio 3.0: 4 Domínios iniciais são recebidos antes da escolha da classe.
+      const skillInfo=document.createElement('div');skillInfo.className='origin-skill-count';
+      const skillTotal=document.createElement('strong');skillTotal.textContent='4 PERÍCIAS INICIAIS';
+      const skillBreakdown=document.createElement('span');skillBreakdown.textContent='2 da ocupação + 2 à escolha (Praticante +2)';
+      const skillNote=document.createElement('small');skillNote.textContent=entry.name==='Mundano'?'Escolha 2 perícias livres na criação do personagem.':'Ao escolher esta classe no IP 1, mantenha as 4 perícias; não há perícias adicionais.';
+      skillInfo.append(skillTotal,skillBreakdown,skillNote);card.append(skillInfo);
       const rules=document.createElement('ul');for(const text of entry.rules){const li=document.createElement('li');li.textContent=text;rules.append(li);}card.append(rules);
       if(Object.keys(entry.progress).length){const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Progressão por IP';details.append(summary);for(const [nex,power] of Object.entries(entry.progress)){const row=document.createElement('p');row.textContent=nex+'% — '+power;if(Number(nex)<=Number(state.nex||0))row.className='origin-unlocked';details.append(row);}card.append(details);}
       const cost=document.createElement('p');cost.className='origin-cost';cost.textContent=entry.cost;card.append(cost);
