@@ -1341,34 +1341,6 @@ body.season-rulebook-v3 .mobile-sheet #exilio-pd-widget:not([hidden]){
   margin:8px auto 4px!important;
 }
     
-/* Exílio T2 — contagem de perícias no seletor das quatro classes. */
-body.season-rulebook-v3 #origin-dialog .origin-card .origin-skill-count{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  margin:12px 0 10px;
-  padding:10px 12px;
-  background:linear-gradient(110deg,#3d2118,#21140f);
-  border:1px solid #995339;
-  border-left:3px solid #e28d60;
-  border-radius:4px;
-  color:#f7e5d8;
-}
-body.season-rulebook-v3 #origin-dialog .origin-skill-count strong{
-  color:#ffc29e;
-  font:900 15px/1.25 Georgia,'Times New Roman',serif;
-  letter-spacing:.025em;
-}
-body.season-rulebook-v3 #origin-dialog .origin-skill-count span{
-  color:#fff1e5;
-  font:700 13px/1.35 Arial,sans-serif;
-}
-body.season-rulebook-v3 #origin-dialog .origin-skill-count small{
-  display:block;
-  color:#d3b6a6;
-  font:12px/1.35 Arial,sans-serif;
-}
-
 /* Exílio T2: atributo é escolhido no momento do teste, nunca somado previamente ao card. */
 body.season-rulebook-v3 #skill-drawer #skill-attribute-guide{
   margin:12px 0 6px;
@@ -1522,4 +1494,102 @@ body.season-rulebook-v3 #origin-dialog > .origin-note,
 body.season-rulebook-v3 #origin-dialog > #exilio-class-tools,
 body.season-rulebook-v3 #origin-dialog > #origin-none{
   display:none!important;
+}
+/* Exílio T2 — tabelas de progressão IP 1–10 das três classes especializadas. */
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression{
+  margin:15px 0 17px;
+  overflow:hidden;
+  border:1px solid #8c4a36;
+  border-radius:5px;
+  background:#150e0d;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression h4{
+  margin:0;
+  padding:10px 12px;
+  background:linear-gradient(95deg,#71301f,#291610);
+  color:#ffe1c6;
+  font:900 15px/1.3 Georgia,'Times New Roman',serif;
+  letter-spacing:.035em;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression table{
+  width:100%;
+  border-collapse:collapse;
+  border-spacing:0;
+  table-layout:fixed;
+  font:12px/1.4 Arial,sans-serif;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression thead th{
+  padding:8px 7px;
+  border-bottom:1px solid #a35d40;
+  background:#372018;
+  color:#ffcfb0;
+  font:800 11px/1.3 Arial,sans-serif;
+  text-align:left;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression th:first-child{
+  width:8%;
+  text-align:center;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression th:nth-child(2){
+  width:25%;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression td,
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression tbody th{
+  padding:9px 7px;
+  border-bottom:1px solid #4b2b22;
+  vertical-align:top;
+  color:#ead5c7;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression tbody tr:nth-child(even){
+  background:#261711;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression tbody tr.origin-ip-reached{
+  background:#38281b;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression tbody th{
+  color:#ffc393;
+  font-weight:900;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression .origin-ip-resources{
+  color:#e7b18e;
+  font-weight:800;
+  white-space:normal;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression .origin-ip-gains{
+  overflow-wrap:anywhere;
+  hyphens:auto;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression .origin-ip-gains span{
+  display:block;
+  margin:0 0 5px;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression .origin-ip-gains span:last-child{
+  margin-bottom:0;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression .origin-ip-gains span+span{
+  padding-top:5px;
+  border-top:1px dashed #57382b;
+}
+body.season-rulebook-v3 #origin-dialog .origin-ip-progression .origin-ip-footnote{
+  margin:0!important;
+  padding:10px 12px;
+  border-top:1px solid #74402e;
+  background:#211511;
+  color:#bea99c!important;
+  font:11px/1.5 Arial,sans-serif;
+}
+@media(max-width:520px){
+  body.season-rulebook-v3 #origin-dialog .origin-ip-progression table{
+    font-size:11px;
+  }
+  body.season-rulebook-v3 #origin-dialog .origin-ip-progression th:first-child{
+    width:9%;
+  }
+  body.season-rulebook-v3 #origin-dialog .origin-ip-progression th:nth-child(2){
+    width:24%;
+  }
+  body.season-rulebook-v3 #origin-dialog .origin-ip-progression td,
+  body.season-rulebook-v3 #origin-dialog .origin-ip-progression tbody th{
+    padding:8px 5px;
+  }
 }
