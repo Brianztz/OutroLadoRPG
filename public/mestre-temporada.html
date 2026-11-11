@@ -610,30 +610,50 @@
                     <div class="monster-form-grid">
                         <div class="monster-form-field full"><label for="monster-form-name">Nome</label><input id="monster-form-name" class="monster-input" type="text" placeholder="Nome do monstro"></div>
                         <div class="monster-form-field"><label for="monster-form-life">Pontos de Vida</label><input id="monster-form-life" class="monster-input" type="number" min="1" value="10"></div>
+                        <div class="monster-form-field"><label for="monster-form-mental">Pontos Mentais máximos</label><input id="monster-form-mental" class="monster-input" type="number" min="0" value="10"></div>
+                        <div class="monster-form-field"><label for="monster-form-ip">Influência Paranormal (IP)</label><input id="monster-form-ip" class="monster-input" type="number" min="0" max="10" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-matrix">Matriz principal</label><select id="monster-form-matrix" class="monster-input"><option>Medo</option><option>Lembrança</option><option>Carne</option><option>Ruptura</option><option>Eco</option><option>Vazio</option></select></div>
+                        <div class="monster-form-field"><label for="monster-form-secondary-matrix">Matriz secundária</label><select id="monster-form-secondary-matrix" class="monster-input"><option value="">Nenhuma</option><option>Medo</option><option>Lembrança</option><option>Carne</option><option>Ruptura</option><option>Eco</option><option>Vazio</option></select></div>
+                        <div class="monster-form-field"><label for="monster-form-move">Deslocamento (m)</label><input id="monster-form-move" class="monster-input" type="number" min="0" step="0.5" value="6"></div>
+                        <div class="monster-form-field"><label for="monster-form-defense">Defesa</label><input id="monster-form-defense" class="monster-input" type="number" min="0" value="0"></div>
                         <div class="monster-form-field"><label for="monster-form-resistance">Resistência</label><input id="monster-form-resistance" class="monster-input" type="text" placeholder="Ex.: Balístico 5, Corte 10"></div>
                         <div class="monster-form-field full"><label for="monster-form-vulnerabilities">Vulnerabilidades</label><textarea id="monster-form-vulnerabilities" class="monster-textarea" placeholder="Fraquezas e vulnerabilidades..."></textarea></div>
                     </div>
                 </section>
 
                 <section class="monster-form-section">
-                    <h3 class="monster-form-section-title">Atributos</h3>
-                    <div class="monster-form-grid five">
-                        <div class="monster-form-field"><label for="monster-form-for">FOR</label><input id="monster-form-for" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-agi">AGI</label><input id="monster-form-agi" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-int">INT</label><input id="monster-form-int" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-pre">PRE</label><input id="monster-form-pre" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-vig">VIG</label><input id="monster-form-vig" class="monster-input" type="number" value="0"></div>
+                    <h3 class="monster-form-section-title">Atributos do Exílio (2d10 + atributo)</h3>
+                    <div class="monster-form-grid six">
+                        <div class="monster-form-field"><label for="monster-form-potencia">POTÊNCIA</label><input id="monster-form-potencia" class="monster-input" type="number" step="1" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-destreza">DESTREZA</label><input id="monster-form-destreza" class="monster-input" type="number" step="1" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-constituicao">CONSTITUIÇÃO</label><input id="monster-form-constituicao" class="monster-input" type="number" step="1" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-raciocinio">RACIOCÍNIO</label><input id="monster-form-raciocinio" class="monster-input" type="number" step="1" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-consciencia">CONSCIÊNCIA</label><input id="monster-form-consciencia" class="monster-input" type="number" step="1" value="0"></div>
+                        <div class="monster-form-field"><label for="monster-form-expressao">EXPRESSÃO</label><input id="monster-form-expressao" class="monster-input" type="number" step="1" value="0"></div>
                     </div>
                 </section>
 
                 <section class="monster-form-section">
-                    <h3 class="monster-form-section-title">Perícias</h3>
-                    <div class="monster-form-grid five">
-                        <div class="monster-form-field"><label for="monster-form-fortitude">Fortitude</label><input id="monster-form-fortitude" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-reflexos">Reflexos</label><input id="monster-form-reflexos" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-vontade">Vontade</label><input id="monster-form-vontade" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-percepcao">Percepção</label><input id="monster-form-percepcao" class="monster-input" type="number" value="0"></div>
-                        <div class="monster-form-field"><label for="monster-form-iniciativa">Iniciativa</label><input id="monster-form-iniciativa" class="monster-input" type="number" value="0"></div>
+                    <h3 class="monster-form-section-title">Perícias do Exílio (Domínio / bônus)</h3>
+                    <p class="exilio-monster-hint">Teste: 2d10 + atributo correspondente + valor da perícia. Use 0, +2, +4 ou +6 para os graus de Domínio; outros bônus podem ser anotados diretamente.</p>
+                    <div class="monster-form-grid exilio-skills-form">
+                       <div class="monster-form-field"><label for="monster-form-skill-atletismo">ATLETISMO</label><input id="monster-form-skill-atletismo" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-confronto">CONFRONTO</label><input id="monster-form-skill-confronto" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-precisao">PRECISÃO</label><input id="monster-form-skill-precisao" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-mobilidade">MOBILIDADE</label><input id="monster-form-skill-mobilidade" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-discricao">DISCRIÇÃO</label><input id="monster-form-skill-discricao" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-resistencia">RESISTÊNCIA</label><input id="monster-form-skill-resistencia" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-observacao">OBSERVAÇÃO</label><input id="monster-form-skill-observacao" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-investigacao">INVESTIGAÇÃO</label><input id="monster-form-skill-investigacao" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-conhecimento">CONHECIMENTO</label><input id="monster-form-skill-conhecimento" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-tecnologia">TECNOLOGIA</label><input id="monster-form-skill-tecnologia" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-medicina">MEDICINA</label><input id="monster-form-skill-medicina" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-influencia">INFLUÊNCIA</label><input id="monster-form-skill-influencia" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-sensibilidade">SENSIBILIDADE</label><input id="monster-form-skill-sensibilidade" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-sobrevivencia">SOBREVIVÊNCIA</label><input id="monster-form-skill-sobrevivencia" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-oficio">OFÍCIO</label><input id="monster-form-skill-oficio" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-anomalias">ANOMALIAS</label><input id="monster-form-skill-anomalias" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-iniciativa">Iniciativa (bônus)</label><input id="monster-form-iniciativa" class="monster-input" type="number" value="0"></div>
                     </div>
                 </section>
 
@@ -854,6 +874,12 @@
         }
         let luminaEnabled = loadLuminaAccess(masterTableCode);
         let initiativeState = loadInitiativeState();
+        const EXILIO_MONSTER_ATTRIBUTES=[["potencia","POTÊNCIA","POT"],["destreza","DESTREZA","DES"],["constituicao","CONSTITUIÇÃO","CON"],["raciocinio","RACIOCÍNIO","RAC"],["consciencia","CONSCIÊNCIA","CNS"],["expressao","EXPRESSÃO","EXP"]];
+        const EXILIO_MONSTER_SKILLS=[["ATLETISMO","potencia"],["CONFRONTO","potencia"],["PRECISÃO","destreza"],["MOBILIDADE","destreza"],["DISCRIÇÃO","destreza"],["RESISTÊNCIA","constituicao"],["OBSERVAÇÃO","consciencia"],["INVESTIGAÇÃO","raciocinio"],["CONHECIMENTO","raciocinio"],["TECNOLOGIA","raciocinio"],["MEDICINA","raciocinio"],["INFLUÊNCIA","expressao"],["SENSIBILIDADE","consciencia"],["SOBREVIVÊNCIA","consciencia"],["OFÍCIO","raciocinio"],["ANOMALIAS","consciencia"]];
+        const EXILIO_MONSTER_MATRICES=["Medo","Lembrança","Carne","Ruptura","Eco","Vazio"];
+        const exilioSkillId=name=>'monster-form-skill-'+String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+        const exilioInteger=value=>Number.isFinite(Number(value))?Math.trunc(Number(value)):0;
+        let exilioMonsterCriticalState=new Map();
         let monstersState = loadMonstersState();
         let editingMonsterId = null;
         let editingMonsterActions = [];
@@ -2468,40 +2494,52 @@
         function removeCurrentMasterClue() { if(!currentMasterClueId)return;masterCluesState=masterCluesState.filter(item=>item.id!==currentMasterClueId);closeMasterClueInfo();saveMasterCluesState();renderMasterClues(); }
         function sendCurrentMasterClue() { const clue=masterCluesState.find(item=>item.id===currentMasterClueId);if(clue)openClueRecipientPopup(clue); }
 
+        function normalizeExilioMonster(monster) {
+            const existing=monster&&typeof monster==='object'?monster:{};
+            const originalAttrs=existing.attrs&&typeof existing.attrs==='object'?existing.attrs:{};
+            const originalSkills=existing.skills&&typeof existing.skills==='object'?existing.skills:{};
+            const legacyAttributes={potencia:'for',destreza:'agi',constituicao:'vig',raciocinio:'int',consciencia:null,expressao:'pre'};
+            const legacySkills={'RESISTÊNCIA':'fortitude','MOBILIDADE':'reflexos','SENSIBILIDADE':'vontade','OBSERVAÇÃO':'percepcao'};
+            const attrs={...originalAttrs},skills={...originalSkills};
+            for(const [key] of EXILIO_MONSTER_ATTRIBUTES)
+                if(!Number.isFinite(Number(attrs[key])))attrs[key]=exilioInteger(legacyAttributes[key]?originalAttrs[legacyAttributes[key]]:0);
+                else attrs[key]=exilioInteger(attrs[key]);
+            for(const [name] of EXILIO_MONSTER_SKILLS)
+                if(!Number.isFinite(Number(skills[name])))skills[name]=exilioInteger(legacySkills[name]?originalSkills[legacySkills[name]]:0);
+                else skills[name]=exilioInteger(skills[name]);
+            skills.INICIATIVA=exilioInteger(skills.INICIATIVA??originalSkills.iniciativa??0);
+            const maxLife=Math.max(1,exilioInteger(existing.maxLife)||10);
+            const maxMental=Math.max(0,exilioInteger(existing.maxMental??existing.mental??10));
+            const matrix=EXILIO_MONSTER_MATRICES.includes(existing.matrix)?existing.matrix:'Medo';
+            const secondaryMatrix=EXILIO_MONSTER_MATRICES.includes(existing.secondaryMatrix)&&existing.secondaryMatrix!==matrix?existing.secondaryMatrix:'';
+            return {...existing,
+                id:String(existing.id||'monster_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),
+                name:String(existing.name||'Criatura sem nome'),
+                attrs,skills,life:Math.max(0,Math.min(maxLife,exilioInteger(existing.life??maxLife))),maxLife,
+                mental:Math.max(0,Math.min(maxMental,exilioInteger(existing.mental??maxMental))),maxMental,
+                matrix,secondaryMatrix,ip:Math.max(0,Math.min(10,exilioInteger(existing.ip??0))),
+                move:Math.max(0,Number(existing.move??6)||0),defense:Math.max(0,exilioInteger(existing.defense??0)),
+                resistance:String(existing.resistance??''),vulnerabilities:String(existing.vulnerabilities??''),
+                presence:String(existing.presence??''),damage:String(existing.damage??''),
+                actions:Array.isArray(existing.actions)?existing.actions.map((action,i)=>normalizeMonsterAction(action,i)):[]
+            };
+        }
         function loadMonstersState() {
             try {
-                const saved = JSON.parse(localStorage.getItem(masterStorageKey('mestre_monsters_state')));
-                if (!Array.isArray(saved)) return [];
-                return saved.map((monster, index) => {
-                    const maxLife = Math.max(1, safeNumber(monster.maxLife, 10));
-                    const attrs = monster.attrs && typeof monster.attrs === 'object' ? monster.attrs : {};
-                    const skills = monster.skills && typeof monster.skills === 'object' ? monster.skills : {};
-                    return {
-                        id: String(monster.id || `monster_saved_${index}`),
-                        name: String(monster.name || 'Monstro sem nome'),
-                        life: Math.max(0, Math.min(maxLife, safeNumber(monster.life, maxLife))),
-                        maxLife,
-                        resistance: String(monster.resistance ?? monster.defense ?? ''),
-                        vulnerabilities: String(monster.vulnerabilities ?? monster.notes ?? ''),
-                        attrs: { for: safeNumber(attrs.for), agi: safeNumber(attrs.agi), int: safeNumber(attrs.int), pre: safeNumber(attrs.pre), vig: safeNumber(attrs.vig) },
-                        skills: { fortitude: safeNumber(skills.fortitude), reflexos: safeNumber(skills.reflexos), vontade: safeNumber(skills.vontade), percepcao: safeNumber(skills.percepcao), iniciativa: safeNumber(skills.iniciativa) },
-                        presence: String(monster.presence || ''),
-                        damage: String(monster.damage || ''),
-                        actions: Array.isArray(monster.actions) ? monster.actions.map((action, actionIndex) => normalizeMonsterAction(action, actionIndex)) : []
-                    };
-                });
-            } catch (error) {
-                return [];
-            }
+                const stored=JSON.parse(localStorage.getItem(masterStorageKey('mestre_monsters_state')));
+                return Array.isArray(stored)?stored.map(normalizeExilioMonster):[];
+            }catch(_){return [];}
         }
 
-        function normalizeMonsterAction(action, index = 0) {
+        function normalizeMonsterAction(action,index=0) {
+            const raw=action&&typeof action==='object'?action:{};
+            const fromCrit=String(raw.crit??raw.critical??'×2').match(/[x×]\s*(\d+)/i);
             return {
-                id: String(action && action.id || `action_${Date.now()}_${index}_${Math.random().toString(36).slice(2,6)}`),
-                name: String(action && action.name || ''),
-                test: String(action && action.test || ''),
-                damage: String(action && action.damage || ''),
-                description: String(action && action.description || '')
+                ...raw,
+                id:String(raw.id||'action_'+Date.now()+'_'+index+'_'+Math.random().toString(36).slice(2,6)),
+                name:String(raw.name||''),test:String(raw.test||''),damage:String(raw.damage||''),
+                description:String(raw.description||''),
+                multiplier:Math.max(1,Math.min(4,exilioInteger(raw.multiplier??fromCrit?.[1]??2)))
             };
         }
 
@@ -2509,46 +2547,24 @@
             localStorage.setItem(masterStorageKey('mestre_monsters_state'), JSON.stringify(monstersState));
         }
 
-        function getMonsterRanges(value, isAttribute) {
-            const relevantValue = isAttribute ? safeNumber(value) * 2 : safeNumber(value);
-            const index = Math.max(1, Math.min(20, Math.floor(relevantValue)));
-            return monsterD20Table[index];
+        function getMonsterRanges(value,isAttribute) {
+            const mod=exilioInteger(value);
+            return {modifier:mod};
         }
-
-        function formatMonsterRanges(value, isAttribute) {
-            const ranges = getMonsterRanges(value, isAttribute);
-            return `N:${ranges.n} B:${ranges.b === 99 ? 'X' : ranges.b} E:${ranges.e === 99 ? 'X' : ranges.e}`;
+        function formatMonsterRanges(value) {
+            const mod=exilioInteger(value);
+            return '2d10 '+(mod>=0?'+ ':'− ')+Math.abs(mod);
         }
-
-        const MONSTER_SKILL_RELATED_ATTRIBUTES = {
-            fortitude: 'vig',
-            reflexos: 'agi',
-            vontade: 'pre',
-            percepcao: 'pre',
-            iniciativa: 'agi'
-        };
-
-        function rollMonsterD20PoolByAttribute(attributeValue) {
-            const attribute = Math.max(-20, Math.min(20, Math.trunc(Number(attributeValue) || 0)));
-            // Regra do Outro Lado: 0 = 1d20; ±1 = 2d20, ±2 = 3d20 etc.
-            // Atributos negativos escolhem o menor resultado.
-            const quantity = 1 + Math.abs(attribute);
-            const rolls = Array.from({ length: quantity }, () => Math.floor(Math.random() * 20) + 1);
-            const selectedRoll = attribute < 0 ? Math.min(...rolls) : Math.max(...rolls);
-            return { attribute, quantity, rolls, selectedRoll, takesLowest: attribute < 0 };
+        function rollExilioMonsterDice(modifier,random=Math.random) {
+            const dice=[Math.floor(random()*10)+1,Math.floor(random()*10)+1];
+            const value=dice[0]+dice[1]+exilioInteger(modifier);
+            return {dice,value,matched:dice[0]===dice[1],
+                result:value>=21?'EXTREMO':value>=16?'BOM':value>=11?'NORMAL':'FALHA',
+                color:value>=21?'var(--accent-yellow)':value>=16?'var(--accent-blue)':value>=11?'var(--accent-green)':'var(--accent-red)'};
         }
-
-        function resolveMonsterD20(value, isAttribute, relatedAttributeValue = null) {
-            const pool = relatedAttributeValue === null
-                ? { selectedRoll: Math.floor(Math.random() * 20) + 1 }
-                : rollMonsterD20PoolByAttribute(relatedAttributeValue);
-            const roll = pool.selectedRoll;
-            const ranges = getMonsterRanges(value, isAttribute);
-            if (roll === 20) return { roll, result: 'CRÍTICO', color: 'var(--accent-red)' };
-            if (ranges.e !== 99 && roll >= ranges.e) return { roll, result: 'EXTREMO', color: 'var(--accent-yellow)' };
-            if (ranges.b !== 99 && roll >= ranges.b) return { roll, result: 'BOM', color: 'var(--accent-blue)' };
-            if (roll >= ranges.n) return { roll, result: 'NORMAL', color: 'var(--accent-green)' };
-            return { roll, result: 'FALHA', color: 'var(--accent-red)' };
+        function monsterSkillModifier(monster,name) {
+            const attribute=EXILIO_MONSTER_SKILLS.find(entry=>entry[0]===name)?.[1]||'destreza';
+            return exilioInteger(monster.attrs[attribute])+exilioInteger(monster.skills[name]);
         }
 
         function loadMasterDiceAnimation(image, playbackSequence, onReady) {
@@ -2612,145 +2628,128 @@
             document.getElementById('master-dice-content').classList.remove('revealed');
         }
 
-        function rollMonsterAttribute(monsterId, attributeKey, label) {
-            const monster = monstersState.find(item => item.id === monsterId);
-            if (!monster) return;
-            const result = resolveMonsterD20(monster.attrs[attributeKey], true);
-            showMasterDicePopup(result.roll, `${monster.name} — ${label}`, result.result, result.color);
+        function rollMonsterAttribute(monsterId,attributeKey,label) {
+            const monster=monstersState.find(item=>item.id===monsterId);if(!monster)return;
+            const pool=rollExilioMonsterDice(monster.attrs[attributeKey]);
+            showMasterDicePopup(pool.value,monster.name+' — '+label+' ('+pool.dice.join(' + ')+')',pool.result,pool.color);
         }
-
-        function rollMonsterSkill(monsterId, skillKey, label) {
-            const monster = monstersState.find(item => item.id === monsterId);
-            if (!monster) return;
-            const relatedAttributeKey = MONSTER_SKILL_RELATED_ATTRIBUTES[skillKey];
-            const relatedAttributeValue = relatedAttributeKey ? monster.attrs[relatedAttributeKey] : 0;
-            const result = resolveMonsterD20(monster.skills[skillKey], false, relatedAttributeValue);
-            showMasterDicePopup(result.roll, `${monster.name} — ${label}`, result.result, result.color);
-            if (skillKey === 'iniciativa') applyMonsterInitiativeRoll(monster, result.roll);
+        function rollMonsterSkill(monsterId,skillKey,label) {
+            const monster=monstersState.find(item=>item.id===monsterId);if(!monster)return;
+            const pool=rollExilioMonsterDice(monsterSkillModifier(monster,skillKey));
+            showMasterDicePopup(pool.value,monster.name+' — '+label+' ('+pool.dice.join(' + ')+')',pool.result,pool.color);
+            if(skillKey==='INICIATIVA')applyMonsterInitiativeRoll(monster,pool.value);
         }
-
-        function applyMonsterInitiativeRoll(monster, roll) {
-            const id = `monster_initiative_${monster.id}`;
-            const existing = initiativeState.entries.find(entry => entry.id === id);
-            if (existing) {
-                existing.name = monster.name;
-                existing.value = roll;
-            } else {
-                initiativeState.entries.push({ id, name: monster.name, value: roll, kind: 'npc', code: '' });
-            }
-            saveInitiativeState();
-            renderInitiative();
+        function applyMonsterInitiativeRoll(monster,roll) {
+            const id='monster_initiative_'+monster.id;
+            const existing=initiativeState.entries.find(entry=>entry.id===id);
+            if(existing){existing.name=monster.name;existing.value=roll;}
+            else initiativeState.entries.push({id,name:monster.name,value:roll,kind:'npc',code:''});
+            saveInitiativeState();renderInitiative();
         }
-
         function extractMonsterTestValue(test) {
-            const matches = String(test || '').match(/[+-]?\d+(?![^\d]*\d)/g);
-            if (!matches || !matches.length) return null;
-            return safeNumber(matches[matches.length - 1], null);
+            const value=String(test??'').trim();
+            if(!value)return null;
+            const match=value.match(/([+-]\s*\d+)\s*$/);
+            if(match)return exilioInteger(match[1].replace(/\s/g,''));
+            if(/^[+-]?\d+$/.test(value))return exilioInteger(value);
+            return null;
         }
-
-        function rollMonsterActionAttack(monsterId, actionIndex) {
-            const monster = monstersState.find(item => item.id === monsterId);
-            const action = monster && monster.actions[actionIndex];
-            if (!action) return;
-            const testValue = extractMonsterTestValue(action.test);
-            if (testValue === null) return alert('Informe um valor numérico no Teste / Ataque dessa ação.');
-            const result = resolveMonsterD20(testValue, false);
-            showMasterDicePopup(result.roll, `${monster.name} — ${action.name || 'Ação'}`, result.result, result.color);
+        function rollMonsterActionAttack(monsterId,index) {
+            const monster=monstersState.find(item=>item.id===monsterId);
+            const action=monster?.actions[index];if(!action)return;
+            const modifier=extractMonsterTestValue(action.test);
+            if(modifier===null)return alert('Informe o bônus da ação, por exemplo: Confronto +2 ou Precisão +4.');
+            const pool=rollExilioMonsterDice(modifier);
+            const multiplier=Math.max(1,exilioInteger(action.multiplier)||2);
+            exilioMonsterCriticalState.set(action.id,pool.matched&&multiplier>1);
+            showMasterDicePopup(pool.value,monster.name+' — '+(action.name||'Ataque')+' ('+pool.dice.join(' + ')+')',
+                pool.matched?'PAR IGUAL · ×'+multiplier+' SE ACERTAR':pool.result,
+                pool.matched?'var(--accent-red)':pool.color);
         }
-
-        function rollMonsterActionDamage(monsterId, actionIndex) {
-            const monster = monstersState.find(item => item.id === monsterId);
-            const action = monster && monster.actions[actionIndex];
-            if (!action) return;
-            rollMonsterDamage(monsterId, action.damage, action.name || 'Ação');
+        function rollMonsterActionDamage(monsterId,index) {
+            const monster=monstersState.find(item=>item.id===monsterId);const action=monster?.actions[index];if(!action)return;
+            rollMonsterDamage(monsterId,action.damage,action.name||'Ação',
+                exilioMonsterCriticalState.get(action.id)?Math.max(1,exilioInteger(action.multiplier)||2):1);
         }
-
-        function rollMonsterDamage(monsterId, formula, label) {
-            const monster = monstersState.find(item => item.id === monsterId);
-            if (!monster) return;
-            const tokens = String(formula || '').toLowerCase().replace(/\s/g, '').match(/[+-]?(?:\d*d\d+|\d+)/g);
-            if (!tokens || !tokens.length) return alert('Informe uma fórmula de dano válida, como 2d8+4.');
-            let total = 0;
-            tokens.forEach(token => {
-                const sign = token.startsWith('-') ? -1 : 1;
-                const value = token.replace(/^[+-]/, '');
-                if (value.includes('d')) {
-                    const [quantityText, facesText] = value.split('d');
-                    const quantity = Math.max(1, parseInt(quantityText, 10) || 1);
-                    const faces = Math.max(1, parseInt(facesText, 10) || 1);
-                    for (let index = 0; index < quantity; index++) total += (Math.floor(Math.random() * faces) + 1) * sign;
-                } else {
-                    total += safeNumber(value) * sign;
-                }
-            });
-            showMasterDicePopup(total, `${monster.name} — ${label}`, 'DANO', 'var(--accent-red)');
+        function rollMonsterDamage(monsterId,formula,label,multiplier=1) {
+            const monster=monstersState.find(item=>item.id===monsterId);if(!monster)return;
+            const tokens=String(formula||'').toLowerCase().replace(/\s/g,'').match(/[+-]?(?:\d*d\d+|\d+)/g);
+            if(!tokens?.length)return alert('Informe uma fórmula de dano, por exemplo 2d8+4.');
+            let total=0;
+            const diceCount=Math.max(1,Math.min(4,exilioInteger(multiplier)||1));
+            for(const token of tokens){
+                const sign=token.startsWith('-')?-1:1,raw=token.replace(/^[+-]/,'');
+                if(raw.includes('d')){
+                    const [q,f]=raw.split('d'),quantity=Math.max(1,Math.min(100,exilioInteger(q)||1)),faces=Math.max(1,Math.min(1000,exilioInteger(f)||1));
+                    for(let i=0;i<quantity*diceCount;i++)total+=sign*(1+Math.floor(Math.random()*faces));
+                }else total+=sign*exilioInteger(raw);
+            }
+            showMasterDicePopup(total,monster.name+' — '+label,diceCount>1?'DANO CRÍTICO ×'+diceCount:'DANO','var(--accent-red)');
         }
 
         function renderMonsters() {
-            const grid = document.getElementById('monsters-grid');
-            const count = monstersState.length;
-            document.getElementById('monsters-count').textContent = `${count} ${count === 1 ? 'MONSTRO' : 'MONSTROS'}`;
-            grid.innerHTML = '';
-
-            if (!count) {
-                const empty = document.createElement('div');
-                empty.className = 'monsters-empty';
-                empty.innerHTML = '<strong>Nenhum monstro cadastrado</strong>Clique em Novo Monstro para criar sua primeira criatura.';
-                grid.appendChild(empty);
-                return;
-            }
-
-            monstersState.forEach(monster => {
-                const lifePercent = monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0;
-                const attributesHtml = [['for','FOR'],['agi','AGI'],['int','INT'],['pre','PRE'],['vig','VIG']].map(([key,label]) => `<button class="monster-attribute" type="button" data-attr-key="${key}" data-roll-label="${label}"><span>${label}</span><strong>${monster.attrs[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.attrs[key], true)}</small></button>`).join('');
-                const skillsHtml = [['fortitude','Fortitude'],['reflexos','Reflexos'],['vontade','Vontade'],['percepcao','Percepção'],['iniciativa','Iniciativa']].map(([key,label]) => `<button class="monster-skill-chip" type="button" data-skill-key="${key}" data-roll-label="${label}">${label} <strong>${monster.skills[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.skills[key], false)}</small></button>`).join('');
-                const actionsHtml = monster.actions.length ? monster.actions.map((action,index) => `<div class="monster-action-summary"><div class="monster-action-text"><strong>${escapeHtml(action.name || 'Ação')}</strong>${action.test ? ` · ${escapeHtml(action.test)}` : ''}${action.damage ? `<br>Dano: ${escapeHtml(action.damage)}` : ''}${action.description ? `<br>${escapeHtml(action.description)}` : ''}</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="${index}" ${action.test ? '' : 'disabled'}>ATQ</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="${index}" ${action.damage ? '' : 'disabled'}>DANO</button></div></div>`).join('') : '<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
-                const card = document.createElement('article');
-                card.className = 'monster-card';
-                card.dataset.monsterId = monster.id;
-                card.innerHTML = `
-                    <div class="monster-card-header"><h3 class="monster-card-name">${escapeHtml(monster.name)}</h3><button class="monster-card-button monster-edit" type="button">EDITAR</button><button class="monster-card-button remove monster-remove" type="button" title="Remover monstro">×</button></div>
+            // Importações de catálogos antigos entram no Exílio sem apagar a ficha original.
+            monstersState=monstersState.map(normalizeExilioMonster);
+            const grid=document.getElementById('monsters-grid');
+            const count=monstersState.length;
+            document.getElementById('monsters-count').textContent=count+' '+(count===1?'CRIATURA':'CRIATURAS');
+            grid.replaceChildren();
+            if(!count){const empty=document.createElement('div');empty.className='monsters-empty';
+                empty.innerHTML='<strong>Nenhuma criatura cadastrada</strong>Crie um monstro ou importe um modelo do bestiário.';grid.append(empty);return;}
+            for(const monster of monstersState){
+                const lifePercent=monster.maxLife?Math.max(0,Math.min(100,monster.life/monster.maxLife*100)):0;
+                const mentalPercent=monster.maxMental?Math.max(0,Math.min(100,monster.mental/monster.maxMental*100)):0;
+                const attributesHtml=EXILIO_MONSTER_ATTRIBUTES.map(([key,,label])=>
+                  '<button class="monster-attribute" type="button" data-attr-key="'+key+'" data-roll-label="'+label+'"><span>'+label+'</span><strong>'+(monster.attrs[key]||0)+'</strong><small class="monster-roll-targets">'+formatMonsterRanges(monster.attrs[key])+'</small></button>').join('');
+                const skillButtons=EXILIO_MONSTER_SKILLS.map(([key])=>
+                  '<button class="monster-skill-chip" type="button" data-skill-key="'+escapeHtml(key)+'" data-roll-label="'+escapeHtml(key)+'">'+escapeHtml(key)+' <strong>'+(monster.skills[key]||0)+'</strong><small class="monster-roll-targets">'+formatMonsterRanges(monsterSkillModifier(monster,key))+'</small></button>').join('');
+                const initiativeButton='<button class="monster-skill-chip" type="button" data-skill-key="INICIATIVA" data-roll-label="Iniciativa">INICIATIVA <strong>'+(monster.skills.INICIATIVA||0)+'</strong><small class="monster-roll-targets">'+formatMonsterRanges(monsterSkillModifier(monster,'INICIATIVA'))+'</small></button>';
+                const actions=monster.actions.length?monster.actions.map((action,index)=>
+                  '<div class="monster-action-summary"><div class="monster-action-text"><strong>'+escapeHtml(action.name||'Ação')+'</strong> · '+escapeHtml(action.test||'Sem teste')+' · CRÍTICO ×'+(action.multiplier||2)+(action.damage?'<br>Dano: '+escapeHtml(action.damage):'')+(action.description?'<br>'+escapeHtml(action.description):'')+'</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="'+index+'" '+(action.test?'':'disabled')+'>2d10</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="'+index+'" '+(action.damage?'':'disabled')+'>DANO</button></div></div>').join(''):'<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
+                const card=document.createElement('article');card.className='monster-card exilio-monster-card';card.dataset.monsterId=monster.id;
+                card.innerHTML=`
+                    <div class="monster-card-header"><div><h3 class="monster-card-name">${escapeHtml(monster.name)}</h3><div class="exilio-monster-tags"><span class="exilio-matrix-tag">${escapeHtml(monster.matrix)}</span>${monster.secondaryMatrix?'<span class="exilio-matrix-tag secondary">'+escapeHtml(monster.secondaryMatrix)+'</span>':''}<span>IP ${monster.ip}</span></div></div><button class="monster-card-button monster-edit" type="button">EDITAR</button><button class="monster-card-button remove monster-remove" type="button" title="Remover criatura">×</button></div>
                     <div class="monster-attributes">${attributesHtml}</div>
-                    <div class="monster-life-controls">
-                        <button class="monster-life-button monster-life-minus" type="button">−</button>
-                        <div class="monster-life-meter"><div class="monster-life-fill" style="width:${lifePercent}%"></div><div class="monster-life-text"><input class="monster-current-life" type="number" min="0" value="${monster.life}" aria-label="Vida atual"> / <span class="monster-life-maximum">${monster.maxLife}</span></div></div>
-                        <button class="monster-life-button monster-life-plus" type="button">+</button>
-                    </div>
-                    <div class="monster-info-line"><strong>Resistência:</strong> ${escapeHtml(monster.resistance || '—')}<br><strong>Vulnerabilidades:</strong> ${escapeHtml(monster.vulnerabilities || '—')}</div>
-                    <div class="monster-skills-summary">${skillsHtml}</div>
-                    <div class="monster-presence-row"><div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence || '—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage || '—')}</div><button class="monster-roll-button damage monster-main-damage" type="button" ${monster.damage ? '' : 'disabled'}>DANO</button></div>
-                    <div class="monster-actions-summary">${actionsHtml}</div>`;
-                card.querySelector('.monster-edit').onclick = () => openMonsterPopup(monster.id);
-                card.querySelector('.monster-current-life').onchange = event => updateMonsterLife(monster.id, event.target.value);
-                card.querySelector('.monster-life-minus').onclick = () => changeMonsterLife(monster.id, -1);
-                card.querySelector('.monster-life-plus').onclick = () => changeMonsterLife(monster.id, 1);
-                card.querySelector('.monster-remove').onclick = () => removeMonster(monster.id);
-                card.querySelectorAll('.monster-attribute').forEach(button => button.onclick = () => rollMonsterAttribute(monster.id, button.dataset.attrKey, button.dataset.rollLabel));
-                card.querySelectorAll('.monster-skill-chip').forEach(button => button.onclick = () => rollMonsterSkill(monster.id, button.dataset.skillKey, button.dataset.rollLabel));
-                card.querySelectorAll('.action-attack-roll').forEach(button => button.onclick = () => rollMonsterActionAttack(monster.id, Number(button.dataset.actionIndex)));
-                card.querySelectorAll('.action-damage-roll').forEach(button => button.onclick = () => rollMonsterActionDamage(monster.id, Number(button.dataset.actionIndex)));
-                card.querySelector('.monster-main-damage').onclick = () => rollMonsterDamage(monster.id, monster.damage, 'Presença Perturbadora');
-                grid.appendChild(card);
-            });
+                    <div class="monster-life-controls"><button class="monster-life-button monster-life-minus" type="button">−</button><div class="monster-life-meter"><div class="monster-life-fill" style="width:${lifePercent}%"></div><div class="monster-life-text"><input class="monster-current-life" type="number" min="0" max="${monster.maxLife}" value="${monster.life}" aria-label="PV atuais"> / <span class="monster-life-maximum">${monster.maxLife}</span> PV</div></div><button class="monster-life-button monster-life-plus" type="button">+</button></div>
+                    <div class="exilio-monster-mental"><label>PM <input class="monster-current-mental" type="number" min="0" max="${monster.maxMental}" value="${monster.mental}" aria-label="PM atuais"> / ${monster.maxMental}</label><div class="exilio-mental-meter"><div style="width:${mentalPercent}%"></div></div></div>
+                    <div class="exilio-monster-movement">DEFESA <b>${monster.defense}</b> · DESLOCAMENTO <b>${monster.move} m</b></div>
+                    <div class="monster-info-line"><strong>Resistência:</strong> ${escapeHtml(monster.resistance||'—')}<br><strong>Vulnerabilidades:</strong> ${escapeHtml(monster.vulnerabilities||'—')}</div>
+                    <details class="exilio-monster-skills"><summary>PERÍCIAS (16) E INICIATIVA</summary><div class="monster-skills-summary">${skillButtons+initiativeButton}</div></details>
+                    <div class="monster-presence-row"><div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence||'—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage||'—')}</div><button class="monster-roll-button damage monster-main-damage" type="button" ${monster.damage?'':'disabled'}>DANO</button></div>
+                    <div class="monster-actions-summary">${actions}</div>`;
+                card.querySelector('.monster-edit').onclick=()=>openMonsterPopup(monster.id);
+                card.querySelector('.monster-remove').onclick=()=>removeMonster(monster.id);
+                card.querySelector('.monster-current-life').onchange=event=>updateMonsterLife(monster.id,event.target.value);
+                card.querySelector('.monster-life-minus').onclick=()=>changeMonsterLife(monster.id,-1);
+                card.querySelector('.monster-life-plus').onclick=()=>changeMonsterLife(monster.id,1);
+                card.querySelector('.monster-current-mental').onchange=event=>updateMonsterMental(monster.id,event.target.value);
+                card.querySelectorAll('.monster-attribute').forEach(button=>button.onclick=()=>rollMonsterAttribute(monster.id,button.dataset.attrKey,button.dataset.rollLabel));
+                card.querySelectorAll('.monster-skill-chip').forEach(button=>button.onclick=()=>rollMonsterSkill(monster.id,button.dataset.skillKey,button.dataset.rollLabel));
+                card.querySelectorAll('.action-attack-roll').forEach(button=>button.onclick=()=>rollMonsterActionAttack(monster.id,Number(button.dataset.actionIndex)));
+                card.querySelectorAll('.action-damage-roll').forEach(button=>button.onclick=()=>rollMonsterActionDamage(monster.id,Number(button.dataset.actionIndex)));
+                card.querySelector('.monster-main-damage').onclick=()=>rollMonsterDamage(monster.id,monster.damage,'Presença Perturbadora');
+                grid.append(card);
+            }
         }
 
-        function openMonsterPopup(id = null) {
-            const monster = id ? monstersState.find(item => item.id === id) : null;
-            editingMonsterId = monster ? monster.id : null;
-            editingMonsterActions = monster ? monster.actions.map(action => ({ ...action })) : [];
-            document.getElementById('monster-modal-title').textContent = monster ? `Editar ${monster.name}` : 'Novo monstro';
-            document.getElementById('monster-form-name').value = monster ? monster.name : '';
-            document.getElementById('monster-form-life').value = monster ? monster.maxLife : 10;
-            document.getElementById('monster-form-resistance').value = monster ? monster.resistance : '';
-            document.getElementById('monster-form-vulnerabilities').value = monster ? monster.vulnerabilities : '';
-            ['for','agi','int','pre','vig'].forEach(key => document.getElementById(`monster-form-${key}`).value = monster ? monster.attrs[key] : 0);
-            ['fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => document.getElementById(`monster-form-${key}`).value = monster ? monster.skills[key] : 0);
-            document.getElementById('monster-form-presence').value = monster ? monster.presence : '';
-            document.getElementById('monster-form-damage').value = monster ? monster.damage : '';
-            renderMonsterActionEditors();
-            document.getElementById('monster-modal').classList.add('open');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => document.getElementById('monster-form-name').focus(), 0);
+        function openMonsterPopup(id=null) {
+            const monster=id?monstersState.find(item=>item.id===id):null;
+            editingMonsterId=monster?.id||null;
+            editingMonsterActions=monster?monster.actions.map(action=>({...action})):[];
+            const field=(key,value)=>document.getElementById('monster-form-'+key).value=value;
+            document.getElementById('monster-modal-title').textContent=monster?'Editar '+monster.name:'Nova criatura do Exílio';
+            field('name',monster?.name||'');field('life',monster?.maxLife??10);
+            field('mental',monster?.maxMental??10);field('ip',monster?.ip??0);
+            field('matrix',monster?.matrix||'Medo');field('secondary-matrix',monster?.secondaryMatrix||'');
+            field('move',monster?.move??6);field('defense',monster?.defense??0);
+            field('resistance',monster?.resistance||'');field('vulnerabilities',monster?.vulnerabilities||'');
+            EXILIO_MONSTER_ATTRIBUTES.forEach(([key])=>field(key,monster?.attrs[key]??0));
+            EXILIO_MONSTER_SKILLS.forEach(([name])=>document.getElementById(exilioSkillId(name)).value=monster?.skills[name]??0);
+            field('iniciativa',monster?.skills.INICIATIVA??0);
+            field('presence',monster?.presence||'');field('damage',monster?.damage||'');
+            renderMonsterActionEditors();document.getElementById('monster-modal').classList.add('open');
+            document.body.style.overflow='hidden';
+            setTimeout(()=>document.getElementById('monster-form-name').focus(),0);
         }
 
         function closeMonsterPopup() {
@@ -2771,10 +2770,11 @@
             editingMonsterActions.forEach((action, index) => {
                 const editor = document.createElement('div');
                 editor.className = 'monster-action-editor';
-                editor.innerHTML = `<div class="monster-action-editor-head"><span>AÇÃO ${index + 1}</span><button class="monster-action-remove" type="button">REMOVER</button></div><div class="monster-form-grid"><div class="monster-form-field"><label>Nome da ação</label><input class="monster-input action-name" type="text" value="${escapeHtml(action.name)}" placeholder="Ex.: Mordida"></div><div class="monster-form-field"><label>Teste / Ataque</label><input class="monster-input action-test" type="text" value="${escapeHtml(action.test)}" placeholder="Ex.: Luta +10"></div><div class="monster-form-field"><label>Dano</label><input class="monster-input action-damage" type="text" value="${escapeHtml(action.damage)}" placeholder="Ex.: 2d8+4"></div><div class="monster-form-field full"><label>Descrição</label><textarea class="monster-textarea action-description" placeholder="Efeitos adicionais da ação...">${escapeHtml(action.description)}</textarea></div></div>`;
+                editor.innerHTML = `<div class="monster-action-editor-head"><span>AÇÃO ${index + 1}</span><button class="monster-action-remove" type="button">REMOVER</button></div><div class="monster-form-grid"><div class="monster-form-field"><label>Nome da ação</label><input class="monster-input action-name" type="text" value="${escapeHtml(action.name)}" placeholder="Ex.: Mordida"></div><div class="monster-form-field"><label>Teste / Ataque</label><input class="monster-input action-test" type="text" value="${escapeHtml(action.test)}" placeholder="Ex.: Confronto +2"></div><div class="monster-form-field"><label>Dano</label><input class="monster-input action-damage" type="text" value="${escapeHtml(action.damage)}" placeholder="Ex.: 2d8+4"></div><div class="monster-form-field"><label>Crítico (dados iguais)</label><select class="monster-input action-multiplier"><option value="1" ${action.multiplier===1?'selected':''}>×1</option><option value="2" ${action.multiplier===2?'selected':''}>×2</option><option value="3" ${action.multiplier===3?'selected':''}>×3</option><option value="4" ${action.multiplier===4?'selected':''}>×4</option></select></div><div class="monster-form-field full"><label>Descrição</label><textarea class="monster-textarea action-description" placeholder="Efeitos adicionais da ação...">${escapeHtml(action.description)}</textarea></div></div>`;
                 editor.querySelector('.action-name').oninput = event => action.name = event.target.value;
                 editor.querySelector('.action-test').oninput = event => action.test = event.target.value;
                 editor.querySelector('.action-damage').oninput = event => action.damage = event.target.value;
+                editor.querySelector('.action-multiplier').onchange=event=>action.multiplier=Math.max(1,Math.min(4,Number(event.target.value)||2));
                 editor.querySelector('.action-description').oninput = event => action.description = event.target.value;
                 editor.querySelector('.monster-action-remove').onclick = () => removeMonsterAction(action.id);
                 container.appendChild(editor);
@@ -2792,31 +2792,35 @@
         }
 
         function saveMonsterFromPopup() {
-            const nameInput = document.getElementById('monster-form-name');
-            const name = nameInput.value.trim();
-            if (!name) return nameInput.focus();
-            const existing = editingMonsterId ? monstersState.find(item => item.id === editingMonsterId) : null;
-            const maxLife = Math.max(1, safeNumber(document.getElementById('monster-form-life').value, 10));
-            const monster = {
-                id: existing ? existing.id : `monster_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-                name,
-                life: existing ? Math.min(existing.life, maxLife) : maxLife,
-                maxLife,
-                resistance: document.getElementById('monster-form-resistance').value.trim(),
-                vulnerabilities: document.getElementById('monster-form-vulnerabilities').value.trim(),
-                attrs: {},
-                skills: {},
-                presence: document.getElementById('monster-form-presence').value.trim(),
-                damage: document.getElementById('monster-form-damage').value.trim(),
-                actions: editingMonsterActions.map(action => ({ ...action, name: action.name.trim(), test: action.test.trim(), damage: action.damage.trim(), description: action.description.trim() }))
-            };
-            ['for','agi','int','pre','vig'].forEach(key => monster.attrs[key] = safeNumber(document.getElementById(`monster-form-${key}`).value));
-            ['fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => monster.skills[key] = safeNumber(document.getElementById(`monster-form-${key}`).value));
-            if (existing) monstersState[monstersState.findIndex(item => item.id === existing.id)] = monster;
+            const field=key=>document.getElementById('monster-form-'+key).value;
+            const name=field('name').trim();if(!name)return document.getElementById('monster-form-name').focus();
+            const existing=editingMonsterId?monstersState.find(item=>item.id===editingMonsterId):null;
+            const maxLife=Math.max(1,exilioInteger(field('life'))||10),maxMental=Math.max(0,exilioInteger(field('mental')));
+            const attrs={...(existing?.attrs||{})},skills={...(existing?.skills||{})};
+            EXILIO_MONSTER_ATTRIBUTES.forEach(([key])=>attrs[key]=exilioInteger(field(key)));
+            EXILIO_MONSTER_SKILLS.forEach(([key])=>skills[key]=exilioInteger(document.getElementById(exilioSkillId(key)).value));
+            skills.INICIATIVA=exilioInteger(field('iniciativa'));
+            const matrix=EXILIO_MONSTER_MATRICES.includes(field('matrix'))?field('matrix'):'Medo';
+            const secondaryMatrix=field('secondary-matrix')!==matrix?field('secondary-matrix'):'';
+            const monster=normalizeExilioMonster({
+                ...(existing||{}),id:existing?.id||'monster_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+                name,maxLife,life:existing?Math.min(existing.life,maxLife):maxLife,
+                maxMental,mental:existing?Math.min(existing.mental,maxMental):maxMental,
+                matrix,secondaryMatrix,ip:Math.max(0,Math.min(10,exilioInteger(field('ip')))),
+                move:Math.max(0,Number(field('move'))||0),defense:Math.max(0,exilioInteger(field('defense'))),
+                resistance:field('resistance').trim(),vulnerabilities:field('vulnerabilities').trim(),
+                attrs,skills,presence:field('presence').trim(),damage:field('damage').trim(),
+                actions:editingMonsterActions.map((action,i)=>normalizeMonsterAction(action,i))
+            });
+            if(existing)monstersState[monstersState.findIndex(item=>item.id===existing.id)]=monster;
             else monstersState.push(monster);
-            saveMonstersState();
-            renderMonsters();
-            closeMonsterPopup();
+            saveMonstersState();renderMonsters();closeMonsterPopup();
+        }
+
+        function updateMonsterMental(id,value) {
+            const monster=monstersState.find(item=>item.id===id);if(!monster)return;
+            monster.mental=Math.max(0,Math.min(monster.maxMental,exilioInteger(value)));
+            saveMonstersState();renderMonsters();
         }
 
         function updateMonsterLife(id, rawValue) {
