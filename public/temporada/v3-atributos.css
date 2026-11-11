@@ -1338,3 +1338,31 @@ body.season-rulebook-v3 .mobile-sheet #exilio-pd-widget:not([hidden]){
   height:44px!important;
   margin:8px 0 4px auto!important;
 }
+    
+/* Exílio T2 — contagem de perícias no seletor das quatro classes. */
+body.season-rulebook-v3 #origin-dialog .origin-card .origin-skill-count{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin:12px 0 10px;
+  padding:10px 12px;
+  background:linear-gradient(110deg,#3d2118,#21140f);
+  border:1px solid #995339;
+  border-left:3px solid #e28d60;
+  border-radius:4px;
+  color:#f7e5d8;
+}
+body.season-rulebook-v3 #origin-dialog .origin-skill-count strong{
+  color:#ffc29e;
+  font:900 15px/1.25 Georgia,'Times New Roman',serif;
+  letter-spacing:.025em;
+}
+body.season-rulebook-v3 #origin-dialog .origin-skill-count span{
+  color:#fff1e5;
+  font:700 13px/1.35 Arial,sans-serif;
+}
+body.season-rulebook-v3 #origin-dialog .origin-skill-count small{
+  display:block;
+  color:#d3b6a6;
+  font:12px/1.35 Arial,sans-serif;
+}
