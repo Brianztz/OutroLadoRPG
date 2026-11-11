@@ -542,13 +542,13 @@
 
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
         <div class="monsters-toolbar">
-            <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
+            <div><h2 class="monsters-toolbar-title">Bestiário · Exílio 3.0</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
             <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
         </div>
         <details id="master-bestiary-library" class="master-bestiary-library" open>
-            <summary>CATÁLOGO DE CRIATURAS — ADAPTADAS AO OUTRO LADO</summary>
+            <summary>CRIATURAS DE REFERÊNCIA · IMPORTAR E ADAPTAR AO EXÍLIO</summary>
             <div class="master-bestiary-content">
-                <p class="master-bestiary-description">Referências de nomes de Ordem Paranormal com fichas, danos, atributos e efeitos autorais do Outro Lado. Não são estatísticas nem descrições oficiais. Adicione uma cópia à sua mesa para editar e rolar normalmente.</p>
+                <p class="master-bestiary-description">Modelos de referência não oficiais. Ao importar, revise atributos, perícias e Matrizes do Exílio 3.0 antes de usar na sessão. Os originais continuam preservados.</p>
                 <div class="master-bestiary-filters" role="search" aria-label="Filtrar criaturas do bestiário">
                     <input id="bestiary-search" type="search" placeholder="Pesquisar criatura..." aria-label="Pesquisar nome de criatura">
                     <select id="bestiary-element" aria-label="Filtrar por elemento"><option value="">Todos os elementos</option></select>
@@ -891,6 +891,7 @@
         const masterRollPreloader = new Image();
         masterRollPreloader.onerror = () => { masterRollPreloader.src = masterRollFallbackAsset; };
         masterRollPreloader.src = masterRollPrimaryAsset;
+        const EXILIO_MASTER_CATALOG=[{"id":"catalog-0","name":"Mochila","img":"/temporada/assets/exilio-crops/exilio-item-mochila.png","desc":"Uma mochila leve e de alta qualidade. Ela não usa nenhum espaço e aumenta sua capacidade de carga em 2 espaços.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":0,"ammo":"","capacity":0,"catalogKind":"items","catalogType":"Item"},{"id":"catalog-1","name":"Lanterna","img":"/temporada/assets/exilio-crops/exilio-item-lanterna.png","desc":"Ilumina lugares escuros. Você pode gastar uma ação de movimento para mirar a luz nos olhos de um ser em alcance curto e deixá-lo ofuscado por 1 rodada.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":1,"ammo":"","capacity":0,"catalogKind":"items","catalogType":"Item"},{"id":"catalog-2","name":"Proteção Leve","img":"/temporada/assets/exilio-crops/exilio-item-protecao-leve.png","desc":"Jaqueta de couro pesada ou colete de kevlar. Fornece +5 de Defesa.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":2,"ammo":"","capacity":0,"catalogKind":"items","catalogType":"Item"},{"id":"catalog-3","name":"Proteção Pesada","img":"/temporada/assets/exilio-crops/exilio-item-protecao-pesada.png","desc":"Fornece resistência a balístico, corte, impacto e perfuração, impõe –5 em perícias afetadas pela carga e concede +10 de Defesa.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":5,"ammo":"","capacity":0,"catalogKind":"items","catalogType":"Item"},{"id":"catalog-4","name":"Munição Curta","img":"/temporada/assets/exilio-crops/exilio-item-municao-curta.png","desc":"Um pacote de munição curta consumido ao recarregar uma arma compatível.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":1,"ammo":"Curta","capacity":0,"catalogKind":"items","catalogType":"Munição"},{"id":"catalog-5","name":"Munição Longa","img":"/temporada/assets/exilio-crops/exilio-item-municao-longa.png","desc":"Um pacote de munição longa consumido ao recarregar uma arma compatível.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":1,"ammo":"Longa","capacity":0,"catalogKind":"items","catalogType":"Munição"},{"id":"catalog-6","name":"Munição Pesada","img":"/temporada/assets/exilio-crops/exilio-item-municao-pesada.png","desc":"Um pacote de munição pesada consumido ao recarregar uma arma compatível.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":1,"ammo":"Pesada","capacity":0,"catalogKind":"items","catalogType":"Munição"},{"id":"catalog-7","name":"Munição Especial","img":"/temporada/assets/exilio-crops/exilio-item-municao-especial.png","desc":"Um pacote de munição especial consumido ao recarregar uma arma compatível.","dmg":"","crit":"×2","atk":1,"range":"","skill":"CONFRONTO","weight":1,"ammo":"Especial","capacity":0,"catalogKind":"items","catalogType":"Munição"},{"id":"catalog-8","name":"Soqueira","img":"/temporada/assets/exilio-crops/exilio-item-soqueira.png","desc":"","dmg":"1d6","crit":"×2","atk":2,"range":"Toque","skill":"CONFRONTO","weight":1,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-9","name":"Faca","img":"/temporada/assets/exilio-crops/exilio-item-faca.png","desc":"","dmg":"1d4","crit":"×2","atk":1,"range":"Curto","skill":"CONFRONTO","weight":1,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-10","name":"Machado","img":"/temporada/assets/exilio-crops/exilio-item-machado.png","desc":"","dmg":"1d8","crit":"×3","atk":1,"range":"Curto","skill":"CONFRONTO","weight":2,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-11","name":"Machete","img":"/temporada/assets/exilio-crops/exilio-item-machete.png","desc":"","dmg":"1d6","crit":"×2","atk":1,"range":"Curto","skill":"CONFRONTO","weight":1,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-12","name":"Martelo","img":"/temporada/assets/exilio-crops/exilio-item-martelo.png","desc":"","dmg":"1d6","crit":"×2","atk":1,"range":"Curto","skill":"CONFRONTO","weight":1,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-13","name":"Marreta","img":"/temporada/assets/exilio-crops/exilio-item-marreta.png","desc":"","dmg":"1d10","crit":"×2","atk":1,"range":"Curto","skill":"CONFRONTO","weight":2,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-14","name":"Espada da Ordem","img":"/temporada/assets/exilio-crops/exilio-item-espada-da-ordem.png","desc":"","dmg":"1d8","crit":"×2","atk":1,"range":"Curto","skill":"CONFRONTO","weight":2,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-15","name":"Serra Elétrica","img":"/temporada/assets/exilio-crops/exilio-item-serra-eletrica.png","desc":"","dmg":"2d6","crit":"×2","atk":1,"range":"Curto","skill":"CONFRONTO","weight":2,"ammo":"","capacity":0,"catalogKind":"weapons","catalogType":"Corpo a corpo"},{"id":"catalog-16","name":"Pistola Antiga","img":"/temporada/assets/exilio-crops/exilio-item-pistola-antiga.png","desc":"","dmg":"1d12","crit":"×1","atk":1,"range":"Curto","skill":"PRECISÃO","weight":1,"ammo":"Curta","capacity":8,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-17","name":"Revolver","img":"/temporada/assets/exilio-crops/exilio-item-revolver.png","desc":"","dmg":"3d6","crit":"×2","atk":1,"range":"Curto","skill":"PRECISÃO","weight":1,"ammo":"Curta","capacity":6,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-18","name":"Pistola Semiautomática","img":"/temporada/assets/exilio-crops/exilio-item-pistola-semiautomatica.png","desc":"","dmg":"3d8","crit":"×2","atk":2,"range":"Curto","skill":"PRECISÃO","weight":1,"ammo":"Curta","capacity":10,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-19","name":"Escopeta","img":"/temporada/assets/exilio-crops/exilio-item-escopeta.png","desc":"","dmg":"4d6","crit":"×2","atk":1,"range":"Curto","skill":"PRECISÃO","weight":2,"ammo":"Pesada","capacity":6,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-20","name":"Escopeta (Cano Serrado)","img":"/temporada/assets/exilio-crops/exilio-item-escopeta-cano-serrado.png","desc":"","dmg":"4d4","crit":"×2","atk":1,"range":"Curto","skill":"PRECISÃO","weight":1,"ammo":"Pesada","capacity":6,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-21","name":"Rifle de Caça","img":"/temporada/assets/exilio-crops/exilio-item-rifle-de-caca.png","desc":"","dmg":"2d8","crit":"×3","atk":1,"range":"Longo","skill":"PRECISÃO","weight":2,"ammo":"Longa","capacity":8,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-22","name":"Rifle de Precisão","img":"/temporada/assets/exilio-crops/exilio-item-rifle-de-precisao.png","desc":"","dmg":"3d12","crit":"×4","atk":1,"range":"Longo","skill":"PRECISÃO","weight":2,"ammo":"Longa","capacity":5,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-23","name":"Rifle de Assalto","img":"/temporada/assets/exilio-crops/exilio-item-rifle-de-assalto.png","desc":"","dmg":"3d8","crit":"×2","atk":3,"range":"Longo","skill":"PRECISÃO","weight":2,"ammo":"Longa","capacity":40,"catalogKind":"weapons","catalogType":"Disparo"},{"id":"catalog-24","name":"Balestra","img":"/temporada/assets/exilio-crops/exilio-item-balestra.png","desc":"","dmg":"4d12","crit":"×2","atk":1,"range":"Longo","skill":"PRECISÃO","weight":2,"ammo":"Especial","capacity":1,"catalogKind":"weapons","catalogType":"Disparo"}];
         let masterCatalogFilter = 'all';
         let customCatalogEntries = loadCustomCatalogEntries();
         let pendingCatalogItem = null;
@@ -1353,11 +1354,11 @@
         function renderMasterCatalog() {
             const grid = document.getElementById('catalog-grid');
             if (!grid) return;
-            const data = window.RPG_CATALOG || { items: [], meleeWeapons: [], rangedWeapons: [] };
+            const data = {items: EXILIO_MASTER_CATALOG.filter(i=>i.catalogKind==='items'),meleeWeapons:EXILIO_MASTER_CATALOG.filter(i=>i.catalogType==='Corpo a corpo'),rangedWeapons:EXILIO_MASTER_CATALOG.filter(i=>i.catalogType==='Disparo')};
             const entries = [
-                ...data.meleeWeapons.map(item => ({ ...item, catalogKind: 'weapons', catalogType: 'Corpo a corpo' })),
-                ...data.rangedWeapons.map(item => ({ ...item, catalogKind: 'weapons', catalogType: 'Disparo' })),
-                ...data.items.map(item => ({ ...item, catalogKind: 'items', catalogType: item.ammo ? 'Munição' : 'Item' })),
+                ...data.meleeWeapons,
+                ...data.rangedWeapons,
+                ...data.items,
                 ...customCatalogEntries
             ];
             const query = normalizeCatalogText(document.getElementById('catalog-search').value);
@@ -1383,11 +1384,11 @@
                         <div class="catalog-stat"><span>Ataques</span><strong>${escapeHtml(item.atk)}</strong></div>
                         <div class="catalog-stat"><span>Alcance</span><strong>${escapeHtml(item.range)}</strong></div>
                         <div class="catalog-stat"><span>Perícia</span><strong>${escapeHtml(item.skill)}</strong></div>
-                        <div class="catalog-stat"><span>Peso</span><strong>${escapeHtml(item.weight)}</strong></div>
+                        <div class="catalog-stat"><span>Espaços</span><strong>${escapeHtml(item.weight)}</strong></div>
                     </div>
                     <div class="catalog-details">${item.ammo ? `<span class="catalog-detail">Munição: ${escapeHtml(item.ammo)}</span>` : ''}${item.capacity ? `<span class="catalog-detail">Capacidade: ${escapeHtml(item.capacity)}</span>` : ''}</div>` : `
                     <p class="catalog-description">${escapeHtml(item.desc)}</p>
-                    <div class="catalog-details"><span class="catalog-detail">Peso: ${escapeHtml(item.weight)}</span>${item.ammo ? `<span class="catalog-detail">Tipo: ${escapeHtml(item.ammo)}</span>` : ''}</div>`;
+                    <div class="catalog-details"><span class="catalog-detail">Espaços: ${escapeHtml(item.weight)}</span>${item.ammo ? `<span class="catalog-detail">Tipo: ${escapeHtml(item.ammo)}</span>` : ''}</div>`;
                 const card = document.createElement('article');
                 card.className = `catalog-card ${isWeapon ? 'weapon' : 'item'}`;
                 card.tabIndex = 0;
@@ -1486,7 +1487,7 @@
             if (!recipients.size) return;
             const isWeapon = item.catalogKind === 'weapons';
             const isRanged = item.catalogType === 'Disparo';
-            const description = isWeapon ? `<div style='display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.85em;'><div><b>Atq:</b> ${isRanged ? 'Disparo' : 'Corpo a corpo'} (${item.atk}x)</div><div><b>Dano:</b> ${item.dmg}</div><div><b>Crit:</b> ${item.crit}</div><div><b>Alc:</b> ${item.range}</div><div><b>Mun:</b> ${item.ammo || 'Nenhuma'}</div><div><b>Per:</b> ${item.skill}</div></div>` : item.desc;
+            const description = isWeapon ? 'Ataques: '+item.atk+' | Dano: '+item.dmg+' | Crítico: '+item.crit+' (2d10 iguais se acertar) | Alcance: '+item.range+' | Munição: '+(item.ammo||'Nenhuma')+' | Perícia: '+item.skill : item.desc;
             const catalogItem = {
                 n: item.name,
                 w: item.weight,
@@ -1495,8 +1496,8 @@
                 type: isWeapon ? 'arma' : (item.ammo ? 'municao' : 'comum'),
                 dmg: isWeapon ? item.dmg : '0',
                 extra: '0',
-                crit: isWeapon ? item.crit : '20/x2',
-                skill: isWeapon ? item.skill : 'Luta',
+                crit: isWeapon ? item.crit : '×1',
+                skill: isWeapon ? item.skill : 'CONFRONTO',
                 img: item.img || '',
                 atkType: isWeapon ? (isRanged ? 'Disparo' : 'Corpo a corpo') : 'Corpo a corpo',
                 atk: isWeapon ? item.atk : 1,
@@ -3038,6 +3039,11 @@
             const fromSeason = rawData.sheetType === 'temporada' || rawData.fullData?.sheetType === 'temporada';
             if (isSeasonMaster !== fromSeason) return;
             const data = rawData;
+            const exilioState = data.fullData?.temporada?.state || {};
+            const exilioIp = Math.max(0,Math.min(10,exilioInteger(exilioState.paranormalInfluence??0)));
+            const exilioClass = ['Mundano','Vanguarda','Analista','Canalizador'].includes(exilioState.origin)?exilioState.origin:'Mundano';
+            const exilioOccupation = String(exilioState.occupation||'Sem ocupação');
+            const exilioAttributes = EXILIO_MONSTER_ATTRIBUTES.map(([key,,abbr])=>'<span class="exilio-player-attribute">'+abbr+' <b>'+escapeHtml(exilioState.attrs?.[key]??0)+'</b></span>').join('');
             const code = String(data.codigo);
             connectedPlayers.set(code, data);
             const initiativePlayer = initiativeState.entries.find(entry => entry.id === `player_${code}`);
@@ -3054,10 +3060,10 @@
                 playersBoard.appendChild(card);
             }
 
-            const lifeCurrent = safeNumber(data.vida_atual);
-            const lifeMaximum = Math.max(0, safeNumber(data.vida_max));
-            const sanityCurrent = safeNumber(data.sani_atual);
-            const sanityMaximum = Math.max(0, safeNumber(data.sani_max));
+            const lifeCurrent = safeNumber(exilioState.resources?.life?.current??data.vida_atual);
+            const lifeMaximum = Math.max(0, safeNumber(exilioState.resources?.life?.max??data.vida_max));
+            const sanityCurrent = safeNumber(exilioState.resources?.sanity?.current??data.sani_atual);
+            const sanityMaximum = Math.max(0, safeNumber(exilioState.resources?.sanity?.max??data.sani_max));
             const lifePercent = lifeMaximum ? Math.min(100, Math.max(0, lifeCurrent / lifeMaximum * 100)) : 0;
             const sanityPercent = sanityMaximum ? Math.min(100, Math.max(0, sanityCurrent / sanityMaximum * 100)) : 0;
             let tags = '';
@@ -3071,10 +3077,11 @@
             card.innerHTML = `
                 <div class="player-header">
                     <img src="${escapeHtml(data.foto || '')}" class="player-img" alt="">
-                    <div><h2 class="player-name">${escapeHtml(data.nome || 'Personagem sem nome')}</h2><div class="player-info">NEX: ${escapeHtml(data.nex || 0)}% · Defesa: ${escapeHtml(data.defesa ?? 0)}</div></div>
+                    <div><h2 class="player-name">${escapeHtml(data.nome || 'Personagem sem nome')}</h2><div class="player-info">IP ${exilioIp} · ${escapeHtml(exilioClass)} · DEF ${escapeHtml(data.defesa ?? 0)}</div></div>
                 </div>
-                <div><div class="bar-label vida">VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
-                <div><div class="bar-label sanidade">SANIDADE</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
+                <div class="exilio-player-occupation">${escapeHtml(exilioOccupation)}</div><div class="exilio-player-attributes">${exilioAttributes}</div>
+                <div><div class="bar-label vida">PV · PONTOS DE VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
+                <div><div class="bar-label sanidade">PM · PONTOS MENTAIS</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
                 <div class="status-tags">${tags}</div>
                 <div class="player-actions"><button class="btn-ver-ficha" type="button">🔍 VER FICHA</button><button class="btn-remove-player" type="button">✕ REMOVER DA MESA</button></div>`;
             card.querySelector('.btn-ver-ficha').onclick = () => abrirFicha(code);
