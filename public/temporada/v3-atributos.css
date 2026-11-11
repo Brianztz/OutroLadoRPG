@@ -1260,11 +1260,11 @@ body.season-rulebook-v3 #exilio-pd-widget[hidden]{
 /* O visor fica na área indicada da arte 1920×909, à direita de HABILIDADES. */
 body.season-rulebook-v3 #sheet > #exilio-pd-widget:not([hidden]){
   position:absolute!important;
-  left:1755px!important;
-  top:386px!important;
-  width:148px!important;
-  height:44px!important;
-  display:flex!important;
+  left:1732px!important;
+  top:408px!important;
+  width:144px!important;
+  height:38px!important;
+  display:grid!important;
   visibility:visible!important;
   pointer-events:auto!important;
   z-index:75!important;
@@ -1272,9 +1272,10 @@ body.season-rulebook-v3 #sheet > #exilio-pd-widget:not([hidden]){
 body.season-rulebook-v3 #exilio-pd-widget:not([hidden]){
   box-sizing:border-box!important;
   align-items:center!important;
-  justify-content:space-between!important;
+  justify-items:center!important;
+  grid-template-columns:22px 23px minmax(0,1fr) 23px!important;
   gap:3px!important;
-  padding:4px!important;
+  padding:3px 4px!important;
   margin:0!important;
   background:linear-gradient(180deg,#2c1713,#130b09)!important;
   border:1px solid #a1462f!important;
@@ -1284,12 +1285,14 @@ body.season-rulebook-v3 #exilio-pd-widget:not([hidden]){
   font:800 15px/1 Arial,sans-serif!important;
 }
 body.season-rulebook-v3 #exilio-pd-widget .exilio-pd-label{
-  flex:0 0 auto;
+  display:block!important;
+  text-align:center!important;
   color:#f4b28f!important;
   font:900 16px/1 Georgia,serif!important;
 }
 body.season-rulebook-v3 #exilio-pd-widget output{
-  flex:1 1 auto!important;
+  display:block!important;
+  width:100%!important;
   min-width:0!important;
   white-space:nowrap!important;
   text-align:center!important;
@@ -1299,7 +1302,6 @@ body.season-rulebook-v3 #exilio-pd-widget output{
 }
 body.season-rulebook-v3 #exilio-pd-widget button{
   box-sizing:border-box!important;
-  flex:0 0 23px!important;
   width:23px!important;
   height:28px!important;
   min-width:23px!important;
@@ -1330,13 +1332,13 @@ body.season-rulebook-v3 .mobile-sheet #exilio-pd-widget:not([hidden]){
   position:relative!important;
   left:auto!important;
   top:auto!important;
-  display:flex!important;
+  display:grid!important;
   visibility:visible!important;
   pointer-events:auto!important;
   z-index:auto!important;
   width:175px!important;
   height:44px!important;
-  margin:8px 0 4px auto!important;
+  margin:8px auto 4px!important;
 }
     
 /* Exílio T2 — contagem de perícias no seletor das quatro classes. */
@@ -1365,4 +1367,60 @@ body.season-rulebook-v3 #origin-dialog .origin-skill-count small{
   display:block;
   color:#d3b6a6;
   font:12px/1.35 Arial,sans-serif;
+}
+
+/* Exílio T2: atributo é escolhido no momento do teste, nunca somado previamente ao card. */
+body.season-rulebook-v3 #skill-drawer #skill-attribute-guide{
+  margin:12px 0 6px;
+  color:#e5b79c;
+  font:700 13px/1.5 Arial,sans-serif;
+}
+body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-picker[hidden]{
+  display:none!important;
+}
+body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-picker:not([hidden]){
+  display:block!important;
+  margin:12px 0;
+  padding:14px;
+  border:1px solid #a45c40;
+  border-radius:5px;
+  background:#291812;
+  box-shadow:inset 0 1px 0 #ffffff12;
+}
+body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-picker h3{
+  margin:0 0 7px;
+  color:#ffd0ab;
+  font:800 17px Georgia,serif;
+}
+body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-picker p{
+  margin:0 0 12px;
+  color:#e0c0ae;
+  font:12px/1.45 Arial,sans-serif;
+}
+body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-options{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-options button{
+  min-height:42px;
+  padding:8px 6px;
+  border:1px solid #9c533a;
+  border-radius:4px;
+  background:linear-gradient(180deg,#5f3022,#321b16);
+  color:#fff0df;
+  font:800 12px/1.25 Arial,sans-serif;
+  cursor:pointer;
+  overflow-wrap:anywhere;
+}
+body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-options button:is(:hover,:focus-visible){
+  background:#85402c;
+  border-color:#e3a277;
+  outline:2px solid #ffc19b;
+  outline-offset:1px;
+}
+@media(max-width:360px){
+  body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-options{
+    grid-template-columns:minmax(0,1fr);
+  }
 }
