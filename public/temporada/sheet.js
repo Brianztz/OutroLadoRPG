@@ -22,7 +22,7 @@
       const btn=document.createElement('button');
       btn.className='sheet-skill-details';btn.type='button';
       btn.setAttribute('aria-label','Abrir perícia '+name);
-      btn.title='Abrir '+name+' para configurar Domínio, atributo e rolar 2d10';
+      btn.title='Abrir '+name+' para configurar Domínio e escolher atributo ao rolar 2d10';
       const label=document.createElement('strong');label.textContent=name;
       const rank=document.createElement('span');rank.className='sheet-skill-training';rank.textContent='SEM TREINAMENTO';
       const modifier=document.createElement('span');modifier.className='sheet-skill-score';modifier.textContent='0';
@@ -74,16 +74,15 @@
     document.querySelectorAll('[data-skill]').forEach(el=>{
       const name=el.dataset.skill;
       const domain=Number(state.skillDomains?.[name])||0;
-      const attributeName=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
-      const attribute=Number(state.attrs[attributeName])||0;
       const bonus=Number(state.skillBonuses?.[name])||0;
-      const modifier=attribute+domain+bonus;
+      // Os cards exibem apenas Domínio e bônus; o atributo entra somente no teste.
+      const modifier=domain+bonus;
       const rank={0:'SEM TREINAMENTO',2:'PRATICANTE +2',4:'EXPERIENTE +4',6:'REFERÊNCIA +6'}[domain]||'DOMÍNIO '+(domain>=0?'+':'')+domain;
       el.classList.toggle('trained',domain>0);
       el.querySelector('.sheet-skill-training').textContent=rank;
       el.querySelector('.sheet-skill-score').textContent=(modifier>0?'+':'')+modifier;
       const button=el.querySelector('.sheet-skill-details');
-      button.setAttribute('aria-label',name+', '+rank+', modificador '+(modifier>=0?'+':'')+modifier+'. Abrir detalhes e rolar.');
+      button.setAttribute('aria-label',name+', '+rank+', bônus sem atributo '+(modifier>=0?'+':'')+modifier+'. Abrir e escolher atributo para rolar.');
       updateSkillEdgeBadge(el);
     });
   }
@@ -277,23 +276,22 @@
   }
   function classifySkill(value){return value>=21?'EXTREMO':value>=16?'BOM':value>=11?'NORMAL':'FALHA';}
   function selectedValues(){
-    const attribute=Number(state.attrs[$('skill-attribute').value])||0;
     const domain=Number($('skill-training').value)||0;
     const bonus=Math.trunc(Number($('skill-bonus').value)||0);
-    return {attribute,domain,bonus,total:attribute+domain+bonus};
+    return {domain,bonus,total:domain+bonus};
   }
   function refreshSkill(){
     if(!selectedSkill)return;
-    const v=selectedValues(),key=$('skill-attribute').value;
-    $('skill-formula').textContent='2d10 + '+exilioAttributeLabels[key]+' ('+v.attribute+') + Domínio '+v.domain+(v.bonus?' + bônus '+v.bonus:'');
-    $('skill-dice-rule').textContent='Modificador: '+(v.total>=0?'+':'')+v.total+' · O atributo depende da abordagem.';
+    const v=selectedValues();
+    $('skill-formula').textContent='2d10 + atributo escolhido na rolagem + Domínio '+v.domain+(v.bonus?' + bônus '+v.bonus:'');
+    $('skill-dice-rule').textContent='Modificador sem atributo: '+(v.total>=0?'+':'')+v.total+' · Clique no dado para escolher o atributo.';
   }
   function openSkill(el){
     selectedSkill=el;const name=el.dataset.skill;
     $('skill-name').textContent=name;$('skill-description').textContent=skillDescriptions[skillNames.indexOf(name)]||'';
     $('skill-training').value=String(Number(state.skillDomains?.[name])||0);
-    $('skill-attribute').value=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
     $('skill-bonus').value=Number(state.skillBonuses?.[name])||0;
+    $('skill-roll-attribute-picker').hidden=true;
     $('skill-result').textContent='';refreshSkill();$('skill-drawer').showModal();
   }
   function saveSkillSettings(){
@@ -304,32 +302,30 @@
     const ip=clampParanormalInfluence(state.paranormalInfluence);
     if((requested===4&&ip<4)||(requested===6&&ip<7)){
       toast(requested===4?'Domínio Experiente (+4) exige IP 4.':'Domínio Referência (+6) exige IP 7.');
-      $('skill-training').value=String(previous);refreshSkill();return;
+      $('skill-training').value=String(previous);refreshSkill();return false;
     }
     const refs=skillNames.filter(n=>n!==name&&(Number(state.skillDomains?.[n])||0)===6).length;
     if(requested===6&&refs>=2){
       toast('O livro permite no máximo duas perícias em Referência (+6).');
-      $('skill-training').value=String(previous);refreshSkill();return;
+      $('skill-training').value=String(previous);refreshSkill();return false;
     }
     const bonus=Math.max(-99,Math.min(99,Math.trunc(Number($('skill-bonus').value)||0)));
-    state.skillDomains=state.skillDomains||{};state.skillAttributes=state.skillAttributes||{};state.skillBonuses=state.skillBonuses||{};
+    state.skillDomains=state.skillDomains||{};state.skillBonuses=state.skillBonuses||{};
     state.skillDomains[name]=[0,2,4,6].includes(requested)?requested:previous;
-    state.skillAttributes[name]=$('skill-attribute').value;
     state.skillBonuses[name]=bonus;
     state.skills[name]=state.skillDomains[name];
     $('skill-bonus').value=bonus;
-    save();display();refreshSkill();$('skill-result').textContent='';
+    save();display();refreshSkill();$('skill-result').textContent='';return true;
   }
-  function rollExilioSkill(name,random=Math.random){
-    const key=state.skillAttributes?.[name]||exilioDefaultAttributes[name];
-    const attribute=Number(state.attrs[key])||0,domain=Number(state.skillDomains?.[name])||0,bonus=Number(state.skillBonuses?.[name])||0;
+  function rollExilioSkill(name,attributeKey,random=Math.random){
+    if(!Object.prototype.hasOwnProperty.call(newAttributeNames,attributeKey))throw Error('Escolha um atributo válido.');
+    const attribute=Number(state.attrs[attributeKey])||0,domain=Number(state.skillDomains?.[name])||0,bonus=Number(state.skillBonuses?.[name])||0;
     const dice=[Math.floor(random()*10)+1,Math.floor(random()*10)+1];
     const total=dice[0]+dice[1]+attribute+domain+bonus;
-    const detail='2d10 ['+dice.join(', ')+'] + Atributo '+attribute+' + Domínio '+domain+(bonus?' + bônus '+bonus:'')+' = '+total;
+    const detail='2d10 ['+dice.join(', ')+'] + '+exilioAttributeLabels[attributeKey]+' ('+attribute+') + Domínio '+domain+(bonus?' + bônus '+bonus:'')+' = '+total;
     return {dice,kept:dice,value:total,lowest:false,detail};
   }
   $('skill-training').addEventListener('change',saveSkillSettings);
-  $('skill-attribute').addEventListener('change',saveSkillSettings);
   $('skill-bonus').addEventListener('change',saveSkillSettings);
   $('skill-close').addEventListener('click',()=>$('skill-drawer').close());
   $('skill-drawer').addEventListener('click',event=>{
@@ -338,9 +334,25 @@
     if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)event.target.close();
   });
   $('skill-roll').addEventListener('click',()=>{
-    saveSkillSettings();const name=selectedSkill.dataset.skill,pool=rollExilioSkill(name);
-    const output=$('skill-result');output.dataset.result='TOTAL';output.textContent=pool.detail;
-    showSkillDice(pool,'TOTAL',name);
+    if(!selectedSkill||!saveSkillSettings())return;
+    const picker=$('skill-roll-attribute-picker'),options=$('skill-roll-attribute-options');
+    options.replaceChildren();
+    for(const [key,label] of Object.entries(newAttributeNames)){
+      const attr=Number(state.attrs[key])||0;
+      const button=document.createElement('button');button.type='button';
+      button.textContent=label+' ('+(attr>=0?'+':'')+attr+')';
+      button.setAttribute('aria-label','Rolar '+selectedSkill.dataset.skill+' com '+label+' ('+attr+')');
+      button.addEventListener('click',()=>{
+        if(!selectedSkill)return;
+        const name=selectedSkill.dataset.skill,pool=rollExilioSkill(name,key);
+        const output=$('skill-result');output.dataset.result='TOTAL';output.textContent=pool.detail;
+        picker.hidden=true;
+        showSkillDice(pool,'TOTAL',name);
+      });
+      options.append(button);
+    }
+    picker.hidden=false;
+    options.querySelector('button')?.focus();
   });
   
   let diceTimer=null,diceURL=null;
