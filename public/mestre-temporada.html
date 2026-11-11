@@ -551,7 +551,7 @@
                 <p class="master-bestiary-description">Modelos de referência não oficiais. Ao importar, revise atributos, perícias e Matrizes do Exílio 3.0 antes de usar na sessão. Os originais continuam preservados.</p>
                 <div class="master-bestiary-filters" role="search" aria-label="Filtrar criaturas do bestiário">
                     <input id="bestiary-search" type="search" placeholder="Pesquisar criatura..." aria-label="Pesquisar nome de criatura">
-                    <select id="bestiary-element" aria-label="Filtrar por elemento"><option value="">Todos os elementos</option></select>
+                    <select id="bestiary-element" aria-label="Filtrar elemento da referência original"><option value="">Elementos das referências</option></select>
                     <select id="bestiary-source" aria-label="Filtrar por origem"><option value="">Todas as origens</option></select>
                     <select id="bestiary-tier" aria-label="Filtrar por nível de ameaça"><option value="">Todas as ameaças</option></select>
                 </div>
@@ -946,7 +946,6 @@
         let masterBook3DInitialized = false;
         let masterBookFitToken = 0;
         const masterClueCutoutCache = new Map();
-        const monsterD20Table = {1:{n:20,b:99,e:99},2:{n:19,b:20,e:99},3:{n:18,b:20,e:99},4:{n:17,b:19,e:99},5:{n:16,b:19,e:20},6:{n:15,b:18,e:20},7:{n:14,b:18,e:20},8:{n:13,b:17,e:20},9:{n:12,b:17,e:20},10:{n:11,b:16,e:19},11:{n:10,b:16,e:19},12:{n:9,b:15,e:19},13:{n:8,b:15,e:19},14:{n:7,b:14,e:19},15:{n:6,b:14,e:18},16:{n:5,b:13,e:18},17:{n:4,b:13,e:18},18:{n:3,b:12,e:18},19:{n:2,b:12,e:18},20:{n:1,b:11,e:18}};
 
         function normalizeTableCode(value) {
             const normalized = String(value || 'PADRAO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
