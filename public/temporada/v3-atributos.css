@@ -259,136 +259,160 @@ body.season-rulebook-v3 #sheet > #portrait-stage .portrait-image[hidden]{
   display:none!important;
 }
 
-/* Exílio 3.0 — VIDA e MENTAL em barras ornamentais, exclusivas da T2. */
+/* Exílio 3.0 — medidores limpos e alinhados da segunda temporada. */
 body.season-rulebook-v3 #sheet > section.resource-widget[aria-label]{
   position:absolute!important;
   display:block!important;
   visibility:visible!important;
   pointer-events:auto!important;
   z-index:45!important;
-  isolation:isolate;
-  height:52px!important;
+  height:48px!important;
   margin:0!important;
   padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  isolation:isolate;
   font-family:Georgia,'Times New Roman',serif!important;
-  filter:drop-shadow(0 3px 8px #000a) drop-shadow(0 0 7px var(--meter-glow));
+  filter:drop-shadow(0 2px 5px #000b) drop-shadow(0 0 5px var(--meter-glow));
 }
 body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Vida"]{
-  left:1210px!important;
-  top:186px!important;
-  width:310px!important;
-  --meter-main:#ff5c48;
-  --meter-deep:#68120f;
-  --meter-soft:#230908;
-  --meter-glow:#c737344a;
-  --meter-edge:#e4a28d;
+  left:1230px!important;
+  top:192px!important;
+  width:294px!important;
+  --meter-main:#f55142;
+  --meter-light:#ffb8a2;
+  --meter-deep:#5b1413;
+  --meter-dark:#170708;
+  --meter-glow:#cf39384d;
 }
 body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Sanidade"]{
-  left:1245px!important;
-  top:260px!important;
-  width:310px!important;
-  --meter-main:#b76fff;
-  --meter-deep:#3d1a62;
-  --meter-soft:#190d26;
-  --meter-glow:#8d4ccc55;
-  --meter-edge:#c5a2e9;
+  left:1230px!important;
+  top:266px!important;
+  width:294px!important;
+  --meter-main:#ad70f3;
+  --meter-light:#e0bcff;
+  --meter-deep:#402361;
+  --meter-dark:#140b20;
+  --meter-glow:#9655d64f;
 }
-/* Tarja com nome, luz e contorno ligados à mesma peça do medidor. */
-body.season-rulebook-v3 #sheet > section.resource-widget[aria-label]::before{
-  content:attr(data-meter-title);
+/* O nome e o ícone agora são elementos reais: sem emoji nem glifo quadrado. */
+body.season-rulebook-v3 #sheet .resource-widget .resource-heading{
   position:absolute!important;
-  left:-154px!important;
-  top:4px!important;
   box-sizing:border-box!important;
-  width:166px!important;
-  height:44px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  padding:0 8px 0 40px!important;
-  background:
-    linear-gradient(0deg,transparent 0, #ffffff16 50%,transparent 100%) center / 100% 1px no-repeat,
-    linear-gradient(180deg,#ffffff19 0%,transparent 43%),
-    linear-gradient(100deg,#12090e 0%,var(--meter-soft) 70%,var(--meter-deep) 100%)!important;
-  border-top:1px solid var(--meter-edge)!important;
-  border-bottom:1px solid var(--meter-main)!important;
-  border-radius:5px 0 0 5px!important;
-  color:#fff0e6!important;
-  text-align:center!important;
-  font:900 23px/1 Georgia,'Times New Roman',serif!important;
-  letter-spacing:.035em!important;
-  text-shadow:0 1px 4px #000,0 0 12px var(--meter-glow)!important;
-  box-shadow:inset 0 1px 0 #ffffff20,0 0 10px var(--meter-glow)!important;
-  pointer-events:none!important;
-}
-/* Ícones anatômicos discretos e monocromáticos. */
-body.season-rulebook-v3 #sheet > section.resource-widget[aria-label]::after{
-  position:absolute!important;
-  left:-164px!important;
+  left:-163px!important;
   top:0!important;
-  display:grid!important;
-  place-items:center!important;
-  width:61px!important;
-  height:52px!important;
-  font:40px/1 'Segoe UI Emoji','Apple Color Emoji',sans-serif!important;
-  filter:grayscale(1) brightness(1.6) contrast(1.08) drop-shadow(0 1px 2px #000)!important;
+  width:172px!important;
+  height:48px!important;
+  margin:0!important;
+  padding:0 12px!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:11px!important;
+  z-index:3!important;
   pointer-events:none!important;
+  background:linear-gradient(180deg,#231417 0%,var(--meter-dark) 52%,#090708 100%)!important;
+  border:1px solid var(--meter-main)!important;
+  border-right:0!important;
+  border-radius:8px 0 0 8px!important;
+  box-shadow:inset 0 1px 0 #ffffff19,inset 0 -2px 0 var(--meter-deep),0 0 8px var(--meter-glow)!important;
 }
-body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Vida"]::after{content:'🫀'}
-body.season-rulebook-v3 #sheet > section.resource-widget[aria-label="Sanidade"]::after{content:'🧠'}
+body.season-rulebook-v3 #sheet .resource-widget .resource-heading::after{
+  content:''!important;
+  position:absolute!important;
+  left:12px!important;
+  right:9px!important;
+  bottom:5px!important;
+  height:1px!important;
+  background:linear-gradient(90deg,transparent,var(--meter-main),transparent)!important;
+  opacity:.8;
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-heading svg{
+  box-sizing:border-box!important;
+  flex:0 0 30px!important;
+  display:block!important;
+  width:30px!important;
+  height:30px!important;
+  fill:none!important;
+  stroke:var(--meter-light)!important;
+  stroke-width:1.7!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  filter:drop-shadow(0 0 3px var(--meter-glow));
+}
+body.season-rulebook-v3 #sheet .resource-widget .resource-heading span{
+  flex:1 1 auto!important;
+  display:block!important;
+  min-width:0!important;
+  color:#fff2e8!important;
+  font:900 22px/1 Georgia,'Times New Roman',serif!important;
+  letter-spacing:.02em!important;
+  text-align:left!important;
+  white-space:nowrap!important;
+  text-shadow:0 1px 3px #000c!important;
+}
+/* Elimina os antigos pseudoelementos com emojis do desenho anterior. */
+body.season-rulebook-v3 #sheet > section.resource-widget[aria-label]::before,
+body.season-rulebook-v3 #sheet > section.resource-widget[aria-label]::after{
+  content:none!important;
+  display:none!important;
+}
 body.season-rulebook-v3 #sheet .resource-widget .resource-bar{
+  box-sizing:border-box!important;
   position:absolute!important;
   inset:0!important;
-  box-sizing:border-box!important;
+  display:block!important;
   width:100%!important;
-  height:52px!important;
+  height:48px!important;
   overflow:hidden!important;
-  border:1px solid var(--meter-edge)!important;
-  border-radius:28px!important;
-  clip-path:polygon(0 50%,6% 0,94% 0,100% 50%,94% 100%,6% 100%);
-  background:linear-gradient(180deg,var(--meter-deep),var(--meter-soft) 87%)!important;
-  box-shadow:inset 0 1px 0 #ffffff45,inset 0 -2px 7px #0007,0 0 16px var(--meter-glow)!important;
+  border:1px solid var(--meter-main)!important;
+  border-radius:0 25px 25px 0!important;
+  background:linear-gradient(180deg,var(--meter-deep),var(--meter-dark))!important;
+  box-shadow:inset 0 1px 0 #ffffff32,inset 0 -2px 5px #0009,0 0 9px var(--meter-glow)!important;
+  z-index:0!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-fill{
   position:relative!important;
   display:block!important;
   height:100%!important;
   background:
-    linear-gradient(180deg,#ffffff33 0%,transparent 38%),
-    linear-gradient(180deg,var(--meter-main) 0%,var(--meter-deep) 82%)!important;
-  box-shadow:inset 0 1px 0 #ffffff50,inset 0 -5px 12px #0007,0 0 16px var(--meter-glow)!important;
+    linear-gradient(180deg,#ffffff36 0%,transparent 40%),
+    linear-gradient(180deg,var(--meter-main) 0%,var(--meter-deep) 92%)!important;
+  box-shadow:inset 0 2px 0 #ffffff29,inset 0 -5px 9px #0006!important;
   transition:width .25s ease!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-fill::after{
   content:''!important;
   position:absolute!important;
   inset:0!important;
+  background:linear-gradient(180deg,#ffffff0e,transparent 52%)!important;
   pointer-events:none!important;
-  background:
-    linear-gradient(180deg,#ffffff1b,transparent 50%),
-    repeating-linear-gradient(110deg,transparent 0 19px,#ffffff08 19px 20px,transparent 20px 38px)!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-bar::after{
   content:''!important;
   position:absolute!important;
-  inset:1px 15px auto!important;
-  height:2px!important;
+  left:4px!important;
+  right:20px!important;
+  top:1px!important;
+  height:1px!important;
+  background:linear-gradient(90deg,transparent,var(--meter-light),transparent)!important;
+  opacity:.8!important;
   pointer-events:none!important;
-  background:linear-gradient(90deg,transparent,var(--meter-edge),transparent)!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-controls{
-  display:grid!important;
   position:absolute!important;
   inset:0!important;
   box-sizing:border-box!important;
-  grid-template-columns:34px minmax(0,1fr) 14px minmax(0,1fr) 34px!important;
+  display:grid!important;
+  grid-template-columns:31px minmax(0,1fr) 12px minmax(0,1fr) 31px!important;
+  width:100%!important;
+  height:48px!important;
   align-items:center!important;
   justify-items:center!important;
-  width:100%!important;
-  height:52px!important;
   margin:0!important;
-  padding:0 13px!important;
-  gap:5px!important;
+  padding:0 11px!important;
+  gap:3px!important;
   z-index:2!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-controls input{
@@ -396,154 +420,182 @@ body.season-rulebook-v3 #sheet .resource-widget .resource-controls input{
   display:block!important;
   width:100%!important;
   min-width:0!important;
-  height:36px!important;
-  padding:0 2px!important;
+  height:34px!important;
   margin:0!important;
+  padding:0!important;
   background:transparent!important;
   border:0!important;
   border-radius:0!important;
   box-shadow:none!important;
-  color:#fffaf5!important;
-  font:900 24px/36px Georgia,'Times New Roman',serif!important;
-  text-align:center!important;
-  text-shadow:0 2px 5px #000a!important;
-  appearance:textfield!important;
+  color:#fffaf7!important;
+  font:900 24px/34px Georgia,'Times New Roman',serif!important;
   font-variant-numeric:tabular-nums!important;
+  text-align:center!important;
+  text-shadow:0 1px 4px #000b!important;
+  appearance:textfield!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-controls span{
   color:#fff7f2!important;
-  font:900 24px/1 Georgia,'Times New Roman',serif!important;
-  text-shadow:0 2px 7px #0009!important;
+  font:800 23px/1 Georgia,serif!important;
+  text-shadow:0 1px 4px #000b!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-controls button{
+  box-sizing:border-box!important;
   display:grid!important;
   place-items:center!important;
-  box-sizing:border-box!important;
-  width:34px!important;
-  height:36px!important;
-  min-width:0!important;
-  min-height:0!important;
+  width:29px!important;
+  height:29px!important;
+  min-width:29px!important;
+  min-height:29px!important;
   padding:0!important;
   margin:0!important;
-  border:0!important;
-  border-radius:18px!important;
   background:#0003!important;
-  color:#fff7f2!important;
-  font:900 27px/1 Arial,sans-serif!important;
-  text-shadow:0 2px 6px #0009!important;
-  box-shadow:inset 0 1px 0 #ffffff15!important;
+  border:1px solid #ffffff5e!important;
+  border-radius:50%!important;
+  color:#fff5ed!important;
+  box-shadow:inset 0 1px 0 #ffffff29!important;
+  font:800 21px/1 Arial,sans-serif!important;
+  text-shadow:0 1px 3px #000!important;
   cursor:pointer!important;
-  transition:background-color .15s ease,transform .15s ease!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-controls button:hover{
-  background:#ffffff28!important;
-  transform:scale(1.04);
+  background:#ffffff2d!important;
+  border-color:var(--meter-light)!important;
 }
 body.season-rulebook-v3 #sheet .resource-widget .resource-controls :is(button,input):focus-visible{
-  outline:2px solid #ffe7cc!important;
+  outline:2px solid var(--meter-light)!important;
   outline-offset:2px!important;
-  background:transparent!important;
   box-shadow:none!important;
 }
 @media(prefers-reduced-motion:reduce){
   body.season-rulebook-v3 #sheet .resource-widget .resource-fill{transition:none!important}
-  body.season-rulebook-v3 #sheet .resource-widget .resource-controls button{transition:none!important}
 }
-/* Em telas móveis, os recursos são renderizados fora de #sheet. */
+/* Layout móvel: rótulo dentro da barra e controles ao lado, sem colisão. */
 body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label]{
-  position:relative!important;
-  display:block!important;
   box-sizing:border-box!important;
+  position:relative!important;
+  inset:auto!important;
+  left:auto!important;
+  top:auto!important;
   width:100%!important;
   max-width:100%!important;
-  height:54px!important;
-  padding:0!important;
+  height:50px!important;
   margin:0!important;
-  overflow:visible!important;
-  border:1px solid var(--meter-edge)!important;
-  border-radius:10px!important;
-  background:linear-gradient(100deg,var(--meter-soft),var(--meter-deep))!important;
-  box-shadow:0 0 12px var(--meter-glow),inset 0 1px 0 #ffffff25!important;
+  padding:0!important;
+  border:1px solid var(--meter-main)!important;
+  border-radius:8px!important;
+  background:var(--meter-dark)!important;
+  box-shadow:0 0 8px var(--meter-glow)!important;
   isolation:isolate;
 }
 body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label="Vida"]{
-  --meter-main:#ff5c48;--meter-deep:#68120f;--meter-soft:#230908;
-  --meter-glow:#c737344a;--meter-edge:#e4a28d;
+  --meter-main:#f55142;--meter-light:#ffb8a2;
+  --meter-deep:#5b1413;--meter-dark:#170708;--meter-glow:#cf39384d;
 }
 body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label="Sanidade"]{
-  --meter-main:#b76fff;--meter-deep:#3d1a62;--meter-soft:#190d26;
-  --meter-glow:#8d4ccc55;--meter-edge:#c5a2e9;
+  --meter-main:#ad70f3;--meter-light:#e0bcff;
+  --meter-deep:#402361;--meter-dark:#140b20;--meter-glow:#9655d64f;
 }
-body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label]::before{
-  content:attr(data-meter-title);
-  position:absolute!important;
-  top:0!important;left:0!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  width:92px!important;height:52px!important;
-  color:#fff4eb!important;
-  font:900 15px/1 Georgia,serif!important;
-  text-shadow:0 1px 4px #000!important;
-  z-index:2;
-  pointer-events:none;
-}
-body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label]::after{
-  position:absolute!important;
-  left:5px!important;top:4px!important;
-  font:23px/1 'Segoe UI Emoji','Apple Color Emoji',sans-serif!important;
-  filter:grayscale(1) brightness(1.5)!important;
-  z-index:3;
-  pointer-events:none;
-}
-body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label="Vida"]::after{content:'🫀'}
-body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label="Sanidade"]::after{content:'🧠'}
 body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-bar{
   position:absolute!important;
   inset:0!important;
+  width:100%!important;
+  height:48px!important;
   box-sizing:border-box!important;
-  width:100%!important;height:52px!important;
+  border:0!important;
+  border-radius:7px!important;
   overflow:hidden!important;
-  border:0!important;border-radius:10px!important;
-  background:var(--meter-soft)!important;
+  background:var(--meter-dark)!important;
+  z-index:0!important;
 }
 body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-fill{
-  position:relative!important;height:100%!important;
+  height:100%!important;
   background:linear-gradient(180deg,var(--meter-main),var(--meter-deep))!important;
-  box-shadow:inset 0 2px 0 #ffffff28!important;
 }
-body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls{
-  position:absolute!important;inset:0 0 0 96px!important;
-  display:grid!important;
-  grid-template-columns:29px minmax(0,1fr) 10px minmax(0,1fr) 29px!important;
-  align-items:center!important;
-  gap:2px!important;
-  height:52px!important;
-  padding:0 6px 0 0!important;
-  margin:0!important;
+body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-heading{
+  position:absolute!important;
+  top:0!important;
+  left:0!important;
+  width:112px!important;
+  height:48px!important;
   box-sizing:border-box!important;
-  z-index:2!important;
-}
-body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls input{
-  width:100%!important;min-width:0!important;height:34px!important;
-  background:transparent!important;border:0!important;box-shadow:none!important;
-  padding:0!important;color:white!important;text-align:center!important;
-  font:900 16px/34px Georgia,serif!important;
-  appearance:textfield!important;
-}
-body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls button{
-  width:28px!important;height:34px!important;min-width:0!important;min-height:0!important;
-  border:0!important;border-radius:5px!important;background:#0003!important;
-  color:white!important;font:900 22px/1 Arial,sans-serif!important;
+  z-index:3!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:7px!important;
+  padding:0 7px!important;
+  border:0!important;
+  border-right:1px solid var(--meter-main)!important;
+  border-radius:7px 0 0 7px!important;
+  background:linear-gradient(180deg,var(--meter-deep),var(--meter-dark))!important;
   box-shadow:none!important;
 }
+body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-heading svg{
+  width:22px!important;
+  height:22px!important;
+  flex:0 0 22px!important;
+}
+body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-heading span{
+  font:900 15px/1 Georgia,serif!important;
+}
+body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-heading::after{
+  content:none!important;
+  display:none!important;
+}
+body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls{
+  position:absolute!important;
+  inset:0 0 0 112px!important;
+  box-sizing:border-box!important;
+  display:grid!important;
+  width:auto!important;
+  height:48px!important;
+  grid-template-columns:27px minmax(0,1fr) 9px minmax(0,1fr) 27px!important;
+  align-items:center!important;
+  gap:2px!important;
+  margin:0!important;
+  padding:0 5px!important;
+  z-index:4!important;
+}
+body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls input{
+  width:100%!important;
+  min-width:0!important;
+  height:32px!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  font:900 16px/32px Georgia,serif!important;
+  color:white!important;
+  text-align:center!important;
+}
 body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls span{
-  color:white!important;font:900 18px/1 Georgia,serif!important;
+  color:white!important;
+  font:900 17px/1 Georgia,serif!important;
+}
+body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls button{
+  display:grid!important;
+  place-items:center!important;
+  width:26px!important;
+  height:26px!important;
+  min-width:26px!important;
+  min-height:26px!important;
+  border:1px solid #ffffff65!important;
+  border-radius:50%!important;
+  background:#0003!important;
+  color:white!important;
+  font:900 19px/1 Arial,sans-serif!important;
+  box-shadow:none!important;
 }
 @media(max-width:370px){
-  body.season-rulebook-v3 .mobile-sheet .resource-widget[aria-label]::before{
-    width:81px!important;font-size:12px!important;
+  body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-heading{
+    width:98px!important;
+  }
+  body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-heading span{
+    font-size:13px!important;
   }
   body.season-rulebook-v3 .mobile-sheet .resource-widget .resource-controls{
-    inset:0 0 0 82px!important;
+    inset:0 0 0 98px!important;
   }
 }
 
