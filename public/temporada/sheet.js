@@ -1075,19 +1075,76 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
   $('exilio-rest-short').addEventListener('click',()=>applyExilioRest(false));
   $('exilio-rest-long').addEventListener('click',()=>applyExilioRest(true));
 
+  // A tabela de cada classe usa os mesmos dados do livro já aplicados à evolução.
+  function classIPGainLabels(klass,ip){
+    const book=exilioBook[klass];
+    if(!book)return [];
+    const gains=[];
+    if(ip===1&&klass==='Vanguarda')gains.push('Posturas de Combate: Guarda, Pressão e Investida');
+    for(const ability of book.base){
+      if(ability.ip===ip&&!ability.postura)gains.push(ability.name);
+    }
+    if(ip===1&&klass==='Analista')gains.push('PD: 2 no início da cena, máximo 3');
+    if(ip===6&&klass==='Analista')gains.push('PD: 3 no início da cena, máximo 5');
+    if(ip===2)gains.push('Escolha a especialização: '+Object.keys(book.branches).join(', '));
+    if([2,5,9].includes(ip)){
+      const specialized=Object.entries(book.branches).map(([branch,skills])=>{
+        const ability=skills.find(skill=>skill.ip===ip);
+        return ability?branch+': '+ability.name:null;
+      }).filter(Boolean);
+      if(specialized.length)gains.push('Habilidade da especialização — '+specialized.join(' • '));
+    }
+    if([4,8].includes(ip)){
+      const options=book.choices[ip]||[];
+      if(options.length)gains.push('Escolha 1 aprimoramento: '+options.map(x=>x.name).join(' • '));
+    }
+    if([3,6,9].includes(ip))gains.push('+1 atributo à escolha');
+    if([2,4,7,10].includes(ip))gains.push('2 melhorias de Domínio (nova perícia ou avanço)');
+    return gains;
+  }
+  function classIPProgressionTable(klass){
+    const growth=exilioGrowth[klass];
+    if(!growth||!exilioBook[klass])return null;
+    const wrapper=document.createElement('section');
+    wrapper.className='origin-ip-progression';
+    wrapper.setAttribute('aria-label','Progressão de '+klass+' do IP 1 ao IP 10');
+    const heading=document.createElement('h4');
+    heading.textContent='PROGRESSÃO · IP 1 AO 10';
+    const table=document.createElement('table');
+    const header=document.createElement('thead'),headRow=document.createElement('tr');
+    for(const column of ['IP','PV / PM','Habilidades e melhorias']){
+      const th=document.createElement('th');th.scope='col';th.textContent=column;headRow.append(th);
+    }
+    header.append(headRow);table.append(header);
+    const body=document.createElement('tbody');
+    for(let level=1;level<=10;level++){
+      const row=document.createElement('tr');
+      if(state.origin===klass&&ipLevel()>=level)row.className='origin-ip-reached';
+      const number=document.createElement('th');number.scope='row';number.textContent=String(level);
+      const resources=document.createElement('td');resources.className='origin-ip-resources';
+      resources.textContent='+'+growth[0]+' PV / +'+growth[1]+' PM';
+      const detail=document.createElement('td');
+      detail.className='origin-ip-gains';
+      for(const benefit of classIPGainLabels(klass,level)){
+        const line=document.createElement('span');line.textContent=benefit;detail.append(line);
+      }
+      row.append(number,resources,detail);body.append(row);
+    }
+    table.append(body);
+    const note=document.createElement('p');
+    note.className='origin-ip-footnote';
+    note.textContent='PV e PM indicam o ganho em cada IP, não o total acumulado. As opções de especialização e aprimoramento são alternativas, não ganhos simultâneos.';
+    wrapper.append(heading,table,note);
+    return wrapper;
+  }
   function renderOrigins(){
     refreshAnalystPD();
     const list=$('origin-options');list.replaceChildren();
     for(const entry of originRules){
       const card=document.createElement('article');card.className='origin-card';
       const title=document.createElement('h3');title.textContent=entry.name;const desc=document.createElement('p');desc.textContent=entry.description;card.append(title,desc);
-      // Exílio 3.0: 4 Domínios iniciais são recebidos antes da escolha da classe.
-      const skillInfo=document.createElement('div');skillInfo.className='origin-skill-count';
-      const skillTotal=document.createElement('strong');skillTotal.textContent='4 PERÍCIAS INICIAIS';
-      const skillBreakdown=document.createElement('span');skillBreakdown.textContent='2 da ocupação + 2 à escolha (Praticante +2)';
-      const skillNote=document.createElement('small');skillNote.textContent=entry.name==='Mundano'?'Escolha 2 perícias livres na criação do personagem.':'Ao escolher esta classe no IP 1, mantenha as 4 perícias; não há perícias adicionais.';
-      skillInfo.append(skillTotal,skillBreakdown,skillNote);card.append(skillInfo);
       const rules=document.createElement('ul');for(const text of entry.rules){const li=document.createElement('li');li.textContent=text;rules.append(li);}card.append(rules);
+      if(exilioBook[entry.name])card.append(classIPProgressionTable(entry.name));
       if(Object.keys(entry.progress).length){const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Progressão por IP';details.append(summary);for(const [nex,power] of Object.entries(entry.progress)){const row=document.createElement('p');row.textContent=nex+'% — '+power;if(Number(nex)<=Number(state.nex||0))row.className='origin-unlocked';details.append(row);}card.append(details);}
       const cost=document.createElement('p');cost.className='origin-cost';cost.textContent=entry.cost;card.append(cost);
       const source=document.createElement('small');source.textContent='EXÍLIO 3.0 — Livro Básico de Regras, p. '+entry.page+'.';card.append(source);
