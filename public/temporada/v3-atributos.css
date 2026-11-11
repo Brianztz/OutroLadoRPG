@@ -1252,3 +1252,89 @@ body.season-rulebook-v3 #sheet > #sheet-skills-grid.exilio-skill-tiles .sheet-sk
   padding:0!important;
   transform:translateY(-9px)!important;
 }
+
+/* Exílio T2 — visor dos Pontos de Dedução do Analista ao lado de Habilidades. */
+body.season-rulebook-v3 #exilio-pd-widget[hidden]{
+  display:none!important;
+}
+/* O visor fica na área indicada da arte 1920×909, à direita de HABILIDADES. */
+body.season-rulebook-v3 #sheet > #exilio-pd-widget:not([hidden]){
+  position:absolute!important;
+  left:1755px!important;
+  top:386px!important;
+  width:148px!important;
+  height:44px!important;
+  display:flex!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  z-index:75!important;
+}
+body.season-rulebook-v3 #exilio-pd-widget:not([hidden]){
+  box-sizing:border-box!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:3px!important;
+  padding:4px!important;
+  margin:0!important;
+  background:linear-gradient(180deg,#2c1713,#130b09)!important;
+  border:1px solid #a1462f!important;
+  border-radius:3px!important;
+  box-shadow:inset 0 1px 0 #f5ae8c22,0 2px 7px #0009!important;
+  color:#fff1e7!important;
+  font:800 15px/1 Arial,sans-serif!important;
+}
+body.season-rulebook-v3 #exilio-pd-widget .exilio-pd-label{
+  flex:0 0 auto;
+  color:#f4b28f!important;
+  font:900 16px/1 Georgia,serif!important;
+}
+body.season-rulebook-v3 #exilio-pd-widget output{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  white-space:nowrap!important;
+  text-align:center!important;
+  font:900 15px/1 Georgia,serif!important;
+  font-variant-numeric:tabular-nums!important;
+  color:#fff4e8!important;
+}
+body.season-rulebook-v3 #exilio-pd-widget button{
+  box-sizing:border-box!important;
+  flex:0 0 23px!important;
+  width:23px!important;
+  height:28px!important;
+  min-width:23px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  background:#54281b!important;
+  border:1px solid #9c5439!important;
+  border-radius:2px!important;
+  color:#fff0e3!important;
+  font:900 17px/1 Arial,sans-serif!important;
+  cursor:pointer!important;
+}
+body.season-rulebook-v3 #exilio-pd-widget button:hover:not(:disabled){
+  background:#88402b!important;
+  border-color:#df946f!important;
+}
+body.season-rulebook-v3 #exilio-pd-widget button:disabled{
+  opacity:.4!important;
+  cursor:default!important;
+}
+body.season-rulebook-v3 #exilio-pd-widget button:focus-visible{
+  outline:2px solid #f5c9a4!important;
+  outline-offset:1px!important;
+}
+/* No celular o mesmo contador aparece antes das habilidades, sem duplicar dados. */
+body.season-rulebook-v3 .mobile-sheet #exilio-pd-widget:not([hidden]){
+  position:relative!important;
+  left:auto!important;
+  top:auto!important;
+  display:flex!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  z-index:auto!important;
+  width:175px!important;
+  height:44px!important;
+  margin:8px 0 4px auto!important;
+}
