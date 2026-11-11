@@ -14,7 +14,7 @@
   function buildExilioSkillTable(){
     const grid=$('sheet-skills-grid');
     grid.classList.add('exilio-skill-tables','exilio-skill-tiles');
-    grid.setAttribute('aria-label','Perícias do Exílio. Clique em um card para ver, configurar e rolar.');
+    grid.setAttribute('aria-label','Perícias do Exílio. Clique para rolar escolhendo um atributo; mantenha pressionado para abrir treinamento.');
     grid.replaceChildren();
     for(const name of skillNames){
       const row=document.createElement('article');
@@ -22,7 +22,7 @@
       const btn=document.createElement('button');
       btn.className='sheet-skill-details';btn.type='button';
       btn.setAttribute('aria-label','Abrir perícia '+name);
-      btn.title='Abrir '+name+' para configurar Domínio e escolher atributo ao rolar 2d10';
+      btn.title='Clique esquerdo: teste com escolha de atributo. Segure o botão esquerdo: treinamento e detalhes.';
       const label=document.createElement('strong');label.textContent=name;
       const rank=document.createElement('span');rank.className='sheet-skill-training';rank.textContent='SEM TREINAMENTO';
       const modifier=document.createElement('span');modifier.className='sheet-skill-score';modifier.textContent='0';
@@ -31,7 +31,7 @@
     }
   }
   buildExilioSkillTable();
-  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillAttributes:{},skillBonuses:{},paranormalInfluence:0,exilioBackground:'',exilioAbilitiesNotes:'',exilioProgression:null,exilioResourceLedger:null,exilioPD:null,exilioShortRests:0};
+  const initial={name:'',occupation:'Nenhum',origin:'Mundano',level:1,nex:0,attrs:{forca:0,agilidade:0,vigor:0,intelecto:0,presenca:0,potencia:0,destreza:0,constituicao:0,raciocinio:0,consciencia:0,expressao:0},skills:{},skillDomains:{},skillDomainBases:null,skillAttributes:{},skillBonuses:{},paranormalInfluence:0,exilioBackground:'',exilioAbilitiesNotes:'',exilioProgression:null,exilioResourceLedger:null,exilioPD:null,exilioShortRests:0};
   let state=JSON.parse(JSON.stringify(initial));
   let toastHandle=null;
   const save=()=>{try{localStorage.setItem(window.SeasonContext.stateKey,JSON.stringify(state));window.dispatchEvent(new Event('season:change'));}catch(e){}};
@@ -40,7 +40,8 @@
     const newResources=ensureExilioCreationResources();
     const creationChanged=reconcileExilioCreationAttributes();
     reconcileIPBonuses();
-    if(newResources||creationChanged)save();
+    const occupationDomainsChanged=reconcileOccupationSkillDomains();
+    if(newResources||creationChanged||occupationDomainsChanged)save();
     displayExilioArtAndAbilities();
     displayParanormalInfluence();
     displayResources();
@@ -82,7 +83,7 @@
       el.querySelector('.sheet-skill-training').textContent=rank;
       el.querySelector('.sheet-skill-score').textContent=(modifier>0?'+':'')+modifier;
       const button=el.querySelector('.sheet-skill-details');
-      button.setAttribute('aria-label',name+', '+rank+', bônus sem atributo '+(modifier>=0?'+':'')+modifier+'. Abrir e escolher atributo para rolar.');
+      button.setAttribute('aria-label',name+', '+rank+', bônus sem atributo '+(modifier>=0?'+':'')+modifier+'. Clique para escolher atributo e rolar; segure para treinamento.');
       updateSkillEdgeBadge(el);
     });
   }
@@ -201,11 +202,33 @@
     buttons.append(decrease,dice);
     el.after(buttons);
   });
+  // Clique esquerdo curto rola; manter pressionado (mouse ou toque) abre treinamento.
+  // Via teclado: Enter/Espaço rola, Shift+Enter ou T abre treinamento.
   document.querySelectorAll('[data-skill]').forEach(el=>{
-    el.querySelector('.sheet-skill-details').addEventListener('click',()=>openSkill(el));
+    const button=el.querySelector('.sheet-skill-details');
+    let holdTimer=null,held=false;
+    const stopHold=()=>{if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null;}};
+    button.addEventListener('pointerdown',event=>{
+      if(event.button!==0||!event.isPrimary)return;
+      stopHold();held=false;
+      holdTimer=setTimeout(()=>{holdTimer=null;held=true;openSkill(el);},550);
+    });
+    for(const type of ['pointerup','pointercancel','pointerleave'])button.addEventListener(type,stopHold);
+    button.addEventListener('contextmenu',event=>{if(event.pointerType==='touch')event.preventDefault();});
+    button.addEventListener('click',event=>{
+      stopHold();
+      if(held){event.preventDefault();held=false;return;}
+      if(event.button!==0)return;
+      openQuickSkillRoll(el);
+    });
+    button.addEventListener('keydown',event=>{
+      if((event.key==='Enter'&&event.shiftKey)||event.key.toLowerCase()==='t'){
+        event.preventDefault();stopHold();openSkill(el);
+      }
+    });
   });
   $('char-name').addEventListener('input',e=>{state.name=e.target.value.toUpperCase().slice(0,22);save();});
-  $('panel-occupation').addEventListener('change',e=>{state.occupation=e.target.value;display();save()});
+  $('panel-occupation').addEventListener('change',e=>{state.occupation=e.target.value;display();save();});
   // Mesmo controle dos atributos: clique esquerdo aumenta, direito diminui.
   const changeLevel=delta=>{
     state.level=Math.max(1,Math.min(20,(Number(state.level)||1)+delta));
@@ -231,6 +254,40 @@
     if(name!=='Nenhum'&&!occupationNames.has(name)&&![...occupationPanelSelect.options].some(o=>o.value===name)){
       const option=document.createElement('option');option.value=name;option.textContent=name+' (anterior)';occupationPanelSelect.append(option);
     }
+  }
+  // A ocupação fornece dois Domínios em Praticante (+2), sem apagar treinos próprios.
+  // Para fichas antigas, os graus existentes são preservados como base independente.
+  function occupationDomainNames(name=state.occupation){
+    const selected=occupations.find(o=>o.name===name);
+    if(!selected)return [];
+    return [...new Set(selected.domains.split('•')
+      .map(part=>part.trim().replace(/\s*\([^)]*\)/g,'').toLocaleUpperCase('pt-BR'))
+      .filter(skill=>skillNames.includes(skill)))];
+  }
+  function reconcileOccupationSkillDomains(){
+    let changed=false;
+    if(!state.skillDomainBases||typeof state.skillDomainBases!=='object'||Array.isArray(state.skillDomainBases)){
+      state.skillDomainBases={...(state.skillDomains||{})};
+      changed=true;
+    }
+    state.skillDomains=state.skillDomains||{};
+    state.skills=state.skills||{};
+    const granted=new Set(occupationDomainNames());
+    for(const skill of skillNames){
+      const own=Math.max(0,Number(state.skillDomainBases[skill])||0);
+      const current=Math.max(own,granted.has(skill)?2:0);
+      if((Number(state.skillDomains[skill])||0)!==current){state.skillDomains[skill]=current;changed=true;}
+      if((Number(state.skills[skill])||0)!==current){state.skills[skill]=current;changed=true;}
+    }
+    return changed;
+  }
+  function setIndependentSkillDomain(name,amount){
+    if(!state.skillDomainBases)reconcileOccupationSkillDomains();
+    state.skillDomainBases[name]=amount;
+    const current=Math.max(amount,occupationDomainNames().includes(name)?2:0);
+    state.skillDomains[name]=current;
+    state.skills=state.skills||{};
+    state.skills[name]=current;
   }
   const choose=(name)=>{state.occupation=name;display();save();$('occupation-dialog').close();};
   $('occupation-none').addEventListener('click',()=>choose('Nenhum'));
@@ -291,9 +348,39 @@
     $('skill-name').textContent=name;$('skill-description').textContent=skillDescriptions[skillNames.indexOf(name)]||'';
     $('skill-training').value=String(Number(state.skillDomains?.[name])||0);
     $('skill-bonus').value=Number(state.skillBonuses?.[name])||0;
+    const occupationHint=$('skill-occupation-hint'),isGranted=occupationDomainNames().includes(name);
+    occupationHint.hidden=!isGranted;
+    occupationHint.textContent=isGranted?'A ocupação '+state.occupation+' concede Praticante (+2) nesta perícia. Esse benefício será retirado ao mudar de ocupação, salvo se você tiver treinamento próprio.':'';
     $('skill-roll-attribute-picker').hidden=true;
     $('skill-result').textContent='';refreshSkill();$('skill-drawer').showModal();
   }
+  // Seletor rápido: não abre nem altera o painel de treinamento.
+  function openQuickSkillRoll(el){
+    const name=el.dataset.skill,dialog=$('skill-quick-roll-dialog'),options=$('skill-quick-roll-options');
+    $('skill-quick-roll-title').textContent=name+' · Escolha o atributo';
+    options.replaceChildren();
+    for(const [key,label] of Object.entries(newAttributeNames)){
+      const value=Number(state.attrs[key])||0;
+      const button=document.createElement('button');
+      button.type='button';
+      button.textContent=label+' ('+(value>=0?'+':'')+value+')';
+      button.setAttribute('aria-label','Rolar '+name+' com '+label);
+      button.addEventListener('click',()=>{
+        const pool=rollExilioSkill(name,key);
+        dialog.close();
+        showSkillDice(pool,'TOTAL',name);
+      });
+      options.append(button);
+    }
+    dialog.showModal();
+    options.querySelector('button')?.focus();
+  }
+  $('skill-quick-roll-close').addEventListener('click',()=>$('skill-quick-roll-dialog').close());
+  $('skill-quick-roll-dialog').addEventListener('click',event=>{
+    if(event.target!==$('skill-quick-roll-dialog'))return;
+    const box=event.target.getBoundingClientRect();
+    if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)event.target.close();
+  });
   function saveSkillSettings(){
     if(!selectedSkill)return;
     const name=selectedSkill.dataset.skill;
@@ -311,9 +398,8 @@
     }
     const bonus=Math.max(-99,Math.min(99,Math.trunc(Number($('skill-bonus').value)||0)));
     state.skillDomains=state.skillDomains||{};state.skillBonuses=state.skillBonuses||{};
-    state.skillDomains[name]=[0,2,4,6].includes(requested)?requested:previous;
+    setIndependentSkillDomain(name,[0,2,4,6].includes(requested)?requested:previous);
     state.skillBonuses[name]=bonus;
-    state.skills[name]=state.skillDomains[name];
     $('skill-bonus').value=bonus;
     save();display();refreshSkill();$('skill-result').textContent='';return true;
   }
@@ -616,8 +702,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     if(value===6||value===2&&level<4||value===4&&level<7)return;
     if(value===4&&skillNames.filter(n=>Number(state.skillDomains?.[n])===6).length>=2)return;
     p.domains[level]=[...chosen,{name,from:value,to:value+2}];
-    state.skillDomains=state.skillDomains||{};state.skills=state.skills||{};
-    state.skillDomains[name]=value+2;state.skills[name]=value+2;
+    setIndependentSkillDomain(name,value+2);
     display();save();renderProgressChoices();
   }
   function renderProgressChoices(){
