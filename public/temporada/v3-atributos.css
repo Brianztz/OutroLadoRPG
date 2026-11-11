@@ -22,8 +22,8 @@ body.season-rulebook-v3 #sheet::after{
   background-size:1920px 909px;
   background-position:-1028px -160px;
   background-repeat:no-repeat;
-  -webkit-mask-image:radial-gradient(ellipse closest-side at center,#000 55%,transparent 100%);
-  mask-image:radial-gradient(ellipse closest-side at center,#000 55%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse farthest-corner at center,#000 76%,transparent 100%);
+  mask-image:radial-gradient(ellipse farthest-corner at center,#000 76%,transparent 100%);
   pointer-events:none;
   z-index:2;
 }
