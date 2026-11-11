@@ -1194,3 +1194,60 @@ body.season-rulebook-v3 #combat-area #combat-move-squares{
     font-size:13px!important;
   }
 }
+
+/* Exílio 3.0 — nome do personagem e alinhamento dos números das perícias (T2). */
+/* Nome visível no espaço superior da arte, com o mesmo campo e salvamento já existentes. */
+body.season-rulebook-v3 #sheet > #char-name{
+  position:absolute!important;
+  left:150px!important;
+  top:34px!important;
+  width:674px!important;
+  height:82px!important;
+  box-sizing:border-box!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  z-index:75!important;
+  margin:0!important;
+  padding:0 18px!important;
+  background:transparent!important;
+  border:0!important;
+  outline:0;
+  border-radius:3px!important;
+  box-shadow:none!important;
+  color:#f6e9df!important;
+  caret-color:#e66e4c!important;
+  text-align:center!important;
+  text-transform:uppercase!important;
+  font:900 42px/82px Georgia,'Times New Roman',serif!important;
+  letter-spacing:.035em!important;
+  text-shadow:0 2px 4px #000!important;
+}
+body.season-rulebook-v3 #sheet > #char-name::placeholder{
+  color:#be9e91!important;
+  opacity:.76!important;
+  font:700 27px/82px Georgia,'Times New Roman',serif!important;
+  letter-spacing:.06em!important;
+  text-shadow:0 1px 3px #000!important;
+}
+body.season-rulebook-v3 #sheet > #char-name:hover{
+  background:rgba(45,19,14,.18)!important;
+}
+body.season-rulebook-v3 #sheet > #char-name:focus-visible{
+  background:rgba(45,19,14,.28)!important;
+  outline:2px solid #bd533b!important;
+  outline-offset:-3px!important;
+}
+/* Centralização visual do modificador dentro da região inferior dos cards.
+   O conteúdo, a pontuação e as rolagens não são alterados. */
+body.season-rulebook-v3 #sheet > #sheet-skills-grid.exilio-skill-tiles .sheet-skill-score{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  align-self:stretch!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  text-align:center!important;
+  padding:0 0 8px!important;
+}
