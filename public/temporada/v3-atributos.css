@@ -1424,3 +1424,95 @@ body.season-rulebook-v3 #skill-drawer #skill-roll-attribute-options button:is(:h
     grid-template-columns:minmax(0,1fr);
   }
 }
+
+/* Exílio T2 — gestos das perícias e rolagem rápida sem abrir treinamento. */
+body.season-rulebook-v3 #sheet-skills-grid.exilio-skill-tiles .sheet-skill-details{
+  touch-action:manipulation!important;
+  -webkit-touch-callout:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+body.season-rulebook-v3 #skill-drawer #skill-occupation-hint:not([hidden]){
+  padding:9px 11px;
+  margin:9px 0 13px;
+  color:#f8d6ba;
+  background:#382116;
+  border:1px solid #83513a;
+  border-left:3px solid #d98956;
+  border-radius:3px;
+  font:12px/1.5 Arial,sans-serif;
+}
+body.season-rulebook-v3 #skill-quick-roll-dialog{
+  position:fixed;
+  inset:0;
+  margin:auto;
+  width:min(460px,calc(100vw - 26px));
+  max-width:calc(100vw - 26px);
+  max-height:calc(100dvh - 28px);
+  overflow-y:auto;
+  padding:20px;
+  box-sizing:border-box;
+  border:1px solid #9c4c35;
+  border-radius:8px;
+  background:linear-gradient(150deg,#271611,#100b0a);
+  color:#f7e8dc;
+  box-shadow:0 14px 54px #000c;
+  font:14px/1.5 Arial,sans-serif;
+}
+body.season-rulebook-v3 #skill-quick-roll-dialog::backdrop{
+  background:#000b;
+}
+body.season-rulebook-v3 #skill-quick-roll-dialog header{
+  display:flex;
+  gap:12px;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+body.season-rulebook-v3 #skill-quick-roll-dialog header small{
+  color:#c68b74;
+  letter-spacing:.08em;
+  font:800 10px Arial,sans-serif;
+}
+body.season-rulebook-v3 #skill-quick-roll-dialog h2{
+  margin:5px 0 10px;
+  color:#f7c4a2;
+  font:800 23px Georgia,serif;
+}
+body.season-rulebook-v3 #skill-quick-roll-dialog > p{
+  margin:7px 0 15px;
+  color:#d9b8a9;
+}
+body.season-rulebook-v3 #skill-quick-roll-close{
+  flex:0 0 auto;
+  width:34px;
+  height:34px;
+  background:#462117;
+  border:1px solid #92503b;
+  border-radius:4px;
+  color:#f8e2d8;
+  font-size:19px;
+  cursor:pointer;
+}
+body.season-rulebook-v3 #skill-quick-roll-options{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+body.season-rulebook-v3 #skill-quick-roll-options button{
+  min-height:47px;
+  padding:9px 5px;
+  background:linear-gradient(180deg,#5b2d1f,#301912);
+  border:1px solid #a45c3f;
+  border-radius:4px;
+  color:#fff0e4;
+  font:800 12px/1.3 Arial,sans-serif;
+  overflow-wrap:anywhere;
+  cursor:pointer;
+}
+body.season-rulebook-v3 #skill-quick-roll-options button:hover,
+body.season-rulebook-v3 #skill-quick-roll-options button:focus-visible,
+body.season-rulebook-v3 #skill-quick-roll-close:focus-visible{
+  background:#783823;
+  outline:2px solid #eeb58f;
+  outline-offset:1px;
+}
