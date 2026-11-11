@@ -1516,3 +1516,10 @@ body.season-rulebook-v3 #skill-quick-roll-close:focus-visible{
   outline:2px solid #eeb58f;
   outline-offset:1px;
 }
+
+/* Exílio T2 — simplificar a janela de escolha de classe. */
+body.season-rulebook-v3 #origin-dialog > .origin-note,
+body.season-rulebook-v3 #origin-dialog > #exilio-class-tools,
+body.season-rulebook-v3 #origin-dialog > #origin-none{
+  display:none!important;
+}
