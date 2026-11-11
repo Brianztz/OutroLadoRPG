@@ -1,12 +1,12 @@
 /* NOVO LIVRO DE REGRAS — Ficha da 2ª temporada, etapa 1.
-   Fundo = JPEG ORIGINAL enviado pelo Mestre, sem recompressão (1920×909).
+   Fundo = nova arte enviada pelo Mestre (proporção 1920×909).
    Usa como fundo a arte enviada pelo Mestre. Apenas os seis atributos
    permanecem na tela: dados/controles antigos não são apagados. */
 body.season-rulebook-v3{background:#030303;min-height:100dvh}
 body.season-rulebook-v3 .sheet{
   width:1920px!important;
   height:909px!important;
-  background:#030303 url('/temporada/assets/fundo-exilio-t2-20261110.webp') left top/1920px 909px no-repeat!important;
+  background:#030303 url('/temporada/assets/fundo-exilio-t2-20261111.webp') left top/1920px 909px no-repeat!important;
   box-shadow:none!important;
 }
 /* Renderizar exclusivamente os atributos, preservando os nós do jogo
