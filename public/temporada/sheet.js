@@ -931,9 +931,10 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
   // Pontos de Dedução não são Pontos Mentais: o Analista começa cenas com 2 PD
   // (máximo 3); no IP 6 passa a começar com 3 PD (máximo 5).
   function refreshAnalystPD(){
-    const panel=$('exilio-analyst-pd');if(!panel)return;
+    const panel=$('exilio-analyst-pd'),widget=$('exilio-pd-widget');if(!panel||!widget)return;
     const eligible=state.origin==='Analista'&&ipLevel()>=1;
     panel.hidden=!eligible;
+    widget.hidden=!eligible;
     if(!eligible)return;
     const max=ipLevel()>=6?5:3;
     const initialPD=ipLevel()>=6?3:2;
@@ -942,10 +943,11 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
     $('exilio-pd-current').textContent=String(state.exilioPD.current);
     $('exilio-pd-max').textContent=String(max);
     $('exilio-pd-guide').textContent='Início de cena: '+initialPD+' PD · máximo '+max+' PD. Pontos de Dedução não substituem PM.';
-    $('exilio-pd-minus').disabled=state.exilioPD.current===0;
-    $('exilio-pd-plus').disabled=state.exilioPD.current===max;
+    $('exilio-pd-sheet-value').textContent=state.exilioPD.current+' / '+max;
+    for(const id of ['exilio-pd-minus','exilio-pd-sheet-minus'])$(id).disabled=state.exilioPD.current===0;
+    for(const id of ['exilio-pd-plus','exilio-pd-sheet-plus'])$(id).disabled=state.exilioPD.current===max;
   }
-  for(const [id,delta] of [['exilio-pd-minus',-1],['exilio-pd-plus',1]]){
+  for(const [id,delta] of [['exilio-pd-minus',-1],['exilio-pd-plus',1],['exilio-pd-sheet-minus',-1],['exilio-pd-sheet-plus',1]]){
     $(id).addEventListener('click',()=>{
       if(state.origin!=='Analista')return;
       refreshAnalystPD();
