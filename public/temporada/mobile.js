@@ -74,6 +74,7 @@
     }
     move(byId('skill-edge-toolbar'),byId('mobile-edges-mount'));
     move(byId('sheet-skills-grid'),byId('mobile-skills-mount'));
+    move(byId('exilio-pd-widget'),byId('mobile-abilities-mount'));
     move(byId('exilio-abilities-panel'),byId('mobile-abilities-mount'));
     move(byId('combat-area'),byId('mobile-combat-mount'));
     // O mesmo botão é recolocado no painel em telas móveis.
