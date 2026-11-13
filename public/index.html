@@ -329,6 +329,9 @@
                     return;
                 }
 
+                // Se um jogador removido estiver usando o convite para voltar,
+                // uma falha temporária não deve bloquear novas tentativas de entrada.
+                if (isPlayerInvite && role === 'player') inviteJoinStarted = false;
                 showAuthMessage(message, true);
                 setPortalBusy(false);
             }
