@@ -174,6 +174,7 @@
     };
     const base=2*tier;
     const skills={
+      luta:Math.min(20,base+attrs.for),
       fortitude:Math.min(20,base+attrs.vig),
       reflexos:Math.min(20,base+attrs.agi),
       vontade:Math.min(20,base+attrs.pre),
