@@ -3990,7 +3990,7 @@
             code = String(code || '').trim().toUpperCase();
             const player = connectedPlayers.get(code);
             const playerName = String(player && player.nome || 'este jogador');
-            if (!code || !confirm(`Remover ${playerName} da mesa ${masterTableCode}? O jogador será desconectado e precisará entrar na mesa novamente para voltar.`)) return;
+            if (!code || !confirm(`Remover ${playerName} da mesa ${masterTableCode}? O jogador será desconectado e poderá voltar usando um novo convite do mestre.`)) return;
 
             const button = document.querySelector(`#player-${CSS.escape(code)} .btn-remove-player`);
             if (button) {
@@ -4009,6 +4009,13 @@
                     throw new Error('O cliente Firebase precisa ser recarregado para remover o acesso da mesa.');
                 }
                 await OLFirebase.removeTablePlayer(masterTableCode, code);
+                if (!isSeasonMaster) {
+                    // Depois da expulsão, facilite o reingresso autorizado pela
+                    // mesma mesa e pelo portal Google/Firebase da 1ª temporada.
+                    openMasterInvite();
+                    const inviteStatus = document.getElementById('master-invite-status');
+                    inviteStatus.textContent = playerName + ' foi removido. Gere um novo convite para que entre novamente e apareça no overlay.';
+                }
             } catch (error) {
                 console.error('O jogador foi desconectado, mas o vínculo da mesa não pôde ser removido:', error);
                 alert(`O jogador foi desconectado agora, mas não foi possível remover o acesso salvo no Firebase. ${error && error.message ? error.message : 'Tente novamente após recarregar a página.'}`);
