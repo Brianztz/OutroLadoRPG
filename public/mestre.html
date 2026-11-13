@@ -460,6 +460,101 @@
         @keyframes roll-entry-in { from { opacity: 0; transform: translateX(12px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
         @media (max-width: 850px) { body, body.combat-mode-active { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 0; } .initiative-drawer { top: 10px; right: 10px; width: calc(100vw - 20px); height: calc(100vh - 20px); } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields, .clue-audio-fields { grid-template-columns: 1fr; } .clue-type-switch { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
+    
+        /* Controles minimalistas: Escudo do Mestre da primeira temporada. */
+        .master-top-actions { gap: 6px; }
+        .master-top-actions > button {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 5px; min-height: 34px; padding: 7px 11px;
+            border: 1px solid rgba(147,185,211,.26);
+            border-radius: 6px;
+            background: rgba(12,25,37,.72);
+            color: #d8e5ee;
+            font-family: inherit; font-size: .73rem; font-weight: 600;
+            line-height: 1.25; letter-spacing: .02em;
+            text-transform: none; text-shadow: none;
+            box-shadow: none; filter: none; transform: none;
+            cursor: pointer;
+            transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+        }
+        .master-top-actions > button:hover:not(:disabled) {
+            background: rgba(28,51,67,.87);
+            border-color: rgba(139,204,246,.56);
+            color: #f1f8fc;
+            box-shadow: none; transform: none;
+        }
+        .master-top-actions > button:active:not(:disabled) {
+            background: rgba(22,43,58,.95);
+            box-shadow: none; transform: none;
+        }
+        .master-top-actions > button:focus-visible,
+        .master-tabs > .master-tab-button:focus-visible {
+            outline: 2px solid #8bccf6; outline-offset: 2px;
+        }
+        .master-top-actions > button:disabled { opacity: .48; cursor: not-allowed; }
+        .master-top-actions > .master-table-button {
+            border-color: rgba(116,185,230,.35);
+            color: #a7d7f2;
+            background: rgba(13,42,60,.48);
+        }
+        .master-top-actions > .master-table-button span {
+            color: inherit; letter-spacing: .03em;
+        }
+        .master-top-actions > .master-invite-button {
+            border-color: rgba(105,175,162,.30);
+            color: #addad0;
+            background: rgba(13,45,42,.38);
+        }
+        .master-top-actions > .btn-create-catalog-entry {
+            border-color: rgba(116,185,230,.32);
+            color: #b5dcf3;
+            background: rgba(14,43,60,.42);
+        }
+        .master-top-actions > .combat-mode-button {
+            border-color: rgba(211,117,125,.34);
+            color: #d8a3aa;
+            background: rgba(62,24,35,.28);
+        }
+        .master-top-actions > .combat-mode-button:hover:not(:disabled) {
+            border-color: rgba(229,146,157,.58);
+            background: rgba(85,38,49,.46);
+            color: #f1c4ca;
+        }
+        .master-top-actions > .combat-mode-button.active {
+            border-color: rgba(240,124,139,.70);
+            background: rgba(105,35,49,.74);
+            color: #ffe4e7;
+            box-shadow: none; animation: none;
+        }
+        .master-tabs { gap: 5px; }
+        .master-tabs > .master-tab-button {
+            min-height: 32px; padding: 7px 12px;
+            border: 1px solid transparent; border-radius: 6px;
+            background: transparent; color: #9db0c0;
+            font-weight: 600; letter-spacing: .02em;
+            box-shadow: none; text-shadow: none; transform: none;
+            transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+        }
+        .master-tabs > .master-tab-button:hover {
+            background: rgba(139,204,246,.065);
+            color: #e0eef7;
+            box-shadow: none; transform: none;
+        }
+        .master-tabs > .master-tab-button.active {
+            border-color: rgba(139,204,246,.30);
+            background: rgba(139,204,246,.10);
+            color: #c4e5f7;
+            box-shadow: none;
+        }
+        @media (max-width: 640px) {
+            .master-top-actions { gap: 5px; }
+            .master-top-actions > button { min-height: 34px; padding: 7px 9px; font-size: .7rem; }
+            .master-tabs > .master-tab-button { padding: 7px 9px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .master-top-actions > button,
+            .master-tabs > .master-tab-button { transition: none; }
+        }
     </style>
     <link rel="stylesheet" href="/bestiary-outrolado.css?v=1">
 </head>
