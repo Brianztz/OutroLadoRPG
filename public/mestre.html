@@ -774,8 +774,21 @@
         <div class="monsters-toolbar">
             <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
             <div class="monsters-toolbar-actions">
+                <button id="master-physical-dice-toggle" class="master-dice-mode-button" type="button" aria-pressed="true" onclick="toggleMasterPhysicalDiceMode()" title="Alternar entre dados físicos e rolagem digital">🎲 DADOS FÍSICOS</button>
                 <button id="master-bestiary-open" class="master-bestiary-open" type="button" onclick="openMasterBestiary()" title="Abrir catálogo de criaturas" aria-label="Abrir catálogo de criaturas" aria-haspopup="dialog" aria-controls="master-bestiary-modal"><span aria-hidden="true">📖</span></button>
                 <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
+            </div>
+        </div>
+        <div class="master-quick-reference" aria-label="Legenda das categorias de resultado">
+            <div class="master-quick-reference-copy">
+                <strong>CONSULTA DE TESTES</strong>
+                <span id="master-dice-mode-hint">Role seus dados físicos e compare o maior resultado com as categorias da ficha.</span>
+            </div>
+            <div class="master-quick-reference-legend">
+                <span class="master-legend-normal">NORMAL</span>
+                <span class="master-legend-good">BOM</span>
+                <span class="master-legend-extreme">EXTREMO</span>
+                <span class="master-legend-critical">20 natural = CRÍTICO</span>
             </div>
         </div>
         <dialog id="master-bestiary-modal" class="master-bestiary-modal" aria-labelledby="master-bestiary-modal-title" onclick="if(event.target===this) closeMasterBestiary()">
@@ -2768,6 +2781,24 @@
             return `N:${ranges.n} B:${ranges.b === 99 ? 'X' : ranges.b} E:${ranges.e === 99 ? 'X' : ranges.e}`;
         }
 
+        // Usa exatamente os mesmos cortes da rolagem digital, agora legíveis na mesa.
+        function renderMonsterThresholds(value, isAttribute) {
+            const ranges = getMonsterRanges(value, isAttribute);
+            return [['normal', 'NORMAL', ranges.n], ['good', 'BOM', ranges.b], ['extreme', 'EXTREMO', ranges.e]]
+                .map(([kind, label, threshold]) => {
+                    const available = threshold !== 99;
+                    const displayed = available ? `${threshold}+` : '—';
+                    const detail = available ? `A partir de ${threshold} no d20` : 'Faixa indisponível';
+                    return `<span class="monster-threshold monster-threshold-${kind}${available ? '' : ' monster-threshold-unavailable'}" title="${label}: ${detail}"><span class="monster-threshold-label">${label}</span><strong class="monster-threshold-value">${displayed}</strong></span>`;
+                }).join('');
+        }
+
+        function renderMonsterActionThresholds(test) {
+            // Mostra faixas apenas quando a ação tem uma perícia e um valor numérico claros.
+            const match = String(test || '').trim().match(/^(?:luta|pontaria|vontade|fortitude|reflexos|percepção|percepcao|iniciativa|ataque)\s*([+-]?\d+)$/i);
+            return match ? `<div class="monster-action-thresholds" aria-label="Categorias deste teste">${renderMonsterThresholds(Number(match[1]), false)}</div>` : '';
+        }
+
         const MONSTER_SKILL_RELATED_ATTRIBUTES = {
             luta: 'for',
             fortitude: 'vig',
@@ -2935,6 +2966,34 @@
             showMasterDicePopup(total, `${monster.name} — ${label}`, 'DANO', 'var(--accent-red)');
         }
 
+        let masterPhysicalDiceMode = true;
+
+        function applyMasterPhysicalDiceMode() {
+            document.body.classList.toggle('master-physical-dice-mode', masterPhysicalDiceMode);
+            document.body.classList.toggle('master-digital-dice-mode', !masterPhysicalDiceMode);
+            const button = document.getElementById('master-physical-dice-toggle');
+            if (button) {
+                button.textContent = masterPhysicalDiceMode ? '🎲 DADOS FÍSICOS' : '💻 ROLAGEM DIGITAL';
+                button.setAttribute('aria-pressed', String(masterPhysicalDiceMode));
+                button.title = masterPhysicalDiceMode ? 'Usando dados físicos; clique para o modo digital' : 'Usando rolagem digital; clique para destacar dados físicos';
+            }
+            const hint = document.getElementById('master-dice-mode-hint');
+            if (hint) hint.textContent = masterPhysicalDiceMode
+                ? 'Role seus dados físicos e compare o resultado com as categorias da ficha. Os botões de rolagem continuam disponíveis.'
+                : 'Clique nos atributos e perícias para rolar digitalmente. As categorias continuam disponíveis para consulta.';
+        }
+
+        function toggleMasterPhysicalDiceMode() {
+            masterPhysicalDiceMode = !masterPhysicalDiceMode;
+            try { localStorage.setItem(masterStorageKey('mestre_physical_dice_mode'), masterPhysicalDiceMode ? '1' : '0'); } catch (error) {}
+            applyMasterPhysicalDiceMode();
+        }
+
+        function initializeMasterPhysicalDiceMode() {
+            try { masterPhysicalDiceMode = localStorage.getItem(masterStorageKey('mestre_physical_dice_mode')) !== '0'; } catch (error) {}
+            applyMasterPhysicalDiceMode();
+        }
+
         function renderMonsters() {
             const grid = document.getElementById('monsters-grid');
             const count = monstersState.length;
@@ -2951,24 +3010,33 @@
 
             monstersState.forEach(monster => {
                 const lifePercent = monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0;
-                const attributesHtml = [['for','FOR'],['agi','AGI'],['int','INT'],['pre','PRE'],['vig','VIG']].map(([key,label]) => `<button class="monster-attribute" type="button" data-attr-key="${key}" data-roll-label="${label}"><span>${label}</span><strong>${monster.attrs[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.attrs[key], true)}</small></button>`).join('');
-                const skillsHtml = [['luta','Luta'],['fortitude','Fortitude'],['reflexos','Reflexos'],['vontade','Vontade'],['percepcao','Percepção'],['iniciativa','Iniciativa']].map(([key,label]) => `<button class="monster-skill-chip" type="button" data-skill-key="${key}" data-roll-label="${label}">${label} <strong>${monster.skills[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.skills[key], false)}</small></button>`).join('');
-                const actionsHtml = monster.actions.length ? monster.actions.map((action,index) => `<div class="monster-action-summary"><div class="monster-action-text"><strong>${escapeHtml(action.name || 'Ação')}</strong>${action.test ? ` · ${escapeHtml(action.test)}` : ''}${action.damage ? `<br>Dano: ${escapeHtml(action.damage)}` : ''}${action.description ? `<br>${escapeHtml(action.description)}` : ''}</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="${index}" ${action.test ? '' : 'disabled'}>ATQ</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="${index}" ${action.damage ? '' : 'disabled'}>DANO</button></div></div>`).join('') : '<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
+                const attributesHtml = [['for','FOR'],['agi','AGI'],['int','INT'],['pre','PRE'],['vig','VIG']].map(([key,label]) => `<button class="monster-attribute" type="button" data-attr-key="${key}" data-roll-label="${label}" title="Rolar ${label} digitalmente"><span class="monster-stat-title">${label}</span><strong class="monster-stat-number">${monster.attrs[key]}</strong><span class="monster-roll-targets" aria-label="Categorias de ${label}">${renderMonsterThresholds(monster.attrs[key], true)}</span></button>`).join('');
+                const skillsHtml = [['luta','Luta'],['fortitude','Fortitude'],['reflexos','Reflexos'],['vontade','Vontade'],['percepcao','Percepção'],['iniciativa','Iniciativa']].map(([key,label]) => `<button class="monster-skill-chip" type="button" data-skill-key="${key}" data-roll-label="${label}" title="Rolar ${label} digitalmente"><span class="monster-skill-heading"><span class="monster-stat-title">${label}</span><strong class="monster-stat-number">${monster.skills[key]}</strong></span><span class="monster-roll-targets" aria-label="Categorias de ${label}">${renderMonsterThresholds(monster.skills[key], false)}</span></button>`).join('');
+                const actionsHtml = monster.actions.length ? monster.actions.map((action,index) => `<div class="monster-action-summary"><div class="monster-action-text"><strong>${escapeHtml(action.name || 'Ação')}</strong>${action.test ? ` · ${escapeHtml(action.test)}` : ''}${action.damage ? `<br>Dano: ${escapeHtml(action.damage)}` : ''}${action.description ? `<br>${escapeHtml(action.description)}` : ''}${action.test ? renderMonsterActionThresholds(action.test) : ''}</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="${index}" ${action.test ? '' : 'disabled'} title="Rolar ataque digitalmente">ATQ</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="${index}" ${action.damage ? '' : 'disabled'} title="Rolar dano digitalmente">DANO</button></div></div>`).join('') : '<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
                 const card = document.createElement('article');
                 card.className = 'monster-card';
                 card.dataset.monsterId = monster.id;
                 card.innerHTML = `
                     <div class="monster-card-header"><h3 class="monster-card-name">${escapeHtml(monster.name)}</h3><button class="monster-card-button monster-edit" type="button">EDITAR</button><button class="monster-card-button remove monster-remove" type="button" title="Remover monstro">×</button></div>
-                    <div class="monster-attributes">${attributesHtml}</div>
+                    <section class="monster-stat-section" aria-label="Atributos e categorias de resultado">
+                        <div class="monster-stat-section-head"><span>ATRIBUTOS</span><small>Consultas de d20</small></div>
+                        <div class="monster-attributes">${attributesHtml}</div>
+                    </section>
                     <div class="monster-life-controls">
                         <button class="monster-life-button monster-life-minus" type="button">−</button>
                         <div class="monster-life-meter"><div class="monster-life-fill" style="width:${lifePercent}%"></div><div class="monster-life-text"><input class="monster-current-life" type="number" min="0" value="${monster.life}" aria-label="Vida atual"> / <span class="monster-life-maximum">${monster.maxLife}</span></div></div>
                         <button class="monster-life-button monster-life-plus" type="button">+</button>
                     </div>
                     <div class="monster-info-line"><strong>Resistência:</strong> ${escapeHtml(monster.resistance || '—')}<br><strong>Vulnerabilidades:</strong> ${escapeHtml(monster.vulnerabilities || '—')}</div>
-                    <div class="monster-skills-summary">${skillsHtml}</div>
+                    <section class="monster-stat-section" aria-label="Perícias e categorias de resultado">
+                        <div class="monster-stat-section-head"><span>PERÍCIAS</span><small>Cortes do dado físico</small></div>
+                        <div class="monster-skills-summary">${skillsHtml}</div>
+                    </section>
                     <div class="monster-presence-row"><div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence || '—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage || '—')}</div><button class="monster-roll-button damage monster-main-damage" type="button" ${monster.damage ? '' : 'disabled'}>DANO</button></div>
-                    <div class="monster-actions-summary">${actionsHtml}</div>`;
+                    <section class="monster-stat-section" aria-label="Ações de combate">
+                        <div class="monster-stat-section-head"><span>AÇÕES</span><small>Combate e efeitos</small></div>
+                        <div class="monster-actions-summary">${actionsHtml}</div>
+                    </section>`;
                 card.querySelector('.monster-edit').onclick = () => openMonsterPopup(monster.id);
                 card.querySelector('.monster-current-life').onchange = event => updateMonsterLife(monster.id, event.target.value);
                 card.querySelector('.monster-life-minus').onclick = () => changeMonsterLife(monster.id, -1);
@@ -3436,6 +3504,7 @@
         updatePlayersCount();
         renderInitiative();
         renderPlayerRollResults();
+        initializeMasterPhysicalDiceMode();
         renderMonsters();
         renderMasterClues();
         initializeMasterCluesCloudSync();
