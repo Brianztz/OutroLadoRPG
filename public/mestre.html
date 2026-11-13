@@ -587,6 +587,97 @@
                 padding: 0; font-size: 18px;
             }
         }
+
+        /* Catálogo de criaturas isolado em janela modal na primeira temporada. */
+        .monsters-toolbar-actions {
+            display: flex; align-items: center; justify-content: flex-end;
+            gap: 8px; flex-wrap: wrap;
+        }
+        .master-bestiary-open {
+            width: 38px; min-width: 38px; height: 38px;
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0; border: 1px solid rgba(139,204,246,.4);
+            border-radius: 6px; background: rgba(16,44,61,.48);
+            color: #cae7f7; font: 20px/1 Arial,sans-serif; cursor: pointer;
+            box-shadow: none; transition: background-color .16s ease, border-color .16s ease;
+        }
+        .master-bestiary-open:hover {
+            border-color: rgba(139,204,246,.75); background: rgba(37,78,102,.62);
+        }
+        .master-bestiary-open:focus-visible,
+        .master-bestiary-close:focus-visible {
+            outline: 2px solid #8bccf6; outline-offset: 3px;
+        }
+        .master-bestiary-modal {
+            box-sizing: border-box; width: min(1020px, calc(100vw - 28px));
+            max-width: 1020px; max-height: min(88vh, 950px);
+            max-height: min(88dvh, 950px);
+            margin: auto; padding: 0;
+            overflow: hidden;
+            border: 1px solid rgba(139,204,246,.35);
+            border-radius: 12px; background: #07111b; color: #e7f1f7;
+            box-shadow: 0 28px 96px rgba(0,0,0,.75);
+        }
+        .master-bestiary-modal::backdrop {
+            background: rgba(0,4,10,.82);
+            backdrop-filter: blur(4px);
+        }
+        .master-bestiary-modal[open] { display: flex; flex-direction: column; }
+        .master-bestiary-dialog-inner {
+            display: flex; flex-direction: column;
+            min-height: 0; max-height: inherit; width: 100%;
+        }
+        .master-bestiary-dialog-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; padding: 17px 20px;
+            border-bottom: 1px solid rgba(139,204,246,.22);
+            background: rgba(12,28,41,.92); flex: 0 0 auto;
+        }
+        .master-bestiary-dialog-header h2 {
+            margin: 0; font-size: 14px; font-weight: 700;
+            color: #dcecf7; letter-spacing: .06em;
+        }
+        .master-bestiary-close {
+            width: 34px; height: 34px; min-width: 34px;
+            display: inline-grid; place-items: center;
+            padding: 0; border: 1px solid rgba(157,189,210,.26);
+            border-radius: 6px; background: rgba(12,25,37,.72);
+            color: #d3e0e9; font-size: 22px; line-height: 1; cursor: pointer;
+        }
+        .master-bestiary-close:hover {
+            background: rgba(39,65,82,.85); border-color: rgba(139,204,246,.65);
+        }
+        .master-bestiary-dialog-body {
+            min-height: 0; overflow-y: auto; padding: 16px 18px 22px;
+            overscroll-behavior: contain;
+        }
+        .master-bestiary-modal .master-bestiary-library {
+            margin: 0; padding: 0; border: 0;
+            border-radius: 0; box-shadow: none; background: transparent;
+        }
+        .master-bestiary-modal .master-bestiary-library > summary {
+            display: none;
+        }
+        .master-bestiary-modal .master-bestiary-content { padding: 0; }
+        .master-bestiary-modal .bestiary-reference-card {
+            background: rgba(11,26,39,.92);
+            border-color: rgba(121,166,201,.27);
+        }
+        .master-bestiary-modal .bestiary-reference-import,
+        .master-bestiary-modal .bestiary-load-more {
+            background: rgba(16,48,67,.75);
+            border-color: rgba(117,190,232,.42); color: #cbe9fa;
+        }
+        .master-bestiary-modal .bestiary-reference-import:hover,
+        .master-bestiary-modal .bestiary-load-more:hover {
+            background: rgba(32,78,104,.84); border-color: #8bccf6;
+        }
+        @media (max-width: 640px) {
+            .master-bestiary-modal { width: calc(100vw - 16px); max-height: 94dvh; }
+            .master-bestiary-dialog-header { padding: 12px 13px; }
+            .master-bestiary-dialog-header h2 { font-size: 12px; }
+            .master-bestiary-dialog-body { padding: 12px; }
+        }
     </style>
     <link rel="stylesheet" href="/bestiary-outrolado.css?v=1">
 </head>
@@ -676,9 +767,19 @@
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
         <div class="monsters-toolbar">
             <div><h2 class="monsters-toolbar-title">Bestiário do Mestre</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
-            <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
+            <div class="monsters-toolbar-actions">
+                <button id="master-bestiary-open" class="master-bestiary-open" type="button" onclick="openMasterBestiary()" title="Abrir catálogo de criaturas" aria-label="Abrir catálogo de criaturas" aria-haspopup="dialog" aria-controls="master-bestiary-modal"><span aria-hidden="true">📖</span></button>
+                <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
+            </div>
         </div>
-        <details id="master-bestiary-library" class="master-bestiary-library" open>
+        <dialog id="master-bestiary-modal" class="master-bestiary-modal" aria-labelledby="master-bestiary-modal-title" onclick="if(event.target===this) closeMasterBestiary()">
+            <div class="master-bestiary-dialog-inner">
+                <header class="master-bestiary-dialog-header">
+                    <h2 id="master-bestiary-modal-title">📖 CATÁLOGO DE CRIATURAS</h2>
+                    <button class="master-bestiary-close" type="button" onclick="closeMasterBestiary()" aria-label="Fechar catálogo de criaturas" title="Fechar catálogo">×</button>
+                </header>
+                <div class="master-bestiary-dialog-body">
+                    <details id="master-bestiary-library" class="master-bestiary-library" open>
             <summary>CATÁLOGO DE CRIATURAS — ADAPTADAS AO OUTRO LADO</summary>
             <div class="master-bestiary-content">
                 <p class="master-bestiary-description">Referências de nomes de Ordem Paranormal com fichas, danos, atributos e efeitos autorais do Outro Lado. Não são estatísticas nem descrições oficiais. Adicione uma cópia à sua mesa para editar e rolar normalmente.</p>
@@ -693,7 +794,10 @@
                 <div id="bestiary-reference-grid" class="bestiary-reference-grid" aria-label="Modelos de monstros para importar"></div>
                 <button id="bestiary-load-more" class="bestiary-load-more" type="button">MOSTRAR MAIS CRIATURAS</button>
             </div>
-        </details>
+                    </details>
+                </div>
+            </div>
+        </dialog>
         <div id="monsters-grid" class="monsters-grid"></div>
     </section>
 
@@ -1312,6 +1416,18 @@
         function clearPlayerRollResults() {
             playerRollHistory = [];
             renderPlayerRollResults();
+        }
+
+        function openMasterBestiary() {
+            const dialog = document.getElementById('master-bestiary-modal');
+            if (!dialog || dialog.open) return;
+            dialog.showModal();
+            document.getElementById('bestiary-search')?.focus();
+        }
+
+        function closeMasterBestiary() {
+            const dialog = document.getElementById('master-bestiary-modal');
+            if (dialog?.open) dialog.close();
         }
 
         let combatModeEnabled = localStorage.getItem(masterStorageKey('mestre_combat_mode')) === '1';
