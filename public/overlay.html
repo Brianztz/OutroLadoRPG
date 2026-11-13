@@ -1311,6 +1311,7 @@
             }
 
             let article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
+            if (article) article.classList.remove('leaving');
             if (!article) {
                 article = createPlayerWidget(code);
                 grid.appendChild(article);
@@ -1449,14 +1450,23 @@
             });
         }
 
-        function removePlayer(codeValue) {
+        function removePlayer(codeValue, immediate = false) {
             const code = String(codeValue || '').trim().toUpperCase();
+            if (!code) return;
             players.delete(code);
             previousVitals.delete(code);
             const article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
             if (article) {
-                article.classList.add('leaving');
-                setTimeout(() => article.remove(), 210);
+                if (immediate) {
+                    // Um convite pode trazer o personagem de volta rapidamente;
+                    // não deixar uma animação antiga apagar seu novo retrato.
+                    article.remove();
+                } else {
+                    article.classList.add('leaving');
+                    setTimeout(() => {
+                        if (article.classList.contains('leaving')) article.remove();
+                    }, 210);
+                }
             }
             if (!players.size) setConnectionMessage('Aguardando jogadores conectados...');
         }
@@ -1534,7 +1544,7 @@
             // não manter no overlay clássico personagens que já foram removidos.
             if (!seasonOverlay) {
                 for (const code of [...players.keys()]) {
-                    if (!receivedCodes.has(code)) removePlayer(code);
+                    if (!receivedCodes.has(code)) removePlayer(code, true);
                 }
             }
             if (!receivedCodes.size && !players.size) setConnectionMessage(`Aguardando jogadores da mesa ${tableCode}...`);
@@ -1551,7 +1561,7 @@
             if (!seasonOverlay && data && data.reason === 'removed_by_master') {
                 // Expulsão remove o retrato; um novo convite poderá trazer o
                 // personagem de volta quando a ficha enviar status_change.
-                removePlayer(data.codigo);
+                removePlayer(data.codigo, true);
             } else {
                 keepDisconnectedPlayer(data && data.codigo);
             }
