@@ -1487,7 +1487,9 @@
             const article = grid.querySelector(`[data-code="${CSS.escape(code)}"]`);
             if (article) {
                 article.classList.add('leaving');
-                setTimeout(() => article.remove(), 210);
+                setTimeout(() => {
+                    if (article.classList.contains('leaving')) article.remove();
+                }, 210);
             }
         }
 
