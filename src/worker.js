@@ -462,10 +462,18 @@ export class TableRoom extends DurableObject {
             if (!code) return;
             const registeredCode = normalizePlayerCode(meta.playerCode);
             if (registeredCode && registeredCode !== code) return;
+            // Sinalize uma entrada nova apenas quando não houver outra aba ativa
+            // deste jogador. Assim o overlay libera retratos ocultos após o
+            // reingresso pelo convite, sem tratar cada edição da ficha como login.
+            const freshConnection = registeredCode !== code
+                && !this.playerSockets(code).some(target => target !== ws);
             meta = this.updateMeta(ws, { playerCode: code });
             const player = { ...data, codigo: code, id: code, mesa: this.table, online: true };
             this.players.set(code, player);
             await this.persistPlayer(player);
+            if (freshConnection) {
+                this.broadcast('player_connected', { codigo: code, mesa: this.table });
+            }
             this.broadcast('update_mestre', player);
             return;
         }
