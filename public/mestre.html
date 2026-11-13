@@ -1019,6 +1019,31 @@
         .master-digital-dice-mode .monster-attribute,
         .master-digital-dice-mode .monster-skill-chip { gap: 5px; padding: 9px 8px; }
         .master-digital-dice-mode .monster-roll-button:not(:disabled) { opacity: 1; }
+
+        /* Prioridade de leitura: as regras antigas dos spans não apagam as cores das faixas. */
+        .monster-attribute .monster-roll-targets {
+            display: grid; font-size: 1rem; color: inherit;
+            grid-template-columns: repeat(3,minmax(0,1fr));
+        }
+        .monster-attribute .monster-threshold {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; text-align: center;
+        }
+        .monster-attribute .monster-threshold-normal { color: var(--master-normal); }
+        .monster-attribute .monster-threshold-good { color: var(--master-good); }
+        .monster-attribute .monster-threshold-extreme { color: var(--master-extreme); }
+        .monster-attribute .monster-threshold-unavailable { color: #94a0a9; }
+        .master-physical-dice-mode .monster-attribute .monster-threshold-value,
+        .master-physical-dice-mode .monster-skill-chip .monster-threshold-value,
+        .master-physical-dice-mode .monster-action-thresholds .monster-threshold-value {
+            font-size: 1.09rem;
+        }
+        .master-digital-dice-mode .monster-attribute .monster-threshold-value,
+        .master-digital-dice-mode .monster-skill-chip .monster-threshold-value,
+        .master-digital-dice-mode .monster-action-thresholds .monster-threshold-value {
+            font-size: .86rem;
+        }
+
         @media (max-width: 720px) {
             .mestre-top-bar { padding: 14px; }
             .master-quick-reference { padding: 12px; }
