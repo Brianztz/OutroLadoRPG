@@ -684,6 +684,363 @@
         @media (max-width: 640px) {
             .monster-form-grid.monster-skill-fields { grid-template-columns: repeat(2, minmax(0,1fr)); }
         }
+
+        /* Painel do Mestre — primeira temporada: leitura tática com dados físicos. */
+        :root {
+            --master-panel: rgba(8,20,32,.96);
+            --master-line: rgba(135,179,207,.28);
+            --master-muted: #a6bbc9;
+            --master-normal: #8be6b1;
+            --master-good: #91d1fc;
+            --master-extreme: #f0d18b;
+        }
+        body { font-family: "Segoe UI", Roboto, Arial, sans-serif; }
+        .mestre-top-bar {
+            position: relative; overflow: hidden;
+            padding: 18px 20px;
+            border-color: var(--master-line);
+            border-radius: 14px;
+            background: linear-gradient(125deg,rgba(9,25,39,.98),rgba(4,12,21,.96));
+            box-shadow: 0 14px 40px rgba(0,0,0,.43);
+        }
+        .mestre-top-bar::before {
+            content: ""; position: absolute; inset: 0 auto 0 0; width: 3px;
+            background: linear-gradient(180deg,#a5daf4,#3a779f);
+            pointer-events: none;
+        }
+        .top-title {
+            font-size: clamp(1.05rem,1.8vw,1.34rem);
+            line-height: 1.15; font-weight: 800;
+            letter-spacing: .075em; color: #f0f8fe;
+        }
+        .connection-info { margin-top: 8px; font-weight: 600; color: #a4bdcc; }
+        .connection-dot.online { background: #73d9ae; box-shadow: 0 0 0 3px rgba(115,217,174,.12); }
+        .master-tabs {
+            margin-top: -5px; margin-bottom: 18px;
+            border: 1px solid var(--master-line);
+            border-radius: 11px;
+            padding: 5px; background: rgba(7,19,30,.92);
+            box-shadow: inset 0 1px rgba(255,255,255,.035);
+        }
+        .master-tabs > .master-tab-button {
+            border-radius: 8px; color: #aac0cd;
+        }
+        .master-tabs > .master-tab-button.active {
+            color: #ebf7ff; border-color: rgba(139,204,246,.50);
+            background: rgba(58,122,160,.23);
+            box-shadow: inset 0 1px rgba(255,255,255,.06);
+        }
+        .player-card, .player-rolls-container, .catalog-toolbar,
+        .clues-toolbar, .monsters-toolbar {
+            border-color: var(--master-line);
+            background: linear-gradient(160deg,rgba(11,29,44,.96),rgba(5,14,24,.98));
+            box-shadow: 0 10px 32px rgba(0,0,0,.30);
+        }
+        .player-card {
+            border-width: 1px; border-radius: 13px;
+        }
+        .player-header { border-bottom-color: rgba(139,204,246,.15); }
+        .player-name { color: #e9f5fc; }
+        .players-container { gap: 14px; }
+        .bar-container { border-radius: 7px; background: rgba(5,12,22,.85); border-color: rgba(139,204,246,.18); }
+        .monsters-workspace { gap: 12px; }
+        .monsters-toolbar {
+            padding: 15px 17px; gap: 12px;
+            border-radius: 12px; flex-wrap: wrap;
+        }
+        .monsters-toolbar-title {
+            color: #f0f6fb; font-size: .98rem;
+            letter-spacing: .055em; font-weight: 800;
+        }
+        .monsters-toolbar-info { color: var(--master-muted); font-size: .77rem; }
+        .monsters-count { color: #ffabb1; }
+        .monsters-toolbar-actions { gap: 8px; }
+        .master-dice-mode-button {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            min-height: 38px; padding: 8px 13px;
+            border: 1px solid rgba(139,204,246,.34);
+            border-radius: 7px; background: rgba(11,36,55,.72);
+            color: #c3d9e8; font: 700 .72rem/1.2 "Segoe UI",Arial,sans-serif;
+            letter-spacing: .035em; cursor: pointer;
+            transition: background-color .16s ease,border-color .16s ease,color .16s ease;
+        }
+        .master-dice-mode-button[aria-pressed="true"] {
+            background: rgba(27,79,91,.58); color: #baf1e4;
+            border-color: rgba(119,220,197,.58);
+        }
+        .master-dice-mode-button:hover {
+            background: rgba(48,90,114,.60); border-color: #a0d8f5;
+        }
+        .master-dice-mode-button:focus-visible,
+        .monster-attribute:focus-visible,
+        .monster-skill-chip:focus-visible,
+        .monster-roll-button:focus-visible {
+            outline: 2px solid #8bccf6; outline-offset: 3px;
+        }
+        .master-quick-reference {
+            padding: 13px 17px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 12px;
+            border: 1px solid rgba(139,204,246,.22);
+            border-radius: 11px; background: rgba(7,19,30,.93);
+        }
+        .master-quick-reference-copy { display: flex; flex-direction: column; gap: 4px; min-width: 220px; flex: 1 1 320px; }
+        .master-quick-reference-copy strong {
+            color: #f0f8ff; font-size: .72rem;
+            font-weight: 800; letter-spacing: .11em;
+        }
+        .master-quick-reference-copy span {
+            color: var(--master-muted); font-size: .76rem; line-height: 1.5;
+        }
+        .master-quick-reference-legend {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+        }
+        .master-quick-reference-legend > span {
+            padding: 7px 10px; border: 1px solid rgba(147,185,211,.23);
+            border-radius: 6px; background: rgba(17,34,47,.62);
+            font: 800 .65rem/1.2 "Segoe UI",Arial,sans-serif;
+            letter-spacing: .045em;
+        }
+        .master-legend-normal { color: var(--master-normal); border-color: rgba(113,224,168,.35) !important; }
+        .master-legend-good { color: var(--master-good); border-color: rgba(139,204,246,.37) !important; }
+        .master-legend-extreme { color: var(--master-extreme); border-color: rgba(240,209,139,.38) !important; }
+        .master-legend-critical { color: #f4b0b7; }
+        .monsters-grid {
+            grid-template-columns: repeat(auto-fill,minmax(min(100%,410px),1fr));
+            gap: 16px; padding: 2px 5px 15px 2px;
+        }
+        .monster-card {
+            position: relative; gap: 13px; padding: 17px;
+            border: 1px solid rgba(148,178,197,.32);
+            border-radius: 13px;
+            background: linear-gradient(157deg,rgba(11,27,40,.99),rgba(6,14,23,.99));
+            box-shadow: 0 12px 32px rgba(0,0,0,.30);
+        }
+        .monster-card::before {
+            content: ""; position: absolute;
+            left: 17px; right: 17px; top: 0; height: 2px;
+            border-radius: 0 0 4px 4px;
+            background: linear-gradient(90deg,rgba(233,111,121,.68),rgba(129,190,220,.2),transparent);
+            pointer-events: none;
+        }
+        .monster-card-header {
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(145,179,200,.18);
+            gap: 8px;
+        }
+        .monster-card-name {
+            font-size: clamp(.96rem,1.35vw,1.15rem);
+            line-height: 1.24; letter-spacing: .025em;
+            color: #f4f6fa;
+        }
+        .monster-card-button {
+            min-height: 32px; border-radius: 6px;
+            border-color: rgba(139,204,246,.3);
+            background: rgba(15,37,52,.78);
+            color: #d5e7f2;
+        }
+        .monster-card-button.remove {
+            color: #ffb6bb; background: rgba(90,37,48,.34);
+            border-color: rgba(231,126,143,.32);
+        }
+        .monster-stat-section {
+            min-width: 0; display: flex; flex-direction: column; gap: 8px;
+        }
+        .monster-stat-section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; padding: 0 1px;
+            color: #e5f2fa; font-weight: 800; font-size: .72rem;
+            letter-spacing: .11em;
+        }
+        .monster-stat-section-head small {
+            color: #8faabc; font-size: .69rem;
+            font-weight: 500; letter-spacing: .01em;
+            text-transform: none;
+        }
+        .monster-attributes, .monster-skills-summary {
+            display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 8px;
+        }
+        .monster-attribute, .monster-skill-chip {
+            width: 100%; min-width: 0;
+            display: flex; flex-direction: column; align-items: stretch;
+            gap: 7px; padding: 11px 10px;
+            border: 1px solid rgba(134,178,206,.28);
+            border-radius: 9px;
+            background: rgba(13,31,46,.78);
+            color: #e5f3fb; font-size: .77rem;
+            font-weight: 600; text-align: left;
+            box-shadow: none; cursor: pointer;
+            transition: border-color .16s ease,background-color .16s ease;
+        }
+        .monster-attribute:hover, .monster-skill-chip:hover {
+            border-color: rgba(139,204,246,.70);
+            background: rgba(24,52,70,.83);
+        }
+        .monster-attribute .monster-stat-title,
+        .monster-skill-chip .monster-stat-title {
+            display: inline; margin: 0;
+            color: #c5d8e5;
+            font: 800 .73rem/1.2 "Segoe UI",Arial,sans-serif;
+            letter-spacing: .035em;
+        }
+        .monster-attribute > .monster-stat-number {
+            display: block; margin: 0;
+            color: #f5f9fc;
+            font: 800 1.17rem/1.1 "Segoe UI",Arial,sans-serif;
+        }
+        .monster-skill-heading {
+            display: flex; align-items: baseline;
+            justify-content: space-between; gap: 5px;
+        }
+        .monster-skill-chip .monster-stat-number {
+            margin: 0;
+            color: #eaf7ff; font: 800 1.03rem/1.15 "Segoe UI",Arial,sans-serif;
+        }
+        .monster-roll-targets {
+            display: grid; grid-template-columns: repeat(3,minmax(0,1fr));
+            width: 100%; min-width: 0; gap: 4px; margin: 0;
+            font-family: "Segoe UI",Arial,sans-serif;
+        }
+        .monster-threshold {
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; gap: 3px; min-width: 0;
+            min-height: 47px; padding: 5px 2px;
+            border: 1px solid rgba(127,168,197,.25);
+            border-radius: 6px; background: rgba(4,14,24,.76);
+            text-align: center;
+        }
+        .monster-attribute .monster-threshold .monster-threshold-label,
+        .monster-skill-chip .monster-threshold .monster-threshold-label {
+            display: block; color: inherit;
+            font: 800 clamp(.49rem,.7vw,.58rem)/1.1 "Segoe UI",Arial,sans-serif;
+            letter-spacing: .012em;
+        }
+        .monster-attribute .monster-threshold .monster-threshold-value,
+        .monster-skill-chip .monster-threshold .monster-threshold-value,
+        .monster-action-thresholds .monster-threshold-value {
+            display: block; margin: 0;
+            color: inherit;
+            font: 800 .99rem/1.05 "Segoe UI",Arial,sans-serif;
+            white-space: nowrap;
+        }
+        .monster-threshold-normal {
+            color: var(--master-normal);
+            border-color: rgba(111,205,158,.34);
+            background: rgba(23,62,46,.44);
+        }
+        .monster-threshold-good {
+            color: var(--master-good);
+            border-color: rgba(104,174,225,.36);
+            background: rgba(20,57,83,.48);
+        }
+        .monster-threshold-extreme {
+            color: var(--master-extreme);
+            border-color: rgba(209,177,107,.39);
+            background: rgba(74,58,31,.42);
+        }
+        .monster-threshold-unavailable {
+            color: #94a0a9; background: rgba(25,32,38,.58);
+            border-color: rgba(127,142,153,.22);
+        }
+        .monster-life-controls { gap: 8px; }
+        .monster-life-button {
+            height: 36px; border-radius: 8px;
+            border-color: rgba(181,138,146,.38);
+            background: rgba(35,24,36,.81); color: #f2d7dc;
+        }
+        .monster-life-meter {
+            height: 36px; background: #0c1722;
+            border-color: rgba(221,122,134,.28);
+            border-radius: 8px;
+        }
+        .monster-life-fill {
+            background: linear-gradient(90deg,#8b303e,#db7280);
+        }
+        .monster-life-text {
+            color: #fff; font-size: .85rem;
+            text-shadow: 0 2px 3px rgba(0,0,0,.8);
+        }
+        .monster-info-line {
+            border-left-color: rgba(136,189,215,.54);
+            border-radius: 0 6px 6px 0;
+            background: rgba(12,30,44,.65);
+            color: #b4c6d2; font-size: .78rem; line-height: 1.5;
+            padding: 10px 12px;
+        }
+        .monster-info-line strong { color: #eff6fb; }
+        .monster-presence-row { align-items: stretch; }
+        .monster-actions-summary { gap: 8px; }
+        .monster-action-summary {
+            padding: 12px; display: flex; align-items: flex-start;
+            border-color: rgba(134,178,206,.28);
+            border-radius: 9px; background: rgba(9,24,37,.85);
+            color: #cbdce7; font-size: .77rem; line-height: 1.5;
+        }
+        .monster-action-summary strong { color: #f2d6d9; }
+        .monster-action-thresholds {
+            display: grid; grid-template-columns: repeat(3,minmax(0,1fr));
+            gap: 5px; margin-top: 10px; max-width: 340px;
+        }
+        .monster-action-thresholds .monster-threshold {
+            min-height: 42px;
+        }
+        .monster-roll-buttons { align-self: start; gap: 5px; }
+        .monster-roll-button {
+            border-radius: 6px; min-height: 30px;
+            border-color: rgba(139,204,246,.45);
+            background: rgba(17,55,80,.6); color: #c1e5f9;
+        }
+        .monster-roll-button.damage {
+            border-color: rgba(232,127,140,.43);
+            background: rgba(89,35,47,.38);
+            color: #f5b0b9;
+        }
+        .monster-roll-button:disabled { opacity: .35; }
+        .master-physical-dice-mode .monster-roll-button:not(:disabled) {
+            opacity: .72;
+        }
+        .master-physical-dice-mode .monster-roll-button:hover:not(:disabled),
+        .master-physical-dice-mode .monster-roll-button:focus-visible:not(:disabled) {
+            opacity: 1;
+        }
+        .master-physical-dice-mode .monster-threshold {
+            min-height: 51px;
+        }
+        .master-physical-dice-mode .monster-threshold-value {
+            font-size: 1.09rem;
+        }
+        .master-digital-dice-mode .monster-threshold {
+            min-height: 39px; padding: 4px 2px;
+        }
+        .master-digital-dice-mode .monster-threshold-value {
+            font-size: .86rem;
+        }
+        .master-digital-dice-mode .monster-attribute,
+        .master-digital-dice-mode .monster-skill-chip { gap: 5px; padding: 9px 8px; }
+        .master-digital-dice-mode .monster-roll-button:not(:disabled) { opacity: 1; }
+        @media (max-width: 720px) {
+            .mestre-top-bar { padding: 14px; }
+            .master-quick-reference { padding: 12px; }
+            .monsters-grid { grid-template-columns: minmax(0,1fr); gap: 12px; padding-right: 0; }
+            .monster-card { padding: 13px; }
+            .monsters-toolbar { padding: 13px; }
+        }
+        @media (max-width: 400px) {
+            .monster-attributes, .monster-skills-summary { gap: 5px; }
+            .monster-attribute, .monster-skill-chip { padding: 8px 6px; gap: 5px; }
+            .monster-roll-targets { gap: 2px; }
+            .monster-threshold { padding: 5px 1px; }
+            .monster-threshold .monster-threshold-label { font-size: .48rem; }
+            .monster-threshold .monster-threshold-value { font-size: .88rem; }
+            .monster-action-summary { flex-wrap: wrap; }
+            .monster-roll-buttons { margin-left: auto; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .monster-card { animation: none; }
+            .monster-attribute, .monster-skill-chip, .master-dice-mode-button { transition: none; }
+        }
+
     </style>
     <link rel="stylesheet" href="/bestiary-outrolado.css?v=1">
 </head>
