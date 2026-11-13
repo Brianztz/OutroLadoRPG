@@ -4,103 +4,90 @@
   window.__outroLadoCompactToolbarLoaded = true;
 
   const css = `
-    /* Barra de acoes do personagem: visual compacto sem trocar eventos originais. */
+    /* Primeira temporada: controles leves, sem efeitos decorativos. */
     .ol-toolbar-group {
-      display: flex !important;
-      align-items: center !important;
-      flex-wrap: wrap !important;
-      gap: 7px !important;
-      width: auto !important;
-      max-width: 100%;
+      display: flex !important; align-items: center !important;
+      flex-wrap: wrap !important; gap: 6px !important;
+      width: auto !important; max-width: 100%;
     }
-    .ol-toolbar-action,
-    .ol-toolbar-table {
+    .ol-toolbar-action, .ol-toolbar-table {
       box-sizing: border-box !important;
-      min-height: 35px !important;
-      height: auto !important;
-      width: auto !important;
-      max-width: 100%;
-      padding: 7px 12px !important;
-      margin: 0 !important;
-      display: inline-flex !important;
-      justify-content: center !important;
-      align-items: center !important;
-      gap: 6px !important;
-      border-radius: 9px !important;
-      font-family: "Segoe UI", system-ui, sans-serif !important;
-      font-size: 12px !important;
-      font-weight: 700 !important;
-      line-height: 1.35 !important;
-      letter-spacing: .012em !important;
+      display: inline-flex !important; align-items: center !important;
+      justify-content: center !important; gap: 5px !important;
+      width: auto !important; max-width: 100%;
+      height: auto !important; min-height: 32px !important;
+      margin: 0 !important; padding: 6px 10px !important;
+      border: 1px solid rgba(157,189,210,.23) !important;
+      border-radius: 6px !important;
+      background: rgba(10,22,33,.70) !important;
+      color: #d3e0e9 !important;
+      font: 600 11.5px/1.3 "Segoe UI", system-ui, sans-serif !important;
+      letter-spacing: .01em !important;
       white-space: nowrap !important;
-      text-decoration: none !important;
-      text-transform: none !important;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
-      transition: border-color .18s ease, background-color .18s ease,
-        box-shadow .18s ease, transform .18s ease !important;
+      text-transform: none !important; text-decoration: none !important;
+      text-shadow: none !important; box-shadow: none !important;
+      filter: none !important; transform: none !important;
+      transition: background-color .16s ease, border-color .16s ease, color .16s ease !important;
     }
-    .ol-toolbar-action {
-      background: #101a27 !important;
-      border: 1px solid #364e63 !important;
-      color: #eaf2f9 !important;
-      cursor: pointer !important;
-    }
+    .ol-toolbar-action { cursor: pointer !important; }
     .ol-toolbar-action:hover:not(:disabled) {
-      background: #1b3044 !important;
-      border-color: #6cbbea !important;
-      box-shadow: 0 0 0 2px rgba(57,174,232,.1) !important;
-      transform: translateY(-1px);
+      background: rgba(32,57,74,.85) !important;
+      border-color: rgba(139,204,246,.55) !important;
+      color: #f2f8fc !important;
+      box-shadow: none !important; transform: none !important;
     }
-    .ol-toolbar-action:active:not(:disabled) { transform: translateY(0); }
+    .ol-toolbar-action:active:not(:disabled) {
+      background: rgba(27,47,63,.95) !important;
+    }
     .ol-toolbar-action:focus-visible {
-      outline: 2px solid #91d9ff !important;
-      outline-offset: 3px !important;
+      outline: 2px solid #8bccf6 !important; outline-offset: 2px !important;
     }
-    .ol-toolbar-action:disabled { opacity: .52 !important; cursor: not-allowed !important; }
+    .ol-toolbar-action:disabled {
+      opacity: .48 !important; cursor: not-allowed !important;
+    }
     .ol-toolbar-table {
-      background: rgba(12, 32, 48, .86) !important;
-      border: 1px solid rgba(88, 176, 232, .6) !important;
-      color: #aedfff !important;
-      font-size: 11.5px !important;
-      letter-spacing: .03em !important;
+      min-height: 30px !important;
+      color: #a6bac9 !important;
+      border-color: rgba(157,189,210,.16) !important;
+      background: rgba(8,18,28,.45) !important;
+      font-size: 11px !important;
       user-select: text;
     }
     .ol-toolbar-action[data-ol-action="combat"] {
-      background: #112333 !important;
-      border-color: #4d84a4 !important;
-      color: #d6ecfa !important;
+      color: #c4dbea !important;
     }
     .ol-toolbar-action[data-ol-action="save"] {
-      background: #2797d0 !important;
-      border-color: #55c2f2 !important;
-      color: #031522 !important;
-      font-weight: 800 !important;
+      color: #9ed5f4 !important;
+      border-color: rgba(117,190,232,.42) !important;
+      background: rgba(16,48,67,.48) !important;
+      font-weight: 650 !important;
     }
     .ol-toolbar-action[data-ol-action="save"]:hover:not(:disabled) {
-      background: #65c8f5 !important;
-      border-color: #9cddff !important;
+      color: #e6f5ff !important;
+      background: rgba(33,81,110,.55) !important;
+      border-color: rgba(139,204,246,.68) !important;
     }
     .ol-toolbar-action[data-ol-action="reset"] {
-      background: rgba(92,19,35,.22) !important;
-      border-color: rgba(242,85,105,.48) !important;
-      color: #ff9eab !important;
+      color: #d6a0a9 !important;
+      border-color: rgba(208,122,137,.32) !important;
+      background: rgba(61,23,32,.24) !important;
     }
     .ol-toolbar-action[data-ol-action="reset"]:hover:not(:disabled) {
-      background: rgba(132,26,46,.35) !important;
-      border-color: #ff8293 !important;
+      color: #f4c1c8 !important;
+      background: rgba(89,36,47,.43) !important;
+      border-color: rgba(229,146,157,.58) !important;
     }
     @media (max-width: 640px) {
-      .ol-toolbar-group { gap: 6px !important; }
+      .ol-toolbar-group { gap: 5px !important; }
       .ol-toolbar-action, .ol-toolbar-table {
-        min-height: 34px !important;
-        padding: 7px 10px !important;
+        min-height: 32px !important; padding: 6px 9px !important;
         font-size: 11px !important;
       }
     }
     @media (prefers-reduced-motion: reduce) {
-      .ol-toolbar-action { transition: none !important; transform: none !important; }
+      .ol-toolbar-action { transition: none !important; }
     }
-  `;
+  
 
   const style = document.createElement('style');
   style.id = 'ol-compact-toolbar-style';
