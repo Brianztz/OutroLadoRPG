@@ -678,6 +678,12 @@
             .master-bestiary-dialog-header h2 { font-size: 12px; }
             .master-bestiary-dialog-body { padding: 12px; }
         }
+
+        /* Seis perícias editáveis, incluindo Luta, sem comprimir os inputs. */
+        .monster-form-grid.monster-skill-fields { grid-template-columns: repeat(3, minmax(0,1fr)); }
+        @media (max-width: 640px) {
+            .monster-form-grid.monster-skill-fields { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        }
     </style>
     <link rel="stylesheet" href="/bestiary-outrolado.css?v=1">
 </head>
@@ -865,7 +871,8 @@
 
                 <section class="monster-form-section">
                     <h3 class="monster-form-section-title">Perícias</h3>
-                    <div class="monster-form-grid five">
+                    <div class="monster-form-grid monster-skill-fields">
+                        <div class="monster-form-field"><label for="monster-form-luta">Luta</label><input id="monster-form-luta" class="monster-input" type="number" value="0"></div>
                         <div class="monster-form-field"><label for="monster-form-fortitude">Fortitude</label><input id="monster-form-fortitude" class="monster-input" type="number" value="0"></div>
                         <div class="monster-form-field"><label for="monster-form-reflexos">Reflexos</label><input id="monster-form-reflexos" class="monster-input" type="number" value="0"></div>
                         <div class="monster-form-field"><label for="monster-form-vontade">Vontade</label><input id="monster-form-vontade" class="monster-input" type="number" value="0"></div>
@@ -2725,7 +2732,7 @@
                         resistance: String(monster.resistance ?? monster.defense ?? ''),
                         vulnerabilities: String(monster.vulnerabilities ?? monster.notes ?? ''),
                         attrs: { for: safeNumber(attrs.for), agi: safeNumber(attrs.agi), int: safeNumber(attrs.int), pre: safeNumber(attrs.pre), vig: safeNumber(attrs.vig) },
-                        skills: { fortitude: safeNumber(skills.fortitude), reflexos: safeNumber(skills.reflexos), vontade: safeNumber(skills.vontade), percepcao: safeNumber(skills.percepcao), iniciativa: safeNumber(skills.iniciativa) },
+                        skills: { luta: safeNumber(skills.luta), fortitude: safeNumber(skills.fortitude), reflexos: safeNumber(skills.reflexos), vontade: safeNumber(skills.vontade), percepcao: safeNumber(skills.percepcao), iniciativa: safeNumber(skills.iniciativa) },
                         presence: String(monster.presence || ''),
                         damage: String(monster.damage || ''),
                         actions: Array.isArray(monster.actions) ? monster.actions.map((action, actionIndex) => normalizeMonsterAction(action, actionIndex)) : []
@@ -2762,6 +2769,7 @@
         }
 
         const MONSTER_SKILL_RELATED_ATTRIBUTES = {
+            luta: 'for',
             fortitude: 'vig',
             reflexos: 'agi',
             vontade: 'pre',
@@ -2944,7 +2952,7 @@
             monstersState.forEach(monster => {
                 const lifePercent = monster.maxLife ? Math.max(0, Math.min(100, monster.life / monster.maxLife * 100)) : 0;
                 const attributesHtml = [['for','FOR'],['agi','AGI'],['int','INT'],['pre','PRE'],['vig','VIG']].map(([key,label]) => `<button class="monster-attribute" type="button" data-attr-key="${key}" data-roll-label="${label}"><span>${label}</span><strong>${monster.attrs[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.attrs[key], true)}</small></button>`).join('');
-                const skillsHtml = [['fortitude','Fortitude'],['reflexos','Reflexos'],['vontade','Vontade'],['percepcao','Percepção'],['iniciativa','Iniciativa']].map(([key,label]) => `<button class="monster-skill-chip" type="button" data-skill-key="${key}" data-roll-label="${label}">${label} <strong>${monster.skills[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.skills[key], false)}</small></button>`).join('');
+                const skillsHtml = [['luta','Luta'],['fortitude','Fortitude'],['reflexos','Reflexos'],['vontade','Vontade'],['percepcao','Percepção'],['iniciativa','Iniciativa']].map(([key,label]) => `<button class="monster-skill-chip" type="button" data-skill-key="${key}" data-roll-label="${label}">${label} <strong>${monster.skills[key]}</strong><small class="monster-roll-targets">${formatMonsterRanges(monster.skills[key], false)}</small></button>`).join('');
                 const actionsHtml = monster.actions.length ? monster.actions.map((action,index) => `<div class="monster-action-summary"><div class="monster-action-text"><strong>${escapeHtml(action.name || 'Ação')}</strong>${action.test ? ` · ${escapeHtml(action.test)}` : ''}${action.damage ? `<br>Dano: ${escapeHtml(action.damage)}` : ''}${action.description ? `<br>${escapeHtml(action.description)}` : ''}</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="${index}" ${action.test ? '' : 'disabled'}>ATQ</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="${index}" ${action.damage ? '' : 'disabled'}>DANO</button></div></div>`).join('') : '<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
                 const card = document.createElement('article');
                 card.className = 'monster-card';
@@ -2985,7 +2993,7 @@
             document.getElementById('monster-form-resistance').value = monster ? monster.resistance : '';
             document.getElementById('monster-form-vulnerabilities').value = monster ? monster.vulnerabilities : '';
             ['for','agi','int','pre','vig'].forEach(key => document.getElementById(`monster-form-${key}`).value = monster ? monster.attrs[key] : 0);
-            ['fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => document.getElementById(`monster-form-${key}`).value = monster ? monster.skills[key] : 0);
+            ['luta','fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => document.getElementById(`monster-form-${key}`).value = monster ? safeNumber(monster.skills[key]) : 0);
             document.getElementById('monster-form-presence').value = monster ? monster.presence : '';
             document.getElementById('monster-form-damage').value = monster ? monster.damage : '';
             renderMonsterActionEditors();
@@ -3052,7 +3060,7 @@
                 actions: editingMonsterActions.map(action => ({ ...action, name: action.name.trim(), test: action.test.trim(), damage: action.damage.trim(), description: action.description.trim() }))
             };
             ['for','agi','int','pre','vig'].forEach(key => monster.attrs[key] = safeNumber(document.getElementById(`monster-form-${key}`).value));
-            ['fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => monster.skills[key] = safeNumber(document.getElementById(`monster-form-${key}`).value));
+            ['luta','fortitude','reflexos','vontade','percepcao','iniciativa'].forEach(key => monster.skills[key] = safeNumber(document.getElementById(`monster-form-${key}`).value));
             if (existing) monstersState[monstersState.findIndex(item => item.id === existing.id)] = monster;
             else monstersState.push(monster);
             saveMonstersState();
