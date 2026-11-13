@@ -87,7 +87,7 @@
     @media (prefers-reduced-motion: reduce) {
       .ol-toolbar-action { transition: none !important; }
     }
-  
+  `;
 
   const style = document.createElement('style');
   style.id = 'ol-compact-toolbar-style';
