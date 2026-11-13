@@ -183,6 +183,13 @@
             if (event === 'player_disconnected' && playerKey) {
                 const previousTimer = this._disconnectTimers.get(playerKey);
                 if (previousTimer) clearTimeout(previousTimer);
+                this._disconnectTimers.delete(playerKey);
+                if (data && data.reason === 'removed_by_master') {
+                    // Expulsão é definitiva; não aguardar a tolerância de
+                    // desconexões breves usada para quedas normais da rede.
+                    this._dispatchNow(event, data);
+                    return;
+                }
                 const timer = setTimeout(() => {
                     this._disconnectTimers.delete(playerKey);
                     this._dispatchNow(event, data);
