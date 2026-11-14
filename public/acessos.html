@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Outro Lado RPG — Acessos</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;font-family:Roboto,"Segoe UI",Arial,sans-serif;color:#e7f1f7;background:#02050a}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(ellipse at top,#10273e,#02050a 65%)}
+main{width:min(640px,100%);border:1px solid #34516b;border-radius:16px;background:#070f18;padding:clamp(18px,4vw,32px);box-shadow:0 24px 65px #0009}
+h1{font-size:1.65rem;margin:0 0 8px}p{color:#a3b7c7;line-height:1.55;margin:0 0 18px}
+label{display:block;font-size:.85rem;font-weight:700;margin:15px 0 7px}input,select{width:100%;border:1px solid #46657e;border-radius:9px;background:#07101b;color:#fff;padding:13px;font:inherit}
+.row{display:flex;gap:11px;margin-top:20px;flex-wrap:wrap}button,a.action{border:1px solid #6a9bc0;background:#12334e;color:white;border-radius:9px;padding:12px 18px;font:700 .9rem inherit;cursor:pointer;text-decoration:none}
+button:disabled{opacity:.45;cursor:wait}button.secondary,a.action{background:#0a1621;border-color:#34516b}#result{margin-top:16px;padding:14px;background:#0b1e2d;border-radius:10px;border:1px solid #244e70;overflow-wrap:anywhere}#result[hidden]{display:none}.warning{font-size:.82rem;color:#e5b794}#status{min-height:1.2em;color:#b8d5e8;margin-top:14px}
+</style>
+<script src="/season-space.js"></script>
+<script src="/native-client.js"></script>
+</head>
+<body>
+<main>
+<h1>Gerenciar acessos dos jogadores</h1>
+<p id="description">Somente o mestre pode criar ou renovar convites da mesa. Cada jogador recebe uma chave exclusiva.</p>
+<label for="player-code">Código do personagem</label>
+<input id="player-code" maxlength="40" placeholder="Ex.: A1B2C3D4" autocomplete="off">
+<div class="row">
+<button type="button" id="new-code" class="secondary">Gerar código</button>
+<button type="button" id="create">Criar / renovar convite</button>
+</div>
+<p class="warning">Se você renovar o convite de um código existente, a chave anterior será invalidada. A ficha salva continua armazenada.</p>
+<div id="result" hidden><label for="invite-url">Convite do jogador</label><input id="invite-url" readonly><div class="row"><button id="copy" type="button">Copiar convite</button></div><p class="warning">O link contém a chave privada do jogador. Compartilhe apenas com a pessoa correta; não publique em grupos.</p></div>
+<div id="status" role="status"></div>
+<div class="row"><a class="action" id="back" href="index.html">Voltar à mesa</a><button id="signout" type="button" class="secondary">Sair da conta</button></div>
+</main>
+<script>
+(async function() {
+  const p = new URLSearchParams(location.search);
+  const table = OLNative.tableCode(p.get('mesa') || localStorage.getItem('master_table_code') || 'PADRAO');
+  const season = p.get('temporada') === '2';
+  const edition = season ? 'temporada' : 'classic';
+  const physical = season ? OLSeasonSpace.tableId(table, edition) : table;
+  const back = document.getElementById('back');
+  back.href = (season ? 'mestre-temporada.html' : 'mestre.html') + '?mesa=' + encodeURIComponent(table) + (season ? '&temporada=2' : '');
+  const code = document.getElementById('player-code'), status = document.getElementById('status'),
+    create = document.getElementById('create'), result = document.getElementById('result');
+  try {
+    const session = await OLNative.getSession(physical);
+    if (!session.ok || session.role !== 'master') throw Error('Sessão de mestre necessária.');
+  } catch (error) {
+    status.textContent = 'Entre como mestre para gerar convites.';
+    create.disabled = true;
+    back.href = 'index.html?mesa=' + encodeURIComponent(table) + (season ? '&temporada=2' : '');
+    return;
+  }
+  document.getElementById('description').textContent = 'Mesa ' + table + ' — ' + (season ? 'temporada 2' : 'temporada original') + '. Crie um convite para cada personagem.';
+  document.getElementById('new-code').onclick = () => {
+    code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)),
+      b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+    code.focus();
+  };
+  create.onclick = async () => {
+    const playerCode = code.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,40);
+    if (!playerCode) { status.textContent = 'Digite ou gere um código válido.'; return; }
+    if (!confirm('Gerar uma nova chave para ' + playerCode + '? Se já existir uma, ela será revogada.')) return;
+    create.disabled = true; status.textContent = 'Gerando convite...';
+    try {
+      const data = await OLNative.provisionPlayer(physical, edition, playerCode);
+      const invite = new URL('index.html', location.href);
+      invite.search = '';
+      invite.hash = '';
+      invite.searchParams.set('mesa', table);
+      invite.searchParams.set('convite', '1');
+      if (season) invite.searchParams.set('temporada', '2');
+      invite.hash = new URLSearchParams({ codigo: playerCode, chave: data.playerKey }).toString();
+      document.getElementById('invite-url').value = invite.href;
+      result.hidden = false;
+      status.textContent = 'Convite criado. A ficha existente foi preservada.';
+    } catch (error) {
+      status.textContent = 'Não foi possível gerar o convite: ' + error.message;
+    } finally { create.disabled = false; }
+  };
+  document.getElementById('copy').onclick = async () => {
+    const value = document.getElementById('invite-url').value;
+    try { await navigator.clipboard.writeText(value); status.textContent = 'Convite copiado.'; }
+    catch (error) { document.getElementById('invite-url').select(); status.textContent = 'Selecione e copie o link manualmente.'; }
+  };
+  document.getElementById('signout').onclick = async () => {
+    await OLNative.signOut(physical);
+    location.href = 'index.html?mesa=' + encodeURIComponent(table);
+  };
+})();
+</script>
+</body></html>
