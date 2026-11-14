@@ -1,4 +1,4 @@
-name: Verify native storage migration
+name: Verify Vestigios season 2
 on:
   push:
     branches: [migration/firebase-to-durable-storage]
@@ -17,7 +17,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: node --test tests/master-room.test.cjs tests/storage-api.test.cjs tests/season-portal-rest.test.cjs tests/firestore-write-optimizations.test.cjs tests/season-isolation.test.cjs tests/first-season-reinvite-overlay.test.cjs
+      - run: node --test tests/legacy-route-redirects.test.cjs tests/master-room.test.cjs tests/storage-api.test.cjs tests/season-portal-rest.test.cjs tests/firestore-write-optimizations.test.cjs tests/season-isolation.test.cjs tests/season2-reinvite-overlay.test.cjs
       - run: npx wrangler deploy --dry-run
   full-regression:
     runs-on: ubuntu-latest

@@ -5,37 +5,43 @@
 <title>Outro Lado RPG — Convidar jogadores</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
-:root{color-scheme:dark;font-family:Roboto,"Segoe UI",Arial,sans-serif;color:#e7f1f7;background:#02050a}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:18px;background:radial-gradient(ellipse at top,#10273e,#02050a 65%)}
-main{width:min(570px,100%);border:1px solid #34516b;border-radius:18px;background:#070f18;padding:clamp(20px,5vw,34px);box-shadow:0 24px 65px #0009}
-h1{font-size:clamp(1.6rem,5vw,2rem);margin:0 0 10px}p{color:#a9becd;line-height:1.5;margin:0 0 20px}
-button,a.action{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border:1px solid #5d9bc9;background:#123e60;color:white;border-radius:10px;padding:12px 18px;font:700 .95rem Roboto,"Segoe UI",Arial,sans-serif;cursor:pointer;text-decoration:none}
-button:disabled{opacity:.5;cursor:wait}button.secondary,a.action{background:#0a1621;border-color:#34516b}
-button.primary{width:100%;min-height:64px;font-size:1.05rem;background:#1b648f;border-color:#67bce8}
-button:hover:not(:disabled),a.action:hover{border-color:#c6e8ff}
-.row{display:flex;gap:11px;margin-top:18px;flex-wrap:wrap}
-#result{margin-top:22px;padding:22px;background:#0b2330;border-radius:13px;border:1px solid #357c9f}
-#result[hidden],[hidden]{display:none!important}
-#result h2{font-size:1.25rem;margin:0 0 7px}
-#result p{margin:0 0 12px}
-label{display:block;font-size:.85rem;font-weight:700;margin:13px 0 7px}
-input{width:100%;border:1px solid #46657e;border-radius:9px;background:#07101b;color:#fff;padding:13px;font:inherit}
-#invite-url{font-size:.78rem}
-#created-code{font-size:.82rem;color:#8eaec1}
-.warning{font-size:.81rem;color:#d6b594;line-height:1.45}
-#status{min-height:1.4em;color:#b8d5e8;margin-top:15px}
-details{margin-top:30px;border-top:1px solid #24394c;padding-top:18px}
-summary{cursor:pointer;color:#a3c2d9;font-size:.88rem}
-details p{font-size:.85rem;margin:13px 0}
-footer{margin-top:26px;border-top:1px solid #233748;padding-top:8px}
+:root{color-scheme:dark;font-family:Inter,"Segoe UI",Arial,sans-serif;--bg:#090c0d;--surface:#141a1d;--line:#394144;--accent:#cb7965;--text:#eeeae3;--muted:#a9b3b4}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;color:var(--text);background:radial-gradient(ellipse at 75% 8%,rgba(139,51,47,.22),transparent 44%),radial-gradient(ellipse at 5% 85%,rgba(44,70,74,.22),transparent 48%),var(--bg)}
+main{width:min(560px,100%);background:linear-gradient(150deg,#192023,#0e1316);border:1px solid var(--line);border-radius:18px;padding:clamp(24px,5vw,40px);box-shadow:0 30px 65px rgba(0,0,0,.3)}
+.kicker{font-weight:800;letter-spacing:.21em;text-transform:uppercase;color:#dfa38f;font-size:.69rem}
+h1{font-size:clamp(1.7rem,5vw,2.3rem);margin:9px 0 12px;letter-spacing:-.05em}
+h2{margin:0 0 7px;font-size:1.3rem}
+p{color:var(--muted);font-size:.92rem;line-height:1.6;margin:0 0 20px}
+button,.link-button{min-height:46px;padding:11px 17px;border:1px solid #996352;border-radius:10px;background:#3b2724;color:var(--text);cursor:pointer;font:750 .9rem Inter,"Segoe UI",sans-serif;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+button:hover:not(:disabled),.link-button:hover{border-color:#e8a58b;background:#52342d}
+button:disabled{opacity:.55;cursor:wait}
+.primary{width:100%;font-size:1rem;min-height:59px;background:var(--accent);border-color:#e4a68f;color:#1a0f0c;font-weight:850}
+.primary:hover:not(:disabled){background:#e7a28b}
+.row{display:flex;flex-wrap:wrap;gap:11px;margin-top:17px}
+label{display:block;font-size:.8rem;font-weight:750;margin:14px 0 8px}
+input{width:100%;padding:13px;min-height:49px;border:1px solid #435054;background:#080c10;border-radius:9px;color:#f7f4ed;font:inherit;outline:none}
+input:focus{border-color:var(--accent)}
+#invite-url{font-size:.76rem}
+[hidden]{display:none!important}
+#result{margin-top:24px;padding:21px;background:#172320;border:1px solid #466353;border-radius:13px}
+#result p{margin-bottom:13px}
+#created-code{color:#d0b2a9;font-size:.8rem;margin:12px 0}
+.warning{font-size:.78rem;color:#cba99e}
+#status{min-height:1.4em;margin-top:16px;color:#dfa38f;font-size:.83rem;line-height:1.5}
+details{margin-top:27px;border-top:1px solid #343c3e;padding-top:18px}
+summary{cursor:pointer;color:#e2b1a0;font-size:.85rem}
+details p{margin-top:12px;font-size:.82rem}
+footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
 </style>
 <script src="/season-space.js"></script>
 <script src="/native-client.js"></script>
 </head>
 <body>
 <main>
+<span class="kicker">OUTRO LADO · VESTÍGIOS</span>
 <h1>Convidar jogador</h1>
-<p id="description">Crie um link e envie. O jogador só precisa abrir para entrar na ficha.</p>
+<p id="description">Gere um convite da segunda temporada. O jogador só precisa abrir o link.</p>
 <button type="button" id="create" class="primary">+ Criar link de convite</button>
 <div id="result" hidden>
   <h2>Convite pronto!</h2>
@@ -64,12 +70,11 @@ footer{margin-top:26px;border-top:1px solid #233748;padding-top:8px}
 <script>
 (async function() {
   const p = new URLSearchParams(location.search);
-  const table = OLNative.tableCode(p.get('mesa') || localStorage.getItem('master_table_code') || 'PADRAO');
-  const season = p.get('temporada') === '2';
-  const edition = season ? 'temporada' : 'classic';
-  const physical = season ? OLSeasonSpace.tableId(table, edition) : table;
+  const table = OLNative.tableCode(p.get('mesa') || localStorage.getItem('master_permanent_table_code') || localStorage.getItem('master_table_code') || 'PADRAO');
+  const edition = 'temporada';
+  const physical = OLSeasonSpace.tableId(table, edition);
   const back = document.getElementById('back');
-  back.href = (season ? 'mestre-temporada.html' : 'mestre.html') + '?mesa=' + encodeURIComponent(table) + (season ? '&temporada=2' : '');
+  back.href = 'mestre-temporada.html?mesa=' + encodeURIComponent(table) + '&temporada=2';
   const code = document.getElementById('player-code');
   const status = document.getElementById('status');
   const create = document.getElementById('create');
@@ -84,12 +89,11 @@ footer{margin-top:26px;border-top:1px solid #233748;padding-top:8px}
     status.textContent = 'Entre como mestre para criar convites.';
     create.disabled = true;
     renew.disabled = true;
-    back.href = 'index.html?mesa=' + encodeURIComponent(table) + (season ? '&temporada=2' : '');
+    back.href = 'index.html';
     return;
   }
   document.getElementById('description').textContent =
-    'Mesa ' + table + ' · ' + (season ? 'Nova temporada' : 'Temporada original') +
-    '. Crie um link e envie ao jogador. Sem código ou senha para digitar.';
+    'Mesa ' + table + ' · Vestígios, segunda temporada. Um link é tudo de que o jogador precisa.';
 
   function generateCode() {
     return 'J' + Array.from(crypto.getRandomValues(new Uint8Array(12)),
@@ -110,7 +114,7 @@ footer{margin-top:26px;border-top:1px solid #233748;padding-top:8px}
       invite.hash = '';
       invite.searchParams.set('mesa', table);
       invite.searchParams.set('convite', '1');
-      if (season) invite.searchParams.set('temporada', '2');
+      invite.searchParams.set('temporada', '2');
       invite.hash = new URLSearchParams({ codigo: playerCode, chave: data.playerKey }).toString();
       document.getElementById('invite-url').value = invite.href;
       document.getElementById('created-code').textContent = 'Código da ficha: ' + playerCode + ' (guarde se precisar renovar o acesso).';
@@ -143,7 +147,7 @@ footer{margin-top:26px;border-top:1px solid #233748;padding-top:8px}
   };
   document.getElementById('signout').onclick = async () => {
     await OLNative.signOut(physical);
-    location.href = 'index.html?mesa=' + encodeURIComponent(table);
+    location.href = 'index.html';
   };
 })();
 </script>

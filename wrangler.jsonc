@@ -21,7 +21,10 @@
       "/socket.io/*",
       "/ficha",
       "/ficha/",
-      "/ficha.html"
+      "/ficha.html",
+      "/mestre",
+      "/mestre/",
+      "/mestre.html"
     ]
   },
   "durable_objects": {

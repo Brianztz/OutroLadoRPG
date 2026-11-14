@@ -4,19 +4,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const classic = fs.readFileSync(path.join(root, 'public/mestre.html'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'public/mestre-temporada.html'), 'utf8');
 const theme = fs.readFileSync(path.join(root, 'public/temporada/master-theme.css'), 'utf8');
 
-test('The classic master remains unthemed, while the new season master imports its own colors', () => {
-  assert(!classic.includes('href="/temporada/master-theme.css?v=1"'));
-  assert(!classic.includes('class="master-season-kicker"'));
-  assert(classic.includes('target.search = window.location.search;'));
+test('Escudo de Vestigios tem identidade visual exclusiva do Exilio 3.0', () => {
   const originalStyle = html.indexOf('</style>');
-  const themeLink = html.indexOf('href="/temporada/master-theme.css?v=1"');
-  assert(originalStyle >= 0 && themeLink > originalStyle, 'season stylesheet should override the old palette');
-  assert.match(html, /class="master-season-kicker">OUTRO LADO \/ NOVA TEMPORADA<\/span>/);
-  assert.match(html, /<h1 class="top-title">Escudo do Mestre · Nova Temporada<\/h1>/);
+  const themeLink = html.indexOf('href="/temporada/master-theme.css?v=exilio-3-escudo-v2"');
+  assert(originalStyle >= 0 && themeLink > originalStyle);
+  assert(html.includes('OUTRO LADO: VESTÍGIOS · EXÍLIO 3.0'));
+  assert(html.includes('Escudo do Mestre · Vestígios'));
+  assert(!html.includes('OUTRO LADO / 1ª TEMPORADA'));
+  assert(!fs.existsSync(path.join(root, 'public/mestre.html')));
 });
 
 test('Theme uses the season red, black and parchment palette without hiding game sections', () => {
@@ -42,8 +40,7 @@ test('Master controls and game content still use the existing identifiers', () =
     'monsters-grid','catalog-grid','master-clues-grid',
     'master-invite-dialog','master-overlay-button'
   ]) {
-    assert(html.includes('id="' + id + '"'), 'Missing season master control: ' + id);
-    assert(classic.includes('id="' + id + '"'), 'Missing classic master control: ' + id);
+    assert(html.includes('id="' + id + '"'), 'Missing Vestigios master control: ' + id);
   }
   for (const method of [
     'toggleCombatMode()', 'copyMasterTableCode()', 'openMasterInvite()',

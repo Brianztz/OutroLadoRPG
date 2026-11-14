@@ -1,384 +1,246 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Outro Lado RPG — Entrar na Mesa</title>
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <style>
-        :root {
-            color-scheme: dark;
-            --bg: #02050a;
-            --panel: rgba(4, 10, 17, 0.94);
-            --panel-soft: rgba(9, 19, 29, 0.78);
-            --line: rgba(121, 166, 201, 0.30);
-            --line-strong: rgba(139, 204, 246, 0.66);
-            --text: #e7f1f7;
-            --muted: #94a9b9;
-            --blue: #8bccf6;
-            --blue-strong: #39aee8;
-            --master: #d2e8f8;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            min-height: 100vh;
-            margin: 0;
-            padding: 24px;
-            display: grid;
-            place-items: center;
-            overflow-x: hidden;
-            background-color: var(--bg);
-            background-image:
-                linear-gradient(rgba(0, 4, 9, 0.78), rgba(0, 3, 8, 0.94)),
-                radial-gradient(circle at 50% 8%, rgba(57, 174, 232, 0.20), transparent 38%),
-                url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhj-H1CrLywWPDTFYUiAfN0fblQnGH3NKbZhb7nVbbJASv2JENXK4TgRPS8w4IOxxLHi8GVVyXwg4ZNAWeAnECODYIiGWTEbfSyckMu_eR8OA0mODh-CuM8FxInMy61LrxeGFnBGbVIYXuy4U333EkPMDstP8sF-S_-lfeb8SPeo77FNIlpz3Q0_R70q6yf/w1214-h684/Outro%20Lado%20RPG%20-%20Titulo.jpg');
-            background-position: center;
-            background-size: cover;
-            background-attachment: fixed;
-            color: var(--text);
-            font-family: Roboto, "Segoe UI", Arial, sans-serif;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background-image: linear-gradient(rgba(139, 204, 246, 0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(139, 204, 246, 0.022) 1px, transparent 1px);
-            background-size: 44px 44px;
-            mask-image: radial-gradient(circle at center, #000 20%, transparent 82%);
-        }
-
-        .entry-shell {
-            position: relative;
-            width: min(760px, 100%);
-            overflow: hidden;
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            background: linear-gradient(145deg, rgba(7, 15, 24, 0.97), rgba(1, 5, 10, 0.97));
-            box-shadow: 0 32px 100px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(57, 174, 232, 0.035);
-            backdrop-filter: blur(16px);
-        }
-
-        .entry-shell::before {
-            content: '';
-            position: absolute;
-            inset: 0 0 auto;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--blue-strong), var(--blue), transparent);
-            box-shadow: 0 0 22px rgba(57, 174, 232, 0.65);
-        }
-
-        .brand {
-            padding: clamp(28px, 6vw, 50px) clamp(22px, 7vw, 58px) 24px;
-            text-align: center;
-        }
-
-        .brand-mark {
-            width: 58px;
-            height: 58px;
-            margin: 0 auto 18px;
-            display: grid;
-            place-items: center;
-            border: 1px solid var(--line-strong);
-            border-radius: 15px;
-            background: rgba(57, 174, 232, 0.08);
-            box-shadow: 0 0 28px rgba(57, 174, 232, 0.14);
-            color: var(--blue);
-            font-size: 1.7rem;
-            font-weight: 900;
-            transform: rotate(45deg);
-        }
-
-        .brand-mark span { transform: rotate(-45deg); }
-        .eyebrow { margin: 0 0 8px; color: var(--blue); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.22em; text-transform: uppercase; }
-        h1 { margin: 0; font-size: clamp(2.2rem, 8vw, 4.4rem); line-height: 0.95; letter-spacing: -0.055em; text-transform: uppercase; }
-        h1 span { color: var(--blue); text-shadow: 0 0 24px rgba(139, 204, 246, 0.22); }
-        .intro { max-width: 520px; margin: 16px auto 0; color: var(--muted); font-size: 1rem; line-height: 1.55; }
-
-        .entry-form { padding: 0 clamp(22px, 7vw, 58px) clamp(28px, 6vw, 48px); }
-        .table-field { display: block; margin-bottom: 19px; }
-        .table-field > span { display: block; margin-bottom: 8px; color: var(--text); font-size: 0.82rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
-        .input-wrap { position: relative; }
-        .input-symbol { position: absolute; top: 50%; left: 16px; transform: translateY(-50%); color: var(--blue); font-size: 1.05rem; font-weight: 900; }
-        #table-input {
-            width: 100%;
-            min-height: 56px;
-            padding: 13px 16px 13px 43px;
-            border: 1px solid rgba(139, 204, 246, 0.30);
-            border-radius: 11px;
-            outline: none;
-            background: rgba(1, 6, 12, 0.84);
-            color: #fff;
-            font: 900 1rem/1 Roboto, "Segoe UI", sans-serif;
-            letter-spacing: 0.10em;
-            text-transform: uppercase;
-            transition: 0.2s ease;
-        }
-        #table-input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(57, 174, 232, 0.09), 0 0 24px rgba(57, 174, 232, 0.08); }
-
-        .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
-        .role-button {
-            min-height: 112px;
-            padding: 18px;
-            display: grid;
-            grid-template-columns: 45px minmax(0, 1fr);
-            align-items: center;
-            gap: 13px;
-            border: 1px solid var(--line);
-            border-radius: 13px;
-            background: var(--panel-soft);
-            color: var(--text);
-            cursor: pointer;
-            text-align: left;
-            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-        }
-        .role-button:hover, .role-button:focus-visible { transform: translateY(-2px); border-color: var(--line-strong); background: rgba(20, 44, 63, 0.72); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.30), 0 0 18px rgba(57, 174, 232, 0.10); outline: none; }
-        .role-icon { width: 45px; height: 45px; display: grid; place-items: center; border: 1px solid rgba(139, 204, 246, 0.38); border-radius: 11px; background: rgba(57, 174, 232, 0.08); color: var(--blue); font-size: 1.35rem; }
-        .role-copy strong { display: block; margin-bottom: 5px; font-size: 0.98rem; letter-spacing: 0.05em; text-transform: uppercase; }
-        .role-copy span { display: block; color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
-        .role-button.master .role-icon { border-color: rgba(210, 232, 248, 0.42); color: var(--master); }
-
-        .hint { margin: 16px 0 0; color: #718797; font-size: 0.76rem; line-height: 1.45; text-align: center; }
-        .auth-panel { margin-bottom: 20px; padding: 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid rgba(139, 204, 246, 0.22); border-radius: 12px; background: rgba(1, 6, 12, 0.72); }
-        .auth-copy { min-width: 0; display: flex; align-items: center; gap: 11px; }
-        .auth-avatar { width: 40px; height: 40px; flex: 0 0 40px; border: 1px solid var(--line-strong); border-radius: 50%; object-fit: cover; background: rgba(57, 174, 232, 0.08); }
-        .auth-copy strong, .auth-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .auth-copy strong { font-size: 0.86rem; }
-        .auth-copy small { margin-top: 3px; color: var(--muted); font-size: 0.7rem; }
-        .auth-button { min-height: 40px; flex: 0 0 auto; padding: 9px 14px; border: 1px solid var(--line-strong); border-radius: 9px; background: rgba(57, 174, 232, 0.12); color: #fff; cursor: pointer; font-weight: 900; }
-        .auth-button:hover { background: rgba(57, 174, 232, 0.22); box-shadow: 0 0 18px rgba(57, 174, 232, 0.13); }
-        .auth-button.secondary { border-color: rgba(148, 169, 185, 0.34); background: rgba(148, 169, 185, 0.07); color: var(--muted); }
-        .auth-message { min-height: 20px; margin: -10px 0 14px; color: var(--muted); font-size: 0.78rem; text-align: center; }
-        .auth-message.error { color: #ff7a82; }
-        .role-button:disabled { cursor: not-allowed; opacity: 0.42; transform: none; box-shadow: none; }
-
-        @media (max-width: 620px) {
-            body { padding: 12px; }
-            .entry-shell { border-radius: 15px; }
-            .brand { padding-top: 34px; }
-            .role-grid { grid-template-columns: 1fr; }
-            .role-button { min-height: 90px; }
-        }
-    .credential-grid {display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}
-        .credential-grid input {width:100%;min-height:49px;border:1px solid rgba(139,204,246,.3);border-radius:9px;background:rgba(1,6,12,.84);color:#fff;padding:12px;font:600 .89rem Roboto,"Segoe UI",sans-serif}
-        .credential-grid input:focus{outline:2px solid #39aee8;outline-offset:1px}
-        @media(max-width:620px){.credential-grid{grid-template-columns:1fr}}
-    .credential-simple {width:100%;min-height:50px;padding:12px;border:1px solid rgba(139,204,246,.32);border-radius:10px;background:rgba(1,6,12,.84);color:#fff;font:600 .92rem Roboto,"Segoe UI",sans-serif}
-    .credential-simple:focus {outline:2px solid #39aee8;outline-offset:1px}
-    .portal-advanced {margin:20px 0 0;padding:16px 0 0;border-top:1px solid rgba(139,204,246,.18)}
-    .portal-advanced summary {cursor:pointer;color:var(--blue);font-size:.85rem;font-weight:700}
-    .portal-advanced p {font-size:.82rem;color:var(--muted);line-height:1.5}
-    .portal-advanced .table-field {margin-top:14px}
-    [hidden] { display: none !important; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b0d">
+<meta name="description" content="Outro Lado: Vestígios — portal exclusivo da segunda temporada. Entre como mestre ou acesse sua ficha pelo convite.">
+<title>Outro Lado: Vestígios — Exílio 3.0</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;--bg:#080a0c;--panel:#11161a;--line:#343a3b;--accent:#c66556;--accent2:#f1aa8b;--text:#f1ede5;--muted:#aab0af;--soft:#161d21;font-family:Inter,"Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(ellipse at 80% 8%,rgba(127,47,44,.26),transparent 43%),radial-gradient(ellipse at 7% 86%,rgba(44,71,73,.22),transparent 50%),var(--bg);display:grid;grid-template-rows:auto 1fr auto}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;background:repeating-linear-gradient(90deg,transparent 0 119px,#fff 120px,transparent 121px);mask-image:linear-gradient(to bottom,#000,transparent 75%)}
+.page-head{width:min(1120px,calc(100% - 44px));margin:auto;display:flex;align-items:center;justify-content:space-between;padding:28px 0;gap:12px;position:relative}
+.wordmark{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--text);font-weight:800;letter-spacing:.14em;font-size:.83rem}
+.wordmark-mark{width:35px;height:35px;border:1px solid #ab7066;display:grid;place-items:center;transform:rotate(45deg);color:var(--accent2);font-size:1.25rem}
+.wordmark-mark b{transform:rotate(-45deg);font-weight:400}
+.season-pill{font-size:.69rem;letter-spacing:.16em;color:#d6a89b;padding:9px 12px;border:1px solid #61433d;border-radius:999px;text-transform:uppercase}
+main{width:min(1120px,calc(100% - 44px));margin:auto;display:grid;grid-template-columns:1fr minmax(325px,430px);gap:clamp(28px,6vw,100px);align-items:center;padding:20px 0 64px;position:relative}
+.eyebrow{font-size:.76rem;font-weight:800;letter-spacing:.27em;color:var(--accent2);text-transform:uppercase;margin:0 0 18px}
+.hero h1{font-weight:850;letter-spacing:-.075em;line-height:.97;font-size:clamp(3.25rem,7vw,6.1rem);margin:0 0 25px}
+.hero h1 span{display:block;color:var(--accent)}
+.hero-copy{max-width:490px;color:#bfc5c4;font-size:clamp(1rem,1.8vw,1.16rem);line-height:1.7}
+.hero-line{width:72px;height:2px;background:var(--accent);margin:32px 0 25px}
+.feature-row{display:flex;gap:18px;flex-wrap:wrap;color:#b5b6b4;font-size:.84rem}
+.feature-row span{display:inline-flex;align-items:center;gap:7px}
+.feature-row i{width:6px;height:6px;background:var(--accent);border-radius:50%}
+.panel{border:1px solid #394041;border-radius:18px;background:linear-gradient(160deg,rgba(25,30,33,.96),rgba(11,15,18,.98));padding:clamp(24px,4vw,36px);box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.panel-top{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:22px}
+.panel-kicker{text-transform:uppercase;letter-spacing:.18em;font-size:.68rem;color:var(--accent2);font-weight:800}
+.panel h2{margin:7px 0 0;font-size:1.65rem;letter-spacing:-.035em}
+.panel-hint{font-size:.85rem;line-height:1.55;color:var(--muted);margin:0 0 24px}
+label{display:block;font-size:.79rem;font-weight:750;color:#dedbd3;margin:14px 0 9px}
+input{background:#080c10;border:1px solid #455053;color:#fff;border-radius:10px;width:100%;height:50px;padding:12px 15px;outline:none;font:inherit}
+input:focus-visible{border-color:#dd9a87;box-shadow:0 0 0 3px rgba(198,101,86,.13)}
+input::placeholder{color:#778387}
+.action{width:100%;min-height:54px;display:inline-flex;justify-content:center;align-items:center;gap:10px;margin-top:18px;background:var(--accent);color:#180f0e;border:1px solid #d68d7b;border-radius:10px;padding:12px 16px;font-weight:850;font-size:.98rem;cursor:pointer;transition:background .2s,transform .2s}
+.action:hover:not(:disabled){background:#e09a82;transform:translateY(-1px)}
+.action:disabled{cursor:wait;opacity:.6}
+.panel-divider{height:1px;background:#303a3b;margin:26px 0}
+.player-note{font-size:.9rem;color:#dad8d1;line-height:1.5}
+.player-note strong{display:block;font-size:.95rem;margin-bottom:6px}
+.player-note p{margin:0;color:var(--muted);font-size:.85rem;line-height:1.55}
+.panel details{border-top:1px solid #293638;margin-top:24px;padding-top:16px}
+.panel summary{cursor:pointer;font-size:.8rem;color:#c8a89e}
+.panel details p{font-size:.81rem;color:var(--muted);line-height:1.55}
+.small-code{color:var(--accent2);font-size:.72rem;letter-spacing:.07em;font-weight:700}
+.status{min-height:1.3em;margin:15px 0 0;color:#d3b6aa;font-size:.81rem;line-height:1.5}
+.status.error{color:#ff9b91}
+.status.success{color:#a8d2bd}
+.invite-view{text-align:center}
+.invite-icon{width:70px;height:70px;display:grid;place-items:center;margin:0 auto 19px;border:1px solid #925c51;border-radius:16px;font-size:1.9rem;color:#e4b19f;background:rgba(198,101,86,.08)}
+.invite-view h2{font-size:1.7rem}
+footer{width:min(1120px,calc(100% - 44px));margin:auto;padding:21px 0 29px;border-top:1px solid #272e2f;display:flex;flex-wrap:wrap;justify-content:space-between;gap:9px;color:#818a8c;font-size:.73rem;letter-spacing:.08em}
+footer strong{color:#b9bab5}
+[hidden]{display:none!important}
+@media(max-width:820px){main{grid-template-columns:1fr;gap:35px;padding-top:10px}.hero h1{font-size:clamp(3.25rem,11vw,5rem)}.hero-copy{margin-bottom:0}.feature-row{display:none}}
+@media(max-width:450px){.page-head{padding:20px 0}.wordmark{font-size:.7rem}.season-pill{font-size:.58rem}.panel{padding:22px}.hero h1{font-size:3.3rem}}
+</style>
 </head>
 <body>
-    <main class="entry-shell">
-        <header class="brand">
-            <div class="brand-mark" aria-hidden="true"><span>◇</span></div>
-            <p class="eyebrow">Portal da mesa</p>
-            <h1>Outro Lado <span>RPG</span></h1>
-            <p class="intro">Jogadores entram pelo link enviado pelo mestre. O mestre usa sua chave privada.</p>
-        </header>
-
-        <form class="entry-form" onsubmit="enterPortal('master'); return false;">
-            <section class="auth-panel" aria-live="polite">
-                <div class="auth-copy">
-                    <div><strong id="auth-name">Acesso do mestre</strong>
-                    <small id="auth-email">Seu código de mesa é gerado uma vez e fica sempre com você.</small></div>
-                </div>
-            </section>
-            <label class="table-field" for="credential-input">
-                <span>Chave de acesso</span>
-                <input id="credential-input" class="credential-simple" type="password" autocomplete="off" placeholder="Sua chave privada de mestre">
-            </label>
-            <label class="table-field" for="sheet-model"><span>Temporada</span>
-                <select id="sheet-model" style="width:100%;padding:12px;background:#101923;color:#eee;border:1px solid #426076;border-radius:8px">
-                    <option value="temporada">Nova temporada</option>
-                    <option value="classic">Outro Lado — original</option>
-                </select>
-            </label>
-            <div class="role-grid" style="grid-template-columns:1fr">
-                <button class="role-button master" type="submit" disabled>
-                    <span class="role-icon" aria-hidden="true">♜</span>
-                    <span class="role-copy"><strong>Entrar como mestre</strong><span>Usar sempre o mesmo código de mesa.</span></span>
-                </button>
-            </div>
-            <details id="old-room-details" class="portal-advanced">
-                <summary>Já tenho uma mesa antiga e quero manter seu código</summary>
-                <p>Use esta opção na primeira entrada. Depois que o código ficar salvo, ele não poderá ser trocado pelo login.</p>
-                <label class="table-field" for="old-master-room"><span>Código da mesa existente</span>
-                    <input id="old-master-room" class="credential-simple" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" spellcheck="false" placeholder="Ex.: PADRAO">
-                </label>
-            </details>
-            <details id="manual-player-login" class="portal-advanced">
-                <summary>Sou jogador e preciso entrar manualmente</summary>
-                <p>O mais fácil é abrir o link enviado pelo mestre. Use esta opção se tiver recebido código e chave separadamente.</p>
-                <label id="player-code-field" class="table-field" for="player-code-input">
-                    <span>Código do personagem</span>
-                    <input id="player-code-input" class="credential-simple" autocomplete="off" maxlength="40" placeholder="Código do personagem" spellcheck="false">
-                </label>
-                <label class="table-field" for="table-input">
-                    <span>Código da mesa</span>
-                    <div class="input-wrap">
-                        <span class="input-symbol" aria-hidden="true">#</span>
-                        <input id="table-input" name="mesa" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false" placeholder="PADRAO">
-                    </div>
-                </label>
-                <div class="role-grid" style="grid-template-columns:1fr">
-                    <button class="role-button player" type="button" onclick="enterPortal('player')" disabled>
-                        <span class="role-icon" aria-hidden="true">♟</span>
-                        <span class="role-copy"><strong>Entrar como jogador</strong><span>Usar código e chave enviados pelo mestre.</span></span>
-                    </button>
-                </div>
-            </details>
-            <p id="auth-message" class="auth-message" role="status"></p>
+<header class="page-head">
+  <a class="wordmark" href="/"><span class="wordmark-mark" aria-hidden="true"><b>◇</b></span> OUTRO LADO</a>
+  <span class="season-pill">2ª temporada · Exílio 3.0</span>
+</header>
+<main>
+  <section class="hero" aria-label="Sobre a campanha">
+    <p class="eyebrow">A temporada começa aqui</p>
+    <h1>VESTÍGIOS<span>DO EXÍLIO.</span></h1>
+    <p class="hero-copy">Uma floresta. Uma cabana esquecida. Algo que nunca deveria ter escapado. Entre na mesa de <strong>Outro Lado: Vestígios</strong> e continue sua história.</p>
+    <div class="hero-line"></div>
+    <div class="feature-row"><span><i></i> Ficha conectada</span><span><i></i> Escudo do mestre</span><span><i></i> Convites privados</span></div>
+  </section>
+  <section class="panel" aria-label="Acesso à segunda temporada">
+    <div id="master-section">
+      <div class="panel-top"><div><span class="panel-kicker">Área do mestre</span><h2>Entrar na mesa</h2></div></div>
+      <p class="panel-hint">Sua chave é suficiente. Seu código de mesa é criado uma única vez e fica salvo para sempre.</p>
+      <form id="master-form">
+        <label for="master-key">Chave privada do mestre</label>
+        <input id="master-key" type="password" autocomplete="off" placeholder="Digite sua chave de acesso">
+        <button class="action" type="submit" id="master-button">Acessar escudo <span aria-hidden="true">↗</span></button>
+      </form>
+      <p class="status" id="master-status" role="status" aria-live="polite"></p>
+      <details id="existing-room">
+        <summary>Já usava uma mesa nesta temporada?</summary>
+        <p>Na primeira entrada, você pode manter o código que já usa com seus jogadores. Se um código permanente já tiver sido criado, ele continuará o mesmo.</p>
+        <label for="existing-room-code">Código da mesa existente</label>
+        <input id="existing-room-code" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false" placeholder="Código atual da mesa">
+      </details>
+      <div class="panel-divider"></div>
+      <div class="player-note"><strong>É jogador?</strong><p>Você não precisa de login nem de senha nesta tela. Basta abrir o link de convite que seu mestre enviou.</p></div>
+      <details id="player-manual">
+        <summary>Entrar manualmente com código e chave</summary>
+        <p>Use apenas se não puder abrir seu link de convite.</p>
+        <form id="player-form">
+          <label for="manual-table">Código da mesa</label><input id="manual-table" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Código fornecido pelo mestre">
+          <label for="manual-code">Código do personagem</label><input id="manual-code" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Seu código">
+          <label for="manual-key">Chave do jogador</label><input id="manual-key" type="password" autocomplete="off" placeholder="Sua chave individual">
+          <button class="action" type="submit" id="player-button">Abrir minha ficha</button>
         </form>
-        <section id="invite-entry" hidden aria-live="polite" style="text-align:center;padding:0 30px 38px">
-          <div aria-hidden="true" style="font-size:2rem;color:#8bccf6">♟</div>
-          <h2 style="font-size:1.4rem">Convite recebido!</h2>
-          <p id="invite-status" role="status" style="color:#b2cede">Entrando na sua ficha...</p>
-          <button type="button" id="invite-retry" hidden style="border:1px solid #8bccf6;border-radius:10px;padding:12px 22px;background:#12334e;color:#fff;cursor:pointer">Tentar novamente</button>
-        </section>
-    </main>
+        <p class="status" id="player-status" role="status" aria-live="polite"></p>
+      </details>
+    </div>
+    <div id="invite-section" class="invite-view" hidden>
+      <div class="invite-icon" aria-hidden="true">◇</div>
+      <span class="panel-kicker">Seu convite</span>
+      <h2>Bem-vindo ao Exílio.</h2>
+      <p class="panel-hint">Conectando você à sua ficha da segunda temporada.</p>
+      <p id="invite-status" class="status" role="status" aria-live="polite">Autenticando...</p>
+      <button id="invite-retry" class="action" hidden type="button">Tentar novamente</button>
+    </div>
+  </section>
+</main>
+<footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
+<script src="/season-space.js?v=3"></script>
+<script src="/firebase-client.js?v=season2-portal-20261114"></script>
+<script>
+(function () {
+  'use strict';
+  const params = new URLSearchParams(location.search);
+  const invite = params.get('convite') === '1';
+  const masterForm = document.getElementById('master-form');
+  const playerForm = document.getElementById('player-form');
+  const masterStatus = document.getElementById('master-status');
+  const playerStatus = document.getElementById('player-status');
+  const inviteStatus = document.getElementById('invite-status');
+  const retry = document.getElementById('invite-retry');
+  const masterButton = document.getElementById('master-button');
+  const playerButton = document.getElementById('player-button');
+  const masterKey = document.getElementById('master-key');
+  let inviteCredentials = null;
+  let busy = false;
+  const edition = 'temporada';
 
-    <script src="/season-space.js?v=3"></script>
-    <script src="firebase-client.js?v=native-auth-1"></script>
-    <script>
-      const params = new URLSearchParams(location.search);
-      const tableInput = document.getElementById('table-input');
-      const seasonSelect = document.getElementById('sheet-model');
-      const codeInput = document.getElementById('player-code-input');
-      const keyInput = document.getElementById('credential-input');
-      const message = document.getElementById('auth-message');
-      const inviteLanding = document.getElementById('invite-entry');
-      const inviteStatus = document.getElementById('invite-status');
-      const inviteRetry = document.getElementById('invite-retry');
-      const roleButtons = [...document.querySelectorAll('.role-button')];
-      const isPlayerInvite = params.get('convite') === '1';
-      let busy = false;
-      tableInput.value = OLFirebase.normalizeTableCode(params.get('mesa')
-        || localStorage.getItem('portal_table_code') || 'PADRAO');
-      if (isPlayerInvite || params.get('temporada') === '2') {
-        seasonSelect.value = params.get('temporada') === '2' ? 'temporada' : 'classic';
-      }
-      if (isPlayerInvite) {
-        seasonSelect.disabled = true;
-        tableInput.readOnly = true;
-        document.querySelector('.entry-form').hidden = true;
-        inviteLanding.hidden = false;
-      }
-      const fragment = new URLSearchParams(location.hash.replace(/^#/, ''));
-      if (fragment.has('codigo')) codeInput.value = fragment.get('codigo') || '';
-      if (fragment.has('chave')) keyInput.value = fragment.get('chave') || '';
-      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-      roleButtons.forEach(b => b.disabled = false);
-      function show(messageText, error = false) {
-        message.textContent = messageText;
-        message.classList.toggle('error', error);
-        if (isPlayerInvite) {
-          inviteStatus.textContent = messageText;
-          inviteStatus.style.color = error ? '#ff9ea5' : '';
+  function show(node, text, error) {
+    node.textContent = text;
+    node.classList.toggle('error', Boolean(error));
+    node.classList.toggle('success', !error && Boolean(text));
+  }
+  function normalize(code) { return OLFirebase.normalizeTableCode(code); }
+  function physicalRoom(code) { return OLFirebase.seasonScopedTable(code, edition); }
+  function destination(role, table, playerCode) {
+    localStorage.setItem('portal_table_code', table);
+    localStorage.setItem(role === 'master' ? 'master_table_code' : 'player_table_code', table);
+    if (role === 'master') localStorage.setItem('master_permanent_table_code', table);
+    if (role === 'player') localStorage.setItem('player_sync_code', playerCode);
+    const next = new URL(role === 'master' ? './mestre-temporada.html' : './ficha-temporada.html', location.href);
+    next.searchParams.set('mesa', table);
+    next.searchParams.set('temporada', '2');
+    location.assign(next.href);
+  }
+  function lock(value) {
+    busy = value;
+    masterButton.disabled = value;
+    playerButton.disabled = value;
+    retry.disabled = value;
+  }
+  async function enterMaster(event) {
+    event.preventDefault();
+    if (busy) return;
+    lock(true);
+    show(masterStatus, 'Verificando seu acesso...', false);
+    try {
+      const key = masterKey.value.trim();
+      let table;
+      if (key) {
+        const advanced = document.getElementById('existing-room');
+        const existing = document.getElementById('existing-room-code');
+        const preferredCode = advanced.open ? existing.value.trim().toUpperCase() : '';
+        if (advanced.open && (!preferredCode || !existing.reportValidity())) {
+          throw Error('Informe o código da mesa existente ou feche a opção avançada.');
         }
-      }
-      function setBusy(state) {
-        busy = state;
-        roleButtons.forEach(b => { b.disabled = busy; });
-        inviteRetry.disabled = busy;
-      }
-      function destination(role, logicalTable, edition) {
-        localStorage.setItem('portal_table_code', logicalTable);
-        localStorage.setItem(role === 'master' ? 'master_table_code' : 'player_table_code', logicalTable);
-        const page = role === 'master'
-          ? (edition === 'temporada' ? 'mestre-temporada.html' : 'mestre.html')
-          : (edition === 'temporada' ? 'ficha-temporada.html' : 'ficha.html');
-        const next = new URL('./' + page, location.href);
-        next.searchParams.set('mesa', logicalTable);
-        if (edition === 'temporada') next.searchParams.set('temporada','2');
-        location.assign(next.href);
-      }
-      async function enterPortal(role) {
-        if (busy) return;
-        if (role === 'player' && !tableInput.reportValidity()) return;
-        const edition = seasonSelect.value;
-        const key = keyInput.value.trim();
-        let table = OLFirebase.normalizeTableCode(tableInput.value);
-        let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
-        setBusy(true);
-        show(role === 'master' ? 'Entrando como mestre...' : 'Entrando na ficha...');
-        try {
-          if (role === 'master') {
-            if (key) {
-              const oldRoomDetails = document.getElementById('old-room-details');
-              const oldRoomInput = document.getElementById('old-master-room');
-              const preferredCode = oldRoomDetails.open ? oldRoomInput.value.trim().toUpperCase() : '';
-              if (oldRoomDetails.open && (!preferredCode || !oldRoomInput.reportValidity())) {
-                throw Error('Informe o código da mesa antiga ou feche essa opção para gerar um novo.');
-              }
-              // The server stores this code once; the browser never chooses a new one later.
-              const ownerRoom = await OLNative.getMasterRoom(key, preferredCode);
-              table = ownerRoom.tableCode;
-              const physical = OLFirebase.seasonScopedTable(table, edition);
-              await OLNative.signInMaster(physical, key);
-              localStorage.setItem('master_permanent_table_code', table);
-            } else {
-              // Resume an existing authenticated session without regenerating the code.
-              const remembered = localStorage.getItem('master_permanent_table_code');
-              if (!remembered) throw Error('Informe a sua chave de acesso do mestre.');
-              table = OLFirebase.normalizeTableCode(remembered);
-              const physical = OLFirebase.seasonScopedTable(table, edition);
-              const session = await OLNative.getSession(physical).catch(() => null);
-              if (!session?.ok || session.role !== 'master') {
-                throw Error('Sessão expirada. Informe a sua chave de acesso do mestre.');
-              }
-            }
-          } else {
-            const physical = OLFirebase.seasonScopedTable(table, edition);
-            let current = await OLNative.getSession(physical).catch(() => null);
-            if (!code && current?.role === 'player') code = current.code;
-            if (!current?.ok || current.role !== 'player' || current.code !== code) {
-              if (!code || !key) throw Error('Informe o código e a chave do personagem ou abra seu convite.');
-              await OLNative.signInPlayer(physical, edition, code, key);
-            }
-            localStorage.setItem('player_sync_code', code || current?.code);
-          }
-          keyInput.value = '';
-          destination(role, table, edition);
-        } catch (error) {
-          show(isPlayerInvite
-            ? 'Não foi possível entrar. Tente novamente ou peça um novo convite ao mestre.'
-            : String(error.message || 'Falha ao entrar na mesa.'), true);
-          if (isPlayerInvite) inviteRetry.hidden = false;
-        } finally { setBusy(false); }
-      }
-      window.enterPortal = enterPortal;
-      const incomingNotice = params.get('aviso');
-      if (incomingNotice) show(incomingNotice, true);
-      else if (isPlayerInvite) show('Entrando na sua ficha...');
-      // Show the last known master room without trusting localStorage as authentication.
-      if (!isPlayerInvite && !keyInput.value && !incomingNotice) {
+        const owner = await OLNative.getMasterRoom(key, preferredCode);
+        table = owner.tableCode;
+        await OLNative.signInMaster(physicalRoom(table), key);
+      } else {
         const remembered = localStorage.getItem('master_permanent_table_code');
-        if (remembered) {
-          const physical = OLFirebase.seasonScopedTable(remembered, seasonSelect.value);
-          OLNative.getSession(physical).then(user => {
-            if (user?.ok && user.role === 'master') {
-              show('Sessão do mestre ativa. Código fixo: ' + remembered);
-            }
-          }).catch(() => {});
+        if (!remembered) throw Error('Informe sua chave privada de mestre.');
+        table = normalize(remembered);
+        const session = await OLNative.getSession(physicalRoom(table));
+        if (!session.ok || session.role !== 'master') throw Error('Sessão expirada. Informe a chave do mestre.');
+      }
+      masterKey.value = '';
+      destination('master', table);
+    } catch (error) {
+      show(masterStatus, error.message === 'invalid_credentials' ? 'Chave de mestre incorreta.' : String(error.message || 'Não foi possível entrar.'), true);
+    } finally { lock(false); }
+  }
+  async function enterPlayer(table, code, key, statusNode) {
+    if (busy) return;
+    lock(true);
+    show(statusNode, 'Conectando à sua ficha...', false);
+    try {
+      const normalizedTable = normalize(table);
+      const normalizedCode = String(code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
+      if (!table || !normalizedCode || !key) throw Error('Convite incompleto. Peça um novo link ao mestre.');
+      const physical = physicalRoom(normalizedTable);
+      await OLNative.signInPlayer(physical, edition, normalizedCode, key);
+      destination('player', normalizedTable, normalizedCode);
+    } catch (error) {
+      show(statusNode, invite ? 'Não foi possível usar o convite. Tente novamente ou peça outro ao mestre.' : String(error.message || 'Não foi possível entrar.'), true);
+      if (invite) retry.hidden = false;
+    } finally { lock(false); }
+  }
+  masterForm.addEventListener('submit', enterMaster);
+  playerForm.addEventListener('submit', event => {
+    event.preventDefault();
+    enterPlayer(document.getElementById('manual-table').value, document.getElementById('manual-code').value, document.getElementById('manual-key').value.trim(), playerStatus);
+  });
+
+  if (invite) {
+    document.getElementById('master-section').hidden = true;
+    document.getElementById('invite-section').hidden = false;
+    const fragment = new URLSearchParams(location.hash.slice(1));
+    inviteCredentials = {
+      table: params.get('mesa') || '',
+      code: fragment.get('codigo') || '',
+      key: fragment.get('chave') || ''
+    };
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    retry.addEventListener('click', () => {
+      retry.hidden = true;
+      enterPlayer(inviteCredentials.table, inviteCredentials.code, inviteCredentials.key, inviteStatus);
+    });
+    if (inviteCredentials.table && inviteCredentials.code && inviteCredentials.key) {
+      enterPlayer(inviteCredentials.table, inviteCredentials.code, inviteCredentials.key, inviteStatus);
+    } else {
+      show(inviteStatus, 'Este convite está incompleto. Peça outro link ao mestre.', true);
+    }
+  } else {
+    const notice = params.get('aviso');
+    if (notice) show(masterStatus, notice, true);
+    const remembered = localStorage.getItem('master_permanent_table_code');
+    if (remembered && !notice) {
+      OLNative.getSession(physicalRoom(remembered)).then(session => {
+        if (session?.ok && session.role === 'master') {
+          show(masterStatus, 'Sessão ativa. Clique em Acessar escudo para continuar.', false);
         }
-      }
-      inviteRetry.addEventListener('click', () => {
-        inviteRetry.hidden = true;
-        enterPortal('player');
-      });
-      if (isPlayerInvite && keyInput.value && codeInput.value) {
-        enterPortal('player');
-      } else if (isPlayerInvite) {
-        show('Este link está incompleto. Peça um novo convite ao mestre.', true);
-      }
-    </script>
+      }).catch(() => {});
+    }
+  }
+})();
+</script>
 </body>
 </html>

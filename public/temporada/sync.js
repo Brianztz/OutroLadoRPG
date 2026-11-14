@@ -1,4 +1,4 @@
-/* Season realtime/cloud adapter. Classic sheet storage and events are left intact. */
+/* Vestigios / Exilio 3.0: realtime and Cloudflare native storage adapter. */
 window.startSeasonSync=async function startSeasonSync(){
   const {table,view,user,prefix,stateKey}=window.SeasonContext;
   const api=window.SeasonSheet,portrait=window.SeasonPortrait,$=id=>document.getElementById(id);

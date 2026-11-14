@@ -543,28 +543,12 @@ export default {
                 headers
             });
         }
-        if (url.pathname === '/ficha' || url.pathname === '/ficha/' || url.pathname === '/ficha.html') {
-            const assetResponse = await env.ASSETS.fetch(request);
-            const contentType = String(assetResponse.headers.get('content-type') || '');
-            if (!assetResponse.ok || !contentType.includes('text/html')) return assetResponse;
-
-            const html = await assetResponse.text();
-            const playerOccupationScript = '<script defer src="/player-occupations.js?v=20261028-1"></script>'
-                + '<script defer src="/occupation-picker.js?v=20261028-2"></script>'
-                + '<script defer src="/character-toolbar.js?v=20261028-1"></script>'
-                + '<script defer src="/vitals-alignment.js?v=20261028-3"></script>'
-                + '<script defer src="/ritual-balance-runtime.js?v=20261028-1"></script>';
-            const body = html.includes('</head>')
-                ? html.replace('</head>', playerOccupationScript + '</head>')
-                : playerOccupationScript + html;
-            const headers = new Headers(assetResponse.headers);
-            headers.delete('content-length');
-            headers.set('Cache-Control', 'no-store');
-            return new Response(body, {
-                status: assetResponse.status,
-                statusText: assetResponse.statusText,
-                headers
-            });
+        // Legacy URLs only redirect. No first-season page or application runs here.
+        if (/^\/(?:ficha|mestre)(?:\.html)?\/?$/i.test(url.pathname)) {
+            const isMaster = /^\/mestre/i.test(url.pathname);
+            url.pathname = isMaster ? '/mestre-temporada.html' : '/ficha-temporada.html';
+            url.searchParams.set('temporada', '2');
+            return Response.redirect(url.toString(), 308);
         }
         return env.ASSETS.fetch(request);
     }
