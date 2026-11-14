@@ -447,6 +447,28 @@
         .catalog-creator-footer button { padding: 10px 16px; border-radius: 6px; font-size: 0.7em; font-weight: 900; cursor: pointer; }
         .catalog-creator-cancel { border: 1px solid #45454c; background: #29292f; color: var(--text-primary); }
         .catalog-creator-save { border: 1px solid var(--accent-blue); background: var(--accent-blue); color: #000; }
+        /* Saved and offline character sheets available directly to the master. */
+        .master-sheets-dialog { width:min(720px,calc(100vw - 28px)); max-height:min(86vh,900px); padding:0; border:1px solid #8b4b3b; border-radius:16px; background:#141010; color:#f3e9e0; box-shadow:0 24px 90px #000b; }
+        .master-sheets-dialog::backdrop { background:#030305cf; backdrop-filter:blur(5px); }
+        .master-sheets-body { padding:clamp(18px,3vw,28px); display:grid; gap:15px; overflow:auto; max-height:86vh; }
+        .master-sheets-head { display:flex; align-items:flex-start; justify-content:space-between; gap:15px; }
+        .master-sheets-head h2 { margin:0; font-size:1.25rem; color:#ffcfb7; letter-spacing:.015em; }
+        .master-sheets-description { margin:0; font-size:.85rem; line-height:1.55; color:#bcb0a7; }
+        .master-sheets-close { cursor:pointer; padding:8px 12px; border-radius:8px; border:1px solid #8b4b3b; background:#301913; color:#f6c6ae; font-weight:800; }
+        #master-sheets-search { display:block; width:100%; border-radius:9px; border:1px solid #695149; background:#0c0a0a; color:#fff4ed; font:inherit; padding:13px; box-sizing:border-box; outline-offset:3px; }
+        .master-sheets-list { display:grid; gap:10px; min-height:60px; }
+        .master-sheet-entry { border:1px solid #65463a; background:#1b1715; padding:13px; border-radius:11px; display:flex; justify-content:space-between; align-items:center; gap:14px; }
+        .master-sheet-entry-info { flex:1; min-width:0; overflow-wrap:anywhere; }
+        .master-sheet-entry strong { display:block; color:#f4e7de; font-size:.95rem; }
+        .master-sheet-entry small { color:#baa89c; display:block; margin-top:5px; font-size:.74rem; }
+        .master-sheet-entry button { flex-shrink:0; min-height:40px; border-radius:8px; border:1px solid #d28568; background:#6d2c1b; color:#ffded0; font-size:.75rem; font-weight:900; padding:9px 13px; cursor:pointer; }
+        .master-sheet-entry button:hover:not(:disabled) { background:#92432b; }
+        .master-sheet-entry button:disabled { opacity:.45; cursor:not-allowed; }
+        .master-sheets-footer { display:flex; flex-wrap:wrap; align-items:center; gap:12px; justify-content:space-between; }
+        .master-sheets-footer button { padding:10px 15px; border-radius:8px; border:1px solid #98604a; background:#332018; color:#f9d8c7; cursor:pointer; font-weight:800; }
+        .master-sheets-footer a { color:#f3bba1; text-decoration:underline; font-size:.85rem; }
+        #master-sheets-status { margin:0; font-size:.85rem; color:#d4b1a2; }
+        @media(max-width:540px) { .master-sheet-entry { flex-direction:column; align-items:stretch; } .master-sheet-entry button { width:100%; } .master-sheets-head h2 { font-size:1.08rem; } }
         #modal-ficha { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,0.92); }
         .modal-toolbar { width: 95%; max-width: 1400px; display: flex; justify-content: flex-end; }
         .btn-close-modal { margin-bottom: 10px; padding: 10px 20px; border: 0; border-radius: 8px; background: var(--accent-red); color: white; font-size: 1em; font-weight: 900; cursor: pointer; }
@@ -492,6 +514,7 @@
         </div>
         <div class="master-top-actions">
             <button id="master-back-menu" class="master-menu-button" type="button" onclick="returnToMasterMenu()" aria-label="Voltar ao menu principal">← VOLTAR AO MENU</button>
+            <button id="master-saved-sheets-button" class="master-invite-button" type="button" onclick="openSavedPlayerSheets()">▤ FICHAS DOS PERSONAGENS</button>
             <button id="master-overlay-button" class="master-invite-button" type="button" onclick="openMasterOverlay()">ABRIR OVERLAY</button>
             <button id="master-table-button" class="master-table-button" type="button" onclick="copyMasterTableCode()">MESA: <span id="master-table-code">PADRAO</span></button>
             <button class="master-invite-button" type="button" onclick="openMasterInvite()">✉ CONVIDAR JOGADOR</button>
@@ -906,6 +929,24 @@
             </div>
         </div>
     </div>
+
+    <dialog id="master-sheets-dialog" class="master-sheets-dialog" aria-labelledby="master-sheets-title">
+        <div class="master-sheets-body">
+            <div class="master-sheets-head">
+                <h2 id="master-sheets-title">Fichas dos personagens</h2>
+                <button class="master-sheets-close" type="button" onclick="closeSavedPlayerSheets()" aria-label="Fechar lista de fichas">✕ FECHAR</button>
+            </div>
+            <p class="master-sheets-description">Abra qualquer ficha salva desta mesa, mesmo se o jogador estiver offline. As fichas sem dados ainda não podem ser abertas.</p>
+            <label for="master-sheets-search" class="master-sheets-description">Buscar por personagem ou código</label>
+            <input id="master-sheets-search" type="search" autocomplete="off" placeholder="Nome ou código do personagem" oninput="renderSavedPlayerSheets()">
+            <p id="master-sheets-status" role="status" aria-live="polite"></p>
+            <div id="master-sheets-list" class="master-sheets-list" aria-live="polite"></div>
+            <div class="master-sheets-footer">
+                <button type="button" onclick="refreshSavedPlayerSheets()">↻ ATUALIZAR FICHAS</button>
+                <a id="master-sheets-invite-link" href="./acessos.html">Gerenciar convites</a>
+            </div>
+        </div>
+    </dialog>
 
     <div id="modal-ficha" onclick="if(event.target===this) fecharFicha()">
         <div class="modal-toolbar"><button class="btn-close-modal" onclick="fecharFicha()">✕ FECHAR FICHA</button></div>
@@ -3366,8 +3407,108 @@
             }
         }
 
+        let savedPlayerSheets = [];
+        let savedPlayerSheetsLoading = false;
+
+        function closeSavedPlayerSheets() {
+            const dialog = document.getElementById('master-sheets-dialog');
+            if (dialog.open) dialog.close();
+        }
+
+        function renderSavedPlayerSheets() {
+            const list = document.getElementById('master-sheets-list');
+            const status = document.getElementById('master-sheets-status');
+            const search = document.getElementById('master-sheets-search').value.trim().toLocaleLowerCase('pt-BR');
+            list.replaceChildren();
+
+            const joined = new Map(savedPlayerSheets.map(entry => [String(entry.code), entry]));
+            // Also show characters currently connected but not yet backed up.
+            for (const [code, player] of connectedPlayers) {
+                if (!joined.has(code)) joined.set(code, {
+                    code, name: String(player?.nome || code), hasSheet: false
+                });
+            }
+            const entries = [...joined.values()]
+                .filter(entry => !search || String(entry.name).toLocaleLowerCase('pt-BR').includes(search)
+                    || String(entry.code).toLocaleLowerCase('pt-BR').includes(search))
+                .sort((a,b) => String(a.name).localeCompare(String(b.name),'pt-BR'));
+
+            if (!entries.length) {
+                const empty = document.createElement('p');
+                empty.className = 'master-sheets-description';
+                empty.textContent = savedPlayerSheetsLoading ? 'Carregando fichas…'
+                    : search ? 'Nenhuma ficha corresponde a essa busca.'
+                    : 'Ainda não há fichas registradas nesta mesa.';
+                list.append(empty);
+                return;
+            }
+            for (const entry of entries) {
+                const code = String(entry.code);
+                const online = connectedPlayers.has(code);
+                const row = document.createElement('article');
+                row.className = 'master-sheet-entry';
+                const info = document.createElement('div');
+                info.className = 'master-sheet-entry-info';
+                const name = document.createElement('strong');
+                name.textContent = online ? String(connectedPlayers.get(code)?.nome || entry.name) : String(entry.name || code);
+                const detail = document.createElement('small');
+                detail.textContent = 'Código: ' + code + ' · '
+                    + (online ? 'Conectado agora' : entry.hasSheet ? 'Ficha salva na nuvem' : 'Ainda sem ficha salva');
+                info.append(name,detail);
+                const open = document.createElement('button');
+                open.type = 'button';
+                open.textContent = 'ABRIR FICHA';
+                open.disabled = !entry.hasSheet && !online;
+                open.title = open.disabled ? 'Este personagem ainda não salvou uma ficha.' : 'Abrir ficha completa';
+                open.addEventListener('click', () => {
+                    closeSavedPlayerSheets();
+                    abrirFicha(code);
+                });
+                row.append(info,open);
+                list.append(row);
+            }
+            if (status.textContent === 'Carregando fichas da mesa…') {
+                status.textContent = entries.length + (entries.length === 1 ? ' personagem encontrado.' : ' personagens encontrados.');
+            }
+        }
+
+        function openSavedPlayerSheets() {
+            const dialog = document.getElementById('master-sheets-dialog');
+            const invite = new URL('./acessos.html',window.location.href);
+            invite.searchParams.set('mesa', masterTableCode);
+            invite.searchParams.set('temporada','2');
+            document.getElementById('master-sheets-invite-link').href = invite.href;
+            document.getElementById('master-sheets-search').value = '';
+            if (!dialog.open) dialog.showModal();
+            void refreshSavedPlayerSheets();
+        }
+
+        async function refreshSavedPlayerSheets() {
+            if (savedPlayerSheetsLoading) return;
+            const tableAtStart = masterTableCode;
+            savedPlayerSheetsLoading = true;
+            const status = document.getElementById('master-sheets-status');
+            status.textContent = 'Carregando fichas da mesa…';
+            renderSavedPlayerSheets();
+            try {
+                // This endpoint is master-only, scoped to the room's Durable Object.
+                const physical = OLFirebase.seasonScopedTable(tableAtStart);
+                const result = await OLNative.listPlayers(physical,'temporada');
+                if (tableAtStart !== masterTableCode) return;
+                savedPlayerSheets = Array.isArray(result.players) ? result.players : [];
+                status.textContent = savedPlayerSheets.length
+                    + (savedPlayerSheets.length === 1 ? ' ficha cadastrada.' : ' fichas cadastradas.')
+                    + (result.truncated ? ' Exibindo as primeiras 200.' : '');
+            } catch (error) {
+                console.error('Falha ao listar fichas salvas:',error);
+                status.textContent = 'Não foi possível consultar as fichas salvas. Tente atualizar a lista.';
+            } finally {
+                savedPlayerSheetsLoading = false;
+                if (tableAtStart === masterTableCode) renderSavedPlayerSheets();
+            }
+        }
+
         function abrirFicha(code) {
-            const player = connectedPlayers.get(String(code));
             const page = 'ficha-temporada.html';
             document.getElementById('iframe-ficha').src = `${page}?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}${isSeasonMaster ? '&temporada=2' : ''}`;
             document.getElementById('modal-ficha').style.display = 'flex';
