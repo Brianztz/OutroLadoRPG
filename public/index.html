@@ -42,6 +42,10 @@ input::placeholder{color:#778387}
 .player-note{font-size:.9rem;color:#dad8d1;line-height:1.5}
 .player-note strong{display:block;font-size:.95rem;margin-bottom:6px}
 .player-note p{margin:0;color:var(--muted);font-size:.85rem;line-height:1.55}
+.credential-actions{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap}
+.credential-actions button,.secondary-small{border:1px solid #6b625f;background:#262b2e;color:#f0e8e0;border-radius:8px;padding:9px 15px;cursor:pointer;font-weight:700;font-size:.84rem}
+.credential-actions button:hover,.secondary-small:hover{border-color:#e2a492}
+.key-warning{color:#adadb0;font-size:.75rem;line-height:1.55;margin:9px 0 14px}
 .panel details{border-top:1px solid #293638;margin-top:24px;padding-top:16px}
 .panel summary{cursor:pointer;font-size:.8rem;color:#c8a89e}
 .panel details p{font-size:.81rem;color:var(--muted);line-height:1.55}
@@ -75,13 +79,30 @@ footer strong{color:#b9bab5}
   <section class="panel" aria-label="Acesso à segunda temporada">
     <div id="master-section">
       <div class="panel-top"><div><span class="panel-kicker">Área do mestre</span><h2>Entrar na mesa</h2></div></div>
-      <p class="panel-hint">Sua chave é suficiente. Seu código de mesa é criado uma única vez e fica salvo para sempre.</p>
+      <p class="panel-hint">Sua chave pessoal é criada automaticamente neste dispositivo. Depois de ativada, você entra direto no seu escudo.</p>
+      <label for="master-key">Sua chave única de mestre</label>
+      <input id="master-key" type="password" readonly autocomplete="off" spellcheck="false" aria-label="Sua chave pessoal de mestre">
+      <div class="credential-actions">
+        <button id="show-master-key" type="button">Mostrar</button>
+        <button id="copy-master-key" type="button">Copiar chave</button>
+      </div>
+      <p class="key-warning">Guarde uma cópia em local seguro. Essa chave permite entrar no seu escudo em outro dispositivo.</p>
       <form id="master-form">
-        <label for="master-key">Chave privada do mestre</label>
-        <input id="master-key" type="password" autocomplete="off" placeholder="Digite sua chave de acesso">
-        <button class="action" type="submit" id="master-button">Acessar escudo <span aria-hidden="true">↗</span></button>
+        <div id="activate-master" hidden>
+          <label for="activation-key">Primeiro acesso: ative sua chave com a chave antiga</label>
+          <input id="activation-key" type="password" autocomplete="off" placeholder="Somente uma vez, para confirmar que você é o mestre">
+          <p class="key-warning">A chave antiga não será armazenada no navegador. Depois da ativação, você usará somente a chave pessoal.</p>
+        </div>
+        <button class="action" type="submit" id="master-button">Entrar como mestre <span aria-hidden="true">↗</span></button>
       </form>
       <p class="status" id="master-status" role="status" aria-live="polite"></p>
+      <details id="restore-master">
+        <summary>Já tenho minha chave em outro dispositivo</summary>
+        <p>Cole aqui a chave pessoal que você salvou anteriormente. Ela substitui somente a chave candidata deste navegador.</p>
+        <label for="restore-master-key">Minha chave pessoal</label>
+        <input id="restore-master-key" type="text" autocomplete="off" spellcheck="false" placeholder="OLM-...">
+        <button id="restore-master-button" type="button" class="secondary-small">Usar minha chave existente</button>
+      </details>
       <details id="existing-room">
         <summary>Já usava uma mesa nesta temporada?</summary>
         <p>Na primeira entrada, você pode manter o código que já usa com seus jogadores. Se um código permanente já tiver sido criado, ele continuará o mesmo.</p>
@@ -129,6 +150,13 @@ footer strong{color:#b9bab5}
   const masterButton = document.getElementById('master-button');
   const playerButton = document.getElementById('player-button');
   const masterKey = document.getElementById('master-key');
+  const activationKey = document.getElementById('activation-key');
+  const activationPanel = document.getElementById('activate-master');
+  const KEY_STORAGE = 'ol_personal_master_key_v1';
+  const MASTER_PATTERN = /^OLM-[A-F0-9]{64}$/;
+  let personalKey = '';
+  let personalActivated = false;
+
   let inviteCredentials = null;
   let busy = false;
   const edition = 'temporada';
@@ -156,35 +184,71 @@ footer strong{color:#b9bab5}
     playerButton.disabled = value;
     retry.disabled = value;
   }
+  function createMasterKey() {
+    return 'OLM-' + Array.from(crypto.getRandomValues(new Uint8Array(32)), b =>
+      b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+  function putMasterKey(key) {
+    if (!MASTER_PATTERN.test(key)) throw Error('Chave pessoal inválida. Verifique o código.');
+    personalKey = key;
+    localStorage.setItem(KEY_STORAGE, key);
+    masterKey.value = key;
+  }
+  async function inspectMasterKey(autoEnter = false) {
+    show(masterStatus, 'Verificando sua chave pessoal...', false);
+    try {
+      const owner = await OLNative.getMasterRoom(personalKey);
+      if (!owner?.tableCode) throw Error('Não foi possível recuperar sua mesa.');
+      personalActivated = true;
+      activationPanel.hidden = true;
+      show(masterStatus, 'Sua chave está ativa. Seu código de mesa está preservado.', false);
+      if (autoEnter) await enterMaster({ preventDefault() {} });
+    } catch (error) {
+      personalActivated = false;
+      if (error.status === 403 && error.message === 'activation_required') {
+        activationPanel.hidden = false;
+        show(masterStatus, 'Sua chave foi criada! Confirme sua identidade com a chave antiga uma única vez para ativá-la.', false);
+      } else {
+        activationPanel.hidden = true;
+        show(masterStatus, 'Esta chave não está ativa para este site. Se ela já existia, confira se foi copiada corretamente.', true);
+      }
+    }
+  }
   async function enterMaster(event) {
     event.preventDefault();
     if (busy) return;
     lock(true);
-    show(masterStatus, 'Verificando seu acesso...', false);
+    show(masterStatus, 'Entrando no escudo...', false);
     try {
-      const key = masterKey.value.trim();
-      let table;
-      if (key) {
-        const advanced = document.getElementById('existing-room');
-        const existing = document.getElementById('existing-room-code');
-        const preferredCode = advanced.open ? existing.value.trim().toUpperCase() : '';
-        if (advanced.open && (!preferredCode || !existing.reportValidity())) {
-          throw Error('Informe o código da mesa existente ou feche a opção avançada.');
-        }
-        const owner = await OLNative.getMasterRoom(key, preferredCode);
-        table = owner.tableCode;
-        await OLNative.signInMaster(physicalRoom(table), key);
-      } else {
-        const remembered = localStorage.getItem('master_permanent_table_code');
-        if (!remembered) throw Error('Informe sua chave privada de mestre.');
-        table = normalize(remembered);
-        const session = await OLNative.getSession(physicalRoom(table));
-        if (!session.ok || session.role !== 'master') throw Error('Sessão expirada. Informe a chave do mestre.');
+      if (!personalKey || !MASTER_PATTERN.test(personalKey)) {
+        throw Error('A chave pessoal não foi criada corretamente.');
       }
-      masterKey.value = '';
+      const advanced = document.getElementById('existing-room');
+      const existing = document.getElementById('existing-room-code');
+      const preferredCode = !personalActivated && advanced.open ? existing.value.trim().toUpperCase() : '';
+      if (!personalActivated && advanced.open && (!preferredCode || !existing.reportValidity())) {
+        throw Error('Informe o código da mesa antiga ou feche essa opção.');
+      }
+      const bootstrap = !personalActivated ? activationKey.value.trim() : '';
+      const owner = await OLNative.getMasterRoom(personalKey, preferredCode, bootstrap);
+      const table = owner.tableCode;
+      await OLNative.signInMaster(physicalRoom(table), personalKey);
+      activationKey.value = '';
+      personalActivated = true;
+      activationPanel.hidden = true;
       destination('master', table);
     } catch (error) {
-      show(masterStatus, error.message === 'invalid_credentials' ? 'Chave de mestre incorreta.' : String(error.message || 'Não foi possível entrar.'), true);
+      const code = String(error.message || '');
+      if (code === 'activation_required') {
+        activationPanel.hidden = false;
+        show(masterStatus, 'Ative sua chave usando a chave antiga, apenas nesta primeira vez.', true);
+      } else if (code === 'already_activated') {
+        show(masterStatus, 'Já existe uma chave pessoal de mestre. Use a opção abaixo para colocar sua chave original neste dispositivo.', true);
+      } else if (code === 'invalid_activation') {
+        show(masterStatus, 'A chave antiga está incorreta. Confira e tente novamente.', true);
+      } else {
+        show(masterStatus, code === 'invalid_credentials' ? 'Esta chave ainda não tem acesso.' : code || 'Não foi possível entrar.', true);
+      }
     } finally { lock(false); }
   }
   async function enterPlayer(table, code, key, statusNode) {
@@ -204,6 +268,33 @@ footer strong{color:#b9bab5}
     } finally { lock(false); }
   }
   masterForm.addEventListener('submit', enterMaster);
+  document.getElementById('show-master-key').addEventListener('click', () => {
+    const showing = masterKey.type === 'text';
+    masterKey.type = showing ? 'password' : 'text';
+    document.getElementById('show-master-key').textContent = showing ? 'Mostrar' : 'Ocultar';
+  });
+  document.getElementById('copy-master-key').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(personalKey);
+      show(masterStatus, 'Chave copiada. Guarde-a em um local seguro.', false);
+    } catch {
+      masterKey.type = 'text';
+      masterKey.select();
+      show(masterStatus, 'Selecione e copie a chave exibida acima.', true);
+    }
+  });
+  document.getElementById('restore-master-button').addEventListener('click', () => {
+    try {
+      const restored = document.getElementById('restore-master-key').value.trim().toUpperCase();
+      putMasterKey(restored);
+      document.getElementById('restore-master-key').value = '';
+      activationKey.value = '';
+      void inspectMasterKey(true);
+    } catch (error) {
+      show(masterStatus, String(error.message || 'Chave inválida.'), true);
+    }
+  });
+
   playerForm.addEventListener('submit', event => {
     event.preventDefault();
     enterPlayer(document.getElementById('manual-table').value, document.getElementById('manual-code').value, document.getElementById('manual-key').value.trim(), playerStatus);
@@ -231,13 +322,14 @@ footer strong{color:#b9bab5}
   } else {
     const notice = params.get('aviso');
     if (notice) show(masterStatus, notice, true);
-    const remembered = localStorage.getItem('master_permanent_table_code');
-    if (remembered && !notice) {
-      OLNative.getSession(physicalRoom(remembered)).then(session => {
-        if (session?.ok && session.role === 'master') {
-          show(masterStatus, 'Sessão ativa. Clique em Acessar escudo para continuar.', false);
-        }
-      }).catch(() => {});
+    try {
+      const stored = localStorage.getItem(KEY_STORAGE);
+      putMasterKey(stored && MASTER_PATTERN.test(stored) ? stored : createMasterKey());
+      // The key is generated locally, but cannot act as master until it is
+      // activated on the server by the existing master secret.
+      void inspectMasterKey(!notice);
+    } catch (error) {
+      show(masterStatus, 'Não foi possível criar sua chave pessoal neste navegador.', true);
     }
   }
 })();
