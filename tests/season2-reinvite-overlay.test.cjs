@@ -84,7 +84,7 @@ test('T2: convite individual é renovado, overlay apaga expulsos e restaura reco
   assert(master.includes('await OLFirebase.removeTablePlayer(masterTableCode, code);'));
   assert(master.includes('onclick="openMasterInvite()"'));
   assert(master.includes("new URL('./acessos.html', location.href)"));
-  assert(manager.includes('OLNative.provisionPlayer(physical, edition, playerCode, existing ? 'renew' : 'create')'));
+  assert(manager.includes("OLNative.provisionPlayer(physical, edition, playerCode, existing ? 'renew' : 'create')"));
   assert(manager.includes("invite.hash = new URLSearchParams"));
   assert(overlay.includes("data.reason === 'removed_by_master'") || overlay.includes("data && data.reason === 'removed_by_master'"));
   assert(overlay.includes("socket.on('player_connected', releasePlayerAfterReconnect)"));
