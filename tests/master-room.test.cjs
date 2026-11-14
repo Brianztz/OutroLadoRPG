@@ -67,29 +67,26 @@ test('na primeira entrada codigos invalidos ou reservados sao rejeitados', async
   assert.equal(response.status, 400);
   assert.equal(ctx.values.size, 0);
 });
-test('o login do mestre usa o codigo permanente e o jogador mantem o link de convite', () => {
+test('login de Vestigios usa o codigo fixo sem expor o acesso de outras temporadas', () => {
   const worker = fs.readFileSync(path.join(__dirname, '../src/worker.js'), 'utf8');
   const portal = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
   const adapter = fs.readFileSync(path.join(__dirname, '../public/firebase-client.js'), 'utf8');
   assert(worker.includes("getByName('SYSTEM_MASTER_PROFILE_V1')"));
-  assert(worker.includes("handleMasterRoomRequest(request, this.ctx, this.env)"));
+  assert(worker.includes('handleMasterRoomRequest(request, this.ctx, this.env)'));
   assert(adapter.includes("base + 'master-room'"));
   assert(portal.includes('OLNative.getMasterRoom(key, preferredCode)'));
   assert(portal.includes("localStorage.setItem('master_permanent_table_code', table)"));
-  assert(portal.includes("OLNative.signInMaster(physical, key)"));
-  assert(portal.includes("OLNative.signInPlayer(physical, edition, code, key)"));
-  assert(portal.includes("if (isPlayerInvite && keyInput.value && codeInput.value)"));
-  assert(portal.includes("seasonSelect.value = params.get('temporada') === '2'"));
+  assert(portal.includes('OLNative.signInMaster(physicalRoom(table), key)'));
+  assert(portal.includes('OLNative.signInPlayer(physical, edition, normalizedCode, key)'));
+  assert(portal.includes("const edition = 'temporada'"));
+  assert(!portal.includes('value="classic"'));
 });
-
-test('escudos nao deixam o mestre alterar o codigo fixo da mesa', () => {
-  for (const file of ['mestre.html','mestre-temporada.html']) {
-    const html = fs.readFileSync(path.join(__dirname, '../public', file), 'utf8');
-    assert(html.includes('onclick="copyMasterTableCode()"'));
-    assert(html.includes('async function copyMasterTableCode()'));
-    assert(html.includes('url.searchParams.set(\'mesa\', masterTableCode)'));
-    assert(html.includes('id="master-invite-table" type="text" maxlength="40" readonly'));
-    assert(!html.includes('function switchMasterTable('));
-    assert(!html.includes('function chooseMasterTable('));
-  }
+test('escudo da segunda temporada conserva o codigo fixo e seus convites', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../public/mestre-temporada.html'), 'utf8');
+  assert(html.includes('onclick="copyMasterTableCode()"'));
+  assert(html.includes('async function copyMasterTableCode()'));
+  assert(html.includes("url.searchParams.set('mesa', masterTableCode)"));
+  assert(html.includes('id="master-invite-table" type="text" maxlength="40" readonly'));
+  assert(!html.includes('function switchMasterTable('));
+  assert(!html.includes('function chooseMasterTable('));
 });
