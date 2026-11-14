@@ -12,7 +12,7 @@ test('portal Vestigios atende somente a segunda temporada com autenticacao nativ
   assert(portal.includes("const edition = 'temporada'"));
   assert(portal.includes('OLNative.signInMaster(physicalRoom(table), key)'));
   assert(portal.includes('OLNative.signInPlayer(physical, edition, normalizedCode, key)'));
-  assert(portal.includes("'mestre-temporada.html'"));
+  assert(portal.includes("'./mestre-temporada.html'"));
   assert(portal.includes("'./ficha-temporada.html'"));
   assert(portal.includes("next.searchParams.set('temporada', '2')"));
   assert(!portal.includes('value="classic"'));
