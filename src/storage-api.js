@@ -1,3 +1,4 @@
+import { currentSession } from './session-api.js';
 // Durable Object storage for character sheets and the master's clues.
 // This API is intentionally independent from Firebase and GitHub tokens.
 // It is disabled for master operations until MASTER_DATA_TOKEN is configured
@@ -78,7 +79,8 @@ export async function handleStorageRequest(request, ctx, env) {
   const edition = url.searchParams.get('edicao') === 'temporada' ? 'temporada' : 'classic';
   const bearer = /^Bearer (.+)$/.exec(request.headers.get('Authorization') || '')?.[1] || '';
   const masterSecret = String(env.MASTER_DATA_TOKEN || '');
-  const master = masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret);
+  const session = await currentSession(request, ctx);
+  const master = session?.role === 'master' || (masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret));
 
   if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access') return json({ error: 'invalid_kind' }, 400);
   if (kind === 'player-access') {
@@ -100,10 +102,14 @@ export async function handleStorageRequest(request, ctx, env) {
     if (!master) return json({ error: 'master_credential_required' }, 403);
   } else if (!master) {
     // Player keys are provisioned by the authenticated master, never self-claimed.
-    if (bearer.length < 43 || bearer.length > 256) return json({ error: 'player_key_required' }, 401);
-    const existing = await ctx.storage.get(root + ':owner-sha256');
-    if (!existing || !constantTimeEqual(existing, await sha256(bearer))) {
-      return json({ error: 'invalid_player_key' }, 403);
+    const sessionAuthorized = session?.role === 'player'
+      && session.code === code && session.edition === edition;
+    if (!sessionAuthorized) {
+      if (bearer.length < 43 || bearer.length > 256) return json({ error: 'player_key_required' }, 401);
+      const existing = await ctx.storage.get(root + ':owner-sha256');
+      if (!existing || !constantTimeEqual(existing, await sha256(bearer))) {
+        return json({ error: 'invalid_player_key' }, 403);
+      }
     }
   }
 
