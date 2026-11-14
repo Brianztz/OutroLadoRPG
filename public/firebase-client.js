@@ -130,14 +130,35 @@
   function normalizePlayerCode(value) {
     return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
   }
+  function expectedPlayerCode() {
+    const params = new URL(global.location.href).searchParams;
+    return normalizePlayerCode(params.get('personagem') || '');
+  }
   async function authorizedTable(role, requestedTable = tableFromURL(), edition = null) {
     const physical = seasonScopedTable(requestedTable, edition);
     const user = await nativeSession(physical, true);
+    const expectedCode = role === 'player' ? expectedPlayerCode() : '';
     if (!user || (role === 'master' && user.role !== 'master')
-      || (role === 'player' && user.role !== 'player')) {
+      || (role === 'player' && (user.role !== 'player'
+        || (expectedCode && user.code !== expectedCode)))) {
       throw new Error('A sessão não tem acesso a esta mesa. Use seu convite ou entre novamente.');
     }
     return { user, tableId: physical, role };
+  }
+  async function restoreSession(role, requestedTable = tableFromURL()) {
+    const physical = seasonScopedTable(requestedTable);
+    if (role === 'master') {
+      const secret = global.localStorage.getItem('ol_personal_master_key_v1');
+      if (!/^OLM-[A-F0-9]{64}$/.test(secret || '')) return false;
+      await global.OLNative.signInMaster(physical, secret);
+      return true;
+    }
+    if (role !== 'player') return false;
+    const code = expectedPlayerCode() || normalizePlayerCode(global.localStorage.getItem('player_sync_code'));
+    const secret = code && global.sessionStorage.getItem('ol_player_resume_v1:' + physical + ':' + code);
+    if (!secret || !/^[a-f0-9]{96}$/i.test(secret)) return false;
+    await global.OLNative.signInPlayer(physical, 'temporada', code, secret);
+    return true;
   }
   async function preparePortal(role, requestedTable, edition = null) {
     return authorizedTable(role, requestedTable, edition);
@@ -150,16 +171,44 @@
     if (message) u.searchParams.set('aviso', message);
     return u.href;
   }
+  function displaySessionError() {
+    if (document.getElementById('ol-session-unavailable')) return;
+    const notice = document.createElement('div');
+    notice.id = 'ol-session-unavailable';
+    notice.setAttribute('role', 'alert');
+    notice.style.cssText = 'position:fixed;z-index:99999;inset:0;display:grid;place-content:center;text-align:center;padding:24px;background:#090b0f;color:#f4efec;font:16px/1.6 Arial,sans-serif';
+    notice.innerHTML = '<strong>Não foi possível verificar sua conexão.</strong><p>Seus dados continuam salvos. Confira sua internet e tente atualizar a página.</p><button type="button" style="padding:12px;border:1px solid #c97964;background:#25120e;color:white;border-radius:8px">Tentar novamente</button>';
+    notice.querySelector('button').addEventListener('click', () => global.location.reload());
+    document.body.append(notice);
+  }
   async function guardPage(role) {
+    const table = tableFromURL();
+    let lostSession = false;
     try {
-      await authorizedTable(role, tableFromURL());
+      await authorizedTable(role, table);
       document.documentElement.classList.remove('firebase-auth-pending');
       return true;
     } catch (error) {
-      document.documentElement.classList.remove('firebase-auth-pending');
-      global.location.replace(portalURL('Acesso expirado ou não autorizado. Entre novamente.'));
-      return false;
+      // A network failure must never be mistaken for a revoked session.
+      lostSession = error?.message?.includes('A sessão não tem acesso a esta mesa.');
+      if (!lostSession) {
+        document.documentElement.classList.remove('firebase-auth-pending');
+        displaySessionError();
+        return false;
+      }
     }
+    try {
+      if (await restoreSession(role, table)) {
+        await authorizedTable(role, table);
+        document.documentElement.classList.remove('firebase-auth-pending');
+        return true;
+      }
+    } catch (error) {
+      // Invalid or revoked credentials still lead to the login page.
+    }
+    document.documentElement.classList.remove('firebase-auth-pending');
+    global.location.replace(portalURL('Acesso expirado ou não autorizado. Entre novamente.'));
+    return false;
   }
   async function loadCharacter(requestedTable, variant) {
     const user = await getCurrentUser();
