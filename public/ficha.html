@@ -1229,6 +1229,8 @@
     let characterCloudUnsubscribe = null;
     let characterCloudLastHash = '';
     let characterCloudQueuedData = null;
+    const characterPendingKey = 'ol_classic_pending_cloud_' + tableCode;
+    const hasUnsavedCharacter = () => localStorage.getItem(characterPendingKey) === '1';
     let currentViewedItemId = null; 
     let editingItemId = null; 
     let cluesData = [];
@@ -4242,7 +4244,10 @@ function removeCurrentClue() {
                 characterCloudLastHash = result.sheetHash;
                 // Mantém o código local mesmo ao trocar de personagem.
                 localStorage.setItem(characterCloudMarkerKey(user.uid), result.sheetHash);
+                const latestJson = localStorage.getItem('ordem_save_local');
+                if (latestJson && OLFirebase.hashCharacterSheet(latestJson) === result.sheetHash) localStorage.removeItem(characterPendingKey);
             } catch (error) {
+                localStorage.setItem(characterPendingKey, '1');
                 console.error('Não foi possível salvar a ficha na nuvem:', error);
             }
         }, 900);
@@ -4265,11 +4270,19 @@ function removeCurrentClue() {
 
             if (remoteCharacter) {
                 const remoteHash = remoteCharacter.sheetHash || OLFirebase.hashCharacterSheet(remoteCharacter.sheetJson);
-                const localChangedAfterLastSync = Boolean(localJson && knownCloudHash && knownCloudHash === remoteHash && localHash !== knownCloudHash);
+                const locallyPending = hasUnsavedCharacter() || Boolean(localJson && knownCloudHash && knownCloudHash === remoteHash && localHash !== knownCloudHash);
+                const localChangedAfterLastSync = locallyPending && (!knownCloudHash || knownCloudHash === remoteHash);
+                if (locallyPending && !localChangedAfterLastSync) {
+                    characterCloudLastHash = remoteHash;
+                    characterCloudReady = false;
+                    console.warn('Conflito de sincronização: dados locais preservados. Exporte a ficha antes de resolver o conflito.');
+                    return;
+                }
                 if (localChangedAfterLastSync) {
                     const result = await OLFirebase.saveCharacter(tableCode, localJson, getCharacterCloudMetadata());
                     characterCloudLastHash = result.sheetHash;
                     localStorage.setItem(markerKey, result.sheetHash);
+                    localStorage.removeItem(characterPendingKey);
                 } else if (localHash !== remoteHash) {
                     applyCloudCharacter(remoteCharacter, user.uid);
                 } else {
@@ -4281,6 +4294,7 @@ function removeCurrentClue() {
                 const result = await OLFirebase.saveCharacter(tableCode, localJson, getCharacterCloudMetadata());
                 characterCloudLastHash = result.sheetHash;
                 localStorage.setItem(markerKey, result.sheetHash);
+                localStorage.removeItem(characterPendingKey);
             }
 
             characterCloudReady = true;
@@ -4291,7 +4305,7 @@ function removeCurrentClue() {
                 }
                 if (!nextCharacter || !nextCharacter.sheetJson) return;
                 const nextHash = nextCharacter.sheetHash || OLFirebase.hashCharacterSheet(nextCharacter.sheetJson);
-                if (nextHash === characterCloudLastHash) return;
+                if (nextHash === characterCloudLastHash || hasUnsavedCharacter() || characterCloudQueuedData) return;
                 try {
                     applyCloudCharacter(nextCharacter, user.uid);
                 } catch (parseError) {
@@ -4299,8 +4313,8 @@ function removeCurrentClue() {
                 }
             });
         } catch (error) {
-            characterCloudReady = true;
-            console.error('A sincronização da ficha com a nuvem não pôde ser iniciada:', error);
+            characterCloudReady = false;
+            console.error('A sincronização da ficha com a nuvem não pôde ser iniciada; dados locais preservados:', error);
         }
     }
 
@@ -4328,7 +4342,10 @@ function removeCurrentClue() {
         
         if (!viewCode) {
             localStorage.setItem('ordem_save_local', JSON.stringify(d));
-            if (!options.skipCloud) queueCharacterCloudSave(d);
+            if (!options.skipCloud) {
+                localStorage.setItem(characterPendingKey, '1');
+                queueCharacterCloudSave(d);
+            }
         }
 
         if (socket) {
@@ -4540,6 +4557,8 @@ function removeCurrentClue() {
                         localStorage.setItem('ordem_save_local', JSON.stringify(dados.fullData));
                         isLoadingData = true;
                         populateData(dados.fullData);
+                        localStorage.setItem(characterPendingKey, '1');
+                        if (characterCloudReady) queueCharacterCloudSave(dados.fullData);
                     }
                 });
                 socket.on('sync_requested', (dados) => {
