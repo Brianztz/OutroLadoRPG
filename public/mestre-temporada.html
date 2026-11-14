@@ -452,7 +452,31 @@
         @keyframes roll-entry-in { from { opacity: 0; transform: translateX(12px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes pulse-red { 50% { box-shadow: 0 0 11px var(--accent-red); } }
         @media (max-width: 850px) { body, body.combat-mode-active { padding: 10px; } .content-wrapper { flex-direction: column; overflow: visible; } .players-container, .monsters-grid, .catalog-grid, .master-clues-grid { overflow: visible; } .combat-sidebar { min-width: 0; width: 100%; } .initiative-container { min-width: 0; min-height: 0; } .initiative-drawer { top: 10px; right: 10px; width: calc(100vw - 20px); height: calc(100vh - 20px); } .player-rolls-container { max-height: 340px; } .monsters-grid, .catalog-grid, .master-clues-grid { grid-template-columns: 1fr; } .monster-form-grid.five { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-search { min-width: 100%; } .catalog-count { width: 100%; text-align: left; } .catalog-creator-grid { grid-template-columns: 1fr; } .catalog-creator-grid .full { grid-column: auto; } .clue-image-fields, .clue-audio-fields { grid-template-columns: 1fr; } .clue-type-switch { grid-template-columns: 1fr; } .master-clue-3d-stage { height: 340px; } .master-clue-book-stage { height: 390px; } .master-clue-book-controls { gap: 5px; } .master-clue-book-controls button { min-width: 0; flex: 1; padding: 8px 4px; font-size: 0.62em; } }
-    </style>
+    
+        /* Visualizador de pistas com os controles da ficha do jogador. */
+        #master-player-clue-modal { z-index: 10020; }
+        #master-player-clue-modal .clue-dialog { width: min(950px, 96vw); border-color: #794331; background: #140e0c; }
+        #master-player-clue-modal .clue-modal-header { background: #1c120f; border-color: #6d3422; }
+        #master-player-clue-modal .clue-modal-title { color: #f1bf9e; }
+        .master-player-clue-stage { width: 100%; height: clamp(300px, 58vh, 600px); display: grid; place-items: center; overflow: hidden; border: 1px solid #783a27; border-radius: 8px; position: relative; background: radial-gradient(ellipse at center, #342117, #100b09 76%); cursor: grab; touch-action: none; perspective: 900px; }
+        .master-player-clue-stage.dragging { cursor: grabbing; }
+        .master-player-clue-object { width: min(76%, 590px); height: 78%; position: relative; transform-style: preserve-3d; display: grid; place-items: center; will-change: transform; }
+        .master-player-clue-face { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .master-player-clue-face.back { transform: rotateY(180deg); }
+        .master-player-clue-face img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; user-select: none; filter: drop-shadow(0 12px 18px #0008); }
+        .master-player-clue-face span { font-size: 4rem; color: #ebae8d; }
+        .master-player-clue-tools { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; padding: 11px 0 3px; }
+        .master-player-clue-tools button, .master-player-clue-nav button { padding: 8px 12px; min-height: 37px; border-radius: 6px; border: 1px solid #6a3827; background: #271711; color: #f3c2a8; font-weight: 800; cursor: pointer; }
+        .master-player-clue-tools button:hover, .master-player-clue-nav button:hover { background: #493025; }
+        #master-player-clue-zoom { min-width: 52px; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; color: #e6bda5; }
+        .master-player-clue-nav { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 8px; color: #f3c2a8; font-size: .85rem; }
+        .master-player-clue-nav button:disabled { opacity: .35; cursor: not-allowed; }
+        .master-player-clue-copy { color: #e0c4b1; font-size: .87rem; white-space: pre-wrap; }
+        #master-player-clue-modal .clue-modal-footer { background: #1c120f; border-color: #6d3422; flex-wrap: wrap; }
+        #master-player-clue-modal .clue-button-send { background: #6eae86; border-color: #81d6a2; color: #07120b; }
+        .master-player-clue-overlay.active { background: #7c2720 !important; border-color: #e28d72 !important; }
+        @media (max-width: 600px) { .master-player-clue-stage { height: 46vh; } .master-player-clue-tools button { padding: 7px 9px; } }
+</style>
     <link rel="stylesheet" href="/temporada/master-theme.css?v=exilio-3-escudo-v2">
     <link rel="stylesheet" href="/bestiary-outrolado.css?v=1">
 </head>
@@ -746,8 +770,47 @@
                 </div>
                 <div id="master-clue-info-description" class="master-clue-description"></div>
             </div>
-            <div class="clue-modal-footer"><button class="clue-button-danger" type="button" onclick="removeCurrentMasterClue()">REMOVER</button><button class="clue-button-neutral" type="button" onclick="editCurrentMasterClue()">EDITAR</button><button class="clue-button-send" type="button" onclick="sendCurrentMasterClue()">ENVIAR PARA JOGADOR</button><button class="clue-button-neutral" type="button" onclick="closeMasterClueInfo()">FECHAR</button></div>
+            <div class="clue-modal-footer"><button class="clue-button-danger" type="button" onclick="removeCurrentMasterClue()">REMOVER</button><button class="clue-button-neutral" type="button" onclick="editCurrentMasterClue()">EDITAR</button><button class="clue-button-primary" type="button" onclick="openMasterPlayerClueViewer()">VER COMO JOGADOR</button><button class="clue-button-send" type="button" onclick="sendCurrentMasterClue()">ENVIAR PARA JOGADOR</button><button class="clue-button-neutral" type="button" onclick="closeMasterClueInfo()">FECHAR</button></div>
         </div>
+    </div>
+
+
+    <div id="master-player-clue-modal" class="clue-modal" role="presentation" onclick="if(event.target===this) closeMasterPlayerClueViewer()">
+        <section class="clue-dialog viewer" role="dialog" aria-modal="true" aria-labelledby="master-player-clue-title">
+            <div class="clue-modal-header">
+                <h2 id="master-player-clue-title" class="clue-modal-title">Pista — visualização do jogador</h2>
+                <button class="clue-modal-close" type="button" onclick="closeMasterPlayerClueViewer()" aria-label="Fechar visualizador">×</button>
+            </div>
+            <div class="clue-modal-body">
+                <p style="margin:0;color:#bda699;font-size:.8rem">Arraste com o botão esquerdo para girar; com o direito para mover. Use a roda do mouse para ampliar, como na ficha.</p>
+                <div id="master-player-clue-stage" class="master-player-clue-stage" aria-label="Pista interativa">
+                    <div id="master-player-clue-object" class="master-player-clue-object">
+                        <div id="master-player-clue-front" class="master-player-clue-face front"></div>
+                        <div id="master-player-clue-back" class="master-player-clue-face back"></div>
+                    </div>
+                </div>
+                <div class="master-player-clue-tools" role="toolbar" aria-label="Ferramentas de inspeção da pista">
+                    <button type="button" onclick="masterPlayerClueAction('left')" aria-label="Girar para a esquerda">↶</button>
+                    <button type="button" onclick="masterPlayerClueAction('out')" aria-label="Diminuir zoom">−</button>
+                    <output id="master-player-clue-zoom" aria-live="polite">100%</output>
+                    <button type="button" onclick="masterPlayerClueAction('reset')" aria-label="Centralizar pista">⌖</button>
+                    <button type="button" onclick="masterPlayerClueAction('in')" aria-label="Aumentar zoom">+</button>
+                    <button type="button" onclick="masterPlayerClueAction('right')" aria-label="Girar para a direita">↷</button>
+                </div>
+                <div id="master-player-clue-nav" class="master-player-clue-nav" hidden>
+                    <button id="master-player-clue-prev" type="button" onclick="masterPlayerCluePage(-1)">← Anterior</button>
+                    <span id="master-player-clue-page-label" aria-live="polite">Capa</span>
+                    <button id="master-player-clue-next" type="button" onclick="masterPlayerCluePage(1)">Próxima →</button>
+                </div>
+                <audio id="master-player-clue-audio" controls preload="metadata" hidden></audio>
+                <p id="master-player-clue-description" class="master-player-clue-copy"></p>
+            </div>
+            <div class="clue-modal-footer">
+                <button id="master-player-clue-overlay-button" class="clue-button-neutral master-player-clue-overlay" type="button" onclick="toggleMasterPlayerClueOverlay()">MOSTRAR NO OVERLAY</button>
+                <button class="clue-button-send" type="button" onclick="sendCurrentMasterClue()">ENVIAR PARA JOGADOR</button>
+                <button class="clue-button-neutral" type="button" onclick="closeMasterPlayerClueViewer()">VOLTAR</button>
+            </div>
+        </section>
     </div>
 
     <div id="master-dice-popup" class="master-dice-popup" onclick="if(event.target===this) closeMasterDicePopup()">
@@ -2415,12 +2478,179 @@
         }
 
         function closeMasterClueInfo() {
+            if(playerClueId)closeMasterPlayerClueViewer();
             const audioPlayer=document.getElementById('master-clue-audio-player');if(audioPlayer){audioPlayer.pause();audioPlayer.removeAttribute('src');audioPlayer.load();}document.getElementById('master-clue-info-modal').classList.remove('open');masterClueImageToken++;masterBookFitToken++;masterClueDragging=false;masterBookDragging=false;masterBookAnimating=false;masterBookOpen=false;document.getElementById('master-clue-book-stage').classList.remove('dragging');currentMasterClueId=null;
         }
 
         function editCurrentMasterClue() { const id=currentMasterClueId;if(!id)return;closeMasterClueInfo();openMasterClueForm(id); }
         function removeCurrentMasterClue() { if(!currentMasterClueId)return;masterCluesState=masterCluesState.filter(item=>item.id!==currentMasterClueId);closeMasterClueInfo();saveMasterCluesState();renderMasterClues(); }
         function sendCurrentMasterClue() { const clue=masterCluesState.find(item=>item.id===currentMasterClueId);if(clue)openClueRecipientPopup(clue); }
+
+        // The player's simpler clue viewer is also available in the master's
+        // shield, without replacing its existing 3D, book and audio viewers.
+        let playerClueZoom=1,playerClueAngle=0,playerClueTilt=0,playerClueX=0,playerClueY=0;
+        let playerCluePage=-1,playerClueDrag=null,playerClueOnOverlay=false,playerClueId=null;
+        let playerClueOverlayTimer=null;
+        const playerClueStage=document.getElementById('master-player-clue-stage');
+        function currentPlayerStyleMasterClue() {
+            return masterCluesState.find(item=>item.id===playerClueId) || null;
+        }
+        function masterPlayerClueState() {
+            return {
+                rotationX:playerClueTilt,rotationY:playerClueAngle,zoom:playerClueZoom,
+                panXRatio:playerClueX/Math.max(1,playerClueStage.clientWidth),
+                panYRatio:playerClueY/Math.max(1,playerClueStage.clientHeight),
+                open:playerCluePage>=0,spread:Math.max(0,Math.floor(playerCluePage/2))
+            };
+        }
+        function masterPlayerClueOverlayData(clue) {
+            return {
+                id:clue.id,title:clue.title,type:clue.type,desc:clue.desc||'',
+                img:clue.img||'',backImg:clue.backImg||clue.img||'',
+                coverImg:clue.coverImg||clue.img||'',coverBackImg:clue.coverBackImg||'',
+                hasCustomBack:Boolean(clue.coverBackImg),thickness:clue.thickness,
+                pages:normalizeMasterCluePages(clue.pages),
+                audioSrc:clue.audioSrc||'',audioImg:clue.audioImg||''
+            };
+        }
+        function masterPlayerClueRenderTransform() {
+            document.getElementById('master-player-clue-object').style.transform=
+                'translate('+playerClueX+'px,'+playerClueY+'px) scale('+playerClueZoom+') rotateX('+playerClueTilt+'deg) rotateY('+playerClueAngle+'deg)';
+            document.getElementById('master-player-clue-zoom').textContent=Math.round(playerClueZoom*100)+'%';
+            // Match the player's 40ms overlay synchronization throttle.
+            if(playerClueOnOverlay && !playerClueOverlayTimer)
+                playerClueOverlayTimer=setTimeout(flushMasterPlayerClueOverlay,40);
+        }
+        function flushMasterPlayerClueOverlay() {
+            playerClueOverlayTimer=null;
+            const clue=currentPlayerStyleMasterClue();
+            if(playerClueOnOverlay && clue && socket.connected) {
+                socket.emit('clue_inspection_update',{
+                    mesa:masterTableCode,codigo:'MESTRE',clueId:clue.id,state:masterPlayerClueState()
+                });
+            }
+        }
+        function resetMasterPlayerClueView() {
+            playerClueZoom=1;playerClueAngle=0;playerClueTilt=0;playerClueX=0;playerClueY=0;
+            masterPlayerClueRenderTransform();
+        }
+        function masterPlayerClueAction(action) {
+            if(action==='left')playerClueAngle-=45;
+            if(action==='right')playerClueAngle+=45;
+            if(action==='in')playerClueZoom=Math.min(8,playerClueZoom+0.25);
+            if(action==='out')playerClueZoom=Math.max(0.25,playerClueZoom-0.25);
+            if(action==='reset')return resetMasterPlayerClueView();
+            masterPlayerClueRenderTransform();
+        }
+        function masterPlayerClueImage(container,src,alt,fallback) {
+            container.replaceChildren();
+            if(!src) {const span=document.createElement('span');span.textContent=fallback;container.append(span);return;}
+            const img=document.createElement('img');img.src=src;img.alt=alt;img.draggable=false;
+            container.append(img);
+        }
+        function renderMasterPlayerClue() {
+            const clue=currentPlayerStyleMasterClue();if(!clue)return;
+            const pages=normalizeMasterCluePages(clue.pages);
+            const front=document.getElementById('master-player-clue-front');
+            const back=document.getElementById('master-player-clue-back');
+            const nav=document.getElementById('master-player-clue-nav');
+            const audio=document.getElementById('master-player-clue-audio');
+            const book=clue.type==='book';
+            const displayed=book && playerCluePage>=0 ? (pages[playerCluePage]?.img||'')
+                : book ? (clue.coverImg||clue.img||'') : (clue.img||'');
+            masterPlayerClueImage(front,displayed,book?'Capa ou página do livro':clue.title,book?'📖':'🔎');
+            const reverse=book ? displayed : (clue.backImg||clue.img||'');
+            masterPlayerClueImage(back,reverse,clue.title+' (verso)',book?'📖':'🔎');
+            nav.hidden=!book;
+            document.getElementById('master-player-clue-page-label').textContent=
+                playerCluePage<0?'Capa':(playerCluePage+1)+' / '+pages.length;
+            document.getElementById('master-player-clue-prev').disabled=playerCluePage<0;
+            document.getElementById('master-player-clue-next').disabled=playerCluePage>=pages.length-1;
+            audio.hidden=clue.type!=='audio';
+            if(clue.type==='audio') {
+                audio.src=clue.audioSrc||'';
+                audio.load();
+            } else {
+                audio.pause();audio.removeAttribute('src');
+            }
+        }
+        function masterPlayerCluePage(delta) {
+            const clue=currentPlayerStyleMasterClue();if(!clue||clue.type!=='book')return;
+            const max=normalizeMasterCluePages(clue.pages).length-1;
+            playerCluePage=Math.max(-1,Math.min(max,playerCluePage+delta));
+            resetMasterPlayerClueView();renderMasterPlayerClue();
+        }
+        function openMasterPlayerClueViewer() {
+            if(!currentMasterClueId)return;
+            playerClueId=currentMasterClueId;playerCluePage=-1;
+            document.getElementById('master-player-clue-title').textContent=
+                currentPlayerStyleMasterClue()?.title||'Pista';
+            document.getElementById('master-player-clue-description').textContent=
+                currentPlayerStyleMasterClue()?.desc||'Sem descrição.';
+            document.getElementById('master-player-clue-modal').classList.add('open');
+            resetMasterPlayerClueView();renderMasterPlayerClue();
+        }
+        function stopMasterPlayerClueOverlay() {
+            clearTimeout(playerClueOverlayTimer);
+            playerClueOverlayTimer=null;
+            if(!playerClueOnOverlay)return;
+            playerClueOnOverlay=false;
+            socket.emit('clue_inspection_stop',{mesa:masterTableCode,codigo:'MESTRE'});
+            const button=document.getElementById('master-player-clue-overlay-button');
+            button.classList.remove('active');button.textContent='MOSTRAR NO OVERLAY';
+        }
+        function toggleMasterPlayerClueOverlay() {
+            const clue=currentPlayerStyleMasterClue();
+            if(!clue)return;
+            if(playerClueOnOverlay)return stopMasterPlayerClueOverlay();
+            if(!socket.connected){alert('Conecte o escudo à mesa para mostrar a pista no overlay.');return;}
+            socket.emit('clue_inspection_start',{
+                mesa:masterTableCode,codigo:'MESTRE',jogador:'Mestre',
+                clue:masterPlayerClueOverlayData(clue),state:masterPlayerClueState()
+            });
+            playerClueOnOverlay=true;
+            const button=document.getElementById('master-player-clue-overlay-button');
+            button.classList.add('active');button.textContent='PARAR NO OVERLAY';
+        }
+        function closeMasterPlayerClueViewer() {
+            stopMasterPlayerClueOverlay();
+            const audio=document.getElementById('master-player-clue-audio');
+            audio.pause();audio.removeAttribute('src');
+            document.getElementById('master-player-clue-modal').classList.remove('open');
+            playerClueId=null;playerClueDrag=null;playerClueStage.classList.remove('dragging');
+        }
+        playerClueStage.addEventListener('pointerdown',event=>{
+            if(event.button!==0 && event.button!==2)return;
+            if(event.target.closest('button'))return;
+            event.preventDefault();
+            playerClueDrag={id:event.pointerId,x:event.clientX,y:event.clientY,move:event.button===2};
+            playerClueStage.setPointerCapture(event.pointerId);
+            playerClueStage.classList.add('dragging');
+        });
+        playerClueStage.addEventListener('pointermove',event=>{
+            if(!playerClueDrag||event.pointerId!==playerClueDrag.id)return;
+            const dx=event.clientX-playerClueDrag.x,dy=event.clientY-playerClueDrag.y;
+            if(playerClueDrag.move){playerClueX+=dx;playerClueY+=dy;}
+            else {playerClueAngle+=dx*0.5;playerClueTilt=Math.max(-75,Math.min(75,playerClueTilt-dy*0.5));}
+            playerClueDrag.x=event.clientX;playerClueDrag.y=event.clientY;
+            masterPlayerClueRenderTransform();
+        });
+        function finishMasterPlayerClueDrag() {
+            playerClueDrag=null;playerClueStage.classList.remove('dragging');
+        }
+        playerClueStage.addEventListener('pointerup',finishMasterPlayerClueDrag);
+        playerClueStage.addEventListener('pointercancel',finishMasterPlayerClueDrag);
+        playerClueStage.addEventListener('lostpointercapture',finishMasterPlayerClueDrag);
+        playerClueStage.addEventListener('contextmenu',event=>event.preventDefault());
+        playerClueStage.addEventListener('wheel',event=>{
+            event.preventDefault();playerClueZoom=Math.max(.25,Math.min(8,playerClueZoom*(event.deltaY<0?1.12:1/1.12)));
+            masterPlayerClueRenderTransform();
+        },{passive:false});
+        playerClueStage.addEventListener('dblclick',resetMasterPlayerClueView);
+        socket.on('clue_inspection_stopped',event=>{
+            if(event?.codigo==='MESTRE' && playerClueOnOverlay)stopMasterPlayerClueOverlay();
+        });
+
 
         function normalizeExilioMonster(monster) {
             const existing=monster&&typeof monster==='object'?monster:{};
