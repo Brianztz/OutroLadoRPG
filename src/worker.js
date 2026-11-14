@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { handleStorageRequest } from './storage-api.js';
+import { currentSession, handleSessionRequest } from './session-api.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
@@ -242,6 +243,9 @@ export class TableRoom extends DurableObject {
     }
 
     async fetch(request) {
+        if (new URL(request.url).pathname === '/api/session') {
+            return handleSessionRequest(request, this.ctx, this.env);
+        }
         if (new URL(request.url).pathname === '/api/storage') {
             return handleStorageRequest(request, this.ctx, this.env);
         }
@@ -251,6 +255,7 @@ export class TableRoom extends DurableObject {
         const url = new URL(request.url);
         const protocols = requestProtocols(request);
         const suppliedToken = firebaseTokenFromProtocols(protocols);
+        const nativeSession = await currentSession(request, this.ctx);
         let authenticatedUser = null;
         if (protocols.some(value => value.startsWith('firebase.'))) {
             if (!suppliedToken) return new Response('Invalid authentication token', { status: 401 });
@@ -273,15 +278,15 @@ export class TableRoom extends DurableObject {
         this.ctx.acceptWebSocket(server);
         server.serializeAttachment({
             id,
-            authenticated: Boolean(authenticatedUser),
+            authenticated: Boolean(authenticatedUser || nativeSession),
             userId: authenticatedUser ? authenticatedUser.uid : '',
             userEmail: authenticatedUser ? authenticatedUser.email : '',
-            isMaster: Boolean(authenticatedUser
+            isMaster: Boolean(nativeSession?.role === 'master' || (authenticatedUser
                 && authenticatedUser.emailVerified
-                && authenticatedUser.email === String(this.env.MASTER_EMAIL || '').toLowerCase()),
+                && authenticatedUser.email === String(this.env.MASTER_EMAIL || '').toLowerCase())),
             isOverlay: false,
             isLumina: false,
-            playerCode: '',
+            playerCode: nativeSession?.role === 'player' ? nativeSession.code : '',
         });
         const headers = protocols.includes('ol-v1') ? { 'Sec-WebSocket-Protocol': 'ol-v1' } : undefined;
         return new Response(null, { status: 101, webSocket: client, headers });
@@ -590,7 +595,7 @@ export default {
         if (url.pathname === '/health') {
             return Response.json({ ok: true, realtime: true });
         }
-        if (url.pathname === '/api/storage') {
+        if (url.pathname === '/api/storage' || url.pathname === '/api/session') {
             const table = normalizeTableCode(url.searchParams.get('mesa'));
             return env.TABLE_ROOMS.getByName(table).fetch(request);
         }
