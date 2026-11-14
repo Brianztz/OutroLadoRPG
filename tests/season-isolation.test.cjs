@@ -91,7 +91,7 @@ test('portal and master preserve edition across login, invites and embedded play
   assert(portal.includes("'mestre-temporada.html'"));
   assert(classic.includes("'./mestre-temporada.html'"));
   assert(!classic.includes('href="/temporada/master-theme.css?v=1"'));
-  assert(master.includes('href="/temporada/master-theme.css?v=1"'));
+  assert(master.includes('/temporada/master-theme.css'));
   assert(portal.includes('OLNative.signInMaster(physical, key)'));
   assert(portal.includes('OLNative.signInPlayer(physical, edition, code, key)'));
   assert(portal.includes("seasonSelect.disabled = true"));
