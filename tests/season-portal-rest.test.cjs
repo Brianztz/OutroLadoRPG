@@ -32,12 +32,11 @@ test('master invite manager provisions and rotates per-player keys',()=>{
    assert(content.includes("new URL('./acessos.html', location.href)"));
  }
 });
-test('manual Firestore migration downloads backups and validates round-trip',()=>{
- const migration=read('public/migrar.html');
- assert(migration.includes('OLFirebase.loadCharacter('));
- assert(migration.includes('OLNative.writeCharacter('));
- assert(migration.includes("check.data?.sheetJson !== previous.sheetJson"));
- assert(migration.includes('OLNative.writeClues('));
- assert(migration.includes("check.data?.cluesJson !== previous.cluesJson"));
- assert(migration.includes('download(previous'));
+test('nenhum arquivo de migracao Firebase permanece no portal',()=>{
+ const portal=read('public/index.html');
+ const native=read('public/native-client.js');
+ assert(!portal.includes('migrar.html'));
+ assert(!fs.existsSync(path.join(root, 'public/migrar.html')));
+ assert(!fs.existsSync(path.join(root, 'public/legacy-firebase-client.js')));
+ assert(native.includes('OLNative'));
 });
