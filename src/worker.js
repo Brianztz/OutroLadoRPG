@@ -158,7 +158,8 @@ export class TableRoom extends DurableObject {
     }
 
     async fetch(request) {
-        if (new URL(request.url).pathname === '/api/master-room') {
+        if (new URL(request.url).pathname === '/api/master-room'
+            || new URL(request.url).pathname === '/api/master-key-check') {
             return handleMasterRoomRequest(request, this.ctx, this.env);
         }
         if (new URL(request.url).pathname === '/api/session') {
