@@ -265,11 +265,12 @@
         const edition = seasonSelect.value;
         const physical = OLFirebase.seasonScopedTable(table, edition);
         const key = keyInput.value.trim();
-        const code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0,40);
+        let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0,40);
         setBusy(true);
         show(role === 'master' ? 'Autenticando mestre...' : 'Autenticando jogador...');
         try {
           let current = await OLNative.getSession(physical).catch(() => null);
+          if (!code && current?.role === 'player') code = current.code;
           if (!current?.ok || current.role !== role || (role === 'player' && current.code !== code)) {
             if (!key) throw Error('Informe a chave de acesso enviada pelo mestre.');
             if (role === 'master') await OLNative.signInMaster(physical, key);
@@ -293,7 +294,10 @@
       if (!keyInput.value && !incomingNotice) {
         const table = OLFirebase.seasonScopedTable(tableInput.value, seasonSelect.value);
         OLNative.getSession(table).then(user => {
-          if (user?.ok) show('Sessão ativa como ' + (user.role === 'master' ? 'mestre' : 'jogador') + '.');
+          if (user?.ok) {
+            if (user.role === 'player' && !codeInput.value) codeInput.value = user.code;
+            show('Sessão ativa como ' + (user.role === 'master' ? 'mestre' : 'jogador') + '.');
+          }
         }).catch(() => {});
       }
       if (isPlayerInvite && keyInput.value && codeInput.value) {
