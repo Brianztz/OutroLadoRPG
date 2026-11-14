@@ -2474,7 +2474,7 @@
 
             try {
                 const user = await OLFirebase.getCurrentUser();
-                if (!user) throw new Error('Sua sessão do Firebase não está disponível.');
+                if (!user) throw new Error('Sua sessão da mesa não está disponível.');
                 const result = await OLFirebase.saveMasterClues(syncingTable, queuedJson);
                 if (syncingTable !== masterTableCode) return;
                 masterCluesCloudLastHash = result.cluesHash || queuedHash;
@@ -3976,19 +3976,19 @@
 
             try {
                 if (!window.OLFirebase || typeof OLFirebase.removeTablePlayer !== 'function') {
-                    throw new Error('O cliente Firebase precisa ser recarregado para remover o acesso da mesa.');
+                    throw new Error('Recarregue a página para remover o acesso do jogador.');
                 }
                 await OLFirebase.removeTablePlayer(masterTableCode, code);
                 if (!isSeasonMaster) {
                     // Depois da expulsão, facilite o reingresso autorizado pela
-                    // mesma mesa e pelo portal Google/Firebase da 1ª temporada.
+                    // mesma mesa e pelo convite individual da primeira temporada.
                     openMasterInvite();
                     const inviteStatus = document.getElementById('master-invite-status');
                     inviteStatus.textContent = playerName + ' foi removido. Gere um novo convite para que entre novamente e apareça no overlay.';
                 }
             } catch (error) {
                 console.error('O jogador foi desconectado, mas o vínculo da mesa não pôde ser removido:', error);
-                alert(`O jogador foi desconectado agora, mas não foi possível remover o acesso salvo no Firebase. ${error && error.message ? error.message : 'Tente novamente após recarregar a página.'}`);
+                alert(`O jogador foi desconectado agora, mas não foi possível remover o acesso salvo no servidor. ${error && error.message ? error.message : 'Tente novamente após recarregar a página.'}`);
             }
         }
 
