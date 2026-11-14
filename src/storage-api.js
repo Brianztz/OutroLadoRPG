@@ -82,13 +82,53 @@ export async function handleStorageRequest(request, ctx, env) {
   const session = await currentSession(request, ctx);
   const master = session?.role === 'master' || (masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret));
 
-  if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access') return json({ error: 'invalid_kind' }, 400);
+  if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access' && kind !== 'player-list') return json({ error: 'invalid_kind' }, 400);
+  if (kind === 'player-list') {
+    // List only characters belonging to this physical room and edition.
+    // Never return any player access key or its hash.
+    if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+    if (!master) return json({ error: 'master_credential_required' }, 403);
+    const prefix = 'sheet:' + edition + ':';
+    const entries = await ctx.storage.list({ prefix });
+    const codes = new Set();
+    for (const key of entries.keys()) {
+      const match = /^sheet:(?:classic|temporada):([A-Z0-9_-]{1,40}):(?:owner-sha256|manifest)$/.exec(key);
+      if (match) codes.add(match[1]);
+      if (codes.size >= 200) break;
+    }
+    const players = await Promise.all([...codes].map(async playerCode => {
+      const root = prefix + playerCode;
+      let name = '', hasSheet = false;
+      try {
+        const result = await getStored(ctx.storage, root);
+        hasSheet = Boolean(result);
+        const saved = result?.data;
+        name = String(saved?.characterName || '').trim().slice(0, 80);
+        if (!name && typeof saved?.sheetJson === 'string') {
+          const snapshot = JSON.parse(saved.sheetJson);
+          name = String(snapshot?.state?.name || snapshot?.info?.char_nome
+            || snapshot?.temporada?.state?.name || '').trim().slice(0, 80);
+        }
+      } catch (_) { /* A corrupt/legacy sheet must not block access recovery. */ }
+      return { code: playerCode, name: name || playerCode, hasSheet };
+    }));
+    players.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR') || a.code.localeCompare(b.code));
+    return json({ ok: true, players, truncated: codes.size >= 200 });
+  }
   if (kind === 'player-access') {
     // Only the master can provision and rotate player access keys.
     if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
     if (!master) return json({ error: 'master_credential_required' }, 403);
     if (!code) return json({ error: 'invalid_character_code' }, 400);
     const playerRoot = 'sheet:' + edition + ':' + code;
+    const alreadyExists = Boolean(await ctx.storage.get(playerRoot + ':owner-sha256')
+      || await ctx.storage.get(playerRoot + ':manifest'));
+    if (url.searchParams.get('create') === '1' && alreadyExists) {
+      return json({ error: 'character_code_taken' }, 409);
+    }
+    if (url.searchParams.get('renew') === '1' && !alreadyExists) {
+      return json({ error: 'character_not_found' }, 404);
+    }
     const key = Array.from(crypto.getRandomValues(new Uint8Array(48)), byte =>
       byte.toString(16).padStart(2, '0')).join('');
     await ctx.storage.put(playerRoot + ':owner-sha256', await sha256(key));
