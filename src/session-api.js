@@ -82,8 +82,22 @@ export async function handleSessionRequest(request, ctx, env) {
   let credentialHash = '';
   if (role === 'master') {
     const serverKey = String(env.MASTER_DATA_TOKEN || '');
-    if (serverKey.length < 32 || !fixedEqual(data && data.key, serverKey)) {
-      return response({ error: 'invalid_credentials' }, 401);
+    const key = String(data && data.key || '');
+    if (serverKey.length < 32) return response({ error: 'master_not_configured' }, 503);
+    if (!fixedEqual(key, serverKey)) {
+      // Only a personal key activated for THIS season-two table can log in.
+      // The registry DO is called internally; this validation route is not public.
+      if (!/^OLM-[A-F0-9]{64}$/.test(key) || !env.TABLE_ROOMS) {
+        return response({ error: 'invalid_credentials' }, 401);
+      }
+      const physicalTable = new URL(request.url).searchParams.get('mesa') || '';
+      const registry = env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
+      const validation = await registry.fetch(new Request('https://internal.invalid/api/master-key-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-OL-Internal-Auth': serverKey },
+        body: JSON.stringify({ key, physicalTable })
+      }));
+      if (!validation.ok) return response({ error: 'invalid_credentials' }, 401);
     }
   } else if (role === 'player') {
     code = playerCode(data && data.code);
