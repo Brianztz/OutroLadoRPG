@@ -79,7 +79,7 @@ function page({role='player',playerKey='a'.repeat(96),personalKey='OLM-'+'A'.rep
   };
   const physical='T2_'+table;
   const storage = fakeStorage({'ol_personal_master_key_v1':personalKey,'player_sync_code':player});
-  const session = fakeStorage({'ol_player_resume_v1:'+physical+':'+player:playerKey});
+  const session = fakeStorage({['ol_player_resume_v1:'+physical+':'+player]:playerKey});
   let signedIn=false;
   const calls=[];
   const fetch=async (url,opts={})=>{
