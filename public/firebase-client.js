@@ -215,10 +215,14 @@
     global.location.replace(portalURL('Acesso expirado ou não autorizado. Entre novamente.'));
     return false;
   }
-  async function loadCharacter(requestedTable, variant) {
+  async function loadCharacter(requestedTable, variant, selectedCode = '') {
     const user = await getCurrentUser();
     if (!user) throw Error('É necessário entrar na mesa.');
-    const code = user.role === 'master' ? normalizePlayerCode(localStorage.getItem('player_sync_code')) : user.code;
+    // A master may explicitly select ANY character in their own room, even if
+    // the player is offline. Players always remain restricted to their own code.
+    const code = user.role === 'master'
+      ? normalizePlayerCode(selectedCode || localStorage.getItem('player_sync_code'))
+      : user.code;
     if (!code) throw Error('Código do personagem não encontrado.');
     try {
       const response = await global.OLNative.readCharacter(seasonScopedTable(requestedTable), variant, code);
@@ -290,8 +294,8 @@
       global.removeEventListener('focus', changed);
     };
   }
-  async function watchCharacter(table, listener, variant) {
-    return watchChanges(() => loadCharacter(table, variant), listener, data => data.sheetHash);
+  async function watchCharacter(table, listener, variant, selectedCode = '') {
+    return watchChanges(() => loadCharacter(table, variant, selectedCode), listener, data => data.sheetHash);
   }
   async function watchMasterClues(table, listener) {
     return watchChanges(() => loadMasterClues(table), listener, data => data.cluesHash);
