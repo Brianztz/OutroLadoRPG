@@ -198,7 +198,7 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
       invite.searchParams.set('temporada', '2');
       invite.hash = new URLSearchParams({ codigo: playerCode, chave: data.playerKey }).toString();
       document.getElementById('invite-url').value = invite.href;
-      document.getElementById('created-code').textContent = 'Código da ficha: ' + playerCode + ' (guarde se precisar renovar o acesso).';
+      document.getElementById('created-code').textContent = 'Código da ficha: ' + playerCode + ' · disponível na lista de fichas existentes.';
       result.hidden = false;
       status.textContent = 'Pronto! Basta copiar o link e enviar.';
       await refreshSavedPlayers();
