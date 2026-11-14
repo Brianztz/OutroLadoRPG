@@ -36,13 +36,15 @@ test('convites usam somente a temporada 2 com chave individual', () => {
   const master = read('public/mestre-temporada.html');
   assert(manager.includes("const edition = 'temporada'"));
   assert(manager.includes("OLSeasonSpace.tableId(table, edition)"));
-  assert(manager.includes("OLNative.provisionPlayer(physical, edition, playerCode)"));
+  assert(manager.includes("OLNative.provisionPlayer(physical, edition, playerCode, existing ? 'renew' : 'create')"));
   assert(manager.includes("invite.searchParams.set('temporada', '2')"));
   assert(manager.includes("invite.hash = new URLSearchParams"));
-  assert(manager.includes('create.onclick = () => issueInvite(generateCode())'));
-  assert(manager.includes('crypto.getRandomValues(new Uint8Array(12))'));
+  assert(manager.includes('create.onclick = () => {'));
+  assert(manager.includes('function friendlyCode()'));
   assert(manager.includes('navigator.clipboard.writeText(input.value)'));
   assert(manager.includes('<details id="recover">'));
+  assert(manager.includes("OLNative.listPlayers(physical, edition)"));
+  assert(manager.includes("id=\"character-name\""));
   assert(master.includes("new URL('./acessos.html', location.href)"));
   assert(!manager.includes("'classic'"));
   assert(!manager.includes('mestre.html'));

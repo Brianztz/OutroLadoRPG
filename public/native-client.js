@@ -58,8 +58,13 @@
   async function signOut(table) {
     return api(sessionUrl(table), { method: 'DELETE' });
   }
-  async function provisionPlayer(table, edition, code) {
-    return api(query(table, 'player-access', edition, code), { method: 'POST' });
+  async function provisionPlayer(table, edition, code, mode = '') {
+    const url = query(table, 'player-access', edition, code);
+    const flag = mode === 'create' ? '&create=1' : mode === 'renew' ? '&renew=1' : '';
+    return api(url + flag, { method: 'POST' });
+  }
+  async function listPlayers(table, edition = 'temporada') {
+    return api(query(table, 'player-list', edition));
   }
   async function readCharacter(table, edition, code) {
     return api(query(table, 'character', edition, code));
@@ -81,6 +86,6 @@
   }
   global.OLNative = Object.freeze({
     tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
-    provisionPlayer, readCharacter, writeCharacter, readClues, writeClues
+    provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);
