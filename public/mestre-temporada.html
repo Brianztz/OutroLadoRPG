@@ -912,6 +912,7 @@
     <script src="catalog-data.js"></script>
     <script src="/socket.io/socket.io.js?v=season2-2"></script>
     <script src="/season-socket-adapter.js?v=3"></script>
+    <script src="/master-clues-cache.js?v=1"></script>
     <script>
         const socket = io();
         const playersBoard = document.getElementById('players-board');
@@ -963,7 +964,7 @@
         let masterCluesCloudRetryCount = 0;
         let masterCluesCloudQuotaBlockedUntil = 0;
         let masterCluesCloudUnsubscribe = null;
-        let masterCluesLocalStorageWarningShown = false;
+        let masterCluesCacheWrites = Promise.resolve();
         let editingMasterClueId = null;
         let currentMasterClueId = null;
         let pendingMasterClueFront = '';
@@ -1594,17 +1595,42 @@
             status.textContent = message || (state === 'saved' ? 'SALVO NA NUVEM' : state === 'error' ? 'ERRO AO SALVAR' : 'SALVANDO...');
         }
 
+        // Large images and book pages exceed localStorage's small quota. IndexedDB
+        // keeps a complete, room-scoped backup and a pending-sync flag instead.
+        // Writes are serialized, so old cloud confirmations cannot replace new edits.
+        function cacheMasterClues(table, cluesJson, pending = true, cloudHash = '') {
+            const key = masterCluesStorageKey(table);
+            masterCluesCacheWrites = masterCluesCacheWrites.catch(() => {}).then(async () => {
+                if (!window.OLMasterClueCache) throw new Error('indexeddb_unavailable');
+                const existing = await OLMasterClueCache.read(key);
+                if (!pending && existing?.pending && existing.json !== cluesJson) return;
+                await OLMasterClueCache.write(key, {
+                    json: cluesJson, pending, cloudHash, updatedAt: Date.now()
+                });
+                // Remove the oversized legacy copy only AFTER a successful
+                // IndexedDB transaction. Never delete unsynced legacy data first.
+                try { localStorage.removeItem(key); } catch (_) {}
+            }).catch(error => {
+                console.warn('Cache local de pistas indisponível:', error);
+                if (pending) {
+                    // Small collections still have a localStorage fallback.
+                    if (cluesJson.length <= 700000) {
+                        try { localStorage.setItem(key, cluesJson); return; } catch (_) {}
+                    }
+                    setMasterCluesSyncStatus('error',
+                        'CÓPIA LOCAL INDISPONÍVEL — AGUARDE CONFIRMAÇÃO NA NUVEM');
+                } else {
+                    // A remote save/load already succeeded: never leave an old
+                    // localStorage snapshot that could overwrite newer cloud data.
+                    try { localStorage.removeItem(key); } catch (_) {}
+                }
+            });
+            return masterCluesCacheWrites;
+        }
+
         function saveMasterCluesState() {
             const cluesJson = JSON.stringify(masterCluesState);
-            try {
-                localStorage.setItem(masterCluesStorageKey(), cluesJson);
-            } catch (error) {
-                console.warn('A cópia local das pistas não coube no navegador:', error);
-                if (!masterCluesLocalStorageWarningShown) {
-                    masterCluesLocalStorageWarningShown = true;
-                    alert('As pistas ficaram grandes demais para a cópia local do navegador. Elas continuarão sendo salvas na nuvem; aguarde o indicador mostrar "SALVO NA NUVEM" antes de fechar a página.');
-                }
-            }
+            void cacheMasterClues(masterTableCode, cluesJson, true);
             if (masterCluesCloudApplying) return;
             if (!masterCluesCloudReady) {
                 masterCluesCloudDirtyBeforeReady = true;
@@ -1638,11 +1664,8 @@
             masterCluesCloudApplying = true;
             try {
                 masterCluesState = parsedClues.map(normalizeMasterClue);
-                try {
-                    localStorage.setItem(masterCluesStorageKey(), cloudClues.cluesJson);
-                } catch (storageError) {
-                    console.warn('A cópia local das pistas recebidas da nuvem não coube no navegador:', storageError);
-                }
+                void cacheMasterClues(masterTableCode, cloudClues.cluesJson, false,
+                    cloudClues.cluesHash || OLFirebase.hashCharacterSheet(cloudClues.cluesJson));
                 if (currentMasterClueId && !masterCluesState.some(clue => clue.id === currentMasterClueId)) closeMasterClueInfo();
                 renderMasterClues();
                 masterCluesCloudLastHash = cloudClues.cluesHash || OLFirebase.hashCharacterSheet(cloudClues.cluesJson);
@@ -1693,6 +1716,7 @@
                 const result = await OLFirebase.saveMasterClues(syncingTable, queuedJson);
                 if (syncingTable !== masterTableCode) return;
                 masterCluesCloudLastHash = result.cluesHash || queuedHash;
+                void cacheMasterClues(syncingTable, queuedJson, false, masterCluesCloudLastHash);
                 try { localStorage.setItem(masterCluesCloudMarkerKey(user.uid), masterCluesCloudLastHash); } catch (error) {}
                 masterCluesCloudRetryCount = 0;
                 masterCluesCloudQuotaBlockedUntil = 0;
@@ -1740,12 +1764,30 @@
             }
             const syncingTable = masterTableCode;
             try {
+                // Restore the local cache before contacting Cloudflare. If offline,
+                // previously saved clues remain available, including large books.
+                let cached = null;
+                try {
+                    await masterCluesCacheWrites;
+                    cached = await window.OLMasterClueCache?.read(masterCluesStorageKey(syncingTable));
+                } catch (error) {
+                    console.warn('Não foi possível ler o cache IndexedDB de pistas:', error);
+                }
+                if (syncingTable !== masterTableCode) return;
+                let localJson = cached?.json || getStoredMasterCluesJson(syncingTable);
+                if (localJson && !masterCluesCloudDirtyBeforeReady) {
+                    const parsed = JSON.parse(localJson);
+                    if (Array.isArray(parsed)) {
+                        masterCluesState = parsed.map(normalizeMasterClue);
+                        renderMasterClues();
+                        if (cached?.pending) masterCluesCloudDirtyBeforeReady = true;
+                    }
+                }
                 const user = await OLFirebase.getCurrentUser();
                 if (!user || syncingTable !== masterTableCode) return;
-                let localJson = getStoredMasterCluesJson(syncingTable);
                 let localHash = localJson ? OLFirebase.hashCharacterSheet(localJson) : '';
                 const markerKey = masterCluesCloudMarkerKey(user.uid);
-                const knownCloudHash = localStorage.getItem(markerKey) || '';
+                const knownCloudHash = localStorage.getItem(markerKey) || cached?.cloudHash || '';
                 const remoteClues = await OLFirebase.loadMasterClues(syncingTable);
                 if (syncingTable !== masterTableCode) return;
 
@@ -1760,17 +1802,20 @@
                     if (masterCluesCloudDirtyBeforeReady || localChangedAfterLastSync) {
                         const result = await OLFirebase.saveMasterClues(syncingTable, localJson || '[]');
                         masterCluesCloudLastHash = result.cluesHash;
-                        localStorage.setItem(markerKey, result.cluesHash);
+                        void cacheMasterClues(syncingTable, localJson || '[]', false, result.cluesHash);
+                        try { localStorage.setItem(markerKey, result.cluesHash); } catch (_) {}
                     } else if (localHash !== remoteHash) {
                         applyMasterCluesCloud(remoteClues, user.uid);
                     } else {
                         masterCluesCloudLastHash = remoteHash;
-                        localStorage.setItem(markerKey, remoteHash);
+                        void cacheMasterClues(syncingTable, localJson || remoteClues.cluesJson, false, remoteHash);
+                        try { localStorage.setItem(markerKey, remoteHash); } catch (_) {}
                     }
                 } else if (localJson !== null) {
                     const result = await OLFirebase.saveMasterClues(syncingTable, localJson);
                     masterCluesCloudLastHash = result.cluesHash;
-                    localStorage.setItem(markerKey, result.cluesHash);
+                    void cacheMasterClues(syncingTable, localJson, false, result.cluesHash);
+                    try { localStorage.setItem(markerKey, result.cluesHash); } catch (_) {}
                 }
 
                 masterCluesCloudDirtyBeforeReady = false;

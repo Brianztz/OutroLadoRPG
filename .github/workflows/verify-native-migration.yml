@@ -17,7 +17,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: node --test tests/master-player-clue-viewer.test.cjs tests/friendly-player-codes.test.cjs tests/sheet-refresh-session.test.cjs tests/legacy-route-redirects.test.cjs tests/master-room.test.cjs tests/storage-api.test.cjs tests/season-portal-rest.test.cjs tests/firestore-write-optimizations.test.cjs tests/season-isolation.test.cjs tests/season2-reinvite-overlay.test.cjs
+      - run: node --test tests/master-clues-cache.test.cjs tests/master-player-clue-viewer.test.cjs tests/friendly-player-codes.test.cjs tests/sheet-refresh-session.test.cjs tests/legacy-route-redirects.test.cjs tests/master-room.test.cjs tests/storage-api.test.cjs tests/season-portal-rest.test.cjs tests/firestore-write-optimizations.test.cjs tests/season-isolation.test.cjs tests/season2-reinvite-overlay.test.cjs
       - run: npx wrangler deploy --dry-run
   full-regression:
     runs-on: ubuntu-latest
