@@ -6,6 +6,7 @@ window.startSeasonSync=async function startSeasonSync(){
   let ready=false,cloudReady=false,applying=false,dirty=false,busy=false,timer=null,realtimeTimer=null,lastHash='',closed=false;
   let preferences={color:'#b83b25',combat:false,status:{}};
   const metadataKey=prefix+'presentation',markerKey=prefix+'cloudHash',dirtyKey=prefix+'dirty';
+  dirty=localStorage.getItem(dirtyKey)==='1';
   try{preferences={...preferences,...JSON.parse(localStorage.getItem(metadataKey)||'{}')};}catch(_){}
   let code=view||localStorage.getItem('player_sync_code');
   if(!code){code=crypto.randomUUID().replace(/-/g,'').slice(0,8).toUpperCase();localStorage.setItem('player_sync_code',code);}
@@ -50,7 +51,8 @@ window.startSeasonSync=async function startSeasonSync(){
   $('season-color').onchange=()=>{preferences.color=$('season-color').value;storePreferences();changed();};
   $('season-combat').onchange=()=>{preferences.combat=$('season-combat').checked;storePreferences();changed();};
   window.addEventListener('season:roll',event=>{if(!ready)return;const {pool,label,name}=event.detail;broadcast();socket.emit('rolagem_feita',{codigo:code,mesa:table,jogador:api.getState().name||'Personagem',acao:name+' — '+label,resultado:pool.value,cor:label==='FALHA'?'#f16a5b':'#e8b67a'});});
-  socket.on('connect',()=>{if(view)socket.emit('request_player',{codigo:code,mesa:table});else if(ready){broadcast();if(dirty)void flush();}status(ready?'Conectado à mesa':'Carregando ficha…');});
+  socket.on('connect',()=>{if(view)socket.emit('request_player',{codigo:code,mesa:table});else if(ready){broadcast();if(!cloudReady)void initialize();else if(dirty)void flush();}status(ready?'Conectado à mesa':'Carregando ficha…');});
+  window.addEventListener('online',()=>{if(view||closed)return;if(!cloudReady)void initialize();else if(dirty)void flush();});
   socket.on('disconnect',()=>status('Sem conexão · alterações locais preservadas'));
   socket.on('sync_requested',data=>{if(data?.codigo===code&&data.mesa===table)broadcast();});
   let inbound=Promise.resolve();
@@ -62,7 +64,11 @@ window.startSeasonSync=async function startSeasonSync(){
   $('season-import').onclick=()=>$('season-import-file').click();
   $('season-import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>8*1024*1024)throw Error('O arquivo deve ter até 8 MB.');const data=JSON.parse(await file.text());if(data.version!==1||!data.state?.attrs||!data.state?.skills)throw Error('Escolha um backup da ficha da temporada.');await applySnapshot(data);changed();await flush();}catch(error){status('Importação recusada: '+error.message);}};
   let unsubscribe=null;
+  let initializing=false;
   async function initialize(){
+    if(initializing||closed)return;
+    initializing=true;
+    try{
     if(view){if(socket.connected)socket.emit('request_player',{codigo:code,mesa:table});return;}
     status('Carregando a ficha da temporada…');
     try{const cloud=await OLFirebase.loadCharacter(table,'temporada');const marker=localStorage.getItem(markerKey);if(cloud){const locallyDirty=localStorage.getItem(dirtyKey)==='1';if(locallyDirty&&(!marker||marker!==cloud.sheetHash)){
@@ -70,10 +76,12 @@ window.startSeasonSync=async function startSeasonSync(){
         status('Alterações locais e da nuvem diferem. Exporte o backup antes de sincronizar; seus atributos continuam editáveis.');
         return;
       }if(!locallyDirty)await applySnapshot(JSON.parse(cloud.sheetJson));lastHash=cloud.sheetHash;localStorage.setItem(markerKey,lastHash);}ready=true;cloudReady=true;lock(false);broadcast();if(!unsubscribe)unsubscribe=await OLFirebase.watchCharacter(table,(next,error)=>{if(error){status('Falha ao acompanhar a nuvem: '+error.message);return;}if(!next||next.sheetHash===lastHash||busy||dirty||applying)return;inbound=inbound.then(async()=>{if(busy||dirty)return;await applySnapshot(JSON.parse(next.sheetJson));lastHash=next.sheetHash;localStorage.setItem(markerKey,lastHash);broadcast();}).catch(error=>status('Ficha remota inválida: '+error.message));},'temporada');await flush();}catch(error){cloudReady=false;ready=true;lock(false);broadcast();status('MODO LOCAL · Firebase indisponível. Atributos liberados e preservados neste dispositivo. Abra os ajustes e clique em Tentar novamente quando a nuvem voltar.');}
+    }finally{initializing=false;}
   }
   $('season-retry').onclick=()=>cloudReady?flush():initialize();
   window.addEventListener('beforeunload',event=>{if(dirty&&!view){event.preventDefault();event.returnValue='';}});
   window.addEventListener('pagehide',()=>{closed=true;clearTimeout(timer);clearTimeout(realtimeTimer);unsubscribe?.();});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!closed&&!view){if(!cloudReady)void initialize();else if(dirty)void flush();}});
   let inspecting=null,inspectionTimer=null;
   const inspectionButton=document.createElement('button');inspectionButton.type='button';inspectionButton.textContent='Mostrar no overlay';inspectionButton.id='season-inspect-overlay';$('clue-inspect').append(inspectionButton);
   function stopInspection(){if(inspecting)socket.emit('clue_inspection_stop',{mesa:table,codigo:code,clueId:inspecting});inspecting=null;inspectionButton.textContent='Mostrar no overlay';}
