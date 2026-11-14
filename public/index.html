@@ -162,6 +162,10 @@
             .role-grid { grid-template-columns: 1fr; }
             .role-button { min-height: 90px; }
         }
+    .credential-grid {display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}
+        .credential-grid input {width:100%;min-height:49px;border:1px solid rgba(139,204,246,.3);border-radius:9px;background:rgba(1,6,12,.84);color:#fff;padding:12px;font:600 .89rem Roboto,"Segoe UI",sans-serif}
+        .credential-grid input:focus{outline:2px solid #39aee8;outline-offset:1px}
+        @media(max-width:620px){.credential-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
@@ -176,13 +180,14 @@
         <form class="entry-form" onsubmit="enterPortal('player'); return false;">
             <section class="auth-panel" aria-live="polite">
                 <div class="auth-copy">
-                    <img id="auth-avatar" class="auth-avatar" alt="" hidden>
-                    <div><strong id="auth-name">Conta Google necessária</strong><small id="auth-email">Entre para acessar sua ficha ou o escudo.</small></div>
+                    <div><strong id="auth-name">Acesso à mesa</strong><small id="auth-email">Jogadores entram com o convite enviado pelo mestre. O mestre utiliza sua chave privada.</small></div>
                 </div>
-                <button id="google-login" class="auth-button" type="button">ENTRAR COM GOOGLE</button>
-                <button id="google-logout" class="auth-button secondary" type="button" hidden>SAIR</button>
             </section>
-            <p id="auth-message" class="auth-message"></p>
+            <div class="credential-grid">
+              <label id="player-code-field" class="table-field" for="player-code-input"><span>Código do personagem (jogador)</span><input id="player-code-input" autocomplete="off" maxlength="40" placeholder="EX.: A1B2C3D4" spellcheck="false"></label>
+              <label class="table-field" for="credential-input"><span>Chave de acesso</span><input id="credential-input" type="password" autocomplete="off" placeholder="Cole aqui sua chave ou abra o convite"></label>
+            </div>
+            <p id="auth-message" class="auth-message" role="status"></p>
 
             <label class="table-field" for="table-input">
                 <span>Código da mesa</span>
@@ -208,169 +213,96 @@
     </main>
 
     <script src="/season-space.js?v=3"></script>
-    <script src="firebase-client.js?v=season2-5"></script>
+    <script src="firebase-client.js?v=native-auth-1"></script>
     <script>
-        const tableInput = document.getElementById('table-input');
-        const params = new URLSearchParams(window.location.search);
-        const isPlayerInvite = params.get('convite') === '1' && Boolean(params.get('mesa'));
-        const seasonSelect = document.getElementById('sheet-model');
-        // Legacy invitations have no "temporada" parameter and always stay classic.
-        if (isPlayerInvite) {
-            seasonSelect.value = params.get('temporada') === '2' ? 'temporada' : 'classic';
-            seasonSelect.disabled = true;
-        } else if (params.get('temporada') === '2') {
-            seasonSelect.value = 'temporada';
-        }
-        let inviteJoinStarted = false;
-        const authName = document.getElementById('auth-name');
-        const authEmail = document.getElementById('auth-email');
-        const authAvatar = document.getElementById('auth-avatar');
-        const authMessage = document.getElementById('auth-message');
-        const googleLogin = document.getElementById('google-login');
-        const googleLogout = document.getElementById('google-logout');
-        const roleButtons = [...document.querySelectorAll('.role-button')];
-
-        function normalizeTableCode(value) {
-            const normalized = String(value || 'PADRAO')
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .trim()
-                .toUpperCase()
-                .replace(/[^A-Z0-9_-]+/g, '-')
-                .replace(/^-+|-+$/g, '')
-                .slice(0, 40);
-            return normalized || 'PADRAO';
-        }
-
-        const rememberedTable = params.get('mesa') || localStorage.getItem('portal_table_code') || localStorage.getItem('player_table_code') || localStorage.getItem('master_table_code') || 'PADRAO';
-        tableInput.value = normalizeTableCode(rememberedTable);
-        if (isPlayerInvite) {
-            // A shared link targets the precise table chosen by the master.
-            tableInput.readOnly = true;
-            document.querySelector('.hint').textContent =
-                'Convite para a mesa ' + tableInput.value + '. Entre com o Google para abrir sua ficha conectada ao mestre.';
-        }
-        tableInput.addEventListener('input', () => {
-            const start = tableInput.selectionStart;
-            tableInput.value = tableInput.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-            tableInput.setSelectionRange(start, start);
-        });
-
-        function setPortalBusy(busy) {
-            googleLogin.disabled = busy;
-            googleLogout.disabled = busy;
-            roleButtons.forEach(button => { button.disabled = busy || !window.__portalUser; });
-        }
-
-        function showAuthMessage(message, error = false) {
-            authMessage.textContent = String(message || '');
-            authMessage.classList.toggle('error', Boolean(error));
-        }
-
-        function renderAuthUser(user) {
-            window.__portalUser = user || null;
-            const signedIn = Boolean(user);
-            authName.textContent = signedIn ? (user.displayName || 'Conta Google') : 'Conta Google necessária';
-            authEmail.textContent = signedIn ? (user.email || '') : 'Entre para acessar sua ficha ou o escudo.';
-            authAvatar.hidden = !signedIn || !user.photoURL;
-            if (signedIn && user.photoURL) authAvatar.src = user.photoURL;
-            googleLogin.hidden = signedIn;
-            googleLogout.hidden = !signedIn;
-            roleButtons.forEach(button => { button.disabled = !signedIn; });
-        }
-
-        function rememberValidatedPortalAccess(role, table) {
-            const user = window.__portalUser;
-            if (!user || !user.uid) return;
-            try {
-                sessionStorage.setItem('ol_firebase_portal_access', JSON.stringify({
-                    role,
-                    tableId: table,
-                    uid: user.uid,
-                    validatedAt: Date.now()
-                }));
-            } catch (error) {
-                console.warn('Nao foi possivel guardar a validacao local da mesa:', error);
+      const params = new URLSearchParams(location.search);
+      const tableInput = document.getElementById('table-input');
+      const seasonSelect = document.getElementById('sheet-model');
+      const codeInput = document.getElementById('player-code-input');
+      const keyInput = document.getElementById('credential-input');
+      const message = document.getElementById('auth-message');
+      const roleButtons = [...document.querySelectorAll('.role-button')];
+      const isPlayerInvite = params.get('convite') === '1';
+      let busy = false;
+      tableInput.value = OLFirebase.normalizeTableCode(params.get('mesa')
+        || localStorage.getItem('portal_table_code') || 'PADRAO');
+      if (isPlayerInvite || params.get('temporada') === '2') {
+        seasonSelect.value = params.get('temporada') === '2' ? 'temporada' : 'classic';
+      }
+      if (isPlayerInvite) {
+        seasonSelect.disabled = true;
+        tableInput.readOnly = true;
+        document.querySelector('.hint').textContent =
+          'Convite da mesa ' + tableInput.value + ' — use o código e a chave enviados pelo mestre.';
+      }
+      const fragment = new URLSearchParams(location.hash.replace(/^#/, ''));
+      if (fragment.has('codigo')) codeInput.value = fragment.get('codigo') || '';
+      if (fragment.has('chave')) keyInput.value = fragment.get('chave') || '';
+      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+      roleButtons.forEach(b => b.disabled = false);
+      function show(messageText, error = false) {
+        message.textContent = messageText;
+        message.classList.toggle('error', error);
+      }
+      function setBusy(state) {
+        busy = state;
+        roleButtons.forEach(b => { b.disabled = busy; });
+      }
+      function destination(role, logicalTable, edition) {
+        localStorage.setItem('portal_table_code', logicalTable);
+        localStorage.setItem(role === 'master' ? 'master_table_code' : 'player_table_code', logicalTable);
+        const page = role === 'master'
+          ? (edition === 'temporada' ? 'mestre-temporada.html' : 'mestre.html')
+          : (edition === 'temporada' ? 'ficha-temporada.html' : 'ficha.html');
+        const next = new URL('./' + page, location.href);
+        next.searchParams.set('mesa', logicalTable);
+        if (edition === 'temporada') next.searchParams.set('temporada','2');
+        location.assign(next.href);
+      }
+      async function enterPortal(role) {
+        if (busy || !tableInput.reportValidity()) return;
+        const table = OLFirebase.normalizeTableCode(tableInput.value);
+        const edition = seasonSelect.value;
+        const physical = OLFirebase.seasonScopedTable(table, edition);
+        const key = keyInput.value.trim();
+        let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0,40);
+        setBusy(true);
+        show(role === 'master' ? 'Autenticando mestre...' : 'Autenticando jogador...');
+        try {
+          let current = await OLNative.getSession(physical).catch(() => null);
+          if (!code && current?.role === 'player') code = current.code;
+          if (!current?.ok || current.role !== role || (role === 'player' && current.code !== code)) {
+            if (!key) throw Error('Informe a chave de acesso enviada pelo mestre.');
+            if (role === 'master') await OLNative.signInMaster(physical, key);
+            else {
+              if (!code) throw Error('Informe seu código de personagem.');
+              await OLNative.signInPlayer(physical, edition, code, key);
             }
-        }
-
-        function finishPortalEntry(role, table, physicalTable) {
-            const edition = seasonSelect.value;
-            rememberValidatedPortalAccess(role, physicalTable || OLFirebase.seasonScopedTable(table, edition));
-            localStorage.setItem('portal_table_code', table);
-            const isMaster = role === 'master';
-            localStorage.setItem(isMaster ? 'master_table_code' : 'player_table_code', table);
-            const destination = new URL(isMaster
-                ? (edition === 'temporada' ? './mestre-temporada.html' : './mestre.html')
-                : (edition === 'temporada' ? './ficha-temporada.html' : './ficha.html'), window.location.href);
-            destination.search = '';
-            destination.searchParams.set('mesa', table);
-            if (edition === 'temporada') destination.searchParams.set('temporada', '2');
-            window.location.assign(destination.href);
-        }
-
-        async function enterPortal(role) {
-            if (!tableInput.reportValidity()) return;
-            const table = normalizeTableCode(tableInput.value);
-            tableInput.value = table;
-            showAuthMessage(role === 'master' ? 'Validando acesso do mestre...' : 'Entrando na mesa...');
-            setPortalBusy(true);
-            try {
-                const validated = await OLFirebase.preparePortal(role, table, seasonSelect.value);
-                finishPortalEntry(role, table, validated.tableId);
-            } catch (error) {
-                const message = String(error && error.message || 'Nao foi possivel entrar nessa mesa.');
-                const harmlessExistingPlayerRefreshTimeout = role === 'player'
-                    && /Firebase demorou para atualizar o jogador/i.test(message);
-
-                if (harmlessExistingPlayerRefreshTimeout) {
-                    console.warn('A atualizacao do cadastro do jogador demorou, mas o acesso ja foi validado. Entrando na mesa.', error);
-                    finishPortalEntry(role, table, OLFirebase.seasonScopedTable(table, seasonSelect.value));
-                    return;
-                }
-
-                // Se um jogador removido estiver usando o convite para voltar,
-                // uma falha temporária não deve bloquear novas tentativas de entrada.
-                if (isPlayerInvite && role === 'player') inviteJoinStarted = false;
-                showAuthMessage(message, true);
-                setPortalBusy(false);
-            }
-        }
-
-        googleLogin.addEventListener('click', async () => {
-            showAuthMessage('Abrindo o login do Google...');
-            setPortalBusy(true);
-            try {
-                const user = await OLFirebase.signInWithGoogle();
-                renderAuthUser(user);
-                showAuthMessage('Conta conectada. Agora escolha como deseja entrar.');
-            } catch (error) {
-                const cancelled = error && ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code);
-                showAuthMessage(cancelled ? 'Login cancelado.' : 'Nao foi possivel entrar com o Google.', !cancelled);
-            } finally {
-                setPortalBusy(false);
-            }
-        });
-
-        googleLogout.addEventListener('click', async () => {
-            setPortalBusy(true);
-            await OLFirebase.signOut();
-            renderAuthUser(null);
-            showAuthMessage('Conta desconectada.');
-            setPortalBusy(false);
-        });
-
-        const incomingNotice = params.get('aviso');
-        if (incomingNotice) showAuthMessage(incomingNotice, true);
-        else if (isPlayerInvite) showAuthMessage('Convite recebido: conecte sua conta Google para entrar automaticamente.');
-        OLFirebase.onUserChanged(user => {
-            renderAuthUser(user);
-            if (!isPlayerInvite || !user || inviteJoinStarted) return;
-            // No auth bypass: enterPortal checks Firestore membership and
-            // registers the player before redirecting to the character sheet.
-            inviteJoinStarted = true;
-            enterPortal('player');
-        });
+          }
+          if (role === 'player') localStorage.setItem('player_sync_code', code || current?.code);
+          keyInput.value = '';
+          destination(role, table, edition);
+        } catch (error) {
+          show(String(error.message || 'Falha ao entrar na mesa.'), true);
+        } finally { setBusy(false); }
+      }
+      window.enterPortal = enterPortal;
+      const incomingNotice = params.get('aviso');
+      if (incomingNotice) show(incomingNotice, true);
+      else if (isPlayerInvite) show('Convite recebido. Entre como jogador com o código e a chave do mestre.');
+      // A valid session can be resumed without re-entering the access key.
+      if (!keyInput.value && !incomingNotice) {
+        const table = OLFirebase.seasonScopedTable(tableInput.value, seasonSelect.value);
+        OLNative.getSession(table).then(user => {
+          if (user?.ok) {
+            if (user.role === 'player' && !codeInput.value) codeInput.value = user.code;
+            show('Sessão ativa como ' + (user.role === 'master' ? 'mestre' : 'jogador') + '.');
+          }
+        }).catch(() => {});
+      }
+      if (isPlayerInvite && keyInput.value && codeInput.value) {
+        enterPortal('player');
+      }
     </script>
 </body>
 </html>

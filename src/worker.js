@@ -1,96 +1,12 @@
 import { DurableObject } from 'cloudflare:workers';
+import { handleStorageRequest } from './storage-api.js';
+import { currentSession, handleSessionRequest } from './session-api.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-const FIREBASE_JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
-let firebaseJwksCache = { expiresAt: 0, keys: new Map() };
-
-function base64UrlBytes(value) {
-    const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
-    const binary = atob(padded);
-    return Uint8Array.from(binary, character => character.charCodeAt(0));
-}
-
-function parseJwtPart(value) {
-    return JSON.parse(decoder.decode(base64UrlBytes(value)));
-}
-
 function requestProtocols(request) {
     return String(request.headers.get('Sec-WebSocket-Protocol') || '')
-        .split(',')
-        .map(value => value.trim())
-        .filter(Boolean);
-}
-
-function firebaseTokenFromProtocols(protocols) {
-    const protocol = protocols.find(value => value.startsWith('firebase.'));
-    if (!protocol) return '';
-    const token = protocol.slice('firebase.'.length);
-    return token.length <= 4096 ? token : '';
-}
-
-async function firebasePublicKey(kid) {
-    const now = Date.now();
-    if (firebaseJwksCache.expiresAt > now && firebaseJwksCache.keys.has(kid)) {
-        return firebaseJwksCache.keys.get(kid);
-    }
-
-    const response = await fetch(FIREBASE_JWKS_URL, { headers: { Accept: 'application/json' } });
-    if (!response.ok) throw new Error(`Firebase public keys unavailable (${response.status})`);
-    const payload = await response.json();
-    const keys = new Map((Array.isArray(payload && payload.keys) ? payload.keys : [])
-        .filter(key => key && typeof key.kid === 'string')
-        .map(key => [key.kid, key]));
-    const cacheControl = String(response.headers.get('Cache-Control') || '');
-    const maxAge = Number(/max-age=(\d+)/i.exec(cacheControl)?.[1] || 3600);
-    firebaseJwksCache = {
-        expiresAt: now + Math.max(300, Math.min(maxAge, 21600)) * 1000,
-        keys
-    };
-    return keys.get(kid) || null;
-}
-
-async function verifyFirebaseIdToken(token, projectId) {
-    const parts = String(token || '').split('.');
-    if (parts.length !== 3 || !projectId) throw new Error('Invalid Firebase token');
-    const header = parseJwtPart(parts[0]);
-    const claims = parseJwtPart(parts[1]);
-    if (header.alg !== 'RS256' || typeof header.kid !== 'string') throw new Error('Invalid Firebase token header');
-    const jwk = await firebasePublicKey(header.kid);
-    if (!jwk) throw new Error('Unknown Firebase signing key');
-    const key = await crypto.subtle.importKey(
-        'jwk',
-        jwk,
-        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-        false,
-        ['verify']
-    );
-    const validSignature = await crypto.subtle.verify(
-        'RSASSA-PKCS1-v1_5',
-        key,
-        base64UrlBytes(parts[2]),
-        encoder.encode(`${parts[0]}.${parts[1]}`)
-    );
-    const now = Math.floor(Date.now() / 1000);
-    const validClaims = validSignature
-        && claims.aud === projectId
-        && claims.iss === `https://securetoken.google.com/${projectId}`
-        && typeof claims.sub === 'string'
-        && claims.sub.length > 0
-        && claims.sub.length <= 128
-        && Number.isFinite(claims.exp)
-        && claims.exp > now
-        && Number.isFinite(claims.iat)
-        && claims.iat <= now + 60;
-    if (!validClaims) throw new Error('Invalid or expired Firebase token');
-    return {
-        uid: claims.sub,
-        email: String(claims.email || '').toLowerCase(),
-        emailVerified: claims.email_verified === true,
-        name: String(claims.name || '').slice(0, 120)
-    };
+        .split(',').map(v => v.trim()).filter(Boolean);
 }
 
 function normalizeTableCode(value) {
@@ -241,22 +157,18 @@ export class TableRoom extends DurableObject {
     }
 
     async fetch(request) {
+        if (new URL(request.url).pathname === '/api/session') {
+            return handleSessionRequest(request, this.ctx, this.env);
+        }
+        if (new URL(request.url).pathname === '/api/storage') {
+            return handleStorageRequest(request, this.ctx, this.env);
+        }
         if (request.headers.get('Upgrade') !== 'websocket') {
             return new Response('Expected WebSocket', { status: 426 });
         }
         const url = new URL(request.url);
         const protocols = requestProtocols(request);
-        const suppliedToken = firebaseTokenFromProtocols(protocols);
-        let authenticatedUser = null;
-        if (protocols.some(value => value.startsWith('firebase.'))) {
-            if (!suppliedToken) return new Response('Invalid authentication token', { status: 401 });
-            try {
-                authenticatedUser = await verifyFirebaseIdToken(suppliedToken, this.env.FIREBASE_PROJECT_ID);
-            } catch (error) {
-                console.warn(JSON.stringify({ event: 'firebase_auth_rejected', reason: error && error.message || 'invalid_token' }));
-                return new Response('Invalid authentication token', { status: 401 });
-            }
-        }
+        const nativeSession = await currentSession(request, this.ctx);
         const requestedTable = normalizeTableCode(url.searchParams.get('mesa'));
         if (this.table === DEFAULT_TABLE && requestedTable !== this.table) {
             this.table = requestedTable;
@@ -269,15 +181,15 @@ export class TableRoom extends DurableObject {
         this.ctx.acceptWebSocket(server);
         server.serializeAttachment({
             id,
-            authenticated: Boolean(authenticatedUser),
-            userId: authenticatedUser ? authenticatedUser.uid : '',
-            userEmail: authenticatedUser ? authenticatedUser.email : '',
-            isMaster: Boolean(authenticatedUser
-                && authenticatedUser.emailVerified
-                && authenticatedUser.email === String(this.env.MASTER_EMAIL || '').toLowerCase()),
+            authenticated: Boolean(nativeSession),
+            isMaster: nativeSession?.role === 'master',
+            nativeRole: nativeSession?.role || '',
+            nativeCode: nativeSession?.code || '',
+            nativeEdition: nativeSession?.edition || '',
+            nativeCredentialHash: nativeSession?.credentialHash || '',
             isOverlay: false,
             isLumina: false,
-            playerCode: '',
+            playerCode: ''
         });
         const headers = protocols.includes('ol-v1') ? { 'Sec-WebSocket-Protocol': 'ol-v1' } : undefined;
         return new Response(null, { status: 101, webSocket: client, headers });
@@ -345,6 +257,21 @@ export class TableRoom extends DurableObject {
     async handleEvent(ws, event, rawData) {
         const data = rawData && typeof rawData === 'object' ? rawData : rawData;
         let meta = this.meta(ws);
+        if (meta.nativeRole === 'player') {
+            const owner = await this.ctx.storage.get(
+                'sheet:' + meta.nativeEdition + ':' + meta.nativeCode + ':owner-sha256');
+            if (!owner || owner !== meta.nativeCredentialHash) {
+                try { ws.close(4003, 'player access revoked'); } catch (_) {}
+                return;
+            }
+            if (['status_change','rolagem_feita','clue_inspection_start',
+                'clue_inspection_update','clue_inspection_stop'].includes(event)) {
+                const code = normalizePlayerCode(
+                    data && (data.codigo || data.id) || meta.playerCode || meta.nativeCode);
+                if (code !== meta.nativeCode) return;
+            }
+        }
+
 
         if (event === 'master_ready') {
             if (!meta.isMaster) {
@@ -585,6 +512,10 @@ export default {
         const url = new URL(request.url);
         if (url.pathname === '/health') {
             return Response.json({ ok: true, realtime: true });
+        }
+        if (url.pathname === '/api/storage' || url.pathname === '/api/session') {
+            const table = normalizeTableCode(url.searchParams.get('mesa'));
+            return env.TABLE_ROOMS.getByName(table).fetch(request);
         }
         if (url.pathname === '/ws') {
             if (request.headers.get('Upgrade') !== 'websocket') {

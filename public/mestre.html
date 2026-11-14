@@ -14,7 +14,7 @@
         }
     </script>
     <script src="/season-space.js?v=3"></script>
-    <script src="firebase-client.js?v=season2-5"></script>
+    <script src="firebase-client.js?v=native-auth-1"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => OLFirebase.guardPage('master'));
     </script>
@@ -1270,20 +1270,16 @@
     <dialog id="master-invite-dialog" class="master-invite-dialog" aria-labelledby="master-invite-title">
         <div class="master-invite-content">
             <h2 id="master-invite-title">✉ Convite para a mesa</h2>
-            <p>Escolha o código da mesa. Ao gerar o convite, o escudo entra nesta mesa e o link conecta o jogador a ela após o login com Google.</p>
+            <p>Escolha o código da mesa. Ao gerar o convite, o escudo entra nesta mesa e o mestre gera uma chave individual para cada personagem.</p>
             <label for="master-invite-table">CÓDIGO DA MESA
                 <input id="master-invite-table" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" required autocomplete="off" spellcheck="false" placeholder="Ex.: AURORA">
             </label>
             <div class="master-invite-actions">
-                <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">GERAR CONVITE</button>
+                <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">GERENCIAR CONVITES</button>
                 <button type="button" onclick="closeMasterInvite()">FECHAR</button>
             </div>
-            <label for="master-invite-link">LINK DO JOGADOR
-                <input id="master-invite-link" type="text" readonly placeholder="Gere o convite para copiar o link">
-            </label>
-            <div class="master-invite-actions">
-                <button id="master-invite-copy" type="button" onclick="copyMasterInvite()" disabled>COPIAR LINK</button>
-            </div>
+            <input id="master-invite-link" type="hidden" value="">
+            <button id="master-invite-copy" type="button" hidden disabled></button>
             <div id="master-invite-status" class="master-invite-status" role="status" aria-live="polite"></div>
         </div>
     </dialog>
@@ -1849,10 +1845,6 @@
 
         async function generateMasterInvite() {
             const input = document.getElementById('master-invite-table');
-            const button = document.getElementById('master-invite-generate');
-            const status = document.getElementById('master-invite-status');
-            const output = document.getElementById('master-invite-link');
-            const copy = document.getElementById('master-invite-copy');
             const entered = input.value.trim();
             if (!entered) {
                 input.setCustomValidity('Informe o código da mesa.');
@@ -1862,33 +1854,11 @@
             }
             const table = normalizeTableCode(entered);
             input.value = table;
-            button.disabled = true;
-            copy.disabled = true;
-            output.value = '';
-            status.classList.remove('error');
-            status.textContent = 'Validando a mesa e preparando o convite…';
-            try {
-                if (!window.OLFirebase || typeof OLFirebase.preparePortal !== 'function') {
-                    throw new Error('Autenticação ainda não disponível. Recarregue a página.');
-                }
-                // This creates the table for the owner (when needed) and
-                // prevents inviting players to an invalid/unowned table.
-                await OLFirebase.preparePortal('master', table);
-                switchMasterTable(table);
-                const invite = new URL('./index.html', window.location.href);
-                invite.search = '';
-                invite.searchParams.set('mesa', table);
-                invite.searchParams.set('convite', '1');
-                if (isSeasonMaster) invite.searchParams.set('temporada', '2');
-                output.value = invite.href;
-                copy.disabled = false;
-                status.textContent = 'Convite pronto! Envie o link ao jogador para entrar diretamente nesta mesa.';
-            } catch (error) {
-                status.classList.add('error');
-                status.textContent = String(error && error.message || 'Não foi possível gerar o convite.');
-            } finally {
-                button.disabled = false;
-            }
+            const url = new URL('./acessos.html', location.href);
+            url.searchParams.set('mesa', table);
+            if (isSeasonMaster) url.searchParams.set('temporada', '2');
+            // The access manager provisions a player key; a bare table URL is not a valid invite.
+            location.assign(url.href);
         }
 
         async function copyMasterInvite() {
@@ -2504,7 +2474,7 @@
 
             try {
                 const user = await OLFirebase.getCurrentUser();
-                if (!user) throw new Error('Sua sessão do Firebase não está disponível.');
+                if (!user) throw new Error('Sua sessão da mesa não está disponível.');
                 const result = await OLFirebase.saveMasterClues(syncingTable, queuedJson);
                 if (syncingTable !== masterTableCode) return;
                 masterCluesCloudLastHash = result.cluesHash || queuedHash;
@@ -4006,19 +3976,19 @@
 
             try {
                 if (!window.OLFirebase || typeof OLFirebase.removeTablePlayer !== 'function') {
-                    throw new Error('O cliente Firebase precisa ser recarregado para remover o acesso da mesa.');
+                    throw new Error('Recarregue a página para remover o acesso do jogador.');
                 }
                 await OLFirebase.removeTablePlayer(masterTableCode, code);
                 if (!isSeasonMaster) {
                     // Depois da expulsão, facilite o reingresso autorizado pela
-                    // mesma mesa e pelo portal Google/Firebase da 1ª temporada.
+                    // mesma mesa e pelo convite individual da primeira temporada.
                     openMasterInvite();
                     const inviteStatus = document.getElementById('master-invite-status');
                     inviteStatus.textContent = playerName + ' foi removido. Gere um novo convite para que entre novamente e apareça no overlay.';
                 }
             } catch (error) {
                 console.error('O jogador foi desconectado, mas o vínculo da mesa não pôde ser removido:', error);
-                alert(`O jogador foi desconectado agora, mas não foi possível remover o acesso salvo no Firebase. ${error && error.message ? error.message : 'Tente novamente após recarregar a página.'}`);
+                alert(`O jogador foi desconectado agora, mas não foi possível remover o acesso salvo no servidor. ${error && error.message ? error.message : 'Tente novamente após recarregar a página.'}`);
             }
         }
 

@@ -144,7 +144,7 @@
             this._manualClose = true;
             if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
-            try { global.sessionStorage.removeItem('ol_firebase_portal_access'); } catch (error) {}
+            // Player access is revoked server-side when the master removes a player.
             const table = normalizeTableCode(data && data.mesa || this._table);
             const url = new URL('./index.html', global.location.href);
             url.search = '';
@@ -235,34 +235,24 @@
             this._open();
         }
 
-        async _firebaseToken() {
-            let token = '';
-
-            if (GUARDED_PAGE && global.OLFirebase && typeof global.OLFirebase.getCurrentUser === 'function') {
-                try {
-                    const user = await global.OLFirebase.getCurrentUser();
-                    if (!user) return '';
-                    if (typeof global.OLFirebase.refreshRealtimeToken === 'function') {
-                        token = String(await global.OLFirebase.refreshRealtimeToken(user, false) || '');
-                    }
-                } catch (error) {
-                    console.warn('Nao foi possivel preparar a autenticacao em tempo real:', error);
-                }
-            }
-
-            if (!token) {
-                try { token = String(global.sessionStorage.getItem('ol_firebase_id_token') || ''); } catch (error) {}
-            }
-            return token;
+        async _nativeSession() {
+            if (!GUARDED_PAGE) return true;
+            if (!global.OLNative?.getSession) return false;
+            try {
+                const physicalTable = this._season
+                    ? global.OLSeasonSpace.tableId(this._table, 'temporada')
+                    : this._table;
+                const result = await global.OLNative.getSession(physicalTable);
+                return Boolean(result?.ok);
+            } catch (error) { return false; }
         }
 
         async _open() {
             if (this._manualClose) return;
             const generation = ++this._generation;
-            const firebaseToken = await this._firebaseToken();
+            const authorized = await this._nativeSession();
             if (generation !== this._generation || this._manualClose) return;
-
-            if (GUARDED_PAGE && global.OLFirebase && !firebaseToken) {
+            if (!authorized) {
                 this._scheduleReconnect();
                 return;
             }
@@ -275,8 +265,7 @@
                 : this._table);
             url.searchParams.set('client', this.id);
 
-            const protocols = firebaseToken ? ['ol-v1', `firebase.${firebaseToken}`] : [];
-            const socket = protocols.length ? new WebSocket(url.href, protocols) : new WebSocket(url.href);
+            const socket = new WebSocket(url.href, ['ol-v1']);
             this._socket = socket;
 
             socket.addEventListener('open', () => {
