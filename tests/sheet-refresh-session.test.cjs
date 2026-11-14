@@ -128,5 +128,5 @@ test('codigo do personagem fica na URL da ficha sem incluir a chave privada',()=
   assert(portal.includes("sessionStorage.setItem('ol_player_resume_v1:' + physical + ':' + normalizedCode, key)"));
   assert(portal.includes("const edition = 'temporada'"));
   const html=fs.readFileSync(path.join(root,'public/ficha-temporada.html'),'utf8');
-  assert(html.includes('firebase-client.js?v=session-resume-20261114'));
+  assert(html.includes('firebase-client.js?v=master-saved-sheets-1'));
 });
