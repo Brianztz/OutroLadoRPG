@@ -31,11 +31,11 @@
   function sessionUrl(table) {
     return base + 'session?mesa=' + encodeURIComponent(tableCode(table));
   }
-  async function getMasterRoom(secret, preferredCode = '') {
+  async function getMasterRoom(secret, preferredCode = '', activationSecret = '') {
     return api(base + 'master-room', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: secret, preferredCode })
+      body: JSON.stringify({ key: secret, preferredCode, activationSecret })
     });
   }
   async function signInMaster(table, secret) {
