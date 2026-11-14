@@ -2490,6 +2490,7 @@
         // shield, without replacing its existing 3D, book and audio viewers.
         let playerClueZoom=1,playerClueAngle=0,playerClueTilt=0,playerClueX=0,playerClueY=0;
         let playerCluePage=-1,playerClueDrag=null,playerClueOnOverlay=false,playerClueId=null;
+        let playerClueOverlayTimer=null;
         const playerClueStage=document.getElementById('master-player-clue-stage');
         function currentPlayerStyleMasterClue() {
             return masterCluesState.find(item=>item.id===playerClueId) || null;
@@ -2505,7 +2506,9 @@
         function masterPlayerClueOverlayData(clue) {
             return {
                 id:clue.id,title:clue.title,type:clue.type,desc:clue.desc||'',
-                img:clue.img||'',coverImg:clue.coverImg||clue.img||'',
+                img:clue.img||'',backImg:clue.backImg||clue.img||'',
+                coverImg:clue.coverImg||clue.img||'',coverBackImg:clue.coverBackImg||'',
+                hasCustomBack:Boolean(clue.coverBackImg),thickness:clue.thickness,
                 pages:normalizeMasterCluePages(clue.pages),
                 audioSrc:clue.audioSrc||'',audioImg:clue.audioImg||''
             };
@@ -2514,6 +2517,12 @@
             document.getElementById('master-player-clue-object').style.transform=
                 'translate('+playerClueX+'px,'+playerClueY+'px) scale('+playerClueZoom+') rotateX('+playerClueTilt+'deg) rotateY('+playerClueAngle+'deg)';
             document.getElementById('master-player-clue-zoom').textContent=Math.round(playerClueZoom*100)+'%';
+            // Match the player's 40ms overlay synchronization throttle.
+            if(playerClueOnOverlay && !playerClueOverlayTimer)
+                playerClueOverlayTimer=setTimeout(flushMasterPlayerClueOverlay,40);
+        }
+        function flushMasterPlayerClueOverlay() {
+            playerClueOverlayTimer=null;
             const clue=currentPlayerStyleMasterClue();
             if(playerClueOnOverlay && clue && socket.connected) {
                 socket.emit('clue_inspection_update',{
@@ -2582,6 +2591,8 @@
             resetMasterPlayerClueView();renderMasterPlayerClue();
         }
         function stopMasterPlayerClueOverlay() {
+            clearTimeout(playerClueOverlayTimer);
+            playerClueOverlayTimer=null;
             if(!playerClueOnOverlay)return;
             playerClueOnOverlay=false;
             socket.emit('clue_inspection_stop',{mesa:masterTableCode,codigo:'MESTRE'});
