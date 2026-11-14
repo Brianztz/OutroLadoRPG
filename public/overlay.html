@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overlay da Mesa</title>
+    <title>Vestígios · Overlay da Mesa</title>
     <style>
         @font-face {
             font-family: "ITC Krist";
@@ -796,10 +796,10 @@
         let initiativeState = { entries: [], activeId: null, round: 0, started: false };
         const overlayUrlParams = new URLSearchParams(window.location.search);
         const overlayTableFromUrl = overlayUrlParams.get('mesa');
-        const seasonOverlay = overlayUrlParams.get('temporada') === '2';
-        const overlayStorageKey = key => seasonOverlay ? 't2_' + key : key;
+        const seasonOverlay = true; // Vestígios is now the only playable edition.
+        const overlayStorageKey = key => 't2_' + key;
         let overlayTablePinned = Boolean(overlayTableFromUrl);
-        let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem(overlayStorageKey('overlay_table_code')) || localStorage.getItem(overlayStorageKey('master_table_code')) || 'PADRAO');
+        let tableCode = normalizeTableCode(overlayTableFromUrl || localStorage.getItem('master_permanent_table_code') || localStorage.getItem(overlayStorageKey('overlay_table_code')) || localStorage.getItem(overlayStorageKey('master_table_code')) || 'PADRAO');
         let stablePlayerOrder = loadPlayerOrder(tableCode);
         let manuallyHiddenPlayers = loadHiddenPlayers(tableCode);
         localStorage.setItem(overlayStorageKey('overlay_table_code'), tableCode);
@@ -1500,9 +1500,6 @@
             // Um jogador reconectado volta a aparecer, mesmo se foi ocultado
             // manualmente antes de sair da mesa.
             if (manuallyHiddenPlayers.delete(code)) saveHiddenPlayers();
-            if (!seasonOverlay && players.has(code)) {
-                updatePlayerWidget({ ...players.get(code), online: true });
-            }
         }
 
         function activePlayerCode() {
@@ -1542,13 +1539,6 @@
                 receivedCodes.add(code);
                 updatePlayerWidget(data);
             });
-            // O snapshot é a fonte atual de jogadores da mesa. Após expulsão,
-            // não manter no overlay clássico personagens que já foram removidos.
-            if (!seasonOverlay) {
-                for (const code of [...players.keys()]) {
-                    if (!receivedCodes.has(code)) removePlayer(code, true);
-                }
-            }
             if (!receivedCodes.size && !players.size) setConnectionMessage(`Aguardando jogadores da mesa ${tableCode}...`);
             else hideConnectionMessage();
         });
@@ -1560,13 +1550,7 @@
         socket.on('player_connected', releasePlayerAfterReconnect);
         socket.on('player_disconnected', data => {
             if (normalizeTableCode(data && data.mesa) !== tableCode) return;
-            if (!seasonOverlay && data && data.reason === 'removed_by_master') {
-                // Expulsão remove o retrato; um novo convite poderá trazer o
-                // personagem de volta quando a ficha enviar status_change.
-                removePlayer(data.codigo, true);
-            } else {
-                keepDisconnectedPlayer(data && data.codigo);
-            }
+            keepDisconnectedPlayer(data && data.codigo);
         });
         socket.on('initiative_state_updated', state => {
             initiativeState = state && typeof state === 'object'
