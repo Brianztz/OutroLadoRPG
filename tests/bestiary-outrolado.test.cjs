@@ -8,7 +8,7 @@ const root=path.join(__dirname,'..');
 const file=name=>fs.readFileSync(path.join(root,'public',name),'utf8');
 const data=file('bestiary-outrolado.js');
 const browser=file('bestiary-master.js');
-const screens=['mestre.html','mestre-temporada.html'];
+const screens=['mestre-temporada.html'];
 const openPage=name=>{
  const dom=new JSDOM(file(name),{url:'https://example.test/'+name,runScripts:'outside-only'});
  const w=dom.window;
@@ -17,7 +17,7 @@ const openPage=name=>{
  w.eval(browser);
  return {dom,w};
 };
-test('os dois escudos incluem exatamente a mesma biblioteca de referências',()=>{
+test('escudo de Vestigios carrega biblioteca de criaturas',()=>{
  for(const name of screens){
   const html=file(name);
   const ids=['master-bestiary-library','bestiary-search','bestiary-element','bestiary-source','bestiary-tier','bestiary-reference-grid','bestiary-results-count'];
@@ -26,11 +26,10 @@ test('os dois escudos incluem exatamente a mesma biblioteca de referências',()=
   assert(html.includes('bestiary-master.js?v=1'));
   assert(html.includes('bestiary-outrolado.css?v=1'));
  }
- assert(!file('mestre.html').includes('master-theme.css?v=1'),'primeira temporada mantém seu tema original');
- assert(file('mestre-temporada.html').includes('master-theme.css?v=1'));
+ assert(file('mestre-temporada.html').includes('master-theme.css?v=exilio-3-escudo-v2'));
 });
 test('131 modelos diferentes de criatura com mecânica autoral válida do Outro Lado',()=>{
- const {w,dom}=openPage('mestre.html');
+ const {w,dom}=openPage('mestre-temporada.html');
  try{
   const entries=w.OLBestiary.entries;
   assert.equal(entries.length,131);
@@ -65,7 +64,7 @@ test('pesquisa e filtros permitem localizar nomes, elementos e origens',()=>{
  }finally{dom.window.close();}
 });
 test('adicionar monstro importa cópia editável sem sobrescrever monstros da mesa',()=>{
- const {w,dom}=openPage('mestre.html');
+ const {w,dom}=openPage('mestre-temporada.html');
  try{
   const doc=w.document;
   doc.getElementById('bestiary-search').value='zumbi de sangue';
@@ -85,7 +84,7 @@ test('adicionar monstro importa cópia editável sem sobrescrever monstros da me
 });
 
 
-test('os Escudos usam a regra de atributo 0=1d20, +1=2d20, -1=2d20 menor',()=>{
+test('o Escudo de Vestigios usa a regra de atributo 0=1d20, +1=2d20, -1=2d20 menor',()=>{
  for(const page of screens){
   const html=file(page);
   const begin=html.indexOf('function rollMonsterD20PoolByAttribute(');
@@ -112,7 +111,7 @@ test('os Escudos usam a regra de atributo 0=1d20, +1=2d20, -1=2d20 menor',()=>{
 
 
 test('criaturas notáveis recebem traços narrativos autorais sem alterar as rolagens básicas',()=>{
- const {w,dom}=openPage('mestre.html');
+ const {w,dom}=openPage('mestre-temporada.html');
  try{
   const specific={
    'zumbi-de-sangue':'Instinto Restante',
