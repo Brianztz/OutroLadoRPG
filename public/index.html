@@ -213,6 +213,9 @@
     </main>
 
     <script src="/season-space.js?v=3"></script>
+    <p style="text-align:center;padding:0 20px 18px;font-size:.84rem">
+      <a id="legacy-migration-link" href="migrar.html" style="color:#a7d6f3">Trazer ficha e pistas antigas do Firebase</a>
+    </p>
     <script src="firebase-client.js?v=native-auth-1"></script>
     <script>
       const params = new URLSearchParams(location.search);
@@ -240,6 +243,16 @@
       if (fragment.has('chave')) keyInput.value = fragment.get('chave') || '';
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       roleButtons.forEach(b => b.disabled = false);
+      const migrationLink = document.getElementById('legacy-migration-link');
+      function updateMigrationLink() {
+        const url = new URL('./migrar.html', location.href);
+        url.searchParams.set('mesa', OLFirebase.normalizeTableCode(tableInput.value));
+        if (seasonSelect.value === 'temporada') url.searchParams.set('temporada','2');
+        migrationLink.href = url.href;
+      }
+      tableInput.addEventListener('change', updateMigrationLink);
+      seasonSelect.addEventListener('change', updateMigrationLink);
+      updateMigrationLink();
       function show(messageText, error = false) {
         message.textContent = messageText;
         message.classList.toggle('error', error);
