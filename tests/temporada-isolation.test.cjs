@@ -2,7 +2,7 @@ const {test}=require('node:test');const assert=require('node:assert/strict');con
 test('season and classic saved documents use separate namespace keys',()=>{
  const storage=fs.readFileSync(path.join(root,'src/storage-api.js'),'utf8');
  const compat=fs.readFileSync(path.join(root,'public/firebase-client.js'),'utf8');
- assert(storage.includes("edition === 'temporada' ? 'temporada' : 'classic'"));
+ assert(storage.includes("url.searchParams.get('edicao') === 'temporada' ? 'temporada' : 'classic'"));
  assert(storage.includes("'sheet:' + edition + ':' + code"));
  assert(compat.includes("global.OLSeasonSpace.tableId(table, 'temporada')"));
  assert(compat.includes('OLNative.writeCharacter'));
