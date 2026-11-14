@@ -5,18 +5,18 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const read=filename=>fs.readFileSync(path.join(root,filename),'utf8');
 
-test('Firebase SDK is not loaded during gameplay, only in the one-time import page',()=>{
+test('nenhuma tela carrega Firebase e migrador antigo foi removido',()=>{
  const client=read('public/firebase-client.js');
  const worker=read('src/worker.js');
  const portal=read('public/index.html');
  const realtime=read('public/realtime-client.js');
- const legacy=read('public/legacy-firebase-client.js');
  assert(!client.includes('gstatic.com/firebasejs/'));
  assert(!worker.includes('verifyFirebaseIdToken'));
  assert(!realtime.includes('firebase.'));
  assert(!portal.includes('ENTRAR COM GOOGLE'));
- assert(legacy.includes('gstatic.com/firebasejs/'));
- assert(read('public/migrar.html').includes('legacy-firebase-client.js'));
+ assert(!portal.includes('migrar.html'));
+ assert(!fs.existsSync(path.join(root,'public/legacy-firebase-client.js')));
+ assert(!fs.existsSync(path.join(root,'public/migrar.html')));
 });
 test('Durable Object sheets and clues are partitioned by edition and character',()=>{
  const store=read('src/storage-api.js');
