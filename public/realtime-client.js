@@ -262,7 +262,20 @@
             const firebaseToken = await this._firebaseToken();
             if (generation !== this._generation || this._manualClose) return;
 
-            if (GUARDED_PAGE && global.OLFirebase && !firebaseToken) {
+            // Native HttpOnly sessions can authorize a room without Firebase ID tokens.
+            // This remains a fallback while older pages still use Firebase authentication.
+            let nativeAuthorized = false;
+            if (GUARDED_PAGE && !firebaseToken && global.OLNative) {
+                try {
+                    const physicalTable = this._season
+                        ? global.OLSeasonSpace.tableId(this._table, 'temporada')
+                        : this._table;
+                    const session = await global.OLNative.getSession(physicalTable);
+                    nativeAuthorized = Boolean(session?.ok);
+                } catch (error) {}
+            }
+            if (generation !== this._generation || this._manualClose) return;
+            if (GUARDED_PAGE && global.OLFirebase && !firebaseToken && !nativeAuthorized) {
                 this._scheduleReconnect();
                 return;
             }
