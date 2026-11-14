@@ -16,6 +16,6 @@ test('Worker preserves player, master and overlay events after transmission remo
 });
 test('Removed transmission page, music bindings and UI are absent',()=>{
  for(const p of ['public/compartilhar.html','public/spotify-link.js','src/youtube-oauth.js'])assert.equal(fs.existsSync(path.join(root,p)),false);
- for(const p of ['server.js','src/worker.js','public/realtime-client.js','realtime-client.js','public/mestre.html','public/firebase-client.js','wrangler.jsonc'])assert.doesNotMatch(fs.readFileSync(path.join(root,p),'utf8'),/screen_share|screenShare|compartilhar\.html|YOUTUBE_GRANTS|connectYouTubeMusic/);
+ for(const p of ['server.js','src/worker.js','public/realtime-client.js','realtime-client.js','public/mestre-temporada.html','public/firebase-client.js','wrangler.jsonc'])assert.doesNotMatch(fs.readFileSync(path.join(root,p),'utf8'),/screen_share|screenShare|compartilhar\.html|YOUTUBE_GRANTS|connectYouTubeMusic/);
  const config=JSON.parse(fs.readFileSync(path.join(root,'wrangler.jsonc'),'utf8'));assert.equal(config.durable_objects.bindings[0].class_name,'TableRoom');
 });
