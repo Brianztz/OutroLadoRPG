@@ -4,7 +4,7 @@ import { currentSession } from './session-api.js';
 // It is disabled for master operations until MASTER_DATA_TOKEN is configured
 // as a Cloudflare Worker secret. Keep this API on the application's origin.
 
-const MAX_JSON_LENGTH = 12_000_000;
+const MAX_JSON_LENGTH = 30_000_000;
 const CHUNK_SIZE = 96_000;
 
 function asCode(value) {
@@ -34,7 +34,7 @@ function constantTimeEqual(left, right) {
 async function getStored(storage, root) {
   const manifest = await storage.get(root + ':manifest');
   if (!manifest) return null;
-  if (!Number.isInteger(manifest.parts) || manifest.parts < 0 || manifest.parts > 200) {
+  if (!Number.isInteger(manifest.parts) || manifest.parts < 0 || manifest.parts > 400) {
     throw new Error('Invalid stored manifest');
   }
   const values = await Promise.all(Array.from({ length: manifest.parts }, (_, i) =>
