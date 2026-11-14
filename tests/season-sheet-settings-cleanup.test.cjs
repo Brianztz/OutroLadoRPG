@@ -36,7 +36,7 @@ test('selecionar ocupacao na ficha e preservar background salvo continuam funcio
   assert(js.includes("'char-occupation').addEventListener('click'"));
   assert(js.includes("const choose=(name)=>{state.occupation=name;display();save();$('occupation-dialog').close();};"));
   assert(js.includes('reconcileOccupationSkillDomains()'));
-  assert(js.includes('state.exilioBackground||'));
+  assert(js.includes("state.exilioBackgroundVersion==='20261110'"));
   assert(js.includes('appliedSeasonBackground=picture'));
   assert(html.includes('id="photo-panel-add"'));
   assert(html.includes('id="close-panel"'));
