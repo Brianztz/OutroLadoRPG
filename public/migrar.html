@@ -1,0 +1,114 @@
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Outro Lado — Migrar dados antigos</title>
+<style>
+:root{color-scheme:dark;background:#030911;color:#eaf3fa;font:16px "Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}body{max-width:790px;margin:30px auto;padding:0 16px}
+main{background:#0b1722;border:1px solid #2e4e68;border-radius:15px;padding:25px}
+h1{font-size:1.6rem}p{line-height:1.5;color:#b2c6d5}label{display:block;margin:15px 0 6px}
+input,select{background:#07101b;color:#fff;border:1px solid #51728b;border-radius:9px;padding:12px;width:100%;font:inherit}
+button{background:#193d5a;border:1px solid #6c9bc0;color:#fff;border-radius:9px;padding:11px 15px;margin:9px 9px 9px 0;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}a{color:#9fd3f2}#status{min-height:70px;white-space:pre-wrap;background:#03101d;border:1px solid #355572;border-radius:10px;padding:12px;overflow-wrap:anywhere}
+.warning{color:#ffd19f}
+</style>
+<script src="/season-space.js"></script>
+<script src="/native-client.js"></script>
+<script src="/legacy-firebase-client.js"></script>
+</head><body><main>
+<h1>Migrar fichas e pistas do Firebase</h1>
+<p>Esta ferramenta importa seus dados antigos para o novo armazenamento da mesa. O Firebase é usado <strong>somente aqui</strong>, para ler o arquivo antigo com sua conta Google. Não apague o banco antigo até verificar o resultado.</p>
+<p class="warning">Para preservar dados, esta página não sobrescreve automaticamente uma ficha já existente no novo armazenamento.</p>
+<label for="table">Mesa original</label><input id="table" placeholder="PADRAO">
+<label for="edition">Temporada</label><select id="edition"><option value="classic">Primeira temporada</option><option value="temporada">Nova temporada</option></select>
+<button id="google" type="button">Entrar com Google para ler ficha antiga</button>
+<button id="backup" type="button">Baixar backup antigo</button>
+<button id="migrate" type="button">Importar minha ficha</button>
+<button id="clues" type="button">Importar pistas do mestre</button>
+<label for="status">Resultado</label><div id="status" role="status"></div>
+<p><a href="index.html">Voltar ao portal</a></p>
+</main><script>
+(function() {
+ const params = new URLSearchParams(location.search);
+ const $ = id => document.getElementById(id);
+ $('table').value = OLNative.tableCode(params.get('mesa') || localStorage.getItem('portal_table_code') || 'PADRAO');
+ $('edition').value = params.get('temporada') === '2' ? 'temporada' : 'classic';
+ const status = value => $('status').textContent = String(value || '');
+ const room = () => {
+   const logical = OLNative.tableCode($('table').value);
+   return $('edition').value === 'temporada' ? OLSeasonSpace.tableId(logical, 'temporada') : logical;
+ };
+ let legacyData = null;
+ function download(data, name) {
+   const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+   const url = URL.createObjectURL(blob);
+   const anchor = document.createElement('a'); anchor.href = url; anchor.download = name;
+   anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 3000);
+ }
+ async function nativeRole(required) {
+   const current = await OLNative.getSession(room());
+   if (!current.ok || current.role !== required) {
+     throw Error('Entre no portal da mesma mesa como ' + (required === 'master'?'mestre':'jogador') + ' antes de migrar.');
+   }
+   return current;
+ }
+ async function cloudCharacter() {
+   const user = await OLFirebase.getCurrentUser();
+   if (!user) throw Error('Entre com a mesma conta Google que utilizava no RPG antigo.');
+   const previous = await OLFirebase.loadCharacter(OLNative.tableCode($('table').value), $('edition').value);
+   if (!previous?.sheetJson) throw Error('Nenhuma ficha foi encontrada no Firebase para essa conta e mesa.');
+   return previous;
+ }
+ $('google').onclick = async () => {
+   try {
+     const user = await OLFirebase.signInWithGoogle();
+     status('Conta antiga conectada: ' + (user.email || user.displayName || 'Google') + '.');
+   } catch (error) { status('Falha no login antigo: ' + error.message); }
+ };
+ $('backup').onclick = async () => {
+   try {
+     legacyData = await cloudCharacter();
+     download(legacyData, 'backup-firebase-' + OLNative.tableCode($('table').value) + '.json');
+     status('Backup do Firebase baixado. Guarde-o antes de migrar.');
+   } catch (error) { status('Backup não realizado: ' + error.message); }
+ };
+ $('migrate').onclick = async () => {
+   try {
+     const user = await nativeRole('player');
+     const previous = await cloudCharacter();
+     legacyData = previous;
+     download(previous, 'backup-pre-migracao-' + user.code + '.json');
+     const edition = $('edition').value;
+     const oldHash = OLFirebase.hashCharacterSheet(previous.sheetJson);
+     let existing = null;
+     try { existing = await OLNative.readCharacter(room(), edition, user.code); }
+     catch (error) { if (error.status !== 404) throw error; }
+     if (existing?.data?.sheetJson && existing.data.sheetJson !== previous.sheetJson) {
+       throw Error('Já existe uma ficha diferente no novo banco. Backup salvo. Não sobrescrevi.');
+     }
+     if (!existing) await OLNative.writeCharacter(room(), edition, user.code,
+       { ...previous, playerCode: user.code, migratedAt: new Date().toISOString() });
+     const check = await OLNative.readCharacter(room(), edition, user.code);
+     if (check.data?.sheetJson !== previous.sheetJson) throw Error('A verificação de integridade falhou!');
+     status('Ficha migrada e verificada: ' + user.code + '\nHash antigo: ' + oldHash + '\nGuarde o backup baixado.');
+   } catch (error) { status('Importação da ficha não concluída: ' + error.message); }
+ };
+ $('clues').onclick = async () => {
+   try {
+     await nativeRole('master');
+     const previous = await OLFirebase.loadMasterClues(OLNative.tableCode($('table').value));
+     if (!previous?.cluesJson) throw Error('Nenhuma pista antiga encontrada nesta mesa.');
+     download(previous, 'backup-pistas-' + room() + '.json');
+     let existing = null;
+     try { existing = await OLNative.readClues(room()); }
+     catch (error) { if (error.status !== 404) throw error; }
+     if (existing?.data?.cluesJson && existing.data.cluesJson !== previous.cluesJson) {
+       throw Error('O novo banco já contém pistas diferentes. Não sobrescrevi. Backup baixado.');
+     }
+     if (!existing) await OLNative.writeClues(room(), previous);
+     const check = await OLNative.readClues(room());
+     if (check.data?.cluesJson !== previous.cluesJson) throw Error('Verificação das pistas falhou.');
+     status('Pistas migradas e verificadas. Guarde o backup baixado.');
+   } catch (error) { status('Importação das pistas não concluída: ' + error.message); }
+ };
+})();
+</script></body></html>
