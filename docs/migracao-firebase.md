@@ -9,7 +9,7 @@ O GitHub guarda o código. Os dados editáveis ficam no armazenamento persistent
 `GET/PUT /api/storage?mesa=MESA&kind=clues` lê/grava o catálogo de pistas do mestre.
 O corpo de PUT é JSON e a resposta possui hash e timestamp.
 
-* Autorização: `Authorization: Bearer <segredo>`. Para fichas, um token aleatório criptograficamente seguro de pelo menos 43 caracteres por jogador; a primeira gravação registra o hash do token e vincula a ficha. Um mestre autenticado pode acessar fichas.
+* Autorização: `Authorization: Bearer <segredo>`. Para fichas, um token aleatório criptograficamente seguro por jogador, gerado **exclusivamente pelo mestre** por meio do endpoint de provisionamento. Nunca há reivindicação pública no primeiro salvamento. Um mestre autenticado pode acessar fichas.
 * Para o mestre, definir segredo **fora do repositório** com `wrangler secret put MASTER_DATA_TOKEN` (pelo menos 32 caracteres). A configuração da aplicação deve garantir que esse segredo nunca seja incorporado ao HTML ou JS público.
 * Cada mesa tem armazenamento isolado. A ficha é armazenada em partes, e o manifesto só muda após a gravação completar. Dados anteriores são preservados até essa etapa.
 * **Não compartilhar chave de jogador**. Este protocolo usa posse da chave, não login social.
@@ -26,4 +26,10 @@ O corpo de PUT é JSON e a resposta possui hash e timestamp.
 
 ### Atenção de segurança
 
-O primeiro PUT de uma ficha nova associa a chave ao código do personagem. O sistema final deve provisionar os códigos de jogadores de modo autenticado pelo mestre, para evitar reivindicação indevida de um código previsível. O endpoint inicial destina-se a testes controlados, **não a uso público desassistido**.
+O endpoint `POST /api/storage?mesa=MESA&kind=player-access&codigo=CODIGO&edicao=classic` exige a credencial de mestre e retorna uma chave aleatória para o jogador. Uma nova chamada rotaciona a chave e invalida a anterior, preservando os dados. A entrega de chaves deve usar um canal seguro. Esta primeira etapa **não deve ser habilitada como produto completo** até que existam sessões de usuário, revogação e recuperação de contas.
+
+## O que foi implementado depois
+
+- Provisionamento de chaves exclusivamente pelo mestre (não existe mais reivindicação automática da ficha por um visitante).
+- Testes básicos de autorização, persistência e rotação de chave em `tests/storage-api.test.cjs`.
+- **Ainda pendente:** retirar Firebase dos navegadores e autenticar WebSockets. O PR continua em rascunho; nada foi implantado.
