@@ -46,9 +46,11 @@ test('Master controls and game content still use the existing identifiers', () =
     assert(classic.includes('id="' + id + '"'), 'Missing classic master control: ' + id);
   }
   for (const method of [
-    'toggleCombatMode()', 'chooseMasterTable()', 'openMasterInvite()',
+    'toggleCombatMode()', 'copyMasterTableCode()', 'openMasterInvite()',
     "switchMasterTab('combat')", 'openMonsterPopup()'
   ]) {
     assert(html.includes(method), 'Missing master action: ' + method);
   }
+  assert(!html.includes('function chooseMasterTable('), 'O codigo da mesa nao deve ser editavel');
+  assert(!html.includes('function switchMasterTable('), 'O mestre deve manter o codigo definitivo');
 });
