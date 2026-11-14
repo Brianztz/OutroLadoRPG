@@ -31,7 +31,7 @@ window.startSeasonSync=async function startSeasonSync(){
   async function flush(){clearTimeout(timer);if(!ready||applying||busy||closed)return;if(!cloudReady){broadcast();status('MODO LOCAL · atributos salvos neste dispositivo; tente sincronizar depois.');return;}busy=true;try{do{dirty=false;const value=snapshot();broadcast();if(view){status('Alterações enviadas ao jogador');break;}const json=JSON.stringify(value),hash=OLFirebase.hashCharacterSheet(json);if(hash!==lastHash){status('Salvando…');const result=await OLFirebase.saveCharacter(table,json,{sheetVariant:'temporada',playerCode:code,characterName:value.state.name||'Personagem',overlayColor:preferences.color});lastHash=result.sheetHash;localStorage.setItem(markerKey,lastHash);}if(!dirty)localStorage.removeItem(dirtyKey);status(socket.connected?'Salvo · conectado':'Salvo · reconectando');}while(dirty&&!closed);}catch(error){
     dirty=true;
     const quota=/resource.exhausted|quota limit exceeded|cota diária/i.test(String(error?.code||'')+' '+String(error?.message||''));
-    status(quota?'COTA FIREBASE ESGOTADA — alterações locais preservadas. Tente após a renovação.':'Não salvo na nuvem: '+error.message);
+    status(quota?'SINCRONIZAÇÃO TEMPORARIAMENTE INDISPONÍVEL — alterações locais preservadas.':'Não salvo na nuvem: '+error.message);
   }finally{busy=false;}}
   function changed(){
     if(applying)return;
@@ -39,7 +39,7 @@ window.startSeasonSync=async function startSeasonSync(){
     localStorage.setItem(dirtyKey,'1');
     if(!ready)return;
     // Os jogadores continuam vendo as alterações em tempo real pelo socket;
-    // só a gravação custosa de blocos no Firebase aguarda alguns segundos.
+    // a gravação persistente aguarda alguns segundos, reduzindo tráfego.
     if(!view){
       clearTimeout(realtimeTimer);
       realtimeTimer=setTimeout(broadcast,180);
@@ -75,7 +75,7 @@ window.startSeasonSync=async function startSeasonSync(){
         ready=true;cloudReady=false;lock(false);
         status('Alterações locais e da nuvem diferem. Exporte o backup antes de sincronizar; seus atributos continuam editáveis.');
         return;
-      }if(!locallyDirty)await applySnapshot(JSON.parse(cloud.sheetJson));lastHash=cloud.sheetHash;localStorage.setItem(markerKey,lastHash);}ready=true;cloudReady=true;lock(false);broadcast();if(!unsubscribe)unsubscribe=await OLFirebase.watchCharacter(table,(next,error)=>{if(error){status('Falha ao acompanhar a nuvem: '+error.message);return;}if(!next||next.sheetHash===lastHash||busy||dirty||applying)return;inbound=inbound.then(async()=>{if(busy||dirty)return;await applySnapshot(JSON.parse(next.sheetJson));lastHash=next.sheetHash;localStorage.setItem(markerKey,lastHash);broadcast();}).catch(error=>status('Ficha remota inválida: '+error.message));},'temporada');await flush();}catch(error){cloudReady=false;ready=true;lock(false);broadcast();status('MODO LOCAL · Firebase indisponível. Atributos liberados e preservados neste dispositivo. Abra os ajustes e clique em Tentar novamente quando a nuvem voltar.');}
+      }if(!locallyDirty)await applySnapshot(JSON.parse(cloud.sheetJson));lastHash=cloud.sheetHash;localStorage.setItem(markerKey,lastHash);}ready=true;cloudReady=true;lock(false);broadcast();if(!unsubscribe)unsubscribe=await OLFirebase.watchCharacter(table,(next,error)=>{if(error){status('Falha ao acompanhar a nuvem: '+error.message);return;}if(!next||next.sheetHash===lastHash||busy||dirty||applying)return;inbound=inbound.then(async()=>{if(busy||dirty)return;await applySnapshot(JSON.parse(next.sheetJson));lastHash=next.sheetHash;localStorage.setItem(markerKey,lastHash);broadcast();}).catch(error=>status('Ficha remota inválida: '+error.message));},'temporada');await flush();}catch(error){cloudReady=false;ready=true;lock(false);broadcast();status('MODO LOCAL · servidor indisponível. Atributos liberados e preservados neste dispositivo. Abra os ajustes e clique em Tentar novamente quando a nuvem voltar.');}
     }finally{initializing=false;}
   }
   $('season-retry').onclick=()=>cloudReady?flush():initialize();
