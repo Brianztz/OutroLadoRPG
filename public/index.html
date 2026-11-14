@@ -166,6 +166,7 @@
         .credential-grid input {width:100%;min-height:49px;border:1px solid rgba(139,204,246,.3);border-radius:9px;background:rgba(1,6,12,.84);color:#fff;padding:12px;font:600 .89rem Roboto,"Segoe UI",sans-serif}
         .credential-grid input:focus{outline:2px solid #39aee8;outline-offset:1px}
         @media(max-width:620px){.credential-grid{grid-template-columns:1fr}}
+            [hidden] { display: none !important; }
     </style>
 </head>
 <body>
@@ -174,7 +175,7 @@
             <div class="brand-mark" aria-hidden="true"><span>◇</span></div>
             <p class="eyebrow">Portal da mesa</p>
             <h1>Outro Lado <span>RPG</span></h1>
-            <p class="intro">Informe a mesa da sessão e escolha como você deseja entrar.</p>
+            <p class="intro">Jogadores entram pelo link enviado pelo mestre. O mestre usa sua chave privada.</p>
         </header>
 
         <form class="entry-form" onsubmit="enterPortal('player'); return false;">
@@ -210,6 +211,12 @@
 
             <p class="hint">Use o mesmo código para que jogadores, mestre e overlays entrem na mesma sessão.</p>
         </form>
+        <section id="invite-entry" hidden aria-live="polite" style="text-align:center;padding:0 30px 38px">
+          <div aria-hidden="true" style="font-size:2rem;color:#8bccf6">♟</div>
+          <h2 style="font-size:1.4rem">Convite recebido!</h2>
+          <p id="invite-status" role="status" style="color:#b2cede">Entrando na sua ficha...</p>
+          <button type="button" id="invite-retry" hidden style="border:1px solid #8bccf6;border-radius:10px;padding:12px 22px;background:#12334e;color:#fff;cursor:pointer">Tentar novamente</button>
+        </section>
     </main>
 
     <script src="/season-space.js?v=3"></script>
@@ -221,6 +228,9 @@
       const codeInput = document.getElementById('player-code-input');
       const keyInput = document.getElementById('credential-input');
       const message = document.getElementById('auth-message');
+      const inviteLanding = document.getElementById('invite-entry');
+      const inviteStatus = document.getElementById('invite-status');
+      const inviteRetry = document.getElementById('invite-retry');
       const roleButtons = [...document.querySelectorAll('.role-button')];
       const isPlayerInvite = params.get('convite') === '1';
       let busy = false;
@@ -232,8 +242,8 @@
       if (isPlayerInvite) {
         seasonSelect.disabled = true;
         tableInput.readOnly = true;
-        document.querySelector('.hint').textContent =
-          'Convite da mesa ' + tableInput.value + ' — use o código e a chave enviados pelo mestre.';
+        document.querySelector('.entry-form').hidden = true;
+        inviteLanding.hidden = false;
       }
       const fragment = new URLSearchParams(location.hash.replace(/^#/, ''));
       if (fragment.has('codigo')) codeInput.value = fragment.get('codigo') || '';
@@ -243,10 +253,15 @@
       function show(messageText, error = false) {
         message.textContent = messageText;
         message.classList.toggle('error', error);
+        if (isPlayerInvite) {
+          inviteStatus.textContent = messageText;
+          inviteStatus.style.color = error ? '#ff9ea5' : '';
+        }
       }
       function setBusy(state) {
         busy = state;
         roleButtons.forEach(b => { b.disabled = busy; });
+        inviteRetry.disabled = busy;
       }
       function destination(role, logicalTable, edition) {
         localStorage.setItem('portal_table_code', logicalTable);
@@ -283,15 +298,18 @@
           keyInput.value = '';
           destination(role, table, edition);
         } catch (error) {
-          show(String(error.message || 'Falha ao entrar na mesa.'), true);
+          show(isPlayerInvite
+            ? 'Não foi possível entrar. Tente novamente ou peça um novo convite ao mestre.'
+            : String(error.message || 'Falha ao entrar na mesa.'), true);
+          if (isPlayerInvite) inviteRetry.hidden = false;
         } finally { setBusy(false); }
       }
       window.enterPortal = enterPortal;
       const incomingNotice = params.get('aviso');
       if (incomingNotice) show(incomingNotice, true);
-      else if (isPlayerInvite) show('Convite recebido. Entre como jogador com o código e a chave do mestre.');
+      else if (isPlayerInvite) show('Entrando na sua ficha...');
       // A valid session can be resumed without re-entering the access key.
-      if (!keyInput.value && !incomingNotice) {
+      if (!isPlayerInvite && !keyInput.value && !incomingNotice) {
         const table = OLFirebase.seasonScopedTable(tableInput.value, seasonSelect.value);
         OLNative.getSession(table).then(user => {
           if (user?.ok) {
@@ -300,8 +318,14 @@
           }
         }).catch(() => {});
       }
+      inviteRetry.addEventListener('click', () => {
+        inviteRetry.hidden = true;
+        enterPortal('player');
+      });
       if (isPlayerInvite && keyInput.value && codeInput.value) {
         enterPortal('player');
+      } else if (isPlayerInvite) {
+        show('Este link está incompleto. Peça um novo convite ao mestre.', true);
       }
     </script>
 </body>
