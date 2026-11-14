@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import { handleStorageRequest } from './storage-api.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
@@ -241,6 +242,9 @@ export class TableRoom extends DurableObject {
     }
 
     async fetch(request) {
+        if (new URL(request.url).pathname === '/api/storage') {
+            return handleStorageRequest(request, this.ctx, this.env);
+        }
         if (request.headers.get('Upgrade') !== 'websocket') {
             return new Response('Expected WebSocket', { status: 426 });
         }
@@ -585,6 +589,10 @@ export default {
         const url = new URL(request.url);
         if (url.pathname === '/health') {
             return Response.json({ ok: true, realtime: true });
+        }
+        if (url.pathname === '/api/storage') {
+            const table = normalizeTableCode(url.searchParams.get('mesa'));
+            return env.TABLE_ROOMS.getByName(table).fetch(request);
         }
         if (url.pathname === '/ws') {
             if (request.headers.get('Upgrade') !== 'websocket') {
