@@ -176,6 +176,7 @@ footer strong{color:#b9bab5}
     const next = new URL(role === 'master' ? './mestre-temporada.html' : './ficha-temporada.html', location.href);
     next.searchParams.set('mesa', table);
     next.searchParams.set('temporada', '2');
+    if (role === 'player' && playerCode) next.searchParams.set('personagem', playerCode);
     location.assign(next.href);
   }
   function lock(value) {
@@ -261,6 +262,11 @@ footer strong{color:#b9bab5}
       if (!table || !normalizedCode || !key) throw Error('Convite incompleto. Peça um novo link ao mestre.');
       const physical = physicalRoom(normalizedTable);
       await OLNative.signInPlayer(physical, edition, normalizedCode, key);
+      // Keep a tab-scoped copy so a refresh can renew an expired/overwritten
+      // HttpOnly session. The secret never appears in the sheet URL.
+      try {
+        sessionStorage.setItem('ol_player_resume_v1:' + physical + ':' + normalizedCode, key);
+      } catch (_) { /* Private-browsing restrictions should not block entry. */ }
       destination('player', normalizedTable, normalizedCode);
     } catch (error) {
       show(statusNode, invite ? 'Não foi possível usar o convite. Tente novamente ou peça outro ao mestre.' : String(error.message || 'Não foi possível entrar.'), true);

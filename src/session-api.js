@@ -17,20 +17,34 @@ async function digest(token) {
   const hash = await crypto.subtle.digest('SHA-256', encode.encode(String(token)));
   return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
 }
-function sessionToken(request) {
-  const match = /(?:^|;\s*)ol_room_session=([a-f0-9]{64})/i.exec(request.headers.get('Cookie') || '');
-  return match ? match[1] : '';
+// Each physical table has its own cookie. A single global cookie previously
+// replaced the player's session whenever another table was opened in a tab.
+function scopedCookieName(request) {
+  const table = String(new URL(request.url).searchParams.get('mesa') || 'PADRAO')
+    .trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40) || 'PADRAO';
+  return SESSION_COOKIE + '_' + table;
 }
-function sessionCookie(token, clear = false) {
-  return SESSION_COOKIE + '=' + (clear ? '' : token) +
+function cookieToken(request, name) {
+  const cookies = (request.headers.get('Cookie') || '').split(/;\s*/);
+  const entry = cookies.find(item => item.startsWith(name + '='));
+  const value = entry ? entry.slice(name.length + 1) : '';
+  return /^[a-f0-9]{64}$/i.test(value) ? value : '';
+}
+function sessionToken(request) {
+  // Accept the old cookie for sessions established before this update.
+  return cookieToken(request, scopedCookieName(request)) || cookieToken(request, SESSION_COOKIE);
+}
+function sessionCookie(request, token, clear = false, legacy = false) {
+  return (legacy ? SESSION_COOKIE : scopedCookieName(request)) + '=' + (clear ? '' : token) +
     '; Path=/; Secure; HttpOnly; SameSite=Lax' +
     (clear ? '; Max-Age=0' : '; Max-Age=28800');
 }
-function response(payload, status = 200, cookie) {
-  return Response.json(payload, {
-    status,
-    headers: { 'Cache-Control': 'no-store', ...(cookie ? { 'Set-Cookie': cookie } : {}) }
-  });
+function response(payload, status = 200, cookies = []) {
+  const headers = new Headers({ 'Cache-Control': 'no-store' });
+  for (const cookie of (Array.isArray(cookies) ? cookies : [cookies])) {
+    if (cookie) headers.append('Set-Cookie', cookie);
+  }
+  return Response.json(payload, { status, headers });
 }
 function playerCode(value) {
   return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
@@ -65,7 +79,12 @@ export async function handleSessionRequest(request, ctx, env) {
   if (request.method === 'DELETE') {
     const token = sessionToken(request);
     if (token) await ctx.storage.delete('session:' + (await digest(token)));
-    return response({ ok: true }, 200, sessionCookie('', true));
+    const legacy = cookieToken(request, SESSION_COOKIE);
+    if (legacy && legacy !== token) await ctx.storage.delete('session:' + (await digest(legacy)));
+    return response({ ok: true }, 200, [
+      sessionCookie(request, '', true),
+      sessionCookie(request, '', true, true)
+    ]);
   }
   if (request.method !== 'POST') return response({ error: 'method_not_allowed' }, 405);
   if (String(request.headers.get('Content-Type') || '').split(';')[0].trim() !== 'application/json') {
@@ -118,5 +137,5 @@ export async function handleSessionRequest(request, ctx, env) {
   await ctx.storage.put('session:' + await digest(token), {
     role, code, edition, credentialHash, expiresAt: Date.now() + SESSION_TTL_MS
   });
-  return response({ ok: true, role, code }, 200, sessionCookie(token));
+  return response({ ok: true, role, code }, 200, sessionCookie(request, token));
 }
