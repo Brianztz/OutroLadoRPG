@@ -740,17 +740,6 @@ body.season-rulebook-v3 #exilio-abilities-panel textarea{
 body.season-rulebook-v3 #exilio-abilities-panel textarea:focus-visible{
   outline:2px solid #e4a381;outline-offset:1px
 }
-.exilio-art-controls{
-  display:flex;gap:7px;flex-wrap:wrap;align-items:center;
-  padding:9px;margin:8px 0;background:#1a0e0b;border:1px solid #713729;
-}
-.exilio-art-controls button{
-  flex:1;min-height:32px;padding:6px!important;
-  font:700 11px Arial,sans-serif!important
-}
-.exilio-art-controls small{
-  flex-basis:100%;color:#bdaba2;font:11px/1.4 Arial,sans-serif
-}
 body.season-rulebook-v3 #sheet > #portrait-stage{
   z-index:30!important;
 }
