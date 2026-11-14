@@ -1,14 +1,25 @@
 name: Verify native storage migration
 on:
   push:
-    branches:
-      - migration/firebase-to-durable-storage
+    branches: [migration/firebase-to-durable-storage]
   pull_request:
     branches: [main]
 permissions:
   contents: read
 jobs:
-  checks:
+  native-migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/storage-api.test.cjs tests/season-portal-rest.test.cjs tests/firestore-write-optimizations.test.cjs tests/season-isolation.test.cjs tests/first-season-reinvite-overlay.test.cjs
+      - run: npx wrangler deploy --dry-run
+  full-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -19,4 +30,3 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npx wrangler deploy --dry-run
