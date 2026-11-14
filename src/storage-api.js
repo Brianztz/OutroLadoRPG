@@ -69,7 +69,7 @@ async function putStored(storage, root, payload) {
 }
 
 export async function handleStorageRequest(request, ctx, env) {
-  if (request.method !== 'GET' && request.method !== 'PUT') {
+  if (request.method !== 'GET' && request.method !== 'PUT' && request.method !== 'POST') {
     return json({ error: 'method_not_allowed' }, 405);
   }
   const url = new URL(request.url);
@@ -80,30 +80,30 @@ export async function handleStorageRequest(request, ctx, env) {
   const masterSecret = String(env.MASTER_DATA_TOKEN || '');
   const master = masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret);
 
-  if (kind !== 'character' && kind !== 'clues') return json({ error: 'invalid_kind' }, 400);
+  if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access') return json({ error: 'invalid_kind' }, 400);
+  if (kind === 'player-access') {
+    // Only the master can provision and rotate player access keys.
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+    if (!master) return json({ error: 'master_credential_required' }, 403);
+    if (!code) return json({ error: 'invalid_character_code' }, 400);
+    const playerRoot = 'sheet:' + edition + ':' + code;
+    const key = Array.from(crypto.getRandomValues(new Uint8Array(48)), byte =>
+      byte.toString(16).padStart(2, '0')).join('');
+    await ctx.storage.put(playerRoot + ':owner-sha256', await sha256(key));
+    return json({ ok: true, playerCode: code, edition, playerKey: key });
+  }
+  if (request.method === 'POST') return json({ error: 'method_not_allowed' }, 405);
   if (kind === 'character' && !code) return json({ error: 'invalid_character_code' }, 400);
   const root = kind === 'clues' ? 'content:master-clues' : 'sheet:' + edition + ':' + code;
 
   if (kind === 'clues') {
     if (!master) return json({ error: 'master_credential_required' }, 403);
   } else if (!master) {
-    // Players use a high-entropy personal key generated on their own device.
-    // Ownership is established on the first write. Never use a short PIN.
+    // Player keys are provisioned by the authenticated master, never self-claimed.
     if (bearer.length < 43 || bearer.length > 256) return json({ error: 'player_key_required' }, 401);
-    const ownerKey = root + ':owner-sha256';
-    const existing = await ctx.storage.get(ownerKey);
-    const hash = await sha256(bearer);
-    if (existing && !constantTimeEqual(existing, hash)) return json({ error: 'invalid_player_key' }, 403);
-    if (!existing && request.method === 'GET') return json({ error: 'not_found' }, 404);
-    if (!existing) {
-      // Only claim when a complete sheet will be written.
-      const serialized = await request.text();
-      if (serialized.length > MAX_JSON_LENGTH) return json({ error: 'payload_too_large' }, 413);
-      let payload;
-      try { payload = JSON.parse(serialized); } catch { return json({ error: 'invalid_json' }, 400); }
-      await ctx.storage.put(ownerKey, hash);
-      const result = await putStored(ctx.storage, root, payload);
-      return result.error ? json(result, 413) : json({ ok: true, ...result });
+    const existing = await ctx.storage.get(root + ':owner-sha256');
+    if (!existing || !constantTimeEqual(existing, await sha256(bearer))) {
+      return json({ error: 'invalid_player_key' }, 403);
     }
   }
 
