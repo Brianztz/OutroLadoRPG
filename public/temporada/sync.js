@@ -28,7 +28,7 @@ window.startSeasonSync=async function startSeasonSync(){
   function broadcast(){if(ready&&socket.connected)socket.emit(view?'master_update_player':'status_change',packet());}
   function storePreferences(){localStorage.setItem(metadataKey,JSON.stringify(preferences));$('season-color').value=preferences.color;$('season-combat').checked=preferences.combat;}
   async function applySnapshot(value){if(value?.version!==1||!value.state)throw Error('Formato de ficha incompatível.');applying=true;try{api.applyState(value.state);await portrait.apply(value.portrait);preferences={...preferences,...value.presentation};storePreferences();}finally{applying=false;}}
-  async function flush(){clearTimeout(timer);if(!ready||applying||busy||closed)return;if(!cloudReady){broadcast();status('MODO LOCAL · atributos salvos neste dispositivo; tente sincronizar depois.');return;}busy=true;try{do{dirty=false;const value=snapshot();broadcast();if(view){status('Alterações enviadas ao jogador');break;}const json=JSON.stringify(value),hash=OLFirebase.hashCharacterSheet(json);if(hash!==lastHash){status('Salvando…');const result=await OLFirebase.saveCharacter(table,json,{sheetVariant:'temporada',playerCode:code,characterName:value.state.name||'Personagem',overlayColor:preferences.color});lastHash=result.sheetHash;localStorage.setItem(markerKey,lastHash);}if(!dirty)localStorage.removeItem(dirtyKey);status(socket.connected?'Salvo · conectado':'Salvo · reconectando');}while(dirty&&!closed);}catch(error){
+  async function flush(){clearTimeout(timer);if(!ready||applying||busy||closed)return;if(!cloudReady){broadcast();status('MODO LOCAL · atributos salvos neste dispositivo; tente sincronizar depois.');return;}busy=true;try{do{dirty=false;const value=snapshot();broadcast();const json=JSON.stringify(value),hash=OLFirebase.hashCharacterSheet(json);if(hash!==lastHash){status('Salvando…');const result=await OLFirebase.saveCharacter(table,json,{sheetVariant:'temporada',playerCode:code,characterName:value.state.name||'Personagem',overlayColor:preferences.color});lastHash=result.sheetHash;localStorage.setItem(markerKey,lastHash);}if(!dirty)localStorage.removeItem(dirtyKey);status(socket.connected?'Salvo · conectado':'Salvo · reconectando');}while(dirty&&!closed);}catch(error){
     dirty=true;
     const quota=/resource.exhausted|quota limit exceeded|cota diária/i.test(String(error?.code||'')+' '+String(error?.message||''));
     status(quota?'SINCRONIZAÇÃO TEMPORARIAMENTE INDISPONÍVEL — alterações locais preservadas.':'Não salvo na nuvem: '+error.message);
@@ -69,7 +69,30 @@ window.startSeasonSync=async function startSeasonSync(){
     if(initializing||closed)return;
     initializing=true;
     try{
-    if(view){if(socket.connected)socket.emit('request_player',{codigo:code,mesa:table});return;}
+    if(view){
+      // The player's sheet is stored in Cloudflare even when they are offline.
+      // Only the master can supply a different code to loadCharacter.
+      status('Carregando ficha salva do personagem…');
+      try{
+        const cloud=await OLFirebase.loadCharacter(table,'temporada',code);
+        if(cloud?.sheetJson){
+          // A live player may have sent a newer snapshot while the request was
+          // pending. Do not replace that live state with a delayed cloud read.
+          if(!ready)await applySnapshot(JSON.parse(cloud.sheetJson));
+          lastHash=cloud.sheetHash||OLFirebase.hashCharacterSheet(cloud.sheetJson);
+          localStorage.setItem(markerKey,lastHash);
+          ready=true;cloudReady=true;lock(false);
+          status('Ficha salva carregada · o mestre pode visualizar e editar');
+        }else{
+          status('Ainda não há ficha salva na nuvem. Aguardando conexão do jogador…');
+        }
+      }catch(error){
+        console.warn('Não foi possível carregar a ficha salva para o mestre:',error);
+        status('Não foi possível consultar a ficha salva. Aguardando conexão do jogador…');
+      }
+      if(socket.connected)socket.emit('request_player',{codigo:code,mesa:table});
+      return;
+    }
     status('Carregando a ficha da temporada…');
     try{const cloud=await OLFirebase.loadCharacter(table,'temporada');const marker=localStorage.getItem(markerKey);if(cloud){const locallyDirty=localStorage.getItem(dirtyKey)==='1';if(locallyDirty&&(!marker||marker!==cloud.sheetHash)){
         ready=true;cloudReady=false;lock(false);
