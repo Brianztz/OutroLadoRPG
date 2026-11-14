@@ -54,7 +54,7 @@ button:disabled{opacity:.5;cursor:wait}a{color:#9fd3f2}#status{min-height:70px;w
  async function cloudCharacter() {
    const user = await OLFirebase.getCurrentUser();
    if (!user) throw Error('Entre com a mesma conta Google que utilizava no RPG antigo.');
-   const previous = await OLFirebase.loadCharacter(OLNative.tableCode($('table').value), $('edition').value);
+   const previous = await OLFirebase.loadCharacter(room(), $('edition').value);
    if (!previous?.sheetJson) throw Error('Nenhuma ficha foi encontrada no Firebase para essa conta e mesa.');
    return previous;
  }
@@ -95,7 +95,7 @@ button:disabled{opacity:.5;cursor:wait}a{color:#9fd3f2}#status{min-height:70px;w
  $('clues').onclick = async () => {
    try {
      await nativeRole('master');
-     const previous = await OLFirebase.loadMasterClues(OLNative.tableCode($('table').value));
+     const previous = await OLFirebase.loadMasterClues(room());
      if (!previous?.cluesJson) throw Error('Nenhuma pista antiga encontrada nesta mesa.');
      download(previous, 'backup-pistas-' + room() + '.json');
      let existing = null;
