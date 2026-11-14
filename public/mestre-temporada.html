@@ -465,7 +465,7 @@
         </div>
         <div class="master-top-actions">
             <button id="master-overlay-button" class="master-invite-button" type="button" onclick="openMasterOverlay()">ABRIR OVERLAY</button>
-            <button id="master-table-button" class="master-table-button" type="button" onclick="chooseMasterTable()">MESA: <span id="master-table-code">PADRAO</span></button>
+            <button id="master-table-button" class="master-table-button" type="button" onclick="copyMasterTableCode()">MESA: <span id="master-table-code">PADRAO</span></button>
             <button class="master-invite-button" type="button" onclick="openMasterInvite()">✉ CONVIDAR JOGADOR</button>
             <button id="combat-mode-button" class="combat-mode-button" type="button" aria-pressed="false" onclick="toggleCombatMode()">⚔ MODO DE COMBATE</button>
             <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
@@ -475,9 +475,9 @@
     <dialog id="master-invite-dialog" class="master-invite-dialog" aria-labelledby="master-invite-title">
         <div class="master-invite-content">
             <h2 id="master-invite-title">✉ Convite para a mesa</h2>
-            <p>Escolha o código da mesa. Ao gerar o convite, o escudo entra nesta mesa e o mestre gera uma chave individual para cada personagem.</p>
+            <p>Este é o código fixo da sua mesa. Cada jogador receberá seu próprio link de convite.</p>
             <label for="master-invite-table">CÓDIGO DA MESA
-                <input id="master-invite-table" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" required autocomplete="off" spellcheck="false" placeholder="Ex.: AURORA">
+                <input id="master-invite-table" type="text" maxlength="40" readonly autocomplete="off" spellcheck="false" placeholder="Ex.: AURORA">
             </label>
             <div class="master-invite-actions">
                 <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">GERENCIAR CONVITES</button>
@@ -991,39 +991,11 @@
             window.open(url.href,'_blank','noopener');
         }
 
-        function chooseMasterTable() {
-            const requestedTable = prompt('Digite o codigo da mesa:', masterTableCode);
-            if (requestedTable === null) return;
-            switchMasterTable(normalizeTableCode(requestedTable));
-        }
-
-        function switchMasterTable(nextTable) {
-            if (nextTable === masterTableCode) return;
-            masterTableCode = nextTable;
-            luminaEnabled = loadLuminaAccess(masterTableCode);
-            localStorage.setItem(masterStorageKey('master_table_code'), masterTableCode);
-            // Keep a changed table on refresh; URL parameters take priority over storage.
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set('mesa', masterTableCode);
-            window.history.replaceState(null, '', newUrl.href);
-            updateMasterTableUI();
-            renderLuminaControl();
-            playersBoard.querySelectorAll('.player-card').forEach(card => card.remove());
-            connectedPlayers.clear();
-            updatePlayersCount();
-            playerRollHistory = [];
-            renderPlayerRollResults();
-            initiativeState = loadInitiativeState();
-            renderInitiative();
-            resetMasterCluesCloudSync();
-            masterCluesState = loadMasterCluesState();
-            renderMasterClues();
-            initializeMasterCluesCloudSync();
-
-            if (socket && socket.connected) {
-                socket.emit('master_ready', { mesa: masterTableCode });
-                socket.emit('initiative_state_change', { ...initiativeState, mesa: masterTableCode });
-                socket.emit('lumina_master_set',{ mesa: masterTableCode,enabled: luminaEnabled });
+        async function copyMasterTableCode() {
+            try {
+                await navigator.clipboard.writeText(masterTableCode);
+            } catch (error) {
+                window.prompt('Código fixo da sua mesa (copie):', masterTableCode);
             }
         }
 
@@ -1044,20 +1016,10 @@
         }
 
         async function generateMasterInvite() {
-            const input = document.getElementById('master-invite-table');
-            const entered = input.value.trim();
-            if (!entered) {
-                input.setCustomValidity('Informe o código da mesa.');
-                input.reportValidity();
-                input.setCustomValidity('');
-                return;
-            }
-            const table = normalizeTableCode(entered);
-            input.value = table;
             const url = new URL('./acessos.html', location.href);
-            url.searchParams.set('mesa', table);
+            url.searchParams.set('mesa', masterTableCode);
             if (isSeasonMaster) url.searchParams.set('temporada', '2');
-            // The access manager provisions a player key; a bare table URL is not a valid invite.
+            // Only the access manager issues player keys for the fixed room.
             location.assign(url.href);
         }
 
