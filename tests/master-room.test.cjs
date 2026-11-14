@@ -81,3 +81,15 @@ test('o login do mestre usa o codigo permanente e o jogador mantem o link de con
   assert(portal.includes("if (isPlayerInvite && keyInput.value && codeInput.value)"));
   assert(portal.includes("seasonSelect.value = params.get('temporada') === '2'"));
 });
+
+test('escudos nao deixam o mestre alterar o codigo fixo da mesa', () => {
+  for (const file of ['mestre.html','mestre-temporada.html']) {
+    const html = fs.readFileSync(path.join(__dirname, '../public', file), 'utf8');
+    assert(html.includes('onclick="copyMasterTableCode()"'));
+    assert(html.includes('async function copyMasterTableCode()'));
+    assert(html.includes('url.searchParams.set(\'mesa\', masterTableCode)'));
+    assert(html.includes('id="master-invite-table" type="text" maxlength="40" readonly'));
+    assert(!html.includes('function switchMasterTable('));
+    assert(!html.includes('function chooseMasterTable('));
+  }
+});
