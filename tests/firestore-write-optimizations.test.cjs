@@ -26,10 +26,8 @@ test('Durable Object sheets and clues are partitioned by edition and character',
  assert(store.includes('const version = crypto.randomUUID()'));
  assert(store.includes('await sha256(source)'));
 });
-test('classic and season sheets retain change batching and offline protection',()=>{
- const classic=read('public/ficha.html');
+test('Vestigios sheet retains change batching and offline protection',()=>{
  const sync=read('public/temporada/sync.js');
- assert(classic.includes("localStorage.setItem(characterPendingKey, '1')"));
  assert(sync.includes('realtimeTimer=setTimeout(broadcast,180)'));
  assert(sync.includes('timer=setTimeout(flush,view?220:3500)'));
  assert(sync.includes('localStorage.setItem(dirtyKey'));
@@ -37,9 +35,8 @@ test('classic and season sheets retain change batching and offline protection',(
 });
 test('master clue UI preserves fallback, autosaving and safe polling updates',()=>{
  const seasonMaster=read('public/mestre-temporada.html');
- const originalMaster=read('public/mestre.html');
  const compat=read('public/firebase-client.js');
- for(const master of [seasonMaster,originalMaster]){
+ for(const master of [seasonMaster]){
    assert(master.includes('scheduleMasterCluesCloudSave('));
    assert(master.includes('OLFirebase.loadMasterClues('));
    assert(master.includes('OLFirebase.saveMasterClues('));
