@@ -33,3 +33,14 @@ O endpoint `POST /api/storage?mesa=MESA&kind=player-access&codigo=CODIGO&edicao=
 - Provisionamento de chaves exclusivamente pelo mestre (não existe mais reivindicação automática da ficha por um visitante).
 - Testes básicos de autorização, persistência e rotação de chave em `tests/storage-api.test.cjs`.
 - **Ainda pendente:** retirar Firebase dos navegadores e autenticar WebSockets. O PR continua em rascunho; nada foi implantado.
+
+## Fase 2: autenticação própria no Worker (implementada, ainda não ativada nas páginas)
+
+- `POST /api/session?mesa=MESA` com JSON `{"role":"master","key":"..."}` autentica o mestre via `MASTER_DATA_TOKEN` (segredo do servidor), sem Firebase.
+- `POST /api/session?mesa=MESA` com JSON `{"role":"player","code":"CODIGO","edition":"classic","key":"..."}` autentica um jogador autorizado pelo mestre.
+- Uma sessão válida é mantida num cookie `HttpOnly; Secure; SameSite=Lax`, com prazo de 8 horas. O token não fica disponível para JavaScript.
+- `GET /api/session?mesa=MESA` identifica uma sessão existente; `DELETE` encerra a sessão.
+- O Worker agora também aceita essa sessão na conexão `/ws` e nas APIs de armazenamento. As páginas atuais ainda usam Firebase e não foram alteradas.
+- `public/native-client.js` é um cliente separado para integrar posteriormente às interfaces da ficha, sem introduzir regressões em produção.
+
+**Atenção:** a senha/chave de mestre deve ser configurada como secret no Worker; não colar no repositório, em variáveis públicas nem em links de convite. O login e a UI da ficha ainda precisam ser migrados com testes manuais. **A fase 2 não substitui por si só a autenticação nas páginas.**
