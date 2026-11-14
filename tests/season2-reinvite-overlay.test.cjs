@@ -82,7 +82,7 @@ test('T2: convite individual é renovado, overlay apaga expulsos e restaura reco
   const manager = read('public/acessos.html');
 
   assert(master.includes('await OLFirebase.removeTablePlayer(masterTableCode, code);'));
-  assert(master.includes('openMasterInvite();'));
+  assert(master.includes('onclick="openMasterInvite()"'));
   assert(master.includes("new URL('./acessos.html', location.href)"));
   assert(manager.includes('OLNative.provisionPlayer(physical, edition, playerCode)'));
   assert(manager.includes("invite.hash = new URLSearchParams"));
