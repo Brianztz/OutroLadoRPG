@@ -33,6 +33,9 @@
         .connection-dot { width: 9px; height: 9px; border-radius: 50%; background: #666; box-shadow: 0 0 0 transparent; transition: 0.2s; }
         .connection-dot.online { background: var(--accent-green); box-shadow: 0 0 10px rgba(74,153,218,0.85); }
         .master-top-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+        .master-menu-button { min-height:40px; padding:9px 15px; border:1px solid rgba(226,160,133,.72); border-radius:9px; background:rgba(107,40,27,.22); color:#ffd6c4; font-size:.77em; font-weight:900; cursor:pointer; transition:background .2s,border-color .2s; }
+        .master-menu-button:hover, .master-menu-button:focus-visible { background:rgba(143,55,35,.4); border-color:#ffc2aa; outline-offset:3px; }
+
         .master-table-button { padding: 10px 15px; border: 1px solid var(--accent-green); border-radius: 7px; background: rgba(74,153,218,0.1); color: var(--accent-green); font-size: 0.75em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .master-table-button:hover { background: var(--accent-green); color: #000; box-shadow: 0 0 12px rgba(74,153,218,0.3); }
         .master-table-button span { color: #fff; letter-spacing: 1px; }
@@ -488,6 +491,7 @@
             <div class="connection-info"><span id="connection-dot" class="connection-dot"></span><span id="connection-text">Conectando ao servidor...</span></div>
         </div>
         <div class="master-top-actions">
+            <button id="master-back-menu" class="master-menu-button" type="button" onclick="returnToMasterMenu()" aria-label="Voltar ao menu principal">← VOLTAR AO MENU</button>
             <button id="master-overlay-button" class="master-invite-button" type="button" onclick="openMasterOverlay()">ABRIR OVERLAY</button>
             <button id="master-table-button" class="master-table-button" type="button" onclick="copyMasterTableCode()">MESA: <span id="master-table-code">PADRAO</span></button>
             <button class="master-invite-button" type="button" onclick="openMasterInvite()">✉ CONVIDAR JOGADOR</button>
@@ -1049,6 +1053,22 @@
             url.searchParams.set('mesa',masterTableCode);
             if (isSeasonMaster) url.searchParams.set('temporada','2');
             window.open(url.href,'_blank','noopener');
+        }
+
+        async function returnToMasterMenu() {
+            // Allow the local IndexedDB backup to finish before leaving.
+            // Cloud saves may still be running; ask before interrupting them.
+            try { await masterCluesCacheWrites; } catch (error) {
+                console.warn('Não foi possível confirmar a cópia local das pistas:', error);
+            }
+            if ((masterCluesCloudQueuedJson || masterCluesCloudSaveInFlight || masterCluesCloudDirtyBeforeReady)
+                && !window.confirm('Há pistas aguardando sincronização com a nuvem. Deseja voltar ao menu mesmo assim?')) {
+                return;
+            }
+            const menu = new URL('./index.html', window.location.href);
+            menu.searchParams.set('menu', '1');
+            // The master remains signed in; this is navigation, not logout.
+            window.location.assign(menu.href);
         }
 
         async function copyMasterTableCode() {
