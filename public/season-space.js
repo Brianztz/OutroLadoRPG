@@ -1,5 +1,5 @@
 /* Separate physical rooms per RPG season while retaining the public table name.
- * Used by portal, Firebase and realtime; classic tables are unchanged.
+ * Used by Vestigios portal, native storage and realtime; preserves data namespaces.
  */
 (function (global) {
   'use strict';
