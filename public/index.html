@@ -333,7 +333,9 @@ footer strong{color:#b9bab5}
       putMasterKey(stored && MASTER_PATTERN.test(stored) ? stored : createMasterKey());
       // The key is generated locally, but cannot act as master until it is
       // activated on the server by the existing master secret.
-      void inspectMasterKey(!notice);
+      // Returning from the master shield must stay on the menu instead of
+      // immediately auto-redirecting back into the shield.
+      void inspectMasterKey(!notice && params.get('menu') !== '1');
     } catch (error) {
       show(masterStatus, 'Não foi possível criar sua chave pessoal neste navegador.', true);
     }
