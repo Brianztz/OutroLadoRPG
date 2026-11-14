@@ -128,7 +128,7 @@ test('portal gera chave criptografica sem servidor e exige ativacao antes da per
   assert(portal.includes('readonly autocomplete="off" spellcheck="false"'));
   assert(portal.includes('OLNative.getMasterRoom(personalKey, preferredCode, bootstrap)'));
   assert(portal.includes('OLNative.signInMaster(physicalRoom(table), personalKey)'));
-  assert(portal.includes('void inspectMasterKey(!notice)'));
+  assert(portal.includes("void inspectMasterKey(!notice && params.get('menu') !== '1')"));
   assert(portal.includes("document.getElementById('restore-master-button')"));
   assert(native.includes('activationSecret'));
   assert(worker.includes("new URL(request.url).pathname === '/api/master-key-check'"));
