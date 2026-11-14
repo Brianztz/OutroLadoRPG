@@ -26,6 +26,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const DEFAULT_TABLE = 'PADRAO';
 const playersData = new Map();
 const playerSockets = new Map();
+const disconnectTimers = new Map();
+const pendingPlayerUpdates = new Map();
 const initiativeStates = new Map();
 const clueInspections = new Map();
 const luminaStates = new Map();
@@ -100,15 +102,21 @@ function unregisterPlayerSocket(socket, announce = true) {
     sockets.delete(socket.id);
     if (!sockets.size) {
         playerSockets.delete(key);
-        const data = playersData.get(key);
-        if (announce && data) {
-            playersData.set(key, { ...data, online: false });
-            io.to(tableRoom(data.mesa)).emit('player_disconnected', { codigo: data.codigo, mesa: data.mesa });
-            const inspection = clueInspections.get(data.mesa);
-            if (inspection && inspection.codigo === data.codigo) {
-                clueInspections.delete(data.mesa);
-                io.to(tableRoom(data.mesa)).emit('clue_inspection_stopped', { mesa: data.mesa, codigo: data.codigo, reason: 'disconnect' });
-            }
+        if (announce) {
+            clearTimeout(disconnectTimers.get(key));
+            disconnectTimers.set(key, setTimeout(() => {
+                disconnectTimers.delete(key);
+                if (playerSockets.has(key)) return;
+                const data = playersData.get(key);
+                if (!data) return;
+                playersData.set(key, { ...data, online: false });
+                io.to(tableRoom(data.mesa)).emit('player_disconnected', { codigo: data.codigo, mesa: data.mesa });
+                const inspection = clueInspections.get(data.mesa);
+                if (inspection && inspection.codigo === data.codigo) {
+                    clueInspections.delete(data.mesa);
+                    io.to(tableRoom(data.mesa)).emit('clue_inspection_stopped', { mesa: data.mesa, codigo: data.codigo, reason: 'disconnect' });
+                }
+            }, 20000));
         }
     }
 
@@ -128,6 +136,8 @@ function registerPlayerSocket(table, code, socket) {
         if (previousTable) socket.leave(tableRoom(previousTable));
     }
 
+    clearTimeout(disconnectTimers.get(key));
+    disconnectTimers.delete(key);
     const isFreshConnection = !playerSockets.has(key) || playerSockets.get(key).size === 0;
     if (!playerSockets.has(key)) playerSockets.set(key, new Set());
     playerSockets.get(key).add(socket.id);
@@ -236,8 +246,11 @@ io.on('connection', socket => {
             const targetSocket = io.sockets.sockets.get(socketId);
             if (targetSocket) targetSocket.disconnect(true);
         });
+        clearTimeout(disconnectTimers.get(key));
+        disconnectTimers.delete(key);
         playerSockets.delete(key);
         playersData.delete(key);
+        pendingPlayerUpdates.delete(key);
         io.to(tableRoom(table)).emit('player_disconnected', { codigo: code, mesa: table, reason: 'removed_by_master' });
         const inspection = clueInspections.get(table);
         if (inspection && inspection.codigo === code) {
@@ -339,6 +352,11 @@ io.on('connection', socket => {
         const data = { ...rawData, codigo: code, id: code, mesa: table, online: true };
         playersData.set(key, data);
         io.to(tableRoom(table)).emit('update_mestre', data);
+        const pending = pendingPlayerUpdates.get(key);
+        if (pending) {
+            pendingPlayerUpdates.delete(key);
+            socket.emit('player_data_updated', pending);
+        }
     });
 
     socket.on('master_update_player', rawData => {
@@ -349,11 +367,11 @@ io.on('connection', socket => {
 
         const key = playerKey(table, code);
         const previousData = playersData.get(key) || {};
-        const data = { ...previousData, ...rawData, codigo: code, id: code, mesa: table, online: true };
-        playersData.set(key, data);
-
         const sockets = playerSockets.get(key);
-        if (sockets) sockets.forEach(socketId => io.to(socketId).emit('player_data_updated', data));
+        const data = { ...previousData, ...rawData, codigo: code, id: code, mesa: table, online: Boolean(sockets && sockets.size) };
+        playersData.set(key, data);
+        if (sockets && sockets.size) sockets.forEach(socketId => io.to(socketId).emit('player_data_updated', data));
+        else pendingPlayerUpdates.set(key, data);
         io.to(tableRoom(table)).emit('update_mestre', data);
     });
 
