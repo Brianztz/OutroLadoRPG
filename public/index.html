@@ -301,26 +301,50 @@
         location.assign(next.href);
       }
       async function enterPortal(role) {
-        if (busy || !tableInput.reportValidity()) return;
-        const table = OLFirebase.normalizeTableCode(tableInput.value);
+        if (busy) return;
+        if (role === 'player' && !tableInput.reportValidity()) return;
         const edition = seasonSelect.value;
-        const physical = OLFirebase.seasonScopedTable(table, edition);
         const key = keyInput.value.trim();
-        let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0,40);
+        let table = OLFirebase.normalizeTableCode(tableInput.value);
+        let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
         setBusy(true);
-        show(role === 'master' ? 'Autenticando mestre...' : 'Autenticando jogador...');
+        show(role === 'master' ? 'Entrando como mestre...' : 'Entrando na ficha...');
         try {
-          let current = await OLNative.getSession(physical).catch(() => null);
-          if (!code && current?.role === 'player') code = current.code;
-          if (!current?.ok || current.role !== role || (role === 'player' && current.code !== code)) {
-            if (!key) throw Error('Informe a chave de acesso enviada pelo mestre.');
-            if (role === 'master') await OLNative.signInMaster(physical, key);
-            else {
-              if (!code) throw Error('Informe seu código de personagem.');
+          if (role === 'master') {
+            if (key) {
+              const oldRoomDetails = document.getElementById('old-room-details');
+              const oldRoomInput = document.getElementById('old-master-room');
+              const preferredCode = oldRoomDetails.open ? oldRoomInput.value.trim().toUpperCase() : '';
+              if (oldRoomDetails.open && (!preferredCode || !oldRoomInput.reportValidity())) {
+                throw Error('Informe o código da mesa antiga ou feche essa opção para gerar um novo.');
+              }
+              // The server stores this code once; the browser never chooses a new one later.
+              const ownerRoom = await OLNative.getMasterRoom(key, preferredCode);
+              table = ownerRoom.tableCode;
+              const physical = OLFirebase.seasonScopedTable(table, edition);
+              await OLNative.signInMaster(physical, key);
+              localStorage.setItem('master_permanent_table_code', table);
+            } else {
+              // Resume an existing authenticated session without regenerating the code.
+              const remembered = localStorage.getItem('master_permanent_table_code');
+              if (!remembered) throw Error('Informe a sua chave de acesso do mestre.');
+              table = OLFirebase.normalizeTableCode(remembered);
+              const physical = OLFirebase.seasonScopedTable(table, edition);
+              const session = await OLNative.getSession(physical).catch(() => null);
+              if (!session?.ok || session.role !== 'master') {
+                throw Error('Sessão expirada. Informe a sua chave de acesso do mestre.');
+              }
+            }
+          } else {
+            const physical = OLFirebase.seasonScopedTable(table, edition);
+            let current = await OLNative.getSession(physical).catch(() => null);
+            if (!code && current?.role === 'player') code = current.code;
+            if (!current?.ok || current.role !== 'player' || current.code !== code) {
+              if (!code || !key) throw Error('Informe o código e a chave do personagem ou abra seu convite.');
               await OLNative.signInPlayer(physical, edition, code, key);
             }
+            localStorage.setItem('player_sync_code', code || current?.code);
           }
-          if (role === 'player') localStorage.setItem('player_sync_code', code || current?.code);
           keyInput.value = '';
           destination(role, table, edition);
         } catch (error) {
@@ -334,15 +358,17 @@
       const incomingNotice = params.get('aviso');
       if (incomingNotice) show(incomingNotice, true);
       else if (isPlayerInvite) show('Entrando na sua ficha...');
-      // A valid session can be resumed without re-entering the access key.
+      // Show the last known master room without trusting localStorage as authentication.
       if (!isPlayerInvite && !keyInput.value && !incomingNotice) {
-        const table = OLFirebase.seasonScopedTable(tableInput.value, seasonSelect.value);
-        OLNative.getSession(table).then(user => {
-          if (user?.ok) {
-            if (user.role === 'player' && !codeInput.value) codeInput.value = user.code;
-            show('Sessão ativa como ' + (user.role === 'master' ? 'mestre' : 'jogador') + '.');
-          }
-        }).catch(() => {});
+        const remembered = localStorage.getItem('master_permanent_table_code');
+        if (remembered) {
+          const physical = OLFirebase.seasonScopedTable(remembered, seasonSelect.value);
+          OLNative.getSession(physical).then(user => {
+            if (user?.ok && user.role === 'master') {
+              show('Sessão do mestre ativa. Código fixo: ' + remembered);
+            }
+          }).catch(() => {});
+        }
       }
       inviteRetry.addEventListener('click', () => {
         inviteRetry.hidden = true;
