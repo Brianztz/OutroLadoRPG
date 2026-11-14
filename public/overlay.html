@@ -1550,7 +1550,12 @@
         socket.on('player_connected', releasePlayerAfterReconnect);
         socket.on('player_disconnected', data => {
             if (normalizeTableCode(data && data.mesa) !== tableCode) return;
-            keepDisconnectedPlayer(data && data.codigo);
+            if (data && data.reason === 'removed_by_master') {
+                // Expulsão remove o jogador do overlay; um novo convite permite o retorno.
+                removePlayer(data.codigo, true);
+            } else {
+                keepDisconnectedPlayer(data && data.codigo);
+            }
         });
         socket.on('initiative_state_updated', state => {
             initiativeState = state && typeof state === 'object'
