@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { handleStorageRequest } from './storage-api.js';
 import { currentSession, handleSessionRequest } from './session-api.js';
+import { handleMasterRoomRequest } from './master-room-api.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
@@ -157,6 +158,9 @@ export class TableRoom extends DurableObject {
     }
 
     async fetch(request) {
+        if (new URL(request.url).pathname === '/api/master-room') {
+            return handleMasterRoomRequest(request, this.ctx, this.env);
+        }
         if (new URL(request.url).pathname === '/api/session') {
             return handleSessionRequest(request, this.ctx, this.env);
         }
@@ -512,6 +516,10 @@ export default {
         const url = new URL(request.url);
         if (url.pathname === '/health') {
             return Response.json({ ok: true, realtime: true });
+        }
+        if (url.pathname === '/api/master-room') {
+            // A fixed Durable Object holds the owner's code across devices and deployments.
+            return env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1').fetch(request);
         }
         if (url.pathname === '/api/storage' || url.pathname === '/api/session') {
             const table = normalizeTableCode(url.searchParams.get('mesa'));

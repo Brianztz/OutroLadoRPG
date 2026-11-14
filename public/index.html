@@ -166,7 +166,13 @@
         .credential-grid input {width:100%;min-height:49px;border:1px solid rgba(139,204,246,.3);border-radius:9px;background:rgba(1,6,12,.84);color:#fff;padding:12px;font:600 .89rem Roboto,"Segoe UI",sans-serif}
         .credential-grid input:focus{outline:2px solid #39aee8;outline-offset:1px}
         @media(max-width:620px){.credential-grid{grid-template-columns:1fr}}
-            [hidden] { display: none !important; }
+    .credential-simple {width:100%;min-height:50px;padding:12px;border:1px solid rgba(139,204,246,.32);border-radius:10px;background:rgba(1,6,12,.84);color:#fff;font:600 .92rem Roboto,"Segoe UI",sans-serif}
+    .credential-simple:focus {outline:2px solid #39aee8;outline-offset:1px}
+    .portal-advanced {margin:20px 0 0;padding:16px 0 0;border-top:1px solid rgba(139,204,246,.18)}
+    .portal-advanced summary {cursor:pointer;color:var(--blue);font-size:.85rem;font-weight:700}
+    .portal-advanced p {font-size:.82rem;color:var(--muted);line-height:1.5}
+    .portal-advanced .table-field {margin-top:14px}
+    [hidden] { display: none !important; }
     </style>
 </head>
 <body>
@@ -178,38 +184,58 @@
             <p class="intro">Jogadores entram pelo link enviado pelo mestre. O mestre usa sua chave privada.</p>
         </header>
 
-        <form class="entry-form" onsubmit="enterPortal('player'); return false;">
+        <form class="entry-form" onsubmit="enterPortal('master'); return false;">
             <section class="auth-panel" aria-live="polite">
                 <div class="auth-copy">
-                    <div><strong id="auth-name">Acesso à mesa</strong><small id="auth-email">Jogadores entram com o convite enviado pelo mestre. O mestre utiliza sua chave privada.</small></div>
+                    <div><strong id="auth-name">Acesso do mestre</strong>
+                    <small id="auth-email">Seu código de mesa é gerado uma vez e fica sempre com você.</small></div>
                 </div>
             </section>
-            <div class="credential-grid">
-              <label id="player-code-field" class="table-field" for="player-code-input"><span>Código do personagem (jogador)</span><input id="player-code-input" autocomplete="off" maxlength="40" placeholder="EX.: A1B2C3D4" spellcheck="false"></label>
-              <label class="table-field" for="credential-input"><span>Chave de acesso</span><input id="credential-input" type="password" autocomplete="off" placeholder="Cole aqui sua chave ou abra o convite"></label>
-            </div>
-            <p id="auth-message" class="auth-message" role="status"></p>
-
-            <label class="table-field" for="table-input">
-                <span>Código da mesa</span>
-                <div class="input-wrap">
-                    <span class="input-symbol" aria-hidden="true">#</span>
-                    <input id="table-input" name="mesa" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false" placeholder="PADRAO" required>
-                </div>
+            <label class="table-field" for="credential-input">
+                <span>Chave de acesso</span>
+                <input id="credential-input" class="credential-simple" type="password" autocomplete="off" placeholder="Sua chave privada de mestre">
             </label>
-
-            <label class="table-field" for="sheet-model"><span>Temporada da mesa</span><select id="sheet-model" style="width:100%;padding:12px;background:#101923;color:#eee;border:1px solid #426076;border-radius:8px"><option value="temporada">Nova temporada</option><option value="classic">Outro Lado — original</option></select></label><div class="role-grid">
-                <button class="role-button player" type="submit" disabled>
-                    <span class="role-icon" aria-hidden="true">♟</span>
-                    <span class="role-copy"><strong>Entrar como jogador</strong><span>Abrir sua ficha de personagem nesta mesa.</span></span>
-                </button>
-                <button class="role-button master" type="button" onclick="enterPortal('master')" disabled>
+            <label class="table-field" for="sheet-model"><span>Temporada</span>
+                <select id="sheet-model" style="width:100%;padding:12px;background:#101923;color:#eee;border:1px solid #426076;border-radius:8px">
+                    <option value="temporada">Nova temporada</option>
+                    <option value="classic">Outro Lado — original</option>
+                </select>
+            </label>
+            <div class="role-grid" style="grid-template-columns:1fr">
+                <button class="role-button master" type="submit" disabled>
                     <span class="role-icon" aria-hidden="true">♜</span>
-                    <span class="role-copy"><strong>Entrar como mestre</strong><span>Abrir o escudo e controlar esta mesa.</span></span>
+                    <span class="role-copy"><strong>Entrar como mestre</strong><span>Usar sempre o mesmo código de mesa.</span></span>
                 </button>
             </div>
-
-            <p class="hint">Use o mesmo código para que jogadores, mestre e overlays entrem na mesma sessão.</p>
+            <details id="old-room-details" class="portal-advanced">
+                <summary>Já tenho uma mesa antiga e quero manter seu código</summary>
+                <p>Use esta opção na primeira entrada. Depois que o código ficar salvo, ele não poderá ser trocado pelo login.</p>
+                <label class="table-field" for="old-master-room"><span>Código da mesa existente</span>
+                    <input id="old-master-room" class="credential-simple" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" spellcheck="false" placeholder="Ex.: PADRAO">
+                </label>
+            </details>
+            <details id="manual-player-login" class="portal-advanced">
+                <summary>Sou jogador e preciso entrar manualmente</summary>
+                <p>O mais fácil é abrir o link enviado pelo mestre. Use esta opção se tiver recebido código e chave separadamente.</p>
+                <label id="player-code-field" class="table-field" for="player-code-input">
+                    <span>Código do personagem</span>
+                    <input id="player-code-input" class="credential-simple" autocomplete="off" maxlength="40" placeholder="Código do personagem" spellcheck="false">
+                </label>
+                <label class="table-field" for="table-input">
+                    <span>Código da mesa</span>
+                    <div class="input-wrap">
+                        <span class="input-symbol" aria-hidden="true">#</span>
+                        <input id="table-input" name="mesa" type="text" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false" placeholder="PADRAO">
+                    </div>
+                </label>
+                <div class="role-grid" style="grid-template-columns:1fr">
+                    <button class="role-button player" type="button" onclick="enterPortal('player')" disabled>
+                        <span class="role-icon" aria-hidden="true">♟</span>
+                        <span class="role-copy"><strong>Entrar como jogador</strong><span>Usar código e chave enviados pelo mestre.</span></span>
+                    </button>
+                </div>
+            </details>
+            <p id="auth-message" class="auth-message" role="status"></p>
         </form>
         <section id="invite-entry" hidden aria-live="polite" style="text-align:center;padding:0 30px 38px">
           <div aria-hidden="true" style="font-size:2rem;color:#8bccf6">♟</div>
@@ -275,26 +301,50 @@
         location.assign(next.href);
       }
       async function enterPortal(role) {
-        if (busy || !tableInput.reportValidity()) return;
-        const table = OLFirebase.normalizeTableCode(tableInput.value);
+        if (busy) return;
+        if (role === 'player' && !tableInput.reportValidity()) return;
         const edition = seasonSelect.value;
-        const physical = OLFirebase.seasonScopedTable(table, edition);
         const key = keyInput.value.trim();
-        let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0,40);
+        let table = OLFirebase.normalizeTableCode(tableInput.value);
+        let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
         setBusy(true);
-        show(role === 'master' ? 'Autenticando mestre...' : 'Autenticando jogador...');
+        show(role === 'master' ? 'Entrando como mestre...' : 'Entrando na ficha...');
         try {
-          let current = await OLNative.getSession(physical).catch(() => null);
-          if (!code && current?.role === 'player') code = current.code;
-          if (!current?.ok || current.role !== role || (role === 'player' && current.code !== code)) {
-            if (!key) throw Error('Informe a chave de acesso enviada pelo mestre.');
-            if (role === 'master') await OLNative.signInMaster(physical, key);
-            else {
-              if (!code) throw Error('Informe seu código de personagem.');
+          if (role === 'master') {
+            if (key) {
+              const oldRoomDetails = document.getElementById('old-room-details');
+              const oldRoomInput = document.getElementById('old-master-room');
+              const preferredCode = oldRoomDetails.open ? oldRoomInput.value.trim().toUpperCase() : '';
+              if (oldRoomDetails.open && (!preferredCode || !oldRoomInput.reportValidity())) {
+                throw Error('Informe o código da mesa antiga ou feche essa opção para gerar um novo.');
+              }
+              // The server stores this code once; the browser never chooses a new one later.
+              const ownerRoom = await OLNative.getMasterRoom(key, preferredCode);
+              table = ownerRoom.tableCode;
+              const physical = OLFirebase.seasonScopedTable(table, edition);
+              await OLNative.signInMaster(physical, key);
+              localStorage.setItem('master_permanent_table_code', table);
+            } else {
+              // Resume an existing authenticated session without regenerating the code.
+              const remembered = localStorage.getItem('master_permanent_table_code');
+              if (!remembered) throw Error('Informe a sua chave de acesso do mestre.');
+              table = OLFirebase.normalizeTableCode(remembered);
+              const physical = OLFirebase.seasonScopedTable(table, edition);
+              const session = await OLNative.getSession(physical).catch(() => null);
+              if (!session?.ok || session.role !== 'master') {
+                throw Error('Sessão expirada. Informe a sua chave de acesso do mestre.');
+              }
+            }
+          } else {
+            const physical = OLFirebase.seasonScopedTable(table, edition);
+            let current = await OLNative.getSession(physical).catch(() => null);
+            if (!code && current?.role === 'player') code = current.code;
+            if (!current?.ok || current.role !== 'player' || current.code !== code) {
+              if (!code || !key) throw Error('Informe o código e a chave do personagem ou abra seu convite.');
               await OLNative.signInPlayer(physical, edition, code, key);
             }
+            localStorage.setItem('player_sync_code', code || current?.code);
           }
-          if (role === 'player') localStorage.setItem('player_sync_code', code || current?.code);
           keyInput.value = '';
           destination(role, table, edition);
         } catch (error) {
@@ -308,15 +358,17 @@
       const incomingNotice = params.get('aviso');
       if (incomingNotice) show(incomingNotice, true);
       else if (isPlayerInvite) show('Entrando na sua ficha...');
-      // A valid session can be resumed without re-entering the access key.
+      // Show the last known master room without trusting localStorage as authentication.
       if (!isPlayerInvite && !keyInput.value && !incomingNotice) {
-        const table = OLFirebase.seasonScopedTable(tableInput.value, seasonSelect.value);
-        OLNative.getSession(table).then(user => {
-          if (user?.ok) {
-            if (user.role === 'player' && !codeInput.value) codeInput.value = user.code;
-            show('Sessão ativa como ' + (user.role === 'master' ? 'mestre' : 'jogador') + '.');
-          }
-        }).catch(() => {});
+        const remembered = localStorage.getItem('master_permanent_table_code');
+        if (remembered) {
+          const physical = OLFirebase.seasonScopedTable(remembered, seasonSelect.value);
+          OLNative.getSession(physical).then(user => {
+            if (user?.ok && user.role === 'master') {
+              show('Sessão do mestre ativa. Código fixo: ' + remembered);
+            }
+          }).catch(() => {});
+        }
       }
       inviteRetry.addEventListener('click', () => {
         inviteRetry.hidden = true;

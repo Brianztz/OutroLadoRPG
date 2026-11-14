@@ -31,6 +31,13 @@
   function sessionUrl(table) {
     return base + 'session?mesa=' + encodeURIComponent(tableCode(table));
   }
+  async function getMasterRoom(secret, preferredCode = '') {
+    return api(base + 'master-room', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: secret, preferredCode })
+    });
+  }
   async function signInMaster(table, secret) {
     return api(sessionUrl(table), {
       method: 'POST',
@@ -73,7 +80,7 @@
     });
   }
   global.OLNative = Object.freeze({
-    tableCode, signInMaster, signInPlayer, getSession, signOut,
+    tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
     provisionPlayer, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);
