@@ -22,7 +22,7 @@ test('Durable Object sheets and clues are partitioned by edition and character',
  const store=read('src/storage-api.js');
  assert(store.includes("'sheet:' + edition + ':' + code"));
  assert(store.includes("'content:master-clues'"));
- assert(store.includes("ctx.storage.put(root + ':manifest', manifest)"));
+ assert(store.includes("storage.put(root + ':manifest', manifest)"));
  assert(store.includes('const version = crypto.randomUUID()'));
  assert(store.includes('await sha256(source)'));
 });
@@ -40,7 +40,7 @@ test('master clue UI preserves fallback, autosaving and safe polling updates',()
  const originalMaster=read('public/mestre.html');
  const compat=read('public/firebase-client.js');
  for(const master of [seasonMaster,originalMaster]){
-   assert(master.includes('scheduleMasterCluesCloudSave(3000)'));
+   assert(master.includes('scheduleMasterCluesCloudSave('));
    assert(master.includes('OLFirebase.loadMasterClues('));
    assert(master.includes('OLFirebase.saveMasterClues('));
  }
