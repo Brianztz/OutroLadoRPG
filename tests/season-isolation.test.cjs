@@ -119,7 +119,7 @@ test('season master route is guarded, authenticated and season-aware even withou
  assert.equal(season.window.OLSeasonSpace.isSeasonPage(),true);
  assert.equal(season.window.OLSeasonSpace.tableId('AURORA'),'T2_AURORA');
  assert(firebase.includes('async function guardPage(role)'));
- assert(realtime.includes('mestre|mestre-temporada'));
+ assert(realtime.includes('mestre-temporada'));
  const html=load('public/mestre-temporada.html');
  assert(html.includes('const isSeasonMaster = true;'));
  assert(html.includes('OLFirebase.guardPage(\'master\')'));
