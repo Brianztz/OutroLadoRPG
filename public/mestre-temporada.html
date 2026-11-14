@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escudo do Mestre · Exílio 3.0</title>
+    <title>Vestígios · Escudo do Mestre · Vestígios</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <script src="/season-space.js?v=3"></script>
     <script src="firebase-client.js?v=native-auth-1"></script>
@@ -459,8 +459,8 @@
 <body>
     <header class="mestre-top-bar">
         <div>
-            <span class="master-season-kicker">EXÍLIO 3.0 / OUTRO LADO · 2ª TEMPORADA</span>
-            <h1 class="top-title">Escudo do Mestre · Exílio 3.0</h1>
+            <span class="master-season-kicker">OUTRO LADO: VESTÍGIOS · EXÍLIO 3.0</span>
+            <h1 class="top-title">Escudo do Mestre · Vestígios</h1>
             <div class="connection-info"><span id="connection-dot" class="connection-dot"></span><span id="connection-text">Conectando ao servidor...</span></div>
         </div>
         <div class="master-top-actions">
@@ -859,14 +859,10 @@
         const masterStorageKey = key => isSeasonMaster ? 't2_' + key : key;
         let masterTableCode = normalizeTableCode(masterUrlParams.get('mesa') || localStorage.getItem(masterStorageKey('master_table_code')) || localStorage.getItem('master_table_code') || 'PADRAO');
         const seasonKicker = document.querySelector('.master-season-kicker');
-        if (seasonKicker) {
-            seasonKicker.textContent = isSeasonMaster
-                ? 'EXÍLIO 3.0 / OUTRO LADO · 2ª TEMPORADA'
-                : 'OUTRO LADO / 1ª TEMPORADA';
-        }
+        if (seasonKicker) seasonKicker.textContent = 'OUTRO LADO: VESTÍGIOS · EXÍLIO 3.0';
         if (isSeasonMaster) {
-            document.title = 'Escudo do Mestre · Exílio 3.0';
-            document.querySelector('.top-title').textContent = 'Escudo do Mestre · Exílio 3.0';
+            document.title = 'Escudo do Mestre · Vestígios';
+            document.querySelector('.top-title').textContent = 'Escudo do Mestre · Vestígios';
         }
         let luminaEnabled = loadLuminaAccess(masterTableCode);
         let initiativeState = loadInitiativeState();
@@ -3077,7 +3073,7 @@
 
         function abrirFicha(code) {
             const player = connectedPlayers.get(String(code));
-            const page = isSeasonMaster ? 'ficha-temporada.html' : 'ficha.html';
+            const page = 'ficha-temporada.html';
             document.getElementById('iframe-ficha').src = `${page}?view=${encodeURIComponent(code)}&mesa=${encodeURIComponent(masterTableCode)}${isSeasonMaster ? '&temporada=2' : ''}`;
             document.getElementById('modal-ficha').style.display = 'flex';
         }
