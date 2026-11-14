@@ -73,23 +73,25 @@ test('T1: expulsar, reconvidar e conectar o mesmo personagem novamente ao overla
   assert.equal(overlay.messages.filter(event => event.e === 'player_connected').length, 2);
 });
 
-test('T1: mestre oferece convite após remover vínculo; overlay apaga expulsos e restaura reconectados', () => {
+test('T1: convite individual é renovado, overlay apaga expulsos e restaura reconectados', () => {
   const master = read('public/mestre.html');
   const overlay = read('public/overlay.html');
   const portal = read('public/index.html');
-  const firebase = read('public/firebase-client.js');
+  const native = read('public/firebase-client.js');
   const realtime = read('public/realtime-client.js');
+  const manager = read('public/acessos.html');
 
   assert(master.includes('await OLFirebase.removeTablePlayer(masterTableCode, code);'));
-  assert(master.includes('if (!isSeasonMaster) {\n                    // Depois da expulsão'));
   assert(master.includes('openMasterInvite();'));
-  assert(master.includes("invite.searchParams.set('convite', '1')"));
+  assert(master.includes("new URL('./acessos.html', location.href)"));
+  assert(manager.includes('OLNative.provisionPlayer(physical, edition, playerCode)'));
+  assert(manager.includes("invite.hash = new URLSearchParams"));
   assert(overlay.includes("data.reason === 'removed_by_master'"));
   assert(overlay.includes('removePlayer(data.codigo, true)'));
   assert(overlay.includes("socket.on('player_connected', releasePlayerAfterReconnect)"));
   assert(overlay.includes('if (!receivedCodes.has(code)) removePlayer(code, true)'));
   assert(realtime.includes("if (data && data.reason === 'removed_by_master')"));
-  assert(portal.includes("if (isPlayerInvite && role === 'player') inviteJoinStarted = false;"));
-  assert(firebase.includes("memberData.role = 'player';"));
-  assert(firebase.includes('await withTimeout(setDoc(memberRef, memberData)'));
+  assert(portal.includes('if (isPlayerInvite)'));
+  assert(native.includes('async function removeTablePlayer('));
+  assert(native.includes('global.OLNative.provisionPlayer'));
 });
