@@ -73,11 +73,27 @@ test('session login is HttpOnly, player session cannot access another sheet', as
   globalThis.crypto = globalThis.crypto || webcrypto;
   const { handleSessionRequest } = await import(sessionUrl);
   const { handleStorageRequest } = await load();
-  const ctx = fakeContext(), env = { MASTER_DATA_TOKEN: 'M'.repeat(48) };
+  const ctx = fakeContext(), env = {
+    MASTER_DATA_TOKEN:'M'.repeat(48),
+    TABLE_ROOMS:{
+      getByName(name){
+        assert.equal(name,'SYSTEM_MASTER_PROFILE_V2');
+        return {fetch:async req=>{
+          const body=await req.json();
+          const success=body.role==='master'&&body.username==='mestre'
+            &&body.password==='M'.repeat(48);
+          return Response.json(success?{ok:true}:{error:'invalid_credentials'},
+            {status:success?200:401});
+        }};
+      }
+    }
+  };
   const login = async (role, key, code) => handleSessionRequest(
     new Request('https://example.com/api/session?mesa=MESA', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role, key, code, edition: 'classic' })
+      body: JSON.stringify(role==='master'
+        ? {role,username:'mestre',password:key,edition:'classic'}
+        : {role,key,code,edition:'classic'})
     }), ctx, env);
   let res = await login('master', 'wrong');
   assert.equal(res.status, 401);
