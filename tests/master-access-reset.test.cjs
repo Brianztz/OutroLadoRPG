@@ -2,169 +2,136 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const vm=require('node:vm');
-const {webcrypto}=require('node:crypto');
+const {webcrypto,pbkdf2Sync}=require('node:crypto');
 globalThis.crypto=globalThis.crypto||webcrypto;
-
 const root=path.join(__dirname,'..');
-const source=p=>fs.readFileSync(path.join(root,p),'utf8');
-const token='b'.repeat(64);
-const masterSecret='s'.repeat(64);
-const password='senha-nova-123456';
-// Use a test-only token. Never commit the real recovery link in GitHub.
-const {createHash}=require('node:crypto');
-const fixtureHash=createHash('sha256').update(token).digest('hex');
-const production=source('src/account-api.js');
-assert.match(production,/const expectedHash='[a-f0-9]{64}';/);
-assert(!production.includes(token));
-const fixture=production.replace(/const expectedHash='[a-f0-9]{64}';/,
-  "const expectedHash='"+fixtureHash+"';");
-const loaded=import('data:text/javascript;base64,'+Buffer.from(fixture).toString('base64'));
-const storage = () => {
-  const map=new Map();
-  const s={
-    get:async k=>map.get(k),
-    put:async(k,v)=>{map.set(k,v);},
-    delete:async k=>{map.delete(k);},
-    list:async({prefix})=>new Map([...map].filter(([key])=>key.startsWith(prefix))),
-    transaction:async fn=>fn(s),
-    deleteAll:async()=>{map.clear();}
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const password='teste-senha-mestre-2026';
+const salt='a'.repeat(32);
+const passwordHash=pbkdf2Sync(password,Buffer.from(salt,'hex'),180000,32,'sha256').toString('hex');
+const source=read('src/account-api.js');
+assert(!source.includes(password),'A senha temporária nunca pode estar no repositório.');
+assert(source.includes('initializeFreshMasterRegistry'));
+const fixture=source
+  .replace(/const INITIAL_MASTER_SALT = '[a-f0-9]{32}';/,"const INITIAL_MASTER_SALT = '"+salt+"';")
+  .replace(/const INITIAL_MASTER_PASSWORD_HASH = '[a-f0-9]{64}';/,"const INITIAL_MASTER_PASSWORD_HASH = '"+passwordHash+"';");
+const load=()=>import('data:text/javascript;base64,'+Buffer.from(fixture).toString('base64'));
+function createStore(name){
+  const records=new Map();
+  const storage={
+    get:async k=>records.get(k),put:async(k,v)=>records.set(k,v),
+    delete:async k=>records.delete(k),
+    list:async({prefix})=>new Map([...records].filter(([k])=>k.startsWith(prefix))),
+    deleteAll:async()=>records.clear(),
+    transaction:async fn=>fn(storage)
   };
-  return {storage:s,map};
-};
-async function harness(){
-  const ctx=storage(),room=storage();
-  const handler=(await loaded).handleAccountRequest;
-  const calls=[];
-  const env={
-    MASTER_DATA_TOKEN:masterSecret,
-    TABLE_ROOMS:{
-      getByName(name){
-        calls.push(name);
-        assert.equal(name,'T2_VESTIGIOS');
-        return {fetch:async req=>{
-          assert.equal(new URL(req.url).pathname,'/api/admin-auth-reset');
-          assert.equal(req.method,'POST');
-          assert.equal(req.headers.get('X-OL-Internal-Auth'),masterSecret);
-          await room.storage.deleteAll();
-          return Response.json({ok:true,oldRoomErased:true});
-        }};
-      }
-    }
-  };
-  ctx.map.set('owner:permanent-room-code:v1','VESTIGIOS');
-  ctx.map.set('owner:personal-master-sha256:v1','old-hash');
-  ctx.map.set('account:master:v1','account:user:v1:old');
-  ctx.map.set('account:user:v1:old',{
-    role:'master',username:'antigo',passwordHash:'0'.repeat(64),
-    salt:'1234567890abcdef1234567890abcdef',tableCode:'VESTIGIOS'
-  });
-  ctx.map.set('account:player-index:v1:T2_VESTIGIOS:CLARA','account:user:v1:player');
-  ctx.map.set('account:user:v1:player',{
-    role:'player',username:'clara',passwordHash:'0'.repeat(64),
-    salt:'1234567890abcdef1234567890abcdef',tableCode:'VESTIGIOS'
-  });
-  room.map.set('session:old-master',{role:'master'});
-  room.map.set('session:old-player',{role:'player'});
-  room.map.set('sheet:temporada:CLARA:owner-sha256','invitation-secret-hash');
-  room.map.set('sheet:temporada:CLARA:manifest',{version:'legacy',parts:0});
-  room.map.set('content:master-clues:manifest',{version:'legacy',parts:0});
-  room.map.set('monster:001',{name:'Criatura'});
-  const call=(action,fields)=>handler(new Request('https://test.example/api/account',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action,...fields})
-  }),ctx,env);
-  return {ctx,room,env,calls,call};
+  return {id:{name},storage,records};
 }
-test('token inválido não altera registros existentes nem dá acesso ao mestre',async()=>{
-  const h=await harness();
-  const result=await h.call('reset-master',{
-    username:'mestre',password,recoveryToken:'token-falso'
-  });
-  assert.equal(result.status,403);
-  assert.equal(h.ctx.map.get('account:master:v1'),'account:user:v1:old');
-  assert.equal(h.room.map.get('sheet:temporada:CLARA:owner-sha256'),'invitation-secret-hash');
-  assert.equal(h.calls.length,0);
+async function harness(){
+ const fresh=createStore('SYSTEM_MASTER_PROFILE_V2');
+ const oldRegistry=createStore('SYSTEM_MASTER_PROFILE_V1');
+ const oldRoom=createStore('T2_VESTIGIOS');
+ oldRegistry.records.set('owner:permanent-room-code:v1','VESTIGIOS');
+ oldRegistry.records.set('account:master:v1','account:user:v1:old');
+ oldRegistry.records.set('account:user:v1:old',{username:'antigo'});
+ oldRoom.records.set('sheet:temporada:CLARA:manifest',{name:'Clara'});
+ oldRoom.records.set('content:master-clues:manifest',{name:'Pista'});
+ oldRoom.records.set('monster:001',{name:'Criatura'});
+ oldRoom.records.set('session:old-user',{role:'master'});
+ const calls=[];
+ const secret='S'.repeat(48);
+ const env={MASTER_DATA_TOKEN:secret,TABLE_ROOMS:{
+   getByName(name){
+     calls.push(name);
+     const ctx=name==='SYSTEM_MASTER_PROFILE_V1'?oldRegistry:oldRoom;
+     return {fetch:async req=>{
+       const route=new URL(req.url).pathname;
+       if(route==='/api/master-room'&&name==='SYSTEM_MASTER_PROFILE_V1'){
+         const body=await req.json();
+         if(body.key!==secret)return Response.json({error:'forbidden'},{status:403});
+         return Response.json({tableCode:'VESTIGIOS'});
+       }
+       if(route==='/api/admin-auth-reset'&&req.headers.get('X-OL-Internal-Auth')===secret){
+         await ctx.storage.deleteAll();
+         return Response.json({ok:true});
+       }
+       return Response.json({error:'forbidden'},{status:403});
+     }};
+   }
+ }};
+ const api=await load();
+ const account=(action,body)=>api.handleAccountRequest(new Request('https://example.test/api/account',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({action,...body})
+ }),fresh,env);
+ return {fresh,oldRegistry,oldRoom,calls,env,api,account};
+}
+test('apaga contas, fichas, monstros e pistas antigas; provisiona uma mesa vazia segura',async()=>{
+ const h=await harness();
+ await h.api.initializeFreshMasterRegistry(h.fresh,h.env);
+ assert.equal(h.oldRegistry.records.size,0);
+ assert.equal(h.oldRoom.records.size,0);
+ const state=h.fresh.records;
+ assert(state.get('owner:fresh-install:v2')?.initialized);
+ assert.match(state.get('owner:permanent-room-code:v1'),/^M[A-F0-9]{20}$/);
+ assert.notEqual(state.get('owner:permanent-room-code:v1'),'VESTIGIOS');
+ const pointer=state.get('account:master:v1');
+ const master=state.get(pointer);
+ assert.equal(master.username,'mestre');
+ assert.equal(master.role,'master');
+ assert.equal(master.tableCode,state.get('owner:permanent-room-code:v1'));
+ assert.equal(master.passwordHash,passwordHash);
+ assert(!JSON.stringify([...state]).includes(password));
+ const before=h.calls.length;
+ await h.api.initializeFreshMasterRegistry(h.fresh,h.env);
+ assert.equal(h.calls.length,before,'A limpeza deve acontecer somente uma vez');
+ const signed=await h.account('lookup',{username:'mestre',password});
+ assert.equal(signed.status,200);
+ assert.equal((await signed.json()).tableCode,master.tableCode);
 });
-test('link único apaga contas, fichas, monstros, pistas e sessões; cria mesa nova',async()=>{
-  const h=await harness();
-  const response=await h.call('reset-master',{
-    username:'MestreNovo',password,recoveryToken:token
-  });
-  assert.equal(response.status,200);
-  const data=await response.json();
-  assert.match(data.tableCode,/^M[A-F0-9]{20}$/);
-  assert.notEqual(data.tableCode,'VESTIGIOS');
-  assert.equal(data.oldAccessRevoked,true);
-  assert.equal(data.oldRoomErased,true);
-  assert.equal(h.ctx.map.get('owner:permanent-room-code:v1'),data.tableCode);
-  assert.equal(h.ctx.map.has('owner:personal-master-sha256:v1'),false);
-  assert.equal(h.ctx.map.has('account:user:v1:old'),false);
-  assert.equal(h.ctx.map.has('account:user:v1:player'),false);
-  assert.equal(h.ctx.map.has('account:player-index:v1:T2_VESTIGIOS:CLARA'),false);
-  assert.equal(h.room.map.has('session:old-master'),false);
-  assert.equal(h.room.map.has('session:old-player'),false);
-  assert.equal(h.room.map.has('sheet:temporada:CLARA:owner-sha256'),false);
-  assert.equal(h.room.map.size,0);
-  assert.equal(h.room.map.has('sheet:temporada:CLARA:manifest'),false);
-  assert.equal(h.room.map.has('content:master-clues:manifest'),false);
-  assert.equal(h.room.map.has('monster:001'),false);
-  const masterKey=h.ctx.map.get('account:master:v1');
-  const master=h.ctx.map.get(masterKey);
-  assert.equal(master.username,'mestrenovo');
-  assert.equal(master.role,'master');
-  assert.equal(master.tableCode,data.tableCode);
-  assert.notEqual(master.passwordHash,password);
-  assert.equal(master.passwordHash.length,64);
-  assert(!JSON.stringify([...h.ctx.map]).includes(password));
-  assert.equal((await h.call('reset-master',{
-    username:'outro',password,recoveryToken:token
-  })).status,409);
-  assert.equal(h.ctx.map.get('account:master:v1'),masterKey);
-  const lookup=await h.call('lookup',{username:'MestreNovo',password});
-  assert.equal(lookup.status,200);
-  const account=await lookup.json();
-  assert.equal(account.role,'master');
-  assert.equal(account.tableCode,data.tableCode);
+test('não apaga a mesa se a autorização administrativa falhar',async()=>{
+ const h=await harness();
+ h.env.MASTER_DATA_TOKEN='chave inválida';
+ await assert.rejects(h.api.initializeFreshMasterRegistry(h.fresh,h.env));
+ assert.equal(h.oldRoom.records.has('sheet:temporada:CLARA:manifest'),true);
+ assert.equal(h.oldRegistry.records.has('account:master:v1'),true);
+ assert(!h.fresh.records.has('owner:fresh-install:v2'));
 });
-test('registro sem mesa existente é recusado, sem inventar nova mesa',async()=>{
-  const h=await harness();
-  h.ctx.map.delete('owner:permanent-room-code:v1');
-  const result=await h.call('reset-master',{
-    username:'mestre',password,recoveryToken:token
-  });
-  assert.equal(result.status,409);
-  assert.equal((await result.json()).error,'no_existing_room');
-  assert.equal(h.ctx.map.get('account:master:v1'),'account:user:v1:old');
+test('novo login não pode ser assumido por visitantes sem senha',async()=>{
+ const h=await harness();
+ await h.api.initializeFreshMasterRegistry(h.fresh,h.env);
+ let res=await h.account('setup-master',{username:'intruso',password:'qualquer senha longa'});
+ assert.equal(res.status,400,'Cadastro anônimo está desativado');
+ res=await h.account('reset-master',{username:'intruso',password:'qualquer senha longa',recoveryToken:'token'});
+ assert.equal(res.status,400,'O endpoint de recuperação não existe mais');
+ res=await h.account('lookup',{username:'mestre',password:'senha errada longa'});
+ assert.equal(res.status,401);
 });
-test('rota de revogação é interna e exige segredo da Cloudflare',()=>{
-  const worker=source('src/worker.js');
-  assert(worker.includes("'/api/admin-auth-reset'"));
-  assert(worker.includes("request.headers.get('X-OL-Internal-Auth')"));
-  assert(worker.includes('await this.ctx.storage.deleteAll()'));
-  assert(worker.includes('this.players.clear()'));
-  assert(worker.includes('this.initiative=emptyInitiativeState()'));
-  assert(!worker.includes("if (url.pathname === '/api/admin-auth-reset')"));
+test('mestre altera usuário e senha sem código de recuperação',async()=>{
+ const h=await harness();
+ await h.api.initializeFreshMasterRegistry(h.fresh,h.env);
+ const response=await h.account('change-master-credentials',{
+   username:'mestre',password,newUsername:'narrador',newPassword:'Minha-Nova-Senha-2026!'
+ });
+ assert.equal(response.status,200);
+ assert.equal((await response.json()).ok,true);
+ assert.equal((await h.account('lookup',{username:'mestre',password})).status,401);
+ assert.equal((await h.account('lookup',{username:'narrador',password:'Minha-Nova-Senha-2026!'})).status,200);
+ const pointer=h.fresh.records.get('account:master:v1');
+ assert.equal(h.fresh.records.get(pointer).username,'narrador');
 });
-test('portal usa link em fragmento, não exige chave antiga e pede senha nova',()=>{
-  const page=source('public/index.html');
-  const client=source('public/firebase-client.js');
-  assert(page.includes("recoveryFragment.get('recuperar')"));
-  assert(page.includes("history.replaceState(null,'',location.pathname+location.search)"));
-  assert(page.includes("OLNative.resetMasterAccount("));
-  assert(!page.includes('id="setup-proof"'));
-  assert(!page.includes('id="setup-proof-row"'));
-  assert(!page.includes('Chave antiga do mestre'));
-  assert(page.includes('id="master-setup-form" hidden'));
-  assert(page.includes("$('master-setup-form').hidden=false"));
-  assert(!page.includes('OLNative.setupMasterAccount(user,'));
-  assert(!page.includes("localStorage.getItem(KEY_STORAGE)"));
-  assert(page.includes("localStorage.removeItem(KEY_STORAGE)"));
-  assert(page.includes('id="setup-password"'));
-  assert(page.includes('APAGAR MESA ANTIGA E CRIAR MEU NOVO LOGIN'));
-  assert(page.includes('ATENÇÃO: esta operação apaga definitivamente a mesa anterior'));
-  assert(client.includes("action:'reset-master'"));
-  for(const [i,m] of [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].entries()){
-    if(m[1].trim())assert.doesNotThrow(()=>new vm.Script(m[1],{filename:'portal-script-'+i}));
-  }
+test('interface oferece apenas login e troca de senha, sem recuperação ou código antigo',()=>{
+ const portal=read('public/index.html');
+ const worker=read('src/worker.js');
+ const client=read('public/firebase-client.js');
+ assert(portal.includes('id="login-username"'));
+ assert(portal.includes('id="login-password"'));
+ assert(portal.includes('id="change-master-form"'));
+ assert(!/recupera|master-setup|setup-proof|player-manual|manual-table|chave antiga|recoveryToken/i.test(portal));
+ assert(!/reset-master|setup-master|recoveryToken/i.test(client));
+ assert(!/reset-master|setup-master|recoveryToken/i.test(source));
+ assert(worker.includes("getByName('SYSTEM_MASTER_PROFILE_V2')"));
+ assert(worker.includes('initializeFreshMasterRegistry(ctx,env)'));
+ assert(read('src/session-api.js').includes("getByName('SYSTEM_MASTER_PROFILE_V2')"));
+ assert(read('src/storage-api.js').includes("getByName('SYSTEM_MASTER_PROFILE_V2')"));
 });
