@@ -82,10 +82,11 @@
   async function signOut(table) {
     return api(sessionUrl(table), { method: 'DELETE' });
   }
-  async function provisionPlayer(table, edition, code, mode = '') {
+  async function provisionPlayer(table, edition, code, mode = '', name = '') {
     const url = query(table, 'player-access', edition, code);
     const flag = mode === 'create' ? '&create=1' : mode === 'renew' ? '&renew=1' : '';
-    return api(url + flag, { method: 'POST' });
+    const displayName = name ? '&nome=' + encodeURIComponent(String(name).slice(0, 80)) : '';
+    return api(url + flag + displayName, { method: 'POST' });
   }
   async function listPlayers(table, edition = 'temporada') {
     return api(query(table, 'player-list', edition));
