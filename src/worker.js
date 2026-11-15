@@ -134,13 +134,12 @@ function compactPlayer(data) {
         openedByMaster: data && data.openedByMaster === true,
         // Small gameplay summary: cards survive restarts without storing the
         // entire sheet's images, clues and inventory in Durable Object memory.
-        exilioState: data && data.exilioState || (
-            data && data.fullData && data.fullData.temporada && data.fullData.temporada.state
-                ? (() => { const st = data.fullData.temporada.state; return {
-                    paranormalInfluence: st.paranormalInfluence || 0,
-                    origin: st.origin || 'Mundano', occupation: st.occupation || '',
-                    attrs: st.attrs || {}, resources: st.resources || {}
-                }; })() : null)
+        exilioState: data && data.fullData && data.fullData.temporada && data.fullData.temporada.state
+            ? (() => { const st = data.fullData.temporada.state; return {
+                paranormalInfluence: st.paranormalInfluence || 0,
+                origin: st.origin || 'Mundano', occupation: st.occupation || '',
+                attrs: st.attrs || {}, resources: st.resources || {}
+            }; })() : data && data.exilioState || null
     };
 }
 
