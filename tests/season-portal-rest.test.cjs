@@ -8,10 +8,10 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 test('portal Vestigios atende somente a segunda temporada com autenticacao nativa', () => {
   const portal = read('public/index.html');
   const session = read('src/session-api.js');
-  assert(portal.includes('OLNative.getMasterRoom(personalKey, preferredCode, bootstrap)'));
+  assert(portal.includes('OLNative.setupMasterAccount(user,'));
   assert(portal.includes("const edition = 'temporada'"));
-  assert(portal.includes('OLNative.signInMaster(physicalRoom(table), personalKey)'));
-  assert(portal.includes('OLNative.signInPlayer(physical, edition, normalizedCode, key)'));
+  assert(portal.includes('OLNative.signInAccount(physicalRoom(table)'));
+  assert(portal.includes('OLNative.signInPlayer(physical,edition,normalizedCode,key)'));
   assert(portal.includes("'./mestre-temporada.html'"));
   assert(portal.includes("'./ficha-temporada.html'"));
   assert(portal.includes("next.searchParams.set('temporada', '2')"));
@@ -36,11 +36,11 @@ test('convites usam somente a temporada 2 com chave individual', () => {
   const master = read('public/mestre-temporada.html');
   assert(manager.includes("const edition = 'temporada'"));
   assert(manager.includes("OLSeasonSpace.tableId(table, edition)"));
-  assert(manager.includes("OLNative.provisionPlayer(physical, edition, playerCode, existing ? 'renew' : 'create')"));
+  assert(manager.includes("OLNative.provisionPlayer(physical, edition, playerCode,"));
   assert(manager.includes("invite.searchParams.set('temporada', '2')"));
   assert(manager.includes("invite.hash = new URLSearchParams"));
   assert(manager.includes('create.onclick = () => {'));
-  assert(manager.includes('function friendlyCode()'));
+  assert(manager.includes('function generateInternalCode()'));
   assert(manager.includes('navigator.clipboard.writeText(input.value)'));
   assert(manager.includes('<details id="recover">'));
   assert(manager.includes("OLNative.listPlayers(physical, edition)"));
@@ -52,10 +52,10 @@ test('convites usam somente a temporada 2 com chave individual', () => {
 
 test('convite automatico esconde o login e remove o segredo da URL', () => {
   const portal = read('public/index.html');
-  assert(portal.includes("document.getElementById('master-section').hidden = true"));
-  assert(portal.includes("document.getElementById('invite-section').hidden = false"));
-  assert(portal.includes("history.replaceState(null, '', location.pathname + location.search)"));
-  assert(portal.includes('enterPlayer(inviteCredentials.table, inviteCredentials.code, inviteCredentials.key, inviteStatus)'));
+  assert(portal.includes("$('login-section').hidden=true"));
+  assert(portal.includes("$('invite-section').hidden=false"));
+  assert(portal.includes("history.replaceState(null,'',location.pathname+location.search)"));
+  assert(portal.includes('enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status')'));
   assert(portal.includes('Convite incompleto.'));
 });
 
