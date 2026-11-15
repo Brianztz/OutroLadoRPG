@@ -58,16 +58,12 @@
       body:JSON.stringify({action:'lookup',username,password})
     });
   }
-  async function resetMasterAccount(username,password,recoveryToken) {
+  async function changeMasterCredentials(username,password,newUsername,newPassword) {
     return api(base+'account',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'reset-master',username,password,recoveryToken})
-    });
-  }
-  async function setupMasterAccount(username,password,proofKey) {
-    return api(base+'account',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'setup-master',username,password,proofKey})
+      body:JSON.stringify({
+        action:'change-master-credentials',username,password,newUsername,newPassword
+      })
     });
   }
   async function signInAccount(table, role, code, username, password) {
@@ -117,7 +113,7 @@
   }
   global.OLNative = Object.freeze({
     tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
-    lookupAccount, setupMasterAccount, resetMasterAccount, signInAccount, registerPlayerAccount,
+    lookupAccount, changeMasterCredentials, signInAccount, registerPlayerAccount,
     provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);
