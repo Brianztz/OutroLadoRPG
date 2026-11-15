@@ -124,7 +124,7 @@ test('falha temporaria da internet nao manda o jogador de volta ao codigo',async
   assert.equal(p.location.redirects.length,0);
 });
 test('codigo do personagem fica na URL da ficha sem incluir a chave privada',()=>{
-  assert(portal.includes("next.searchParams.set('personagem', playerCode)"));
+  assert(portal.includes("next.searchParams.set('personagem',playerCode)"));
   assert(portal.includes("sessionStorage.setItem('ol_player_resume_v1:'+physical+':'+normalizedCode,key)"));
   assert(portal.includes("const edition = 'temporada'"));
   const html=fs.readFileSync(path.join(root,'public/ficha-temporada.html'),'utf8');
