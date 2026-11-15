@@ -74,7 +74,7 @@ async function setup(h){
   h.registry.data.set('account:master:v1',key);
   h.registry.data.set(key,{
     role:'master',username,tableCode:'VESTIGIOS',salt,
-    passwordHash:pbkdf2Sync(PA,Buffer.from(salt,'hex'),180000,32,'sha256').toString('hex')
+    passwordHash:pbkdf2Sync(PA,Buffer.from(salt,'hex'),100000,32,'sha256').toString('hex')
   });
 }
 test('login do mestre exige usuário e senha e não permite primeiro visitante cadastrar conta',async()=>{
