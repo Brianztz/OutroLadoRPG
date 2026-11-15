@@ -517,7 +517,7 @@
         @media (max-width: 600px) { .master-player-clue-stage { height: 46vh; } .master-player-clue-tools button { padding: 7px 9px; } }
 </style>
     <link rel="stylesheet" href="/temporada/master-theme.css?v=exilio-3-escudo-v2">
-    <link rel="stylesheet" href="/bestiary-outrolado.css?v=1">
+    <link rel="stylesheet" href="/bestiary-outrolado.css?v=exilio-book-30">
 </head>
 <body>
     <header class="mestre-top-bar">
@@ -557,7 +557,7 @@
     <nav class="master-tabs" aria-label="Seções do Escudo do Mestre">
         <button class="master-tab-button active" type="button" data-master-tab="combat" onclick="switchMasterTab('combat')">⚔️ COMBATE</button>
         <button class="master-tab-button" type="button" data-master-tab="monsters" onclick="switchMasterTab('monsters')">👹 MONSTROS</button>
-        <button class="master-tab-button" type="button" data-master-tab="catalog" onclick="switchMasterTab('catalog')">🎒 CATÁLOGO</button>
+        <button class="master-tab-button" type="button" data-master-tab="catalog" onclick="switchMasterTab('catalog')">📖 BESTIÁRIO</button>
         <button class="master-tab-button" type="button" data-master-tab="clues" onclick="switchMasterTab('clues')">🔎 PISTAS</button>
         <button class="master-tab-button" type="button" data-master-tab="lumina" onclick="switchMasterTab('lumina')">🌐 LUMINA</button>
     </nav>
@@ -603,29 +603,41 @@
 
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
         <div class="monsters-toolbar">
-            <div><h2 class="monsters-toolbar-title">Bestiário · Exílio 3.0</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
+            <div><h2 class="monsters-toolbar-title">Criaturas da mesa · Exílio 3.0</h2><div class="monsters-toolbar-info"><span id="monsters-count" class="monsters-count">0 MONSTROS</span> cadastrados</div></div>
             <button class="monster-create-button" type="button" onclick="openMonsterPopup()">+ NOVO MONSTRO</button>
         </div>
-        <details id="master-bestiary-library" class="master-bestiary-library" open>
-            <summary>CRIATURAS DE REFERÊNCIA · IMPORTAR E ADAPTAR AO EXÍLIO</summary>
-            <div class="master-bestiary-content">
-                <p class="master-bestiary-description">Modelos de referência não oficiais. Ao importar, revise atributos, perícias e Matrizes do Exílio 3.0 antes de usar na sessão. Os originais continuam preservados.</p>
-                <div class="master-bestiary-filters" role="search" aria-label="Filtrar criaturas do bestiário">
-                    <input id="bestiary-search" type="search" placeholder="Pesquisar criatura..." aria-label="Pesquisar nome de criatura">
-                    <select id="bestiary-element" aria-label="Filtrar elemento da referência original"><option value="">Elementos das referências</option></select>
-                    <select id="bestiary-source" aria-label="Filtrar por origem"><option value="">Todas as origens</option></select>
-                    <select id="bestiary-tier" aria-label="Filtrar por nível de ameaça"><option value="">Todas as ameaças</option></select>
-                </div>
-                <div class="master-bestiary-results"><span id="bestiary-results-count" aria-live="polite"></span></div>
-                <p id="bestiary-import-status" role="status" aria-live="polite"></p>
-                <div id="bestiary-reference-grid" class="bestiary-reference-grid" aria-label="Modelos de monstros para importar"></div>
-                <button id="bestiary-load-more" class="bestiary-load-more" type="button">MOSTRAR MAIS CRIATURAS</button>
-            </div>
-        </details>
+
         <div id="monsters-grid" class="monsters-grid"></div>
     </section>
 
-    <section id="master-tab-catalog" class="catalog-workspace master-tab-panel">
+    <section id="master-tab-catalog" class="monsters-workspace master-tab-panel" aria-label="Bestiário Exílio 3.0">
+        <div class="monsters-toolbar">
+            <div>
+                <h2 class="monsters-toolbar-title">📖 Catálogo de Criaturas · Exílio 3.0</h2>
+                <div class="monsters-toolbar-info">30 criaturas do Livro Básico, Capítulo 10 · Medo, Lembrança, Carne, Ruptura, Eco e Vazio</div>
+            </div>
+            <button class="monster-create-button" type="button" onclick="switchMasterTab('monsters')">VER MINHAS CRIATURAS</button>
+        </div>
+        <details id="master-bestiary-library" class="master-bestiary-library" open>
+            <summary>30 MANIFESTAÇÕES · 6 MATRIZES PARANORMAIS</summary>
+            <div class="master-bestiary-content">
+                <p class="master-bestiary-description">Criaturas do <strong>Capítulo 10 do Livro Básico Exílio 3.0</strong>. Dados de NA, atributos, Domínios, PV, PM, RD, ataques, habilidades, exposição e fraquezas conforme o livro. Atributos e domínios preenchidos editorialmente são parâmetros provisórios de playtest. Importar gera uma cópia editável para a sua mesa.</p>
+                <div class="master-bestiary-filters" role="search" aria-label="Filtrar criaturas do Exílio">
+                    <input id="bestiary-search" type="search" placeholder="Pesquisar criatura, habilidade ou fraqueza..." aria-label="Pesquisar criatura">
+                    <select id="bestiary-element" aria-label="Filtrar Matriz Paranormal"><option value="">Todas as Matrizes</option></select>
+                    <select id="bestiary-tier" aria-label="Filtrar por Nível de Ameaça"><option value="">Todos os NA</option></select>
+                </div>
+                <div class="master-bestiary-results"><span id="bestiary-results-count" aria-live="polite"></span></div>
+                <p id="bestiary-import-status" role="status" aria-live="polite"></p>
+                <div id="bestiary-reference-grid" class="bestiary-reference-grid" aria-label="As 30 criaturas do Livro Exílio 3.0"></div>
+                <button id="bestiary-load-more" class="bestiary-load-more" type="button">MOSTRAR MAIS CRIATURAS</button>
+            </div>
+        </details>
+    </section>
+
+    <!-- Equipamentos existentes são preservados internamente para seus convites
+         e criações; o antigo catálogo de armas não ocupa mais a aba BESTIÁRIO. -->
+    <section id="master-items-catalog-legacy" class="catalog-workspace" style="display:none" aria-hidden="true">
         <div class="catalog-toolbar">
             <input id="catalog-search" class="catalog-search" type="search" placeholder="Pesquisar arma ou item..." oninput="renderMasterCatalog()">
             <div class="catalog-filters">
@@ -967,7 +979,7 @@
         <iframe id="iframe-ficha" src="" title="Ficha completa do jogador"></iframe>
     </div>
 
-    <script src="/bestiary-outrolado.js?v=2"></script>
+    <script src="/bestiary-exilio.js?v=1"></script>
     <script src="catalog-data.js"></script>
     <script src="/socket.io/socket.io.js?v=season2-2"></script>
     <script src="/season-socket-adapter.js?v=3"></script>
@@ -1299,7 +1311,7 @@
             document.querySelectorAll('.master-tab-button').forEach(button => button.classList.toggle('active', button.dataset.masterTab === selectedTab));
             document.querySelectorAll('.master-tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === `master-tab-${selectedTab}`));
             localStorage.setItem(masterStorageKey('mestre_active_tab'), selectedTab);
-            if (selectedTab === 'catalog') renderMasterCatalog();
+            if (selectedTab === 'catalog' && window.renderExilioBestiary) window.renderExilioBestiary();
             if (selectedTab === 'clues') renderMasterClues();
             if (selectedTab === 'lumina') renderLuminaControl();
         }
@@ -2973,7 +2985,7 @@
             document.getElementById('monsters-count').textContent=count+' '+(count===1?'CRIATURA':'CRIATURAS');
             grid.replaceChildren();
             if(!count){const empty=document.createElement('div');empty.className='monsters-empty';
-                empty.innerHTML='<strong>Nenhuma criatura cadastrada</strong>Crie um monstro ou importe um modelo do bestiário.';grid.append(empty);return;}
+                empty.innerHTML='<strong>Nenhuma criatura cadastrada</strong>Crie uma criatura ou importe uma ficha oficial na aba BESTIÁRIO.';grid.append(empty);return;}
             for(const monster of monstersState){
                 const lifePercent=monster.maxLife?Math.max(0,Math.min(100,monster.life/monster.maxLife*100)):0;
                 const mentalPercent=monster.maxMental?Math.max(0,Math.min(100,monster.mental/monster.maxMental*100)):0;
@@ -2986,11 +2998,11 @@
                   '<div class="monster-action-summary"><div class="monster-action-text"><strong>'+escapeHtml(action.name||'Ação')+'</strong> · '+escapeHtml(action.test||'Sem teste')+' · CRÍTICO ×'+(action.multiplier||2)+(action.damage?'<br>Dano: '+escapeHtml(action.damage):'')+(action.description?'<br>'+escapeHtml(action.description):'')+'</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="'+index+'" '+(action.test?'':'disabled')+'>2d10</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="'+index+'" '+(action.damage?'':'disabled')+'>DANO</button></div></div>').join(''):'<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
                 const card=document.createElement('article');card.className='monster-card exilio-monster-card';card.dataset.monsterId=monster.id;
                 card.innerHTML=`
-                    <div class="monster-card-header"><div><h3 class="monster-card-name">${escapeHtml(monster.name)}</h3><div class="exilio-monster-tags"><span class="exilio-matrix-tag ${monster.matrix?'':'undecided'}">${escapeHtml(monster.matrix||'MATRIZ A DEFINIR')}</span>${monster.secondaryMatrix?'<span class="exilio-matrix-tag secondary">'+escapeHtml(monster.secondaryMatrix)+'</span>':''}<span>IP ${monster.ip}</span></div></div><button class="monster-card-button monster-edit" type="button">EDITAR</button><button class="monster-card-button remove monster-remove" type="button" title="Remover criatura">×</button></div>
+                    <div class="monster-card-header"><div><h3 class="monster-card-name">${escapeHtml(monster.name)}</h3><div class="exilio-monster-tags"><span class="exilio-matrix-tag ${monster.matrix?'':'undecided'}">${escapeHtml(monster.matrix||'MATRIZ A DEFINIR')}</span>${monster.secondaryMatrix?'<span class="exilio-matrix-tag secondary">'+escapeHtml(monster.secondaryMatrix)+'</span>':''}<span>${monster.bestiary?.book ? 'NA '+monster.bestiary.na : 'IP '+monster.ip}</span></div></div><button class="monster-card-button monster-edit" type="button">EDITAR</button><button class="monster-card-button remove monster-remove" type="button" title="Remover criatura">×</button></div>
                     <div class="monster-attributes">${attributesHtml}</div>
                     <div class="monster-life-controls"><button class="monster-life-button monster-life-minus" type="button">−</button><div class="monster-life-meter"><div class="monster-life-fill" style="width:${lifePercent}%"></div><div class="monster-life-text"><input class="monster-current-life" type="number" min="0" max="${monster.maxLife}" value="${monster.life}" aria-label="PV atuais"> / <span class="monster-life-maximum">${monster.maxLife}</span> PV</div></div><button class="monster-life-button monster-life-plus" type="button">+</button></div>
                     <div class="exilio-monster-mental"><label>PM <input class="monster-current-mental" type="number" min="0" max="${monster.maxMental}" value="${monster.mental}" aria-label="PM atuais"> / ${monster.maxMental}</label><div class="exilio-mental-meter"><div style="width:${mentalPercent}%"></div></div></div>
-                    <div class="exilio-monster-movement">DEFESA <b>${monster.defense}</b> · DESLOCAMENTO <b>${monster.move} m</b></div>
+                    <div class="exilio-monster-movement">DEFESA <b>${monster.bestiary?.book ? '—' : monster.defense}</b> · DESLOCAMENTO <b>${monster.move} m</b></div>
                     <div class="monster-info-line"><strong>Resistência:</strong> ${escapeHtml(monster.resistance||'—')}<br><strong>Vulnerabilidades:</strong> ${escapeHtml(monster.vulnerabilities||'—')}</div>
                     <details class="exilio-monster-skills"><summary>PERÍCIAS (16) E INICIATIVA</summary><div class="monster-skills-summary">${skillButtons+initiativeButton}</div></details>
                     <div class="monster-presence-row"><div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence||'—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage||'—')}</div><button class="monster-roll-button damage monster-main-damage" type="button" ${monster.damage?'':'disabled'}>DANO</button></div>
@@ -3641,6 +3653,6 @@
         setCombatMode(combatModeEnabled);
         switchMasterTab(localStorage.getItem(masterStorageKey('mestre_active_tab')));
     </script>
-    <script src="/bestiary-master.js?v=1"></script>
+    <script src="/bestiary-exilio-master.js?v=1"></script>
 </body>
 </html>
