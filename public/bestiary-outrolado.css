@@ -98,3 +98,59 @@
   .master-bestiary-content{padding:0 10px 14px}
   .bestiary-reference-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Catálogo oficial de criaturas do Livro Exílio 3.0 — exclusivo da aba BESTIÁRIO. */
+#master-tab-catalog .master-bestiary-library{margin:0;min-height:0;overflow:auto}
+#master-tab-catalog .master-bestiary-filters{
+  grid-template-columns:minmax(180px,2fr) minmax(110px,1fr) minmax(130px,1fr)
+}
+#master-tab-catalog .bestiary-reference-grid{
+  grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:14px
+}
+#master-tab-catalog .bestiary-book-card{
+  padding:16px;gap:12px;background:linear-gradient(150deg,rgba(36,21,25,.96),rgba(13,16,24,.98));
+  border-color:rgba(162,109,95,.5)
+}
+#master-tab-catalog .bestiary-book-card:hover{border-color:rgba(237,170,141,.78)}
+#master-tab-catalog .bestiary-book-heading{display:flex;align-items:start;gap:11px}
+#master-tab-catalog .bestiary-book-index{flex:none;font:900 13px/1.6 Georgia,serif;color:#deb29b;opacity:.8}
+#master-tab-catalog .bestiary-reference-name{margin:0;font-size:17px;line-height:1.4}
+#master-tab-catalog .bestiary-book-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#master-tab-catalog .bestiary-book-stat{
+  padding:9px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:rgba(0,0,0,.24);border:1px solid rgba(167,118,104,.34);border-radius:5px
+}
+#master-tab-catalog .bestiary-book-stat small{font:800 10px/1.2 Arial,sans-serif;color:#bbaaa2}
+#master-tab-catalog .bestiary-book-stat strong{font:900 16px/1.2 Georgia,serif;color:#f1ded1}
+#master-tab-catalog .bestiary-book-field{
+  margin:0;line-height:1.55;font:12px/1.55 Arial,sans-serif;
+  color:var(--text-secondary,#c6afa3);overflow-wrap:anywhere
+}
+#master-tab-catalog .bestiary-book-field strong{color:#f3c5ac;letter-spacing:.025em}
+#master-tab-catalog .bestiary-book-weakness{
+  padding:10px;border-left:3px solid #a96a51;background:rgba(143,77,54,.11);border-radius:4px
+}
+#master-tab-catalog .bestiary-book-more{
+  padding:10px;border-radius:6px;border:1px solid rgba(166,116,95,.34);background:rgba(0,0,0,.12)
+}
+#master-tab-catalog .bestiary-book-more summary{
+  color:#e1b8a3;font:800 11px/1.4 Arial,sans-serif;letter-spacing:.04em;cursor:pointer
+}
+#master-tab-catalog .bestiary-book-detail-content{display:grid;gap:8px;margin-top:10px}
+#master-tab-catalog .bestiary-reference-import{
+  margin-top:auto;min-height:42px;border-radius:7px;background:rgba(134,67,49,.38)
+}
+#master-tab-catalog .bestiary-reference-element[data-element="Lembrança"]{color:#f1d9a9;background:#42331c}
+#master-tab-catalog .bestiary-reference-element[data-element="Carne"]{color:#faa99a;background:#4c211d}
+#master-tab-catalog .bestiary-reference-element[data-element="Ruptura"]{color:#cdb4ff;background:#30234e}
+#master-tab-catalog .bestiary-reference-element[data-element="Eco"]{color:#b2dbf3;background:#203446}
+#master-tab-catalog .bestiary-reference-element[data-element="Vazio"]{color:#d9dae1;background:#292a34}
+@media(max-width:700px){
+  #master-tab-catalog .master-bestiary-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #master-tab-catalog .master-bestiary-filters input{grid-column:1/-1}
+}
+@media(max-width:480px){
+  #master-tab-catalog .master-bestiary-filters{grid-template-columns:1fr}
+  #master-tab-catalog .master-bestiary-filters input{grid-column:auto}
+  #master-tab-catalog .bestiary-reference-grid{grid-template-columns:minmax(0,1fr)}
+}
