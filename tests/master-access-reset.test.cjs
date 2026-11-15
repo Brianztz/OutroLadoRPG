@@ -8,7 +8,7 @@ globalThis.crypto=globalThis.crypto||webcrypto;
 
 const root=path.join(__dirname,'..');
 const source=p=>fs.readFileSync(path.join(root,p),'utf8');
-const token='RECOVERY-'+('b'.repeat(80));
+const token='b'.repeat(64);
 const masterSecret='s'.repeat(64);
 const password='senha-nova-123456';
 // Use a test-only token. Never commit the real recovery link in GitHub.
@@ -27,7 +27,8 @@ const storage = () => {
     put:async(k,v)=>{map.set(k,v);},
     delete:async k=>{map.delete(k);},
     list:async({prefix})=>new Map([...map].filter(([key])=>key.startsWith(prefix))),
-    transaction:async fn=>fn(s)
+    transaction:async fn=>fn(s),
+    deleteAll:async()=>{map.clear();}
   };
   return {storage:s,map};
 };
@@ -37,7 +38,6 @@ async function harness(){
   const calls=[];
   const env={
     MASTER_DATA_TOKEN:masterSecret,
-    MASTER_RECOVERY_TOKEN:token,
     TABLE_ROOMS:{
       getByName(name){
         calls.push(name);
@@ -46,12 +46,8 @@ async function harness(){
           assert.equal(new URL(req.url).pathname,'/api/admin-auth-reset');
           assert.equal(req.method,'POST');
           assert.equal(req.headers.get('X-OL-Internal-Auth'),masterSecret);
-          const sessions=await room.storage.list({prefix:'session:'});
-          for(const key of sessions.keys())await room.storage.delete(key);
-          const sheets=await room.storage.list({prefix:'sheet:temporada:'});
-          for(const key of sheets.keys())if(key.endsWith(':owner-sha256'))
-            await room.storage.delete(key);
-          return Response.json({ok:true});
+          await room.storage.deleteAll();
+          return Response.json({ok:true,oldRoomErased:true});
         }};
       }
     }
@@ -90,16 +86,18 @@ test('token inválido não altera registros existentes nem dá acesso ao mestre'
   assert.equal(h.room.map.get('sheet:temporada:CLARA:owner-sha256'),'invitation-secret-hash');
   assert.equal(h.calls.length,0);
 });
-test('link único redefine contas e sessões antigas sem apagar personagens e pistas',async()=>{
+test('link único apaga contas, fichas, monstros, pistas e sessões; cria mesa nova',async()=>{
   const h=await harness();
   const response=await h.call('reset-master',{
     username:'MestreNovo',password,recoveryToken:token
   });
   assert.equal(response.status,200);
   const data=await response.json();
-  assert.equal(data.tableCode,'VESTIGIOS');
+  assert.match(data.tableCode,/^M[A-F0-9]{20}$/);
+  assert.notEqual(data.tableCode,'VESTIGIOS');
   assert.equal(data.oldAccessRevoked,true);
-  assert.equal(h.ctx.map.get('owner:permanent-room-code:v1'),'VESTIGIOS');
+  assert.equal(data.oldRoomErased,true);
+  assert.equal(h.ctx.map.get('owner:permanent-room-code:v1'),data.tableCode);
   assert.equal(h.ctx.map.has('owner:personal-master-sha256:v1'),false);
   assert.equal(h.ctx.map.has('account:user:v1:old'),false);
   assert.equal(h.ctx.map.has('account:user:v1:player'),false);
@@ -107,13 +105,15 @@ test('link único redefine contas e sessões antigas sem apagar personagens e pi
   assert.equal(h.room.map.has('session:old-master'),false);
   assert.equal(h.room.map.has('session:old-player'),false);
   assert.equal(h.room.map.has('sheet:temporada:CLARA:owner-sha256'),false);
-  assert.equal(h.room.map.has('sheet:temporada:CLARA:manifest'),true);
-  assert.equal(h.room.map.has('content:master-clues:manifest'),true);
-  assert.equal(h.room.map.get('monster:001').name,'Criatura');
+  assert.equal(h.room.map.size,0);
+  assert.equal(h.room.map.has('sheet:temporada:CLARA:manifest'),false);
+  assert.equal(h.room.map.has('content:master-clues:manifest'),false);
+  assert.equal(h.room.map.has('monster:001'),false);
   const masterKey=h.ctx.map.get('account:master:v1');
   const master=h.ctx.map.get(masterKey);
   assert.equal(master.username,'mestrenovo');
   assert.equal(master.role,'master');
+  assert.equal(master.tableCode,data.tableCode);
   assert.notEqual(master.passwordHash,password);
   assert.equal(master.passwordHash.length,64);
   assert(!JSON.stringify([...h.ctx.map]).includes(password));
@@ -123,7 +123,9 @@ test('link único redefine contas e sessões antigas sem apagar personagens e pi
   assert.equal(h.ctx.map.get('account:master:v1'),masterKey);
   const lookup=await h.call('lookup',{username:'MestreNovo',password});
   assert.equal(lookup.status,200);
-  assert.equal((await lookup.json()).role,'master');
+  const account=await lookup.json();
+  assert.equal(account.role,'master');
+  assert.equal(account.tableCode,data.tableCode);
 });
 test('registro sem mesa existente é recusado, sem inventar nova mesa',async()=>{
   const h=await harness();
@@ -139,9 +141,9 @@ test('rota de revogação é interna e exige segredo da Cloudflare',()=>{
   const worker=source('src/worker.js');
   assert(worker.includes("'/api/admin-auth-reset'"));
   assert(worker.includes("request.headers.get('X-OL-Internal-Auth')"));
-  assert(worker.includes("this.ctx.storage.list({prefix:'session:'})"));
-  assert(worker.includes("this.ctx.storage.list({prefix:'sheet:temporada:'})"));
-  assert(worker.includes("key.endsWith(':owner-sha256')"));
+  assert(worker.includes('await this.ctx.storage.deleteAll()'));
+  assert(worker.includes('this.players.clear()'));
+  assert(worker.includes('this.initiative=emptyInitiativeState()'));
   assert(!worker.includes("if (url.pathname === '/api/admin-auth-reset')"));
 });
 test('portal usa link em fragmento, não exige chave antiga e pede senha nova',()=>{
@@ -153,6 +155,8 @@ test('portal usa link em fragmento, não exige chave antiga e pede senha nova',(
   assert(page.includes("$('setup-proof-row').hidden=true"));
   assert(page.includes("localStorage.removeItem(KEY_STORAGE)"));
   assert(page.includes('id="setup-password"'));
+  assert(page.includes('APAGAR MESA ANTIGA E CRIAR MEU NOVO LOGIN'));
+  assert(page.includes('ATENÇÃO: esta operação apaga definitivamente a mesa anterior'));
   assert(client.includes("action:'reset-master'"));
   for(const [i,m] of [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].entries()){
     if(m[1].trim())assert.doesNotThrow(()=>new vm.Script(m[1],{filename:'portal-script-'+i}));
