@@ -112,6 +112,26 @@ function normalizeClueForInspection(rawClue) {
     return clue;
 }
 
+// Keep only the sixteen official trained Exílio domains in the compact
+// character-card snapshot. Never persist the full character sheet here.
+const PLAYER_TRAINED_SKILLS = [
+    'ANOMALIAS', 'ATLETISMO', 'CONFRONTO', 'CONHECIMENTO',
+    'DISCRIÇÃO', 'INFLUÊNCIA', 'INVESTIGAÇÃO', 'MEDICINA',
+    'MOBILIDADE', 'OBSERVAÇÃO', 'OFÍCIO', 'PRECISÃO',
+    'RESISTÊNCIA', 'SENSIBILIDADE', 'SOBREVIVÊNCIA', 'TECNOLOGIA'
+];
+function compactTrainedSkillDomains(source) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) return null;
+    const trained = {};
+    for (const name of PLAYER_TRAINED_SKILLS) {
+        const value = Number(source[name]);
+        if (Number.isFinite(value) && value > 0) {
+            trained[name] = Math.min(6, Math.max(0, Math.trunc(value)));
+        }
+    }
+    return trained;
+}
+
 function compactPlayer(data) {
     return {
         codigo: normalizePlayerCode(data && (data.codigo || data.id)),
@@ -138,7 +158,8 @@ function compactPlayer(data) {
             ? (() => { const st = data.fullData.temporada.state; return {
                 paranormalInfluence: st.paranormalInfluence || 0,
                 origin: st.origin || 'Mundano', occupation: st.occupation || '',
-                attrs: st.attrs || {}, resources: st.resources || {}
+                attrs: st.attrs || {}, resources: st.resources || {},
+                skillDomains: compactTrainedSkillDomains(st.skillDomains || st.skills)
             }; })() : data && data.exilioState || null
     };
 }
