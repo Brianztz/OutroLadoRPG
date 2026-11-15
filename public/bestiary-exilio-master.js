@@ -83,10 +83,6 @@
       // official template must never be overwritten by another import.
       const monster=api.makeMonster(entry.id);
       if(!monster)return;
-      if(typeof monstersState==='undefined'||typeof saveMonstersState!=='function'){
-        status.textContent='Não foi possível localizar os monstros da mesa.';
-        return;
-      }
       monstersState.push(monster);
       try{
         saveMonstersState();
