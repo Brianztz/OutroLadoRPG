@@ -95,6 +95,9 @@ test('portal apresenta Criar Conta como Mestre sem convite e Jogador por convite
 test('cadastro aberto de mestre cria conta própria e permite escolher Escudo',async()=>{
   const h=harness('master');
   h.el('tab-signup').events.click();
+  // The static HTML starts with Mestre selected; the minimal DOM mock
+  // needs to apply that default, because it does not parse hidden attributes.
+  h.el('signup-as-master').events.click();
   assert.equal(h.el('signup-master-view').hidden,false);
   assert.equal(h.el('signup-player-view').hidden,true);
   h.el('signup-master-username').value='outromestre';
