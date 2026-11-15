@@ -193,6 +193,34 @@ export class TableRoom extends DurableObject {
             || new URL(request.url).pathname === '/api/master-key-check') {
             return handleMasterRoomRequest(request, this.ctx, this.env);
         }
+        if (new URL(request.url).pathname === '/api/admin-auth-reset') {
+            // This path is deliberately unreachable through the public router.
+            // It can only be called by the owner's registry DO with the private
+            // master Worker secret after consuming a one-use recovery link.
+            const secret=String(this.env.MASTER_DATA_TOKEN||'');
+            const proof=String(request.headers.get('X-OL-Internal-Auth')||'');
+            let mismatch=secret.length^proof.length;
+            for(let i=0;i<Math.max(secret.length,proof.length);i++)
+                mismatch|=(secret.charCodeAt(i)||0)^(proof.charCodeAt(i)||0);
+            if(request.method!=='POST'||secret.length<32||mismatch!==0)
+                return Response.json({error:'forbidden'},{status:403});
+            const sessions=await this.ctx.storage.list({prefix:'session:'});
+            for(const key of sessions.keys())await this.ctx.storage.delete(key);
+            // Invalidate all old one-click invitations. Existing sheet manifests
+            // and their chunks remain untouched, ready for fresh invitations.
+            const sheets=await this.ctx.storage.list({prefix:'sheet:temporada:'});
+            let invitations=0;
+            for(const key of sheets.keys()){
+                if(key.endsWith(':owner-sha256')){
+                    await this.ctx.storage.delete(key);
+                    invitations++;
+                }
+            }
+            for(const ws of this.ctx.getWebSockets()){
+                try{ws.close(4001,'Acesso à mesa redefinido');}catch(_){}
+            }
+            return Response.json({ok:true,sessions:sessions.size,invitations});
+        }
         if (new URL(request.url).pathname === '/api/account'
             || new URL(request.url).pathname === '/api/account-internal') {
             return handleAccountRequest(request, this.ctx, this.env);
