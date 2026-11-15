@@ -119,13 +119,15 @@ test('login de mestre usa a chave pessoal apenas para sua propria mesa', async (
   response = await signIn('T2_VESTIGIOS', OWNER_KEY);
   assert.equal(response.status, 200);
 });
-test('portal usa login e senha e mantém a antiga chave apenas para ativação', () => {
+test('portal usa login e senha e não solicita a chave antiga do mestre', () => {
   const portal=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
   const worker=fs.readFileSync(path.join(root,'src/worker.js'),'utf8');
   assert(portal.includes('id="login-username"'));
   assert(portal.includes('id="login-password"'));
   assert(portal.includes('id="master-setup-form"'));
-  assert(portal.includes('OLNative.setupMasterAccount(user,'));
+  assert(portal.includes('OLNative.resetMasterAccount('));
+  assert(!portal.includes('id="setup-proof"'));
+  assert(!portal.includes('Chave antiga do mestre'));
   assert(portal.includes('OLNative.signInAccount(physicalRoom(table)'));
   assert(!portal.includes('id="master-key"'));
   assert(worker.includes("new URL(request.url).pathname === '/api/master-key-check'"));
