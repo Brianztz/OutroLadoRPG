@@ -16,7 +16,7 @@ const ROOM_OWNER = 'account:room-owner:v1:';
 const MASTER_SIGNUP_LIMIT = 5;
 const MASTER_SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 const FAILURE_PREFIX = 'account:fail:v1:';
-const WORK_FACTOR = 180000;
+const WORK_FACTOR = 100000;
 const encoder = new TextEncoder();
 
 function asUsername(input) {
