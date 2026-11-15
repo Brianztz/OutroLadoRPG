@@ -152,7 +152,13 @@ test('portal usa link em fragmento, não exige chave antiga e pede senha nova',(
   assert(page.includes("recoveryFragment.get('recuperar')"));
   assert(page.includes("history.replaceState(null,'',location.pathname+location.search)"));
   assert(page.includes("OLNative.resetMasterAccount("));
-  assert(page.includes("$('setup-proof-row').hidden=true"));
+  assert(!page.includes('id="setup-proof"'));
+  assert(!page.includes('id="setup-proof-row"'));
+  assert(!page.includes('Chave antiga do mestre'));
+  assert(page.includes('id="master-setup-form" hidden'));
+  assert(page.includes("$('master-setup-form').hidden=false"));
+  assert(!page.includes('OLNative.setupMasterAccount(user,'));
+  assert(!page.includes("localStorage.getItem(KEY_STORAGE)"));
   assert(page.includes("localStorage.removeItem(KEY_STORAGE)"));
   assert(page.includes('id="setup-password"'));
   assert(page.includes('APAGAR MESA ANTIGA E CRIAR MEU NOVO LOGIN'));
