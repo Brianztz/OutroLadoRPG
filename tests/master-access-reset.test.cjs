@@ -11,7 +11,15 @@ const source=p=>fs.readFileSync(path.join(root,p),'utf8');
 const token='RECOVERY-'+('b'.repeat(80));
 const masterSecret='s'.repeat(64);
 const password='senha-nova-123456';
-const loaded=import('data:text/javascript;base64,'+Buffer.from(source('src/account-api.js')).toString('base64'));
+// Use a test-only token. Never commit the real recovery link in GitHub.
+const {createHash}=require('node:crypto');
+const fixtureHash=createHash('sha256').update(token).digest('hex');
+const production=source('src/account-api.js');
+assert.match(production,/const expectedHash='[a-f0-9]{64}';/);
+assert(!production.includes(token));
+const fixture=production.replace(/const expectedHash='[a-f0-9]{64}';/,
+  "const expectedHash='"+fixtureHash+"';");
+const loaded=import('data:text/javascript;base64,'+Buffer.from(fixture).toString('base64'));
 const storage = () => {
   const map=new Map();
   const s={
