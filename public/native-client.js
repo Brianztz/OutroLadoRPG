@@ -52,16 +52,41 @@
       body: JSON.stringify({ role: 'player', edition, code, key })
     });
   }
+  async function lookupAccount(username, password) {
+    return api(base+'account',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'lookup',username,password})
+    });
+  }
+  async function setupMasterAccount(username,password,proofKey) {
+    return api(base+'account',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'setup-master',username,password,proofKey})
+    });
+  }
+  async function signInAccount(table, role, code, username, password) {
+    return api(sessionUrl(table),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({role,edition:'temporada',code,username,password})
+    });
+  }
+  async function registerPlayerAccount(table,username,password) {
+    return api(query(table,'account-register','temporada'),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password})
+    });
+  }
   async function getSession(table) {
     return api(sessionUrl(table));
   }
   async function signOut(table) {
     return api(sessionUrl(table), { method: 'DELETE' });
   }
-  async function provisionPlayer(table, edition, code, mode = '') {
+  async function provisionPlayer(table, edition, code, mode = '', name = '') {
     const url = query(table, 'player-access', edition, code);
     const flag = mode === 'create' ? '&create=1' : mode === 'renew' ? '&renew=1' : '';
-    return api(url + flag, { method: 'POST' });
+    const displayName = name ? '&nome=' + encodeURIComponent(String(name).slice(0, 80)) : '';
+    return api(url + flag + displayName, { method: 'POST' });
   }
   async function listPlayers(table, edition = 'temporada') {
     return api(query(table, 'player-list', edition));
@@ -86,6 +111,7 @@
   }
   global.OLNative = Object.freeze({
     tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
+    lookupAccount, setupMasterAccount, signInAccount, registerPlayerAccount,
     provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);

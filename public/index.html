@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0d">
-<meta name="description" content="Outro Lado: Vestígios — portal exclusivo da segunda temporada. Entre como mestre ou acesse sua ficha pelo convite.">
+<meta name="description" content="Outro Lado: Vestígios — entre com seu usuário e senha.">
 <title>Outro Lado: Vestígios — Exílio 3.0</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
@@ -76,269 +76,224 @@ footer strong{color:#b9bab5}
     <div class="hero-line"></div>
     <div class="feature-row"><span><i></i> Ficha conectada</span><span><i></i> Escudo do mestre</span><span><i></i> Convites privados</span></div>
   </section>
-  <section class="panel" aria-label="Acesso à segunda temporada">
-    <div id="master-section">
-      <div class="panel-top"><div><span class="panel-kicker">Área do mestre</span><h2>Entrar na mesa</h2></div></div>
-      <p class="panel-hint">Sua chave pessoal é criada automaticamente neste dispositivo. Depois de ativada, você entra direto no seu escudo.</p>
-      <label for="master-key">Sua chave única de mestre</label>
-      <input id="master-key" type="password" readonly autocomplete="off" spellcheck="false" aria-label="Sua chave pessoal de mestre">
-      <div class="credential-actions">
-        <button id="show-master-key" type="button">Mostrar</button>
-        <button id="copy-master-key" type="button">Copiar chave</button>
-      </div>
-      <p class="key-warning">Guarde uma cópia em local seguro. Essa chave permite entrar no seu escudo em outro dispositivo.</p>
-      <form id="master-form">
-        <div id="activate-master" hidden>
-          <label for="activation-key">Primeiro acesso: ative sua chave com a chave antiga</label>
-          <input id="activation-key" type="password" autocomplete="off" placeholder="Somente uma vez, para confirmar que você é o mestre">
-          <p class="key-warning">A chave antiga não será armazenada no navegador. Depois da ativação, você usará somente a chave pessoal.</p>
-        </div>
-        <button class="action" type="submit" id="master-button">Entrar como mestre <span aria-hidden="true">↗</span></button>
+  <section class="panel" aria-label="Login de Vestígios">
+    <div id="login-section">
+      <div class="panel-top"><div><span class="panel-kicker">Mestre e jogadores</span><h2>Entre na sua conta</h2></div></div>
+      <p class="panel-hint">Sem código da mesa ou chave gigante. Basta usar seu usuário e senha.</p>
+      <form id="login-form">
+        <label for="login-username">Usuário</label>
+        <input id="login-username" type="text" maxlength="32" autocomplete="username" placeholder="Seu nome de usuário" required>
+        <label for="login-password">Senha</label>
+        <input id="login-password" type="password" autocomplete="current-password" placeholder="Sua senha" required>
+        <button id="login-button" class="action" type="submit">ENTRAR <span aria-hidden="true">↗</span></button>
       </form>
-      <p class="status" id="master-status" role="status" aria-live="polite"></p>
-      <details id="restore-master">
-        <summary>Já tenho minha chave em outro dispositivo</summary>
-        <p>Cole aqui a chave pessoal que você salvou anteriormente. Ela substitui somente a chave candidata deste navegador.</p>
-        <label for="restore-master-key">Minha chave pessoal</label>
-        <input id="restore-master-key" type="text" autocomplete="off" spellcheck="false" placeholder="OLM-...">
-        <button id="restore-master-button" type="button" class="secondary-small">Usar minha chave existente</button>
-      </details>
-      <details id="existing-room">
-        <summary>Já usava uma mesa nesta temporada?</summary>
-        <p>Na primeira entrada, você pode manter o código que já usa com seus jogadores. Se um código permanente já tiver sido criado, ele continuará o mesmo.</p>
-        <label for="existing-room-code">Código da mesa existente</label>
-        <input id="existing-room-code" maxlength="40" pattern="[A-Za-z0-9_-]+" autocomplete="off" spellcheck="false" placeholder="Código atual da mesa">
-      </details>
+      <p class="status" id="login-status" role="status" aria-live="polite"></p>
       <div class="panel-divider"></div>
-      <div class="player-note"><strong>É jogador?</strong><p>Você não precisa de login nem de senha nesta tela. Basta abrir o link de convite que seu mestre enviou.</p></div>
+      <div class="player-note"><strong>Primeiro acesso do jogador?</strong>
+        <p>Abra uma vez o convite enviado pelo mestre para escolher seu usuário e senha. Sua ficha antiga continuará a mesma.</p>
+      </div>
+      <details id="master-setup">
+        <summary>Sou o mestre e ainda não criei meu login</summary>
+        <p>Configure uma única vez usando sua chave antiga de mestre ou a chave pessoal já guardada neste navegador.</p>
+        <form id="master-setup-form">
+          <label for="setup-username">Novo usuário do mestre</label>
+          <input id="setup-username" type="text" maxlength="32" autocomplete="username" required placeholder="Ex.: mestrevestigios">
+          <label for="setup-password">Nova senha (mínimo de 10 caracteres)</label>
+          <input id="setup-password" type="password" autocomplete="new-password" minlength="10" required>
+          <label for="setup-confirm">Confirmar senha</label>
+          <input id="setup-confirm" type="password" autocomplete="new-password" minlength="10" required>
+          <label for="setup-proof">Chave antiga do mestre (não precisa preencher se este navegador já a tiver)</label>
+          <input id="setup-proof" type="password" autocomplete="off" placeholder="Chave anterior, usada só nesta ativação">
+          <button id="setup-button" type="submit" class="action">CRIAR LOGIN DO MESTRE</button>
+        </form>
+        <p class="status" id="setup-status" role="status" aria-live="polite"></p>
+      </details>
       <details id="player-manual">
-        <summary>Entrar manualmente com código e chave</summary>
-        <p>Use apenas se não puder abrir seu link de convite.</p>
+        <summary>Tenho um convite antigo com código e chave</summary>
+        <p>Use somente se não conseguir abrir o link original. Depois, escolha seu usuário e senha.</p>
         <form id="player-form">
-          <label for="manual-table">Código da mesa</label><input id="manual-table" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Código fornecido pelo mestre">
-          <label for="manual-code">Código do personagem</label><input id="manual-code" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Seu código">
-          <label for="manual-key">Chave do jogador</label><input id="manual-key" type="password" autocomplete="off" placeholder="Sua chave individual">
-          <button class="action" type="submit" id="player-button">Abrir minha ficha</button>
+          <label for="manual-table">Código antigo da mesa</label>
+          <input id="manual-table" maxlength="40" autocomplete="off">
+          <label for="manual-code">Código antigo do personagem</label>
+          <input id="manual-code" maxlength="40" autocomplete="off">
+          <label for="manual-key">Chave antiga do convite</label>
+          <input id="manual-key" type="password" autocomplete="off">
+          <button id="player-button" class="action" type="submit">RECUPERAR MINHA FICHA</button>
         </form>
         <p class="status" id="player-status" role="status" aria-live="polite"></p>
       </details>
     </div>
     <div id="invite-section" class="invite-view" hidden>
       <div class="invite-icon" aria-hidden="true">◇</div>
-      <span class="panel-kicker">Seu convite</span>
-      <h2>Bem-vindo ao Exílio.</h2>
-      <p class="panel-hint">Conectando você à sua ficha da segunda temporada.</p>
-      <p id="invite-status" class="status" role="status" aria-live="polite">Autenticando...</p>
+      <span class="panel-kicker">Primeiro acesso</span>
+      <h2>Sua ficha está pronta.</h2>
+      <p class="panel-hint">Crie seu usuário e senha para entrar nas próximas vezes, sem códigos.</p>
+      <p id="invite-status" class="status" role="status" aria-live="polite">Autenticando convite...</p>
+      <form id="player-setup-form" hidden>
+        <label for="player-username">Seu usuário</label>
+        <input id="player-username" maxlength="32" autocomplete="username" required placeholder="Escolha seu usuário">
+        <label for="player-password">Sua senha (mínimo de 10 caracteres)</label>
+        <input id="player-password" type="password" minlength="10" autocomplete="new-password" required>
+        <label for="player-confirm">Confirmar senha</label>
+        <input id="player-confirm" type="password" minlength="10" autocomplete="new-password" required>
+        <button id="player-create-account" class="action" type="submit">SALVAR USUÁRIO E SENHA</button>
+        <button id="player-skip-account" class="secondary-small" type="button" style="margin-top:12px">Entrar agora sem cadastrar</button>
+      </form>
       <button id="invite-retry" class="action" hidden type="button">Tentar novamente</button>
     </div>
   </section>
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=season2-portal-20261114"></script>
+<script src="/firebase-client.js?v=login-senha-20261115"></script>
 <script>
 (function () {
   'use strict';
   const params = new URLSearchParams(location.search);
   const invite = params.get('convite') === '1';
-  const masterForm = document.getElementById('master-form');
-  const playerForm = document.getElementById('player-form');
-  const masterStatus = document.getElementById('master-status');
-  const playerStatus = document.getElementById('player-status');
-  const inviteStatus = document.getElementById('invite-status');
-  const retry = document.getElementById('invite-retry');
-  const masterButton = document.getElementById('master-button');
-  const playerButton = document.getElementById('player-button');
-  const masterKey = document.getElementById('master-key');
-  const activationKey = document.getElementById('activation-key');
-  const activationPanel = document.getElementById('activate-master');
-  const KEY_STORAGE = 'ol_personal_master_key_v1';
-  const MASTER_PATTERN = /^OLM-[A-F0-9]{64}$/;
-  let personalKey = '';
-  let personalActivated = false;
-
-  let inviteCredentials = null;
-  let busy = false;
   const edition = 'temporada';
+  const $ = id => document.getElementById(id);
+  const KEY_STORAGE = 'ol_personal_master_key_v1';
+  let busy = false, pendingPlayer = null, inviteCredentials = null;
 
-  function show(node, text, error) {
-    node.textContent = text;
-    node.classList.toggle('error', Boolean(error));
-    node.classList.toggle('success', !error && Boolean(text));
+  function show(id, message, error=false) {
+    const node=$(id);
+    node.textContent=message;
+    node.classList.toggle('error',Boolean(error));
+    node.classList.toggle('success',!error&&Boolean(message));
   }
-  function normalize(code) { return OLFirebase.normalizeTableCode(code); }
-  function physicalRoom(code) { return OLFirebase.seasonScopedTable(code, edition); }
+  function normalize(table) {return OLFirebase.normalizeTableCode(table);}
+  function physicalRoom(table) {return OLFirebase.seasonScopedTable(table,edition);}
   function destination(role, table, playerCode) {
-    localStorage.setItem('portal_table_code', table);
-    localStorage.setItem(role === 'master' ? 'master_table_code' : 'player_table_code', table);
-    if (role === 'master') localStorage.setItem('master_permanent_table_code', table);
-    if (role === 'player') localStorage.setItem('player_sync_code', playerCode);
-    const next = new URL(role === 'master' ? './mestre-temporada.html' : './ficha-temporada.html', location.href);
-    next.searchParams.set('mesa', table);
-    next.searchParams.set('temporada', '2');
-    if (role === 'player' && playerCode) next.searchParams.set('personagem', playerCode);
+    localStorage.setItem('portal_table_code',table);
+    localStorage.setItem(role==='master'?'master_table_code':'player_table_code',table);
+    if(role==='master')localStorage.setItem('master_permanent_table_code',table);
+    if(role==='player')localStorage.setItem('player_sync_code',playerCode);
+    const next=new URL(role==='master'?'./mestre-temporada.html':'./ficha-temporada.html',location.href);
+    next.searchParams.set('mesa',table);
+    next.searchParams.set('temporada','2');
+    if(role==='player'&&playerCode)next.searchParams.set('personagem',playerCode);
     location.assign(next.href);
   }
-  function lock(value) {
-    busy = value;
-    masterButton.disabled = value;
-    playerButton.disabled = value;
-    retry.disabled = value;
+  function normalizedUsername(value) {
+    return String(value||'').trim().normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'').toLowerCase();
   }
-  function createMasterKey() {
-    return 'OLM-' + Array.from(crypto.getRandomValues(new Uint8Array(32)), b =>
-      b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  function credentials(username,password,confirmation='') {
+    const normalized=normalizedUsername(username);
+    if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(normalized))
+      throw Error('Usuário: use de 3 a 32 letras, números, ponto, traço ou underline.');
+    if(password.length<10 || password.length>128)
+      throw Error('A senha precisa ter pelo menos 10 caracteres.');
+    if(confirmation&&password!==confirmation)throw Error('As senhas não coincidem.');
+    return normalized;
   }
-  function putMasterKey(key) {
-    if (!MASTER_PATTERN.test(key)) throw Error('Chave pessoal inválida. Verifique o código.');
-    personalKey = key;
-    localStorage.setItem(KEY_STORAGE, key);
-    masterKey.value = key;
+  function loginError(error) {
+    if(error?.message==='too_many_attempts')return 'Muitas tentativas. Tente novamente em 15 minutos.';
+    if(error?.message==='invalid_credentials')return 'Usuário ou senha incorretos.';
+    if(error?.message==='invalid_account_fields')return 'Confira seu usuário e sua senha.';
+    return String(error?.message||'Não foi possível entrar. Confira sua conexão.');
   }
-  async function inspectMasterKey(autoEnter = false) {
-    show(masterStatus, 'Verificando sua chave pessoal...', false);
-    try {
-      const owner = await OLNative.getMasterRoom(personalKey);
-      if (!owner?.tableCode) throw Error('Não foi possível recuperar sua mesa.');
-      personalActivated = true;
-      activationPanel.hidden = true;
-      show(masterStatus, 'Sua chave está ativa. Seu código de mesa está preservado.', false);
-      if (autoEnter) await enterMaster({ preventDefault() {} });
-    } catch (error) {
-      personalActivated = false;
-      if (error.status === 403 && error.message === 'activation_required') {
-        activationPanel.hidden = false;
-        show(masterStatus, 'Sua chave foi criada! Confirme sua identidade com a chave antiga uma única vez para ativá-la.', false);
-      } else {
-        activationPanel.hidden = true;
-        show(masterStatus, 'Esta chave não está ativa para este site. Se ela já existia, confira se foi copiada corretamente.', true);
-      }
-    }
+  async function accountLogin(username,password) {
+    const account=await OLNative.lookupAccount(username,password);
+    const table=normalize(account.tableCode),code=account.code||'';
+    await OLNative.signInAccount(physicalRoom(table),account.role,code,username,password);
+    localStorage.setItem('ol_last_username',username);
+    destination(account.role,table,code);
   }
-  async function enterMaster(event) {
+  $('login-form').addEventListener('submit',async event=>{
     event.preventDefault();
-    if (busy) return;
-    lock(true);
-    show(masterStatus, 'Entrando no escudo...', false);
-    try {
-      if (!personalKey || !MASTER_PATTERN.test(personalKey)) {
-        throw Error('A chave pessoal não foi criada corretamente.');
-      }
-      const advanced = document.getElementById('existing-room');
-      const existing = document.getElementById('existing-room-code');
-      const preferredCode = !personalActivated && advanced.open ? existing.value.trim().toUpperCase() : '';
-      if (!personalActivated && advanced.open && (!preferredCode || !existing.reportValidity())) {
-        throw Error('Informe o código da mesa antiga ou feche essa opção.');
-      }
-      const bootstrap = !personalActivated ? activationKey.value.trim() : '';
-      const owner = await OLNative.getMasterRoom(personalKey, preferredCode, bootstrap);
-      const table = owner.tableCode;
-      await OLNative.signInMaster(physicalRoom(table), personalKey);
-      activationKey.value = '';
-      personalActivated = true;
-      activationPanel.hidden = true;
-      destination('master', table);
-    } catch (error) {
-      const code = String(error.message || '');
-      if (code === 'activation_required') {
-        activationPanel.hidden = false;
-        show(masterStatus, 'Ative sua chave usando a chave antiga, apenas nesta primeira vez.', true);
-      } else if (code === 'already_activated') {
-        show(masterStatus, 'Já existe uma chave pessoal de mestre. Use a opção abaixo para colocar sua chave original neste dispositivo.', true);
-      } else if (code === 'invalid_activation') {
-        show(masterStatus, 'A chave antiga está incorreta. Confira e tente novamente.', true);
-      } else {
-        show(masterStatus, code === 'invalid_credentials' ? 'Esta chave ainda não tem acesso.' : code || 'Não foi possível entrar.', true);
-      }
-    } finally { lock(false); }
-  }
-  async function enterPlayer(table, code, key, statusNode) {
-    if (busy) return;
-    lock(true);
-    show(statusNode, 'Conectando à sua ficha...', false);
-    try {
-      const normalizedTable = normalize(table);
-      const normalizedCode = String(code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
-      if (!table || !normalizedCode || !key) throw Error('Convite incompleto. Peça um novo link ao mestre.');
-      const physical = physicalRoom(normalizedTable);
-      await OLNative.signInPlayer(physical, edition, normalizedCode, key);
-      // Keep a tab-scoped copy so a refresh can renew an expired/overwritten
-      // HttpOnly session. The secret never appears in the sheet URL.
-      try {
-        sessionStorage.setItem('ol_player_resume_v1:' + physical + ':' + normalizedCode, key);
-      } catch (_) { /* Private-browsing restrictions should not block entry. */ }
-      destination('player', normalizedTable, normalizedCode);
-    } catch (error) {
-      show(statusNode, invite ? 'Não foi possível usar o convite. Tente novamente ou peça outro ao mestre.' : String(error.message || 'Não foi possível entrar.'), true);
-      if (invite) retry.hidden = false;
-    } finally { lock(false); }
-  }
-  masterForm.addEventListener('submit', enterMaster);
-  document.getElementById('show-master-key').addEventListener('click', () => {
-    const showing = masterKey.type === 'text';
-    masterKey.type = showing ? 'password' : 'text';
-    document.getElementById('show-master-key').textContent = showing ? 'Mostrar' : 'Ocultar';
+    if(busy)return;
+    busy=true;$('login-button').disabled=true;
+    show('login-status','Entrando...');
+    try{
+      const username=credentials($('login-username').value,$('login-password').value);
+      await accountLogin(username,$('login-password').value);
+    }catch(error){show('login-status',loginError(error),true);}
+    finally{busy=false;$('login-button').disabled=false;}
   });
-  document.getElementById('copy-master-key').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(personalKey);
-      show(masterStatus, 'Chave copiada. Guarde-a em um local seguro.', false);
-    } catch {
-      masterKey.type = 'text';
-      masterKey.select();
-      show(masterStatus, 'Selecione e copie a chave exibida acima.', true);
-    }
-  });
-  document.getElementById('restore-master-button').addEventListener('click', () => {
-    try {
-      const restored = document.getElementById('restore-master-key').value.trim().toUpperCase();
-      putMasterKey(restored);
-      document.getElementById('restore-master-key').value = '';
-      activationKey.value = '';
-      void inspectMasterKey(true);
-    } catch (error) {
-      show(masterStatus, String(error.message || 'Chave inválida.'), true);
-    }
-  });
-
-  playerForm.addEventListener('submit', event => {
+  $('master-setup-form').addEventListener('submit',async event=>{
     event.preventDefault();
-    enterPlayer(document.getElementById('manual-table').value, document.getElementById('manual-code').value, document.getElementById('manual-key').value.trim(), playerStatus);
+    if(busy)return;
+    busy=true;$('setup-button').disabled=true;
+    try{
+      const user=credentials($('setup-username').value,$('setup-password').value,$('setup-confirm').value);
+      const existingKey=localStorage.getItem(KEY_STORAGE)||'';
+      const proof=$('setup-proof').value.trim()||existingKey;
+      if(!proof)throw Error('Informe sua chave anterior para ativar o primeiro login.');
+      show('setup-status','Criando conta...');
+      await OLNative.setupMasterAccount(user,$('setup-password').value,proof);
+      $('setup-proof').value='';
+      await accountLogin(user,$('setup-password').value);
+    }catch(error){
+      const code=error?.message;
+      show('setup-status',code==='master_already_registered'?
+        'O login do mestre já foi criado. Entre com seu usuário e senha acima.'
+        :loginError(error),true);
+    }finally{busy=false;$('setup-button').disabled=false;}
   });
-
-  if (invite) {
-    document.getElementById('master-section').hidden = true;
-    document.getElementById('invite-section').hidden = false;
-    const fragment = new URLSearchParams(location.hash.slice(1));
-    inviteCredentials = {
-      table: params.get('mesa') || '',
-      code: fragment.get('codigo') || '',
-      key: fragment.get('chave') || ''
-    };
-    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-    retry.addEventListener('click', () => {
-      retry.hidden = true;
-      enterPlayer(inviteCredentials.table, inviteCredentials.code, inviteCredentials.key, inviteStatus);
+  async function enterPlayer(table,code,key,statusNode) {
+    if(busy)return;
+    busy=true;$('player-button').disabled=true;$('invite-retry').disabled=true;
+    try{
+      show(statusNode,'Conectando à sua ficha...');
+      const normalizedTable=normalize(table);
+      const normalizedCode=String(code||'').trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,40);
+      if(!table||!normalizedCode||!key)throw Error('Convite incompleto. Peça um novo link ao mestre.');
+      const physical=physicalRoom(normalizedTable);
+      await OLNative.signInPlayer(physical,edition,normalizedCode,key);
+      try{sessionStorage.setItem('ol_player_resume_v1:'+physical+':'+normalizedCode,key);}
+      catch(_) {}
+      pendingPlayer={table:normalizedTable,code:normalizedCode,physical};
+      $('login-section').hidden=true;
+      $('invite-section').hidden=false;
+      $('player-setup-form').hidden=false;
+      $('invite-retry').hidden=true;
+      show('invite-status','Convite confirmado. Crie seu usuário e senha, ou entre nesta vez sem cadastrar.');
+    }catch(error){
+      show(statusNode,invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error),true);
+      if(invite)$('invite-retry').hidden=false;
+    }finally{busy=false;$('player-button').disabled=false;$('invite-retry').disabled=false;}
+  }
+  $('player-setup-form').addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(busy||!pendingPlayer)return;
+    busy=true;$('player-create-account').disabled=true;
+    try{
+      const username=credentials($('player-username').value,$('player-password').value,$('player-confirm').value);
+      show('invite-status','Salvando seu login...');
+      await OLNative.registerPlayerAccount(pendingPlayer.physical,username,$('player-password').value);
+      localStorage.setItem('ol_last_username',username);
+      destination('player',pendingPlayer.table,pendingPlayer.code);
+    }catch(error){
+      show('invite-status',error?.message==='username_taken'?'Esse usuário já está em uso. Escolha outro.':loginError(error),true);
+    }finally{busy=false;$('player-create-account').disabled=false;}
+  });
+  $('player-skip-account').addEventListener('click',()=>{
+    if(pendingPlayer)destination('player',pendingPlayer.table,pendingPlayer.code);
+  });
+  $('player-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    enterPlayer($('manual-table').value,$('manual-code').value,$('manual-key').value.trim(),'player-status');
+  });
+  if(invite) {
+    $('login-section').hidden=true;
+    $('invite-section').hidden=false;
+    const fragment=new URLSearchParams(location.hash.slice(1));
+    inviteCredentials={table:params.get('mesa')||'',code:fragment.get('codigo')||'',key:fragment.get('chave')||''};
+    if(location.hash)history.replaceState(null,'',location.pathname+location.search);
+    $('invite-retry').addEventListener('click',()=>{
+      $('invite-retry').hidden=true;
+      enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status');
     });
-    if (inviteCredentials.table && inviteCredentials.code && inviteCredentials.key) {
-      enterPlayer(inviteCredentials.table, inviteCredentials.code, inviteCredentials.key, inviteStatus);
-    } else {
-      show(inviteStatus, 'Este convite está incompleto. Peça outro link ao mestre.', true);
+    if(inviteCredentials.table&&inviteCredentials.code&&inviteCredentials.key){
+      enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status');
+    }else{
+      show('invite-status','Convite incompleto. Peça outro link ao mestre.',true);
     }
-  } else {
-    const notice = params.get('aviso');
-    if (notice) show(masterStatus, notice, true);
-    try {
-      const stored = localStorage.getItem(KEY_STORAGE);
-      putMasterKey(stored && MASTER_PATTERN.test(stored) ? stored : createMasterKey());
-      // The key is generated locally, but cannot act as master until it is
-      // activated on the server by the existing master secret.
-      // Returning from the master shield must stay on the menu instead of
-      // immediately auto-redirecting back into the shield.
-      void inspectMasterKey(!notice && params.get('menu') !== '1');
-    } catch (error) {
-      show(masterStatus, 'Não foi possível criar sua chave pessoal neste navegador.', true);
-    }
+  }else{
+    $('login-username').value=localStorage.getItem('ol_last_username')||'';
+    if(params.get('aviso'))show('login-status',params.get('aviso'),true);
   }
 })();
 </script>

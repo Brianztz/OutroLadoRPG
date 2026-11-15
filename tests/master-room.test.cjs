@@ -119,21 +119,17 @@ test('login de mestre usa a chave pessoal apenas para sua propria mesa', async (
   response = await signIn('T2_VESTIGIOS', OWNER_KEY);
   assert.equal(response.status, 200);
 });
-test('portal gera chave criptografica sem servidor e exige ativacao antes da permissao', () => {
-  const portal = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
-  const native = fs.readFileSync(path.join(root, 'public/firebase-client.js'), 'utf8');
-  const worker = fs.readFileSync(path.join(root, 'src/worker.js'), 'utf8');
-  assert(portal.includes("crypto.getRandomValues(new Uint8Array(32))"));
-  assert(portal.includes("localStorage.setItem(KEY_STORAGE, key)"));
-  assert(portal.includes('readonly autocomplete="off" spellcheck="false"'));
-  assert(portal.includes('OLNative.getMasterRoom(personalKey, preferredCode, bootstrap)'));
-  assert(portal.includes('OLNative.signInMaster(physicalRoom(table), personalKey)'));
-  assert(portal.includes("void inspectMasterKey(!notice && params.get('menu') !== '1')"));
-  assert(portal.includes("document.getElementById('restore-master-button')"));
-  assert(native.includes('activationSecret'));
+test('portal usa login e senha e mantém a antiga chave apenas para ativação', () => {
+  const portal=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
+  const worker=fs.readFileSync(path.join(root,'src/worker.js'),'utf8');
+  assert(portal.includes('id="login-username"'));
+  assert(portal.includes('id="login-password"'));
+  assert(portal.includes('id="master-setup-form"'));
+  assert(portal.includes('OLNative.setupMasterAccount(user,'));
+  assert(portal.includes('OLNative.signInAccount(physicalRoom(table)'));
+  assert(!portal.includes('id="master-key"'));
   assert(worker.includes("new URL(request.url).pathname === '/api/master-key-check'"));
   assert(worker.includes("getByName('SYSTEM_MASTER_PROFILE_V1')"));
-  assert(!portal.includes('value="classic"'));
 });
 test('escudo Vestigios continua com seu codigo de mesa fixo e convite individual', () => {
   const master = fs.readFileSync(path.join(root, 'public/mestre-temporada.html'), 'utf8');
@@ -141,5 +137,5 @@ test('escudo Vestigios continua com seu codigo de mesa fixo e convite individual
   assert(master.includes('onclick="copyMasterTableCode()"'));
   assert(master.includes("url.searchParams.set('mesa', masterTableCode)"));
   assert(!master.includes('function switchMasterTable('));
-  assert(portal.includes('OLNative.signInPlayer(physical, edition, normalizedCode, key)'));
+  assert(portal.includes('OLNative.signInPlayer(physical,edition,normalizedCode,key)'));
 });

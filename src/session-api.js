@@ -99,16 +99,37 @@ export async function handleSessionRequest(request, ctx, env) {
   let edition = data && data.edition === 'temporada' ? 'temporada' : 'classic';
   let code = '';
   let credentialHash = '';
+  // The registry checks username/password internally; no password is
+  // persisted in a room session, cookie, localStorage or sheet.
+  async function verifyAccount(roleToCheck, codeToCheck = '') {
+    const serverKey = String(env.MASTER_DATA_TOKEN || '');
+    if (serverKey.length < 32 || !env.TABLE_ROOMS) return null;
+    if (typeof data.username !== 'string' || typeof data.password !== 'string')return null;
+    const registry = env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
+    const check = await registry.fetch(new Request('https://internal.invalid/api/account-internal', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-OL-Internal-Auth':serverKey},
+      body:JSON.stringify({
+        action:'check',username:data.username,password:data.password,
+        role:roleToCheck,code:codeToCheck,
+        physicalTable:new URL(request.url).searchParams.get('mesa')||''
+      })
+    }));
+    if(!check.ok)return null;
+    return check.json();
+  }
+
   if (role === 'master') {
     const serverKey = String(env.MASTER_DATA_TOKEN || '');
     const key = String(data && data.key || '');
     if (serverKey.length < 32) return response({ error: 'master_not_configured' }, 503);
-    if (!fixedEqual(key, serverKey)) {
-      // Only a personal key activated for THIS season-two table can log in.
-      // The registry DO is called internally; this validation route is not public.
-      if (!/^OLM-[A-F0-9]{64}$/.test(key) || !env.TABLE_ROOMS) {
-        return response({ error: 'invalid_credentials' }, 401);
-      }
+    if (typeof data.username === 'string') {
+      const verified=await verifyAccount('master');
+      if(!verified)return response({error:'invalid_credentials'},401);
+    } else if (!fixedEqual(key, serverKey)) {
+      // Keep earlier personal-key sessions operational while they migrate.
+      if (!/^OLM-[A-F0-9]{64}$/.test(key) || !env.TABLE_ROOMS)
+        return response({error:'invalid_credentials'},401);
       const physicalTable = new URL(request.url).searchParams.get('mesa') || '';
       const registry = env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
       const validation = await registry.fetch(new Request('https://internal.invalid/api/master-key-check', {
@@ -116,18 +137,28 @@ export async function handleSessionRequest(request, ctx, env) {
         headers: { 'Content-Type': 'application/json', 'X-OL-Internal-Auth': serverKey },
         body: JSON.stringify({ key, physicalTable })
       }));
-      if (!validation.ok) return response({ error: 'invalid_credentials' }, 401);
+      if (!validation.ok) return response({error:'invalid_credentials'},401);
     }
   } else if (role === 'player') {
     code = playerCode(data && data.code);
-    const key = String(data && data.key || '');
-    if (!code || key.length < 43 || key.length > 256) {
-      return response({ error: 'invalid_credentials' }, 401);
-    }
-    credentialHash = await digest(key);
     const ownerHash = await ctx.storage.get('sheet:' + edition + ':' + code + ':owner-sha256');
-    if (!ownerHash || !fixedEqual(ownerHash, credentialHash)) {
-      return response({ error: 'invalid_credentials' }, 401);
+    if (typeof data.username === 'string') {
+      if (edition !== 'temporada' || !code || !ownerHash)
+        return response({error:'invalid_credentials'},401);
+      const verified=await verifyAccount('player',code);
+      // Revoking an old invitation also invalidates its registered login.
+      if(!verified || !fixedEqual(verified.ownerHash,ownerHash))
+        return response({error:'invalid_credentials'},401);
+      credentialHash=ownerHash;
+    } else {
+      const key = String(data && data.key || '');
+      if (!code || key.length < 43 || key.length > 256) {
+        return response({ error: 'invalid_credentials' }, 401);
+      }
+      credentialHash = await digest(key);
+      if (!ownerHash || !fixedEqual(ownerHash, credentialHash)) {
+        return response({ error: 'invalid_credentials' }, 401);
+      }
     }
   } else {
     return response({ error: 'invalid_role' }, 400);
