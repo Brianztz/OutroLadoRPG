@@ -48,6 +48,10 @@ function harness(role='master') {
     async registerPlayerAccount(table,username,password) {
       calls.push(['registerPlayerAccount',table,username,password]);
     },
+    async registerMasterAccount(username,password) {
+      calls.push(['registerMasterAccount',username,password]);
+      return {ok:true,role:'master',tableCode:'MTEST123'};
+    },
     async signOut(table){calls.push(['signOut',table]);},
     async changeMasterCredentials(){calls.push(['changeMasterCredentials']);}
   };
@@ -75,16 +79,43 @@ async function settle(){
   for(let i=0;i<20;i++)await Promise.resolve();
 }
 
-test('portal apresenta os dois botões, cadastro restrito e tela de escolha de papel',()=>{
+test('portal apresenta Criar Conta como Mestre sem convite e Jogador por convite',()=>{
   for(const id of ['tab-login','tab-signup','login-view','signup-view',
-    'signup-invite-form','signup-invite-link','role-section','role-master',
+    'signup-invite-form','signup-invite-link','signup-master-form',
+    'signup-master-username','signup-master-password','signup-master-confirm',
+    'signup-as-master','signup-as-player','role-section','role-master',
     'role-player','role-other-account','player-setup-form'])
     assert(html.includes('id="'+id+'"'),id);
-  assert(html.includes('O cadastro é restrito aos jogadores convidados'));
-  assert(html.includes('Não é possível criar uma conta de mestre por aqui'));
+  assert(html.includes('Qualquer pessoa pode criar uma conta de Mestre'));
+  assert(html.includes('Para criar uma conta de Jogador, cole o convite'));
   assert(!html.includes('role="master"') && !html.includes('value="master"'));
   assert(!html.includes('id="player-skip-account"'));
   assert.doesNotThrow(()=>new vm.Script(script));
+});
+test('cadastro aberto de mestre cria conta própria e permite escolher Escudo',async()=>{
+  const h=harness('master');
+  h.el('tab-signup').events.click();
+  assert.equal(h.el('signup-master-view').hidden,false);
+  assert.equal(h.el('signup-player-view').hidden,true);
+  h.el('signup-master-username').value='outromestre';
+  h.el('signup-master-password').value='Senha-de-mestre-123';
+  h.el('signup-master-confirm').value='Senha-de-mestre-123';
+  await submit(h,'signup-master-form');
+  assert(h.calls.some(c=>c[0]==='registerMasterAccount'&&c[1]==='outromestre'));
+  assert.equal(h.el('role-section').hidden,false);
+  assert.equal(h.el('role-master').disabled,false);
+  assert.equal(h.location.navigations.length,0);
+  h.el('role-master').events.click();
+  assert.equal(new URL(h.location.navigations[0]).pathname,'/mestre-temporada.html');
+});
+test('ao escolher cadastro de jogador continua obrigando convite',()=>{
+  const h=harness('player');
+  h.el('tab-signup').events.click();
+  h.el('signup-as-player').events.click();
+  assert.equal(h.el('signup-master-view').hidden,true);
+  assert.equal(h.el('signup-player-view').hidden,false);
+  h.el('signup-as-master').events.click();
+  assert.equal(h.el('signup-master-view').hidden,false);
 });
 test('após login, mestre escolhe seu escudo e não recebe ficha de jogador sem convite',async()=>{
   const h=harness('master');
