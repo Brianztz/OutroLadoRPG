@@ -81,8 +81,8 @@ test('portal and master route only Vestigios invites and embedded player sheets'
   const portal=load('public/index.html'), master=load('public/mestre-temporada.html');
   assert(portal.includes("'./mestre-temporada.html'"));
   assert(master.includes('/temporada/master-theme.css'));
-  assert(portal.includes('OLNative.signInMaster(physicalRoom(table), personalKey)'));
-  assert(portal.includes('OLNative.signInPlayer(physical, edition, normalizedCode, key)'));
+  assert(portal.includes('OLNative.signInAccount(physicalRoom(table)'));
+  assert(portal.includes('OLNative.signInPlayer(physical,edition,normalizedCode,key)'));
   assert(portal.includes("const edition = 'temporada'"));
   assert(portal.includes("next.searchParams.set('temporada', '2')"));
   assert(master.includes("if (isSeasonMaster) url.searchParams.set('temporada', '2')"));
