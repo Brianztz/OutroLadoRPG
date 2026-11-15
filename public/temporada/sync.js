@@ -26,6 +26,12 @@ window.startSeasonSync=async function startSeasonSync(){
   function snapshot(){return {version:1,state:api.getState(),portrait:portrait.snapshot(),presentation:{...preferences}};}
   function packet(){const snap=snapshot(),d=api.project();d.temporada=snap;d.info.char_img=snap.portrait.image;d.info.char_cor_overlay=preferences.color;d.modoCombate=preferences.combat;d.charStatus=preferences.status;return {codigo:code,id:code,mesa:table,sheetType:'temporada',nome:d.info.char_nome||'Personagem',foto:portrait.avatar(),corOverlay:preferences.color,nex:d.info.char_nex,defesa:d.defense,vida_atual:d.info.vida_atual,vida_max:d.info.vida_max,sani_atual:d.info.sani_atual,sani_max:d.info.sani_max,modoCombate:preferences.combat,armaDisparoAtiva:d.armaDisparoAtiva,status:preferences.status,fullData:d};}
   function broadcast(){if(ready&&socket.connected)socket.emit(view?'master_update_player':'status_change',packet());}
+  // Opening a saved sheet in the master's iframe adds it to the shield's
+  // character cards. Unlike an edit, this event never marks the player online
+  // or sends the old cloud snapshot to a connected player's own sheet.
+  function announceMasterOpenedSheet(){
+    if(view&&ready&&socket.connected)socket.emit('master_open_sheet',packet());
+  }
   function storePreferences(){localStorage.setItem(metadataKey,JSON.stringify(preferences));$('season-color').value=preferences.color;$('season-combat').checked=preferences.combat;}
   async function applySnapshot(value){if(value?.version!==1||!value.state)throw Error('Formato de ficha incompatível.');applying=true;try{api.applyState(value.state);await portrait.apply(value.portrait);preferences={...preferences,...value.presentation};storePreferences();}finally{applying=false;}}
   async function flush(){clearTimeout(timer);if(!ready||applying||busy||closed)return;if(!cloudReady){broadcast();status('MODO LOCAL · atributos salvos neste dispositivo; tente sincronizar depois.');return;}busy=true;try{do{dirty=false;const value=snapshot();broadcast();const json=JSON.stringify(value),hash=OLFirebase.hashCharacterSheet(json);if(hash!==lastHash){status('Salvando…');const result=await OLFirebase.saveCharacter(table,json,{sheetVariant:'temporada',playerCode:code,characterName:value.state.name||'Personagem',overlayColor:preferences.color});lastHash=result.sheetHash;localStorage.setItem(markerKey,lastHash);}if(!dirty)localStorage.removeItem(dirtyKey);status(socket.connected?'Salvo · conectado':'Salvo · reconectando');}while(dirty&&!closed);}catch(error){
@@ -51,12 +57,12 @@ window.startSeasonSync=async function startSeasonSync(){
   $('season-color').onchange=()=>{preferences.color=$('season-color').value;storePreferences();changed();};
   $('season-combat').onchange=()=>{preferences.combat=$('season-combat').checked;storePreferences();changed();};
   window.addEventListener('season:roll',event=>{if(!ready)return;const {pool,label,name}=event.detail;broadcast();socket.emit('rolagem_feita',{codigo:code,mesa:table,jogador:api.getState().name||'Personagem',acao:name+' — '+label,resultado:pool.value,cor:label==='FALHA'?'#f16a5b':'#e8b67a'});});
-  socket.on('connect',()=>{if(view)socket.emit('request_player',{codigo:code,mesa:table});else if(ready){broadcast();if(!cloudReady)void initialize();else if(dirty)void flush();}status(ready?'Conectado à mesa':'Carregando ficha…');});
+  socket.on('connect',()=>{if(view){socket.emit('request_player',{codigo:code,mesa:table});announceMasterOpenedSheet();}else if(ready){broadcast();if(!cloudReady)void initialize();else if(dirty)void flush();}status(ready?'Conectado à mesa':'Carregando ficha…');});
   window.addEventListener('online',()=>{if(view||closed)return;if(!cloudReady)void initialize();else if(dirty)void flush();});
   socket.on('disconnect',()=>status('Sem conexão · alterações locais preservadas'));
   socket.on('sync_requested',data=>{if(data?.codigo===code&&data.mesa===table)broadcast();});
   let inbound=Promise.resolve();
-  const receive=data=>{if(!data||String(data.codigo)!==code||OLFirebase.normalizeTableCode(data.mesa)!==table||data.fullData?.sheetType!=='temporada')return;inbound=inbound.then(async()=>{if(view&&ready&&JSON.stringify(data.fullData.temporada)===JSON.stringify(snapshot()))return;applying=true;try{api.applyMaster(data.fullData);await portrait.apply(data.fullData.temporada.portrait);preferences={...preferences,...data.fullData.temporada.presentation,color:data.corOverlay||preferences.color,combat:Boolean(data.modoCombate),status:data.status||{}};storePreferences();ready=true;lock(false);status('Atualizado pelo mestre');}finally{applying=false;}if(!view)changed();}).catch(error=>{applying=false;status('Não foi possível receber a ficha: '+error.message);});};
+  const receive=data=>{if(!data||String(data.codigo)!==code||OLFirebase.normalizeTableCode(data.mesa)!==table||data.fullData?.sheetType!=='temporada')return;inbound=inbound.then(async()=>{if(view&&ready&&JSON.stringify(data.fullData.temporada)===JSON.stringify(snapshot()))return;applying=true;try{api.applyMaster(data.fullData);await portrait.apply(data.fullData.temporada.portrait);preferences={...preferences,...data.fullData.temporada.presentation,color:data.corOverlay||preferences.color,combat:Boolean(data.modoCombate),status:data.status||{}};storePreferences();ready=true;lock(false);status('Atualizado pelo mestre');}finally{applying=false;}if(view)announceMasterOpenedSheet();else changed();}).catch(error=>{applying=false;status('Não foi possível receber a ficha: '+error.message);});};
   socket.on(view?'update_mestre':'player_data_updated',receive);
   if(!view)socket.on('catalog_item_granted',data=>{if(!data?.item)return;const p=packet();p.fullData.inv.push(data.item);receive(p);});
   $('download-preview').addEventListener('click',e=>{e.stopImmediatePropagation();$('season-export').click();},true);
@@ -83,6 +89,7 @@ window.startSeasonSync=async function startSeasonSync(){
           localStorage.setItem(markerKey,lastHash);
           ready=true;cloudReady=true;lock(false);
           status('Ficha salva carregada · o mestre pode visualizar e editar');
+          announceMasterOpenedSheet();
         }else{
           status('Ainda não há ficha salva na nuvem. Aguardando conexão do jogador…');
         }
