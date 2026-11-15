@@ -71,7 +71,7 @@ test('cada mesa possui cookie de sessao proprio e atualizar uma nao desloga outr
 });
 test('sessao criada antes do conserto continua valida e sair limpa ambos os cookies', async () => {
   const handle = await loadSession(), ctx = storageContext();
-  const login = await handle(request('T2_AURORA','POST'),ctx,{MASTER_DATA_TOKEN:secret});
+  const login = await handle(request('T2_AURORA','POST'),ctx,authorizedMasterEnv());
   const oldCookie = cookieHeader(login).replace('ol_room_session_T2_AURORA=','ol_room_session=');
   assert.equal((await handle(request('T2_AURORA','GET',oldCookie),ctx,{})).status,200);
   const logout=await handle(request('T2_AURORA','DELETE',oldCookie),ctx,{});
