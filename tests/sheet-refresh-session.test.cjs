@@ -125,7 +125,7 @@ test('falha temporaria da internet nao manda o jogador de volta ao codigo',async
 });
 test('codigo do personagem fica na URL da ficha sem incluir a chave privada',()=>{
   assert(portal.includes("next.searchParams.set('personagem', playerCode)"));
-  assert(portal.includes("sessionStorage.setItem('ol_player_resume_v1:' + physical + ':' + normalizedCode, key)"));
+  assert(portal.includes("sessionStorage.setItem('ol_player_resume_v1:'+physical+':'+normalizedCode,key)"));
   assert(portal.includes("const edition = 'temporada'"));
   const html=fs.readFileSync(path.join(root,'public/ficha-temporada.html'),'utf8');
   assert(html.includes('firebase-client.js?v=master-saved-sheets-1'));
