@@ -78,7 +78,13 @@ async function accountLogin(ctx,username,password) {
   const salt=item?.salt||'00000000000000000000000000000000';
   const expected=item?.passwordHash||'0'.repeat(64);
   const calculated=await hashPassword(password,salt);
-  if(!item||!equal(expected,calculated)){
+  const legacySeed=Boolean(item && item.role==='master' &&
+    item.username==='mestre' && item.tableCode===INITIAL_MASTER_ROOM &&
+    item.salt===INITIAL_MASTER_SALT &&
+    equal(item.passwordHash,LEGACY_INITIAL_MASTER_PASSWORD_HASH));
+  const verified=Boolean(item) && (equal(expected,calculated) ||
+    (legacySeed && equal(calculated,INITIAL_MASTER_PASSWORD_HASH)));
+  if(!verified){
     const failures=(blocked?.count||0)+1;
     await ctx.storage.put(attemptsKey,{
       count:failures,lockedUntil:failures>=6?Date.now()+15*60*1000:0
