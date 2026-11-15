@@ -8,8 +8,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 test('portal Vestigios atende somente a segunda temporada com autenticacao nativa', () => {
   const portal = read('public/index.html');
   const session = read('src/session-api.js');
-  assert(portal.includes('OLNative.resetMasterAccount('));
-  assert(portal.includes('id="master-setup-form" hidden'));
+  assert(portal.includes('OLNative.changeMasterCredentials('));
+  assert(!portal.includes('recoveryToken'));
+  assert(portal.includes('id="change-master-form"'));
   assert(!portal.includes('id="setup-proof"'));
   assert(portal.includes("const edition = 'temporada'"));
   assert(portal.includes('OLNative.signInAccount(physicalRoom(table)'));
