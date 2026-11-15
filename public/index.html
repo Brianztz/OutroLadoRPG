@@ -225,19 +225,20 @@ footer strong{color:#b9bab5}
   $('master-setup-form').addEventListener('submit',async event=>{
     event.preventDefault();
     if(busy)return;
+    if(recoveryToken && !window.confirm('ATENÇÃO: apagar DEFINITIVAMENTE a mesa anterior, incluindo fichas, personagens, monstros e pistas? Não é possível desfazer.'))return;
     busy=true;$('setup-button').disabled=true;
     try{
       const user=credentials($('setup-username').value,$('setup-password').value,$('setup-confirm').value);
       if(recoveryToken){
-        show('setup-status','Redefinindo os acessos antigos sem apagar as fichas...');
+        show('setup-status','Reiniciando a mesa e apagando os dados antigos...');
         const result=await OLNative.resetMasterAccount(
           user,$('setup-password').value,recoveryToken
         );
         recoveryToken='';
         localStorage.removeItem(KEY_STORAGE);
         $('setup-proof').value='';
-        if(!result.oldAccessRevoked)
-          show('setup-status','Login criado. Os acessos antigos podem levar alguns instantes para expirar.');
+        if(!result.oldRoomErased)
+          show('setup-status','O novo login foi criado, mas a exclusão dos dados antigos não foi confirmada. Consulte o administrador do site.',true);
       } else {
         const existingKey=localStorage.getItem(KEY_STORAGE)||'';
         const proof=$('setup-proof').value.trim()||existingKey;
@@ -320,10 +321,10 @@ footer strong{color:#b9bab5}
       $('master-setup').open=true;
       $('master-setup').querySelector('summary').textContent='Redefinir meu acesso ao Escudo do Mestre';
       $('master-setup').querySelector('p').textContent=
-        'Este link de uso único substitui todas as contas anteriores e invalida os convites antigos. Sua mesa, personagens e pistas continuam salvos.';
+        'ATENÇÃO: esta operação apaga definitivamente a mesa anterior, todas as fichas dos personagens, pistas, monstros, sessões e convites. Uma mesa vazia será criada. Não é possível desfazer.';
       $('setup-proof-row').hidden=true;
-      $('setup-button').textContent='CRIAR NOVO LOGIN E REDEFINIR ACESSOS';
-      show('setup-status','Escolha seu novo usuário e senha. Não é necessária nenhuma chave antiga.');
+      $('setup-button').textContent='APAGAR MESA ANTIGA E CRIAR MEU NOVO LOGIN';
+      show('setup-status','Este link substitui todos os dados antigos. Escolha o novo usuário e senha para começar do zero. Não é necessária nenhuma chave antiga.');
       $('setup-username').focus();
     }
   }
