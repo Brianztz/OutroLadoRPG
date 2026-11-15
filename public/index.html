@@ -102,8 +102,10 @@ footer strong{color:#b9bab5}
           <input id="setup-password" type="password" autocomplete="new-password" minlength="10" required>
           <label for="setup-confirm">Confirmar senha</label>
           <input id="setup-confirm" type="password" autocomplete="new-password" minlength="10" required>
-          <label for="setup-proof">Chave antiga do mestre (não precisa preencher se este navegador já a tiver)</label>
-          <input id="setup-proof" type="password" autocomplete="off" placeholder="Chave anterior, usada só nesta ativação">
+          <div id="setup-proof-row">
+            <label for="setup-proof">Chave antiga do mestre (não precisa preencher se este navegador já a tiver)</label>
+            <input id="setup-proof" type="password" autocomplete="off" placeholder="Chave anterior, usada só nesta ativação">
+          </div>
           <button id="setup-button" type="submit" class="action">CRIAR LOGIN DO MESTRE</button>
         </form>
         <p class="status" id="setup-status" role="status" aria-live="polite"></p>
@@ -145,7 +147,7 @@ footer strong{color:#b9bab5}
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=login-senha-20261115"></script>
+<script src="/firebase-client.js?v=master-recovery-20261115"></script>
 <script>
 (function () {
   'use strict';
@@ -154,6 +156,11 @@ footer strong{color:#b9bab5}
   const edition = 'temporada';
   const $ = id => document.getElementById(id);
   const KEY_STORAGE = 'ol_personal_master_key_v1';
+  // A recovery token is never sent in a GET request and is immediately
+  // cleared from the address bar. Only the in-memory, single-use form keeps it.
+  const recoveryFragment = new URLSearchParams(location.hash.slice(1));
+  let recoveryToken = !invite ? (recoveryFragment.get('recuperar') || '') : '';
+  if(recoveryToken)history.replaceState(null,'',location.pathname+location.search);
   let busy = false, pendingPlayer = null, inviteCredentials = null;
 
   function show(id, message, error=false) {
@@ -192,6 +199,9 @@ footer strong{color:#b9bab5}
     if(error?.message==='too_many_attempts')return 'Muitas tentativas. Tente novamente em 15 minutos.';
     if(error?.message==='invalid_credentials')return 'Usuário ou senha incorretos.';
     if(error?.message==='invalid_account_fields')return 'Confira seu usuário e sua senha.';
+    if(error?.message==='invalid_recovery_link')return 'Este link de recuperação não é válido. Solicite outro.';
+    if(error?.message==='recovery_already_used')return 'Este link já foi utilizado. Entre com seu novo login.';
+    if(error?.message==='no_existing_room')return 'Não foi possível encontrar a mesa anterior. Nenhuma conta foi alterada.';
     return String(error?.message||'Não foi possível entrar. Confira sua conexão.');
   }
   async function accountLogin(username,password) {
@@ -218,12 +228,24 @@ footer strong{color:#b9bab5}
     busy=true;$('setup-button').disabled=true;
     try{
       const user=credentials($('setup-username').value,$('setup-password').value,$('setup-confirm').value);
-      const existingKey=localStorage.getItem(KEY_STORAGE)||'';
-      const proof=$('setup-proof').value.trim()||existingKey;
-      if(!proof)throw Error('Informe sua chave anterior para ativar o primeiro login.');
-      show('setup-status','Criando conta...');
-      await OLNative.setupMasterAccount(user,$('setup-password').value,proof);
-      $('setup-proof').value='';
+      if(recoveryToken){
+        show('setup-status','Redefinindo os acessos antigos sem apagar as fichas...');
+        const result=await OLNative.resetMasterAccount(
+          user,$('setup-password').value,recoveryToken
+        );
+        recoveryToken='';
+        localStorage.removeItem(KEY_STORAGE);
+        $('setup-proof').value='';
+        if(!result.oldAccessRevoked)
+          show('setup-status','Login criado. Os acessos antigos podem levar alguns instantes para expirar.');
+      } else {
+        const existingKey=localStorage.getItem(KEY_STORAGE)||'';
+        const proof=$('setup-proof').value.trim()||existingKey;
+        if(!proof)throw Error('Informe sua chave anterior para ativar o primeiro login.');
+        show('setup-status','Criando conta...');
+        await OLNative.setupMasterAccount(user,$('setup-password').value,proof);
+        $('setup-proof').value='';
+      }
       await accountLogin(user,$('setup-password').value);
     }catch(error){
       const code=error?.message;
@@ -294,6 +316,16 @@ footer strong{color:#b9bab5}
   }else{
     $('login-username').value=localStorage.getItem('ol_last_username')||'';
     if(params.get('aviso'))show('login-status',params.get('aviso'),true);
+    if(recoveryToken){
+      $('master-setup').open=true;
+      $('master-setup').querySelector('summary').textContent='Redefinir meu acesso ao Escudo do Mestre';
+      $('master-setup').querySelector('p').textContent=
+        'Este link de uso único substitui todas as contas anteriores e invalida os convites antigos. Sua mesa, personagens e pistas continuam salvos.';
+      $('setup-proof-row').hidden=true;
+      $('setup-button').textContent='CRIAR NOVO LOGIN E REDEFINIR ACESSOS';
+      show('setup-status','Escolha seu novo usuário e senha. Não é necessária nenhuma chave antiga.');
+      $('setup-username').focus();
+    }
   }
 })();
 </script>
