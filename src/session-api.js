@@ -105,7 +105,7 @@ export async function handleSessionRequest(request, ctx, env) {
     const serverKey = String(env.MASTER_DATA_TOKEN || '');
     if (serverKey.length < 32 || !env.TABLE_ROOMS) return null;
     if (typeof data.username !== 'string' || typeof data.password !== 'string')return null;
-    const registry = env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
+    const registry = env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V2');
     const check = await registry.fetch(new Request('https://internal.invalid/api/account-internal', {
       method:'POST',
       headers:{'Content-Type':'application/json','X-OL-Internal-Auth':serverKey},
@@ -120,25 +120,10 @@ export async function handleSessionRequest(request, ctx, env) {
   }
 
   if (role === 'master') {
-    const serverKey = String(env.MASTER_DATA_TOKEN || '');
-    const key = String(data && data.key || '');
-    if (serverKey.length < 32) return response({ error: 'master_not_configured' }, 503);
-    if (typeof data.username === 'string') {
-      const verified=await verifyAccount('master');
-      if(!verified)return response({error:'invalid_credentials'},401);
-    } else if (!fixedEqual(key, serverKey)) {
-      // Keep earlier personal-key sessions operational while they migrate.
-      if (!/^OLM-[A-F0-9]{64}$/.test(key) || !env.TABLE_ROOMS)
-        return response({error:'invalid_credentials'},401);
-      const physicalTable = new URL(request.url).searchParams.get('mesa') || '';
-      const registry = env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
-      const validation = await registry.fetch(new Request('https://internal.invalid/api/master-key-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-OL-Internal-Auth': serverKey },
-        body: JSON.stringify({ key, physicalTable })
-      }));
-      if (!validation.ok) return response({error:'invalid_credentials'},401);
-    }
+    // No legacy key, first-come signup, or recovery link can enter the shield.
+    // The current master's username and password are checked by the v2 registry.
+    if(!await verifyAccount('master'))
+      return response({error:'invalid_credentials'},401);
   } else if (role === 'player') {
     code = playerCode(data && data.code);
     const ownerHash = await ctx.storage.get('sheet:' + edition + ':' + code + ':owner-sha256');

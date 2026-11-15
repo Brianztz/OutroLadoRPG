@@ -13,6 +13,23 @@ const portal = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
 const moduleURL = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
 const loadSession = async () => (await import(moduleURL)).handleSessionRequest;
 const secret = 'M'.repeat(48);
+function authorizedMasterEnv() {
+  return {
+    MASTER_DATA_TOKEN:secret,
+    TABLE_ROOMS:{
+      getByName(name){
+        assert.equal(name,'SYSTEM_MASTER_PROFILE_V2');
+        return {fetch:async request=>{
+          const body=await request.json();
+          const valid=body.role==='master'&&body.username==='mestre'
+            &&body.password==='senha-temporaria-mestre';
+          return Response.json(valid?{ok:true,role:'master'}:{error:'invalid_credentials'},
+            {status:valid?200:401});
+        }};
+      }
+    }
+  };
+}
 
 function storageContext() {
   const data = new Map();
@@ -30,7 +47,9 @@ function request(table, method='GET', cookie='', role='master', key=secret) {
       ...(cookie ? { Cookie: cookie } : {}),
       ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {})
     },
-    ...(method === 'POST' ? { body: JSON.stringify({ role, key }) } : {})
+    ...(method === 'POST' ? { body: JSON.stringify(role==='master'
+      ? {role,username:'mestre',password:'senha-temporaria-mestre'}
+      : {role,key}) } : {})
   });
 }
 function cookieHeader(response) {
@@ -38,8 +57,8 @@ function cookieHeader(response) {
 }
 test('cada mesa possui cookie de sessao proprio e atualizar uma nao desloga outra', async () => {
   const handle = await loadSession(), a = storageContext(), b = storageContext();
-  const ra = await handle(request('T2_AURORA', 'POST'), a, {MASTER_DATA_TOKEN: secret});
-  const rb = await handle(request('T2_VESTIGIOS', 'POST'), b, {MASTER_DATA_TOKEN: secret});
+  const ra = await handle(request('T2_AURORA', 'POST'), a, authorizedMasterEnv());
+  const rb = await handle(request('T2_VESTIGIOS', 'POST'), b, authorizedMasterEnv());
   assert.equal(ra.status, 200); assert.equal(rb.status, 200);
   const ca = cookieHeader(ra), cb = cookieHeader(rb);
   assert.match(ca, /^ol_room_session_T2_AURORA=[a-f0-9]{64}$/);
@@ -52,7 +71,7 @@ test('cada mesa possui cookie de sessao proprio e atualizar uma nao desloga outr
 });
 test('sessao criada antes do conserto continua valida e sair limpa ambos os cookies', async () => {
   const handle = await loadSession(), ctx = storageContext();
-  const login = await handle(request('T2_AURORA','POST'),ctx,{MASTER_DATA_TOKEN:secret});
+  const login = await handle(request('T2_AURORA','POST'),ctx,authorizedMasterEnv());
   const oldCookie = cookieHeader(login).replace('ol_room_session_T2_AURORA=','ol_room_session=');
   assert.equal((await handle(request('T2_AURORA','GET',oldCookie),ctx,{})).status,200);
   const logout=await handle(request('T2_AURORA','DELETE',oldCookie),ctx,{});

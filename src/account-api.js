@@ -2,7 +2,13 @@
 // Durable Object as the permanent room; no account contains a readable password.
 // Character identity and table codes stay internal to the original room.
 const ROOM_KEY = 'owner:permanent-room-code:v1';
-const PERSONAL_HASH_KEY = 'owner:personal-master-sha256:v1';
+const INSTALL_MARKER = 'owner:fresh-install:v2';
+const INSTALL_REGISTRY = 'SYSTEM_MASTER_PROFILE_V2';
+const INITIAL_MASTER_ROOM = 'M6C8604FBE737F0724FE5';
+// Pre-provisioned master password: only its PBKDF2-SHA256 verifier is deployed.
+// Replace username/password using the account settings form after signing in.
+const INITIAL_MASTER_SALT = '59e6ee6f9333255c576cc0d53908f630';
+const INITIAL_MASTER_PASSWORD_HASH = 'f86d915221829bd5da9be5c584f92f93300ecdbc4d487532023ca6e74ceb4241';
 const MASTER_ACCOUNT_KEY = 'account:master:v1';
 const ACCOUNT_PREFIX = 'account:user:v1:';
 const PLAYER_INDEX = 'account:player-index:v1:';
@@ -79,6 +85,44 @@ async function accountLogin(ctx,username,password) {
   return {item};
 }
 
+// A brand-new owner registry is provisioned by the deployed Worker, not by an
+// unauthenticated first-visitor signup. The already-authorized owner requested
+// a complete reset. Old accounts and old room content are deleted once, before
+// the new master login becomes available. No recovery token or legacy key is
+// needed by the user; an administrator-only Cloudflare binding authorizes cleanup.
+export async function initializeFreshMasterRegistry(ctx,env) {
+  if(ctx.id?.name!==INSTALL_REGISTRY)return;
+  if(await ctx.storage.get(INSTALL_MARKER))return;
+  const secret=String(env.MASTER_DATA_TOKEN||'');
+  if(secret.length<32 || !env.TABLE_ROOMS)throw Error('master_not_configured');
+  const oldRegistry=env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
+  const header={'Content-Type':'application/json'};
+  const roomInfo=await oldRegistry.fetch(new Request('https://internal.invalid/api/master-room',{
+    method:'POST',headers:header,body:JSON.stringify({key:secret})
+  }));
+  if(!roomInfo.ok)throw Error('cannot_identify_old_room');
+  const {tableCode:oldRoomCode}=await roomInfo.json();
+  if(!oldRoomCode)throw Error('missing_old_room');
+  const roomStub=env.TABLE_ROOMS.getByName(roomId(oldRoomCode));
+  const erase=(stub)=>stub.fetch(new Request('https://internal.invalid/api/admin-auth-reset',{
+    method:'POST',headers:{'X-OL-Internal-Auth':secret}
+  }));
+  const roomDeleted=await erase(roomStub);
+  if(!roomDeleted.ok)throw Error('cannot_erase_old_room');
+  const registryDeleted=await erase(oldRegistry);
+  if(!registryDeleted.ok)throw Error('cannot_erase_old_accounts');
+  await ctx.storage.deleteAll();
+  const newKey=await accountKey('mestre');
+  await ctx.storage.put(ROOM_KEY,INITIAL_MASTER_ROOM);
+  await ctx.storage.put(newKey,{
+    role:'master',username:'mestre',tableCode:INITIAL_MASTER_ROOM,
+    salt:INITIAL_MASTER_SALT,passwordHash:INITIAL_MASTER_PASSWORD_HASH,
+    createdAt:Date.now()
+  });
+  await ctx.storage.put(MASTER_ACCOUNT_KEY,newKey);
+  await ctx.storage.put(INSTALL_MARKER,{initialized:true,createdAt:Date.now()});
+}
+
 export async function handleAccountRequest(request,ctx,env) {
   const internal=new URL(request.url).pathname==='/api/account-internal';
   if(new URL(request.url).pathname!==(internal?'/api/account-internal':'/api/account')) {
@@ -101,79 +145,29 @@ export async function handleAccountRequest(request,ctx,env) {
     || (action==='register-player'&&!validPassword(password)))
     return reply({error:'invalid_account_fields'},400);
 
-  if(action==='reset-master'&&!internal){
-    // Only possession of a high-entropy, one-use recovery link permits
-    // a full reset. A missing old password never grants public ownership.
-    const token=String(data?.recoveryToken||'');
-    // Only the SHA-256 verifier of a 256-bit random token is stored in code.
-    // The token itself is never committed to the repository or Worker assets.
-    const expectedHash='ebee07a71f2f08c51a15fa1b654d1377a848bd5c4ff1bb24bd2bb4d0d1da6fc0';
-    if(token.length!==64 || !equal(await sha(token),expectedHash))
-      return reply({error:'invalid_recovery_link'},403);
-    const consumedKey='owner:recovery-consumed:'+await sha(token);
-    if(await ctx.storage.get(consumedKey))
-      return reply({error:'recovery_already_used'},409);
-    const room=await ctx.storage.get(ROOM_KEY);
-    if(!room)return reply({error:'no_existing_room'},409);
-    const accountName=await accountKey(username);
-    // A fresh, unpredictable internal room ID prevents any old browser caches
-    // from repopulating the new season even after the old room is wiped.
-    const newRoom=newTableCode();
+  if(action==='change-master-credentials'&&!internal){
+    const result=await accountLogin(ctx,username,password);
+    if(!result.item)return reply({error:result.error},result.status);
+    if(result.item.role!=='master')return reply({error:'master_required'},403);
+    const nextUsername=asUsername(data?.newUsername);
+    const nextPassword=data?.newPassword;
+    if(!validUsername(nextUsername)||!validPassword(nextPassword))
+      return reply({error:'invalid_account_fields'},400);
+    const oldKey=await accountKey(username),newKey=await accountKey(nextUsername);
     const salt=hex(crypto.getRandomValues(new Uint8Array(16)));
-    const passwordHash=await hashPassword(password,salt);
-    const reset=await ctx.storage.transaction(async t=>{
-      if(await t.get(consumedKey))return false;
-      const previous=await t.list({prefix:'account:'});
-      // Reset credentials and the permanent internal room identity. Content
-      // will be wiped from the OLD room through its private, admin-only route.
-      for(const key of previous.keys())await t.delete(key);
-      await t.delete(PERSONAL_HASH_KEY);
-      await t.put(ROOM_KEY,newRoom);
-      await t.put(accountName,{
-        role:'master',username,salt,passwordHash,tableCode:newRoom,createdAt:Date.now()
-      });
-      await t.put(MASTER_ACCOUNT_KEY,accountName);
-      await t.put(consumedKey,{usedAt:Date.now()});
-      return true;
+    const passwordHash=await hashPassword(nextPassword,salt);
+    const updated=await ctx.storage.transaction(async t=>{
+      const stored=await t.get(oldKey);
+      if(!stored || stored.role!=='master' || !equal(stored.passwordHash,result.item.passwordHash))
+        return 'invalid_credentials';
+      if(newKey!==oldKey && await t.get(newKey))return 'username_taken';
+      await t.delete(oldKey);
+      await t.put(newKey,{...stored,username:nextUsername,salt,passwordHash,updatedAt:Date.now()});
+      await t.put(MASTER_ACCOUNT_KEY,newKey);
+      return 'ok';
     });
-    if(!reset)return reply({error:'recovery_already_used'},409);
-    let oldRoomErased=false;
-    try{
-      const physical=roomId(room);
-      const roomObject=env.TABLE_ROOMS.getByName(physical);
-      const revoked=await roomObject.fetch(new Request('https://internal.invalid/api/admin-auth-reset',{
-        method:'POST',
-        headers:{'X-OL-Internal-Auth':serverKey}
-      }));
-      oldRoomErased=revoked.ok;
-    }catch(error){
-      console.error('Old room could not be erased immediately:',error);
-    }
-    return reply({ok:true,tableCode:newRoom,oldAccessRevoked:oldRoomErased,oldRoomErased});
-  }
-
-  if(action==='setup-master'&&!internal){
-    const proof=String(data.proofKey||'');
-    const room=await ctx.storage.get(ROOM_KEY);
-    const stored=await ctx.storage.get(PERSONAL_HASH_KEY);
-    const verified=equal(proof,serverKey) ||
-      (/^OLM-[A-F0-9]{64}$/.test(proof) && stored && equal(await sha(proof),stored));
-    if(!verified)return reply({error:'activation_required'},403);
-    if(await ctx.storage.get(MASTER_ACCOUNT_KEY))
-      return reply({error:'master_already_registered'},409);
-    const key=await accountKey(username);
-    if(await ctx.storage.get(key))return reply({error:'username_taken'},409);
-    const salt=hex(crypto.getRandomValues(new Uint8Array(16)));
-    const passwordHash=await hashPassword(password,salt);
-    const result=await ctx.storage.transaction(async t=>{
-      if(await t.get(MASTER_ACCOUNT_KEY)||await t.get(key))return false;
-      const code=await t.get(ROOM_KEY)||room||newTableCode();
-      if(!await t.get(ROOM_KEY))await t.put(ROOM_KEY,code);
-      await t.put(key,{role:'master',username,salt,passwordHash,tableCode:code,createdAt:Date.now()});
-      await t.put(MASTER_ACCOUNT_KEY,key);
-      return code;
-    });
-    return result?reply({ok:true,tableCode:result}):reply({error:'master_already_registered'},409);
+    if(updated!=='ok')return reply({error:updated},updated==='username_taken'?409:401);
+    return reply({ok:true});
   }
 
   if(action==='register-player'&&internal){

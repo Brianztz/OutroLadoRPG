@@ -90,35 +90,25 @@ footer strong{color:#b9bab5}
       <p class="status" id="login-status" role="status" aria-live="polite"></p>
       <div class="panel-divider"></div>
       <div class="player-note"><strong>Primeiro acesso do jogador?</strong>
-        <p>Abra uma vez o convite enviado pelo mestre para escolher seu usuário e senha. Sua ficha antiga continuará a mesma.</p>
+        <p>Abra uma vez o convite enviado pelo mestre para escolher seu usuário e senha e acessar sua ficha.</p>
       </div>
-      <details id="master-setup">
-        <summary>Criar ou recuperar acesso de mestre</summary>
-        <p>Para criar um novo acesso, abra seu link seguro de recuperação. Você só precisará escolher usuário e senha, sem digitar códigos antigos.</p>
-        <form id="master-setup-form" hidden>
-          <label for="setup-username">Novo usuário do mestre</label>
-          <input id="setup-username" type="text" maxlength="32" autocomplete="username" required placeholder="Ex.: mestrevestigios">
-          <label for="setup-password">Nova senha (mínimo de 10 caracteres)</label>
-          <input id="setup-password" type="password" autocomplete="new-password" minlength="10" required>
-          <label for="setup-confirm">Confirmar senha</label>
-          <input id="setup-confirm" type="password" autocomplete="new-password" minlength="10" required>
-          <button id="setup-button" type="submit" class="action">CRIAR LOGIN DO MESTRE</button>
+      <details id="change-master-login">
+        <summary>Alterar meu usuário ou senha de mestre</summary>
+        <p>Use seu usuário e senha atuais para escolher novos dados de acesso. Não precisa de códigos.</p>
+        <form id="change-master-form">
+          <label for="change-current-user">Usuário atual</label>
+          <input id="change-current-user" autocomplete="username" maxlength="32" required>
+          <label for="change-current-password">Senha atual</label>
+          <input id="change-current-password" type="password" autocomplete="current-password" required>
+          <label for="change-new-user">Novo usuário</label>
+          <input id="change-new-user" autocomplete="off" maxlength="32" required>
+          <label for="change-new-password">Nova senha (mínimo de 10 caracteres)</label>
+          <input id="change-new-password" type="password" autocomplete="new-password" minlength="10" required>
+          <label for="change-confirm-password">Confirme a nova senha</label>
+          <input id="change-confirm-password" type="password" autocomplete="new-password" minlength="10" required>
+          <button id="change-master-button" class="action" type="submit">SALVAR NOVO LOGIN</button>
         </form>
-        <p class="status" id="setup-status" role="status" aria-live="polite"></p>
-      </details>
-      <details id="player-manual">
-        <summary>Tenho um convite antigo com código e chave</summary>
-        <p>Use somente se não conseguir abrir o link original. Depois, escolha seu usuário e senha.</p>
-        <form id="player-form">
-          <label for="manual-table">Código antigo da mesa</label>
-          <input id="manual-table" maxlength="40" autocomplete="off">
-          <label for="manual-code">Código antigo do personagem</label>
-          <input id="manual-code" maxlength="40" autocomplete="off">
-          <label for="manual-key">Chave antiga do convite</label>
-          <input id="manual-key" type="password" autocomplete="off">
-          <button id="player-button" class="action" type="submit">RECUPERAR MINHA FICHA</button>
-        </form>
-        <p class="status" id="player-status" role="status" aria-live="polite"></p>
+        <p id="change-master-status" class="status" role="status" aria-live="polite"></p>
       </details>
     </div>
     <div id="invite-section" class="invite-view" hidden>
@@ -143,7 +133,7 @@ footer strong{color:#b9bab5}
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=master-recovery-20261115"></script>
+<script src="/firebase-client.js?v=simple-login-20261115"></script>
 <script>
 (function () {
   'use strict';
@@ -151,12 +141,6 @@ footer strong{color:#b9bab5}
   const invite = params.get('convite') === '1';
   const edition = 'temporada';
   const $ = id => document.getElementById(id);
-  const KEY_STORAGE = 'ol_personal_master_key_v1';
-  // A recovery token is never sent in a GET request and is immediately
-  // cleared from the address bar. Only the in-memory, single-use form keeps it.
-  const recoveryFragment = new URLSearchParams(location.hash.slice(1));
-  let recoveryToken = !invite ? (recoveryFragment.get('recuperar') || '') : '';
-  if(recoveryToken)history.replaceState(null,'',location.pathname+location.search);
   let busy = false, pendingPlayer = null, inviteCredentials = null;
 
   function show(id, message, error=false) {
@@ -195,9 +179,8 @@ footer strong{color:#b9bab5}
     if(error?.message==='too_many_attempts')return 'Muitas tentativas. Tente novamente em 15 minutos.';
     if(error?.message==='invalid_credentials')return 'Usuário ou senha incorretos.';
     if(error?.message==='invalid_account_fields')return 'Confira seu usuário e sua senha.';
-    if(error?.message==='invalid_recovery_link')return 'Este link de recuperação não é válido. Solicite outro.';
-    if(error?.message==='recovery_already_used')return 'Este link já foi utilizado. Entre com seu novo login.';
-    if(error?.message==='no_existing_room')return 'Não foi possível encontrar a mesa anterior. Nenhuma conta foi alterada.';
+    if(error?.message==='username_taken')return 'Este usuário já está em uso. Escolha outro.';
+    if(error?.message==='master_required')return 'Somente o mestre pode alterar esta conta.';
     return String(error?.message||'Não foi possível entrar. Confira sua conexão.');
   }
   async function accountLogin(username,password) {
@@ -218,34 +201,33 @@ footer strong{color:#b9bab5}
     }catch(error){show('login-status',loginError(error),true);}
     finally{busy=false;$('login-button').disabled=false;}
   });
-  $('master-setup-form').addEventListener('submit',async event=>{
+  $('change-master-form').addEventListener('submit',async event=>{
     event.preventDefault();
     if(busy)return;
-    if(recoveryToken && !window.confirm('ATENÇÃO: apagar DEFINITIVAMENTE a mesa anterior, incluindo fichas, personagens, monstros e pistas? Não é possível desfazer.'))return;
-    busy=true;$('setup-button').disabled=true;
+    busy=true;$('change-master-button').disabled=true;
     try{
-      const user=credentials($('setup-username').value,$('setup-password').value,$('setup-confirm').value);
-      if(!recoveryToken)
-        throw Error('Use seu link seguro de recuperação para criar o login de mestre.');
-      show('setup-status','Reiniciando a mesa e apagando os dados antigos...');
-      const result=await OLNative.resetMasterAccount(
-        user,$('setup-password').value,recoveryToken
+      const oldUsername=normalizedUsername($('change-current-user').value);
+      const oldPassword=$('change-current-password').value;
+      const newUsername=credentials(
+        $('change-new-user').value,
+        $('change-new-password').value,
+        $('change-confirm-password').value
       );
-      recoveryToken='';
-      localStorage.removeItem(KEY_STORAGE);
-      if(!result.oldRoomErased)
-        show('setup-status','O novo login foi criado, mas a exclusão dos dados antigos não foi confirmada. Consulte o administrador do site.',true);
-      await accountLogin(user,$('setup-password').value);
-    }catch(error){
-      const code=error?.message;
-      show('setup-status',code==='master_already_registered'?
-        'O login do mestre já foi criado. Entre com seu usuário e senha acima.'
-        :loginError(error),true);
-    }finally{busy=false;$('setup-button').disabled=false;}
+      show('change-master-status','Atualizando login...');
+      await OLNative.changeMasterCredentials(
+        oldUsername,oldPassword,newUsername,$('change-new-password').value
+      );
+      localStorage.setItem('ol_last_username',newUsername);
+      $('login-username').value=newUsername;
+      $('login-password').value='';
+      $('change-master-form').reset();
+      show('change-master-status','Login alterado! Entre acima com seu novo usuário e senha.');
+    }catch(error){show('change-master-status',loginError(error),true);}
+    finally{busy=false;$('change-master-button').disabled=false;}
   });
   async function enterPlayer(table,code,key,statusNode) {
     if(busy)return;
-    busy=true;$('player-button').disabled=true;$('invite-retry').disabled=true;
+    busy=true;$('invite-retry').disabled=true;
     try{
       show(statusNode,'Conectando à sua ficha...');
       const normalizedTable=normalize(table);
@@ -264,7 +246,7 @@ footer strong{color:#b9bab5}
     }catch(error){
       show(statusNode,invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error),true);
       if(invite)$('invite-retry').hidden=false;
-    }finally{busy=false;$('player-button').disabled=false;$('invite-retry').disabled=false;}
+    }finally{busy=false;$('invite-retry').disabled=false;}
   }
   $('player-setup-form').addEventListener('submit',async event=>{
     event.preventDefault();
@@ -283,10 +265,6 @@ footer strong{color:#b9bab5}
   $('player-skip-account').addEventListener('click',()=>{
     if(pendingPlayer)destination('player',pendingPlayer.table,pendingPlayer.code);
   });
-  $('player-form').addEventListener('submit',event=>{
-    event.preventDefault();
-    enterPlayer($('manual-table').value,$('manual-code').value,$('manual-key').value.trim(),'player-status');
-  });
   if(invite) {
     $('login-section').hidden=true;
     $('invite-section').hidden=false;
@@ -304,17 +282,8 @@ footer strong{color:#b9bab5}
     }
   }else{
     $('login-username').value=localStorage.getItem('ol_last_username')||'';
+    $('change-current-user').value=$('login-username').value;
     if(params.get('aviso'))show('login-status',params.get('aviso'),true);
-    if(recoveryToken){
-      $('master-setup').open=true;
-      $('master-setup').querySelector('summary').textContent='Redefinir meu acesso ao Escudo do Mestre';
-      $('master-setup').querySelector('p').textContent=
-        'ATENÇÃO: esta operação apaga definitivamente a mesa anterior, todas as fichas dos personagens, pistas, monstros, sessões e convites. Uma mesa vazia será criada. Não é possível desfazer.';
-      $('master-setup-form').hidden=false;
-      $('setup-button').textContent='APAGAR MESA ANTIGA E CRIAR MEU NOVO LOGIN';
-      show('setup-status','Este link substitui os dados antigos. Escolha seu novo usuário e senha para começar do zero.');
-      $('setup-username').focus();
-    }
   }
 })();
 </script>

@@ -2,7 +2,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { handleStorageRequest } from './storage-api.js';
 import { currentSession, handleSessionRequest } from './session-api.js';
 import { handleMasterRoomRequest } from './master-room-api.js';
-import { handleAccountRequest } from './account-api.js';
+import { handleAccountRequest, initializeFreshMasterRegistry } from './account-api.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
@@ -177,6 +177,10 @@ export class TableRoom extends DurableObject {
         this.inspection = null;
 
         ctx.blockConcurrencyWhile(async () => {
+            if(ctx.id?.name==='SYSTEM_MASTER_PROFILE_V2'){
+                await initializeFreshMasterRegistry(ctx,env);
+                return;
+            }
             this.table = normalizeTableCode(await ctx.storage.get('table'));
             const storedPlayers = await ctx.storage.list({ prefix: 'player:' });
             for (const [key, player] of storedPlayers) {
@@ -622,7 +626,7 @@ export default {
             return env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1').fetch(request);
         }
         if (url.pathname === '/api/account') {
-            return env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1').fetch(request);
+            return env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V2').fetch(request);
         }
         if (url.pathname === '/api/storage' || url.pathname === '/api/session') {
             const table = normalizeTableCode(url.searchParams.get('mesa'));
