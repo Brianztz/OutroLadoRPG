@@ -101,7 +101,7 @@ export async function handleStorageRequest(request, ctx, env) {
     if (!ownerHash || !env.TABLE_ROOMS || masterSecret.length<32)
       return json({error:'player_session_required'},403);
     const physicalTable=url.searchParams.get('mesa')||'';
-    const registry=env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
+    const registry=env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V2');
     const registration=await registry.fetch(new Request('https://internal.invalid/api/account-internal',{
       method:'POST',
       headers:{'Content-Type':'application/json','X-OL-Internal-Auth':masterSecret},
