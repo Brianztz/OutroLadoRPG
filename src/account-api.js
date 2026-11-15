@@ -101,6 +101,52 @@ export async function handleAccountRequest(request,ctx,env) {
     || (action==='register-player'&&!validPassword(password)))
     return reply({error:'invalid_account_fields'},400);
 
+  if(action==='reset-master'&&!internal){
+    // Only a server-side, Cloudflare-managed one-time recovery secret can
+    // invalidate earlier accounts. An anonymous user can NEVER claim a reset
+    // just because the previous master no longer has the old personal key.
+    const expected=String(env.MASTER_RECOVERY_TOKEN||'');
+    const token=String(data?.recoveryToken||'');
+    if(expected.length<48 || token.length!==expected.length || !equal(token,expected))
+      return reply({error:'invalid_recovery_link'},403);
+    const consumedKey='owner:recovery-consumed:'+await sha(token);
+    if(await ctx.storage.get(consumedKey))
+      return reply({error:'recovery_already_used'},409);
+    const room=await ctx.storage.get(ROOM_KEY);
+    if(!room)return reply({error:'no_existing_room'},409);
+    const accountName=await accountKey(username);
+    const salt=hex(crypto.getRandomValues(new Uint8Array(16)));
+    const passwordHash=await hashPassword(password,salt);
+    const reset=await ctx.storage.transaction(async t=>{
+      if(await t.get(consumedKey))return false;
+      const previous=await t.list({prefix:'account:'});
+      // Only access records are deleted. The permanent room, saved character
+      // sheets, clues, initiative and monster data live under other keys.
+      for(const key of previous.keys())await t.delete(key);
+      await t.delete(PERSONAL_HASH_KEY);
+      await t.put(accountName,{
+        role:'master',username,salt,passwordHash,tableCode:room,createdAt:Date.now()
+      });
+      await t.put(MASTER_ACCOUNT_KEY,accountName);
+      await t.put(consumedKey,{usedAt:Date.now()});
+      return true;
+    });
+    if(!reset)return reply({error:'recovery_already_used'},409);
+    let accessRevoked=false;
+    try{
+      const physical=roomId(room);
+      const roomObject=env.TABLE_ROOMS.getByName(physical);
+      const revoked=await roomObject.fetch(new Request('https://internal.invalid/api/admin-auth-reset',{
+        method:'POST',
+        headers:{'X-OL-Internal-Auth':serverKey}
+      }));
+      accessRevoked=revoked.ok;
+    }catch(error){
+      console.error('Old room sessions could not be revoked immediately:',error);
+    }
+    return reply({ok:true,tableCode:room,oldAccessRevoked:accessRevoked});
+  }
+
   if(action==='setup-master'&&!internal){
     const proof=String(data.proofKey||'');
     const room=await ctx.storage.get(ROOM_KEY);
