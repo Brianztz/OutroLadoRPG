@@ -82,7 +82,37 @@ export async function handleStorageRequest(request, ctx, env) {
   const session = await currentSession(request, ctx);
   const master = session?.role === 'master' || (masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret));
 
-  if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access' && kind !== 'player-list') return json({ error: 'invalid_kind' }, 400);
+  if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access'
+    && kind !== 'player-list' && kind !== 'account-register')
+    return json({ error: 'invalid_kind' }, 400);
+  if (kind === 'account-register') {
+    // A one-time invitation lets a player bind a username and password to the
+    // EXISTING character. No new character is created or moved between tables.
+    if (request.method !== 'POST') return json({error:'method_not_allowed'},405);
+    if (session?.role !== 'player' || session.edition !== 'temporada')
+      return json({error:'player_session_required'},403);
+    if (String(request.headers.get('Content-Type')||'').split(';')[0].trim()!=='application/json')
+      return json({error:'json_required'},415);
+    const raw=await request.text();
+    if(raw.length>512)return json({error:'request_too_large'},413);
+    let payload;try{payload=JSON.parse(raw);}catch{return json({error:'invalid_json'},400);}
+    const code=session.code;
+    const ownerHash=await ctx.storage.get('sheet:temporada:'+code+':owner-sha256');
+    if (!ownerHash || !env.TABLE_ROOMS || masterSecret.length<32)
+      return json({error:'player_session_required'},403);
+    const physicalTable=url.searchParams.get('mesa')||'';
+    const registry=env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1');
+    const registration=await registry.fetch(new Request('https://internal.invalid/api/account-internal',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-OL-Internal-Auth':masterSecret},
+      body:JSON.stringify({
+        action:'register-player',username:payload?.username,
+        password:payload?.password,physicalTable,code,ownerHash
+      })
+    }));
+    const result=await registration.json().catch(()=>({error:'registration_failed'}));
+    return json(result,registration.status);
+  }
   if (kind === 'player-list') {
     // List only characters belonging to this physical room and edition.
     // Never return any player access key or its hash.
