@@ -140,6 +140,7 @@ export async function handleStorageRequest(request, ctx, env) {
             || snapshot?.temporada?.state?.name || '').trim().slice(0, 80);
         }
       } catch (_) { /* A corrupt/legacy sheet must not block access recovery. */ }
+      if(!name)name=String(await ctx.storage.get(root+':display-name')||'').trim().slice(0,80);
       return { code: playerCode, name: name || playerCode, hasSheet };
     }));
     players.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR') || a.code.localeCompare(b.code));
@@ -162,6 +163,9 @@ export async function handleStorageRequest(request, ctx, env) {
     const key = Array.from(crypto.getRandomValues(new Uint8Array(48)), byte =>
       byte.toString(16).padStart(2, '0')).join('');
     await ctx.storage.put(playerRoot + ':owner-sha256', await sha256(key));
+    const displayName=String(url.searchParams.get('nome')||'').trim().slice(0,80);
+    if(displayName && url.searchParams.get('create')==='1')
+      await ctx.storage.put(playerRoot+':display-name',displayName);
     return json({ ok: true, playerCode: code, edition, playerKey: key });
   }
   if (request.method === 'POST') return json({ error: 'method_not_allowed' }, 405);
