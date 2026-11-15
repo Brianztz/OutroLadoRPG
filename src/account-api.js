@@ -105,9 +105,12 @@ export async function handleAccountRequest(request,ctx,env) {
     // Only a server-side, Cloudflare-managed one-time recovery secret can
     // invalidate earlier accounts. An anonymous user can NEVER claim a reset
     // just because the previous master no longer has the old personal key.
-    const expected=String(env.MASTER_RECOVERY_TOKEN||'');
     const token=String(data?.recoveryToken||'');
-    if(expected.length<48 || token.length!==expected.length || !equal(token,expected))
+    // A 384-bit single-use capability, issued from the connected owner's
+    // GitHub account. Only its SHA-256 verifier is public in source control.
+    // No Cloudflare secret setup or previous master key is necessary.
+    const expectedHash='2851ceaac8928519c45118e77a2de1541376d1ea469d45c0c34c5fd8933a262d';
+    if(token.length!==64 || !equal(await sha(token),expectedHash))
       return reply({error:'invalid_recovery_link'},403);
     const consumedKey='owner:recovery-consumed:'+await sha(token);
     if(await ctx.storage.get(consumedKey))
