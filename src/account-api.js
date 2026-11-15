@@ -8,7 +8,8 @@ const INITIAL_MASTER_ROOM = 'M6C8604FBE737F0724FE5';
 // Pre-provisioned master password: only its PBKDF2-SHA256 verifier is deployed.
 // Replace username/password using the account settings form after signing in.
 const INITIAL_MASTER_SALT = '59e6ee6f9333255c576cc0d53908f630';
-const INITIAL_MASTER_PASSWORD_HASH = 'f86d915221829bd5da9be5c584f92f93300ecdbc4d487532023ca6e74ceb4241';
+const INITIAL_MASTER_PASSWORD_HASH = 'e87276dd5d4f2719b49e1d69070f5a5ccf723ae690b00d0affca4666471f3575';
+const LEGACY_INITIAL_MASTER_PASSWORD_HASH = 'f86d915221829bd5da9be5c584f92f93300ecdbc4d487532023ca6e74ceb4241';
 const MASTER_ACCOUNT_KEY = 'account:master:v1';
 const ACCOUNT_PREFIX = 'account:user:v1:';
 const PLAYER_INDEX = 'account:player-index:v1:';
