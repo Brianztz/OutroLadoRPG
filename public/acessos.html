@@ -158,7 +158,7 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
   }
   async function issueInvite(playerCode, existing = false) {
     if (busy) return;
-    if (existing && !confirm('Gerar novo convite para ' + playerCode + '? O link anterior deixará de funcionar.')) return;
+    if (existing && !confirm('Gerar novo convite de recuperação? O link e o login anterior deixarão de funcionar. O jogador poderá escolher novamente usuário e senha. A ficha será preservada.')) return;
     busy = true;
     create.disabled = true;
     renew.disabled = true;
