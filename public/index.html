@@ -93,19 +93,15 @@ footer strong{color:#b9bab5}
         <p>Abra uma vez o convite enviado pelo mestre para escolher seu usuário e senha. Sua ficha antiga continuará a mesma.</p>
       </div>
       <details id="master-setup">
-        <summary>Sou o mestre e ainda não criei meu login</summary>
-        <p>Configure uma única vez usando sua chave antiga de mestre ou a chave pessoal já guardada neste navegador.</p>
-        <form id="master-setup-form">
+        <summary>Criar ou recuperar acesso de mestre</summary>
+        <p>Para criar um novo acesso, abra seu link seguro de recuperação. Você só precisará escolher usuário e senha, sem digitar códigos antigos.</p>
+        <form id="master-setup-form" hidden>
           <label for="setup-username">Novo usuário do mestre</label>
           <input id="setup-username" type="text" maxlength="32" autocomplete="username" required placeholder="Ex.: mestrevestigios">
           <label for="setup-password">Nova senha (mínimo de 10 caracteres)</label>
           <input id="setup-password" type="password" autocomplete="new-password" minlength="10" required>
           <label for="setup-confirm">Confirmar senha</label>
           <input id="setup-confirm" type="password" autocomplete="new-password" minlength="10" required>
-          <div id="setup-proof-row">
-            <label for="setup-proof">Chave antiga do mestre (não precisa preencher se este navegador já a tiver)</label>
-            <input id="setup-proof" type="password" autocomplete="off" placeholder="Chave anterior, usada só nesta ativação">
-          </div>
           <button id="setup-button" type="submit" class="action">CRIAR LOGIN DO MESTRE</button>
         </form>
         <p class="status" id="setup-status" role="status" aria-live="polite"></p>
@@ -229,24 +225,16 @@ footer strong{color:#b9bab5}
     busy=true;$('setup-button').disabled=true;
     try{
       const user=credentials($('setup-username').value,$('setup-password').value,$('setup-confirm').value);
-      if(recoveryToken){
-        show('setup-status','Reiniciando a mesa e apagando os dados antigos...');
-        const result=await OLNative.resetMasterAccount(
-          user,$('setup-password').value,recoveryToken
-        );
-        recoveryToken='';
-        localStorage.removeItem(KEY_STORAGE);
-        $('setup-proof').value='';
-        if(!result.oldRoomErased)
-          show('setup-status','O novo login foi criado, mas a exclusão dos dados antigos não foi confirmada. Consulte o administrador do site.',true);
-      } else {
-        const existingKey=localStorage.getItem(KEY_STORAGE)||'';
-        const proof=$('setup-proof').value.trim()||existingKey;
-        if(!proof)throw Error('Informe sua chave anterior para ativar o primeiro login.');
-        show('setup-status','Criando conta...');
-        await OLNative.setupMasterAccount(user,$('setup-password').value,proof);
-        $('setup-proof').value='';
-      }
+      if(!recoveryToken)
+        throw Error('Use seu link seguro de recuperação para criar o login de mestre.');
+      show('setup-status','Reiniciando a mesa e apagando os dados antigos...');
+      const result=await OLNative.resetMasterAccount(
+        user,$('setup-password').value,recoveryToken
+      );
+      recoveryToken='';
+      localStorage.removeItem(KEY_STORAGE);
+      if(!result.oldRoomErased)
+        show('setup-status','O novo login foi criado, mas a exclusão dos dados antigos não foi confirmada. Consulte o administrador do site.',true);
       await accountLogin(user,$('setup-password').value);
     }catch(error){
       const code=error?.message;
@@ -322,9 +310,9 @@ footer strong{color:#b9bab5}
       $('master-setup').querySelector('summary').textContent='Redefinir meu acesso ao Escudo do Mestre';
       $('master-setup').querySelector('p').textContent=
         'ATENÇÃO: esta operação apaga definitivamente a mesa anterior, todas as fichas dos personagens, pistas, monstros, sessões e convites. Uma mesa vazia será criada. Não é possível desfazer.';
-      $('setup-proof-row').hidden=true;
+      $('master-setup-form').hidden=false;
       $('setup-button').textContent='APAGAR MESA ANTIGA E CRIAR MEU NOVO LOGIN';
-      show('setup-status','Este link substitui todos os dados antigos. Escolha o novo usuário e senha para começar do zero. Não é necessária nenhuma chave antiga.');
+      show('setup-status','Este link substitui os dados antigos. Escolha seu novo usuário e senha para começar do zero.');
       $('setup-username').focus();
     }
   }
