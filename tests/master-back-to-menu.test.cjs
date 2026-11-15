@@ -52,8 +52,8 @@ test('Botão navega para menu sem encerrar a sessão e sem loop de login', async
   assert.equal(prompts.length, 0);
   assert(!action.includes('signOut('));
   assert(!action.includes('localStorage.clear('));
-  assert(portal.includes("void inspectMasterKey(!notice && params.get('menu') !== '1')"));
-  assert(portal.includes('if (autoEnter) await enterMaster'));
+  assert(portal.includes('id="login-form"'));
+  assert(!portal.includes('inspectMasterKey('));
 });
 
 test('Confirma antes de sair com pistas ainda não sincronizadas', async () => {
