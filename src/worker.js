@@ -204,22 +204,20 @@ export class TableRoom extends DurableObject {
                 mismatch|=(secret.charCodeAt(i)||0)^(proof.charCodeAt(i)||0);
             if(request.method!=='POST'||secret.length<32||mismatch!==0)
                 return Response.json({error:'forbidden'},{status:403});
-            const sessions=await this.ctx.storage.list({prefix:'session:'});
-            for(const key of sessions.keys())await this.ctx.storage.delete(key);
-            // Invalidate all old one-click invitations. Existing sheet manifests
-            // and their chunks remain untouched, ready for fresh invitations.
-            const sheets=await this.ctx.storage.list({prefix:'sheet:temporada:'});
-            let invitations=0;
-            for(const key of sheets.keys()){
-                if(key.endsWith(':owner-sha256')){
-                    await this.ctx.storage.delete(key);
-                    invitations++;
-                }
-            }
             for(const ws of this.ctx.getWebSockets()){
-                try{ws.close(4001,'Acesso à mesa redefinido');}catch(_){}
+                try{ws.close(4001,'Mesa reiniciada pelo mestre');}catch(_){}
             }
-            return Response.json({ok:true,sessions:sessions.size,invitations});
+            // Clear EVERY stored entry in this old room: characters, sheet
+            // chunks, clues, monsters, initiative, overlay, sessions and
+            // invitation credentials. The new master receives a different,
+            // clean room ID after the one-time recovery.
+            await this.ctx.storage.deleteAll();
+            this.table=DEFAULT_TABLE;
+            this.players.clear();
+            this.initiative=emptyInitiativeState();
+            this.lumina={mesa:DEFAULT_TABLE,enabled:false,caseId:'aurora-adelanio'};
+            this.inspection=null;
+            return Response.json({ok:true,oldRoomErased:true});
         }
         if (new URL(request.url).pathname === '/api/account'
             || new URL(request.url).pathname === '/api/account-internal') {
