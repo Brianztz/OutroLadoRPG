@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
-const {webcrypto}=require('node:crypto');
+const {webcrypto,pbkdf2Sync,createHash}=require('node:crypto');
 globalThis.crypto=globalThis.crypto||webcrypto;
 
 const root=path.join(__dirname,'..');
@@ -40,7 +40,7 @@ function harness(){
     MASTER_DATA_TOKEN:S,
     TABLE_ROOMS:{
       getByName(name){
-        assert.equal(name,'SYSTEM_MASTER_PROFILE_V1');
+        assert.equal(name,'SYSTEM_MASTER_PROFILE_V2');
         return {fetch:request=>registryHandle(request,registry,env)};
       }
     }
@@ -68,30 +68,29 @@ function harness(){
   };
 }
 async function setup(h){
+  const username='narrador',salt='a'.repeat(32);
+  const key='account:user:v1:'+createHash('sha256').update(username).digest('hex');
   h.registry.data.set('owner:permanent-room-code:v1','VESTIGIOS');
-  return h.account('setup-master',{username:'narrador',password:PA,proofKey:S});
+  h.registry.data.set('account:master:v1',key);
+  h.registry.data.set(key,{
+    role:'master',username,tableCode:'VESTIGIOS',salt,
+    passwordHash:pbkdf2Sync(PA,Buffer.from(salt,'hex'),180000,32,'sha256').toString('hex')
+  });
 }
-test('cadastro do mestre exige prova de dono e guarda somente hash PBKDF2',async()=>{
-  const h=harness();await h.init();
-  h.registry.data.set('owner:permanent-room-code:v1','VESTIGIOS');
-  let res=await h.account('setup-master',{username:'narrador',password:PA,proofKey:'qualquer'});
-  assert.equal(res.status,403);
-  res=await setup(h);
-  assert.equal(res.status,200);
-  assert.equal((await res.json()).tableCode,'VESTIGIOS');
-  const dumped=JSON.stringify([...h.registry.data]);
-  assert(!dumped.includes(PA)&&!dumped.includes(S));
-  assert(dumped.includes('180000')===false);
-  assert(dumped.includes('passwordHash'));
-  res=await h.account('setup-master',{username:'outro',password:PA,proofKey:S});
-  assert.equal(res.status,409);
-  res=await h.account('lookup',{username:'narrador',password:'password-errada'});
+test('login do mestre exige usuário e senha e não permite primeiro visitante cadastrar conta',async()=>{
+  const h=harness();await h.init();await setup(h);
+  let res=await h.account('setup-master',{username:'intruso',password:PA,proofKey:S});
+  assert.equal(res.status,400);
+  res=await h.account('lookup',{username:'narrador',password:'senha-incorreta'});
   assert.equal(res.status,401);
   res=await h.account('lookup',{username:'NARRADOR',password:PA});
   assert.equal(res.status,200);
   assert.deepEqual(JSON.parse(JSON.stringify(await res.json())),{
     ok:true,role:'master',tableCode:'VESTIGIOS',code:''
   });
+  const stored=JSON.stringify([...h.registry.data]);
+  assert(!stored.includes(PA));
+  assert(stored.includes('passwordHash'));
 });
 test('mestre autentica no cookie da mesa e outra mesa é rejeitada',async()=>{
   const h=harness();await h.init();await setup(h);
@@ -149,10 +148,10 @@ test('limite de tentativas e usuário reservado evitam força bruta e colisão',
     h.registry,h.env);
   assert.equal(privateCall.status,403);
 });
-test('portal usa só usuário e senha; convites antigos ainda podem ativar conta',()=>{
+test('portal usa só usuário e senha; convites novos ativam jogador',()=>{
   const html=read('public/index.html');
   for(const id of ['login-username','login-password','login-form',
-    'master-setup-form','player-setup-form','player-username','player-password'])
+    'change-master-form','player-setup-form','player-username','player-password'])
     assert(html.includes('id="'+id+'"'),id);
   assert(!html.includes('id="master-key"'));
   assert(!html.includes('id="room-label"'));
@@ -161,6 +160,9 @@ test('portal usa só usuário e senha; convites antigos ainda podem ativar conta
   assert(html.includes('enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key'));
   assert(html.includes("history.replaceState(null,'',location.pathname+location.search)"));
   assert(!html.includes('localStorage.setItem(KEY_STORAGE'));
+  assert(!html.includes('master-setup-form'));
+  assert(!html.includes('recuperar'));
+  assert(html.includes('OLNative.changeMasterCredentials('));
   const invites=read('public/acessos.html');
   assert(!invites.includes('id="room-label"'));
   assert(invites.includes("generateInternalCode()"));
