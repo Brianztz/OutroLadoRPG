@@ -91,8 +91,13 @@ async function accountLogin(ctx,username,password) {
     });
     return {error:'invalid_credentials',status:401};
   }
+  let authenticated=item;
+  if(legacySeed){
+    authenticated={...item,passwordHash:calculated};
+    await ctx.storage.put(key,authenticated);
+  }
   await ctx.storage.delete(attemptsKey);
-  return {item};
+  return {item:authenticated};
 }
 
 // A brand-new owner registry is provisioned by the deployed Worker, not by an
