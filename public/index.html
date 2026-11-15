@@ -46,6 +46,17 @@ input::placeholder{color:#778387}
 .credential-actions button,.secondary-small{border:1px solid #6b625f;background:#262b2e;color:#f0e8e0;border-radius:8px;padding:9px 15px;cursor:pointer;font-weight:700;font-size:.84rem}
 .credential-actions button:hover,.secondary-small:hover{border-color:#e2a492}
 .key-warning{color:#adadb0;font-size:.75rem;line-height:1.55;margin:9px 0 14px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 20px}
+.auth-tab{border:1px solid #566064;background:#12191e;color:#d9c6bc;padding:13px 10px;border-radius:10px;cursor:pointer;font:inherit;font-size:.89rem;font-weight:800}
+.auth-tab[aria-selected="true"]{background:#503025;border-color:#cc866b;color:#ffddcd}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:21px 0 15px}
+.role-option{border:1px solid #8b5a4b;background:linear-gradient(165deg,#30201d,#171819);color:#f9e4d9;border-radius:12px;padding:22px 12px;cursor:pointer;display:flex;flex-direction:column;gap:8px;align-items:center;font:inherit;font-weight:850;text-align:center;min-height:125px}
+.role-option span{font-size:1.7rem}
+.role-option small{font-size:.73rem;font-weight:550;color:#baa99e}
+.role-option:hover:not(:disabled){border-color:#e6aa91;background:#402a26}
+.role-option:disabled{opacity:.42;cursor:not-allowed}
+.role-note{font-size:.81rem;color:#d5a991;line-height:1.55}
+.subtle-link{margin-top:8px;padding:10px;border:0;background:transparent;color:#ebaa91;font-weight:800;cursor:pointer;text-decoration:underline}
 .panel details{border-top:1px solid #293638;margin-top:24px;padding-top:16px}
 .panel summary{cursor:pointer;font-size:.8rem;color:#c8a89e}
 .panel details p{font-size:.81rem;color:var(--muted);line-height:1.55}
@@ -78,8 +89,13 @@ footer strong{color:#b9bab5}
   </section>
   <section class="panel" aria-label="Login de Vestígios">
     <div id="login-section">
-      <div class="panel-top"><div><span class="panel-kicker">Mestre e jogadores</span><h2>Entre na sua conta</h2></div></div>
-      <p class="panel-hint">Sem código da mesa ou chave gigante. Basta usar seu usuário e senha.</p>
+      <div class="panel-top"><div><span class="panel-kicker">Mestre e jogadores</span><h2 id="access-title">Entre na sua conta</h2></div></div>
+      <div class="auth-tabs" role="tablist" aria-label="Acesso ao Outro Lado">
+        <button id="tab-login" class="auth-tab" type="button" role="tab" aria-selected="true" aria-controls="login-view">ENTRAR</button>
+        <button id="tab-signup" class="auth-tab" type="button" role="tab" aria-selected="false" aria-controls="signup-view">CRIAR CONTA</button>
+      </div>
+      <div id="login-view" role="tabpanel" aria-labelledby="tab-login">
+      <p class="panel-hint">Use seu usuário e senha. Depois, escolha seu tipo de acesso.</p>
       <form id="login-form">
         <label for="login-username">Usuário</label>
         <input id="login-username" type="text" maxlength="32" autocomplete="username" placeholder="Seu nome de usuário" required>
@@ -89,8 +105,8 @@ footer strong{color:#b9bab5}
       </form>
       <p class="status" id="login-status" role="status" aria-live="polite"></p>
       <div class="panel-divider"></div>
-      <div class="player-note"><strong>Primeiro acesso do jogador?</strong>
-        <p>Abra uma vez o convite enviado pelo mestre para escolher seu usuário e senha e acessar sua ficha.</p>
+      <div class="player-note"><strong>Cadastro restrito</strong>
+        <p>Novas contas de jogador precisam de um convite do mestre. O acesso de mestre é reservado à conta autorizada.</p>
       </div>
       <details id="change-master-login">
         <summary>Alterar meu usuário ou senha de mestre</summary>
@@ -110,12 +126,41 @@ footer strong{color:#b9bab5}
         </form>
         <p id="change-master-status" class="status" role="status" aria-live="polite"></p>
       </details>
+      </div>
+      <div id="signup-view" role="tabpanel" aria-labelledby="tab-signup" hidden>
+        <p class="panel-hint">O cadastro é restrito aos jogadores convidados. Cole o link que o mestre enviou para criar seu usuário e senha. Não é possível criar uma conta de mestre por aqui.</p>
+        <form id="signup-invite-form">
+          <label for="signup-invite-link">Link de convite</label>
+          <input id="signup-invite-link" type="text" autocomplete="off" spellcheck="false" placeholder="Cole aqui o link enviado pelo mestre" required>
+          <button id="signup-continue" class="action" type="submit">VALIDAR CONVITE E CRIAR CONTA</button>
+        </form>
+        <p class="status" id="signup-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <div id="role-section" class="invite-view" hidden aria-labelledby="role-title">
+      <span class="panel-kicker">Acesso autenticado</span>
+      <h2 id="role-title">Como deseja entrar?</h2>
+      <p class="panel-hint" id="role-description">Escolha seu acesso à campanha. As permissões dependem da conta autorizada.</p>
+      <div class="role-grid">
+        <button id="role-master" class="role-option" type="button">
+          <span aria-hidden="true">♜</span>
+          MESTRE
+          <small>Acessar o Escudo do Mestre</small>
+        </button>
+        <button id="role-player" class="role-option" type="button">
+          <span aria-hidden="true">♢</span>
+          JOGADOR
+          <small>Entrar na ficha do personagem</small>
+        </button>
+      </div>
+      <p id="role-status" class="role-note" role="status" aria-live="polite"></p>
+      <button id="role-other-account" class="subtle-link" type="button">Trocar conta</button>
     </div>
     <div id="invite-section" class="invite-view" hidden>
       <div class="invite-icon" aria-hidden="true">◇</div>
       <span class="panel-kicker">Primeiro acesso</span>
       <h2>Sua ficha está pronta.</h2>
-      <p class="panel-hint">Crie seu usuário e senha para entrar nas próximas vezes, sem códigos.</p>
+      <p class="panel-hint">Convite validado. Crie seu usuário e senha para entrar na campanha.</p>
       <p id="invite-status" class="status" role="status" aria-live="polite">Autenticando convite...</p>
       <form id="player-setup-form" hidden>
         <label for="player-username">Seu usuário</label>
@@ -125,7 +170,6 @@ footer strong{color:#b9bab5}
         <label for="player-confirm">Confirmar senha</label>
         <input id="player-confirm" type="password" minlength="10" autocomplete="new-password" required>
         <button id="player-create-account" class="action" type="submit">SALVAR USUÁRIO E SENHA</button>
-        <button id="player-skip-account" class="secondary-small" type="button" style="margin-top:12px">Entrar agora sem cadastrar</button>
       </form>
       <button id="invite-retry" class="action" hidden type="button">Tentar novamente</button>
     </div>
@@ -133,7 +177,7 @@ footer strong{color:#b9bab5}
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=simple-login-20261115"></script>
+<script src="/firebase-client.js?v=restricted-roles-20261115"></script>
 <script>
 (function () {
   'use strict';
@@ -142,6 +186,7 @@ footer strong{color:#b9bab5}
   const edition = 'temporada';
   const $ = id => document.getElementById(id);
   let busy = false, pendingPlayer = null, inviteCredentials = null;
+  let activeAccount = null;
 
   function show(id, message, error=false) {
     const node=$(id);
@@ -183,12 +228,59 @@ footer strong{color:#b9bab5}
     if(error?.message==='master_required')return 'Somente o mestre pode alterar esta conta.';
     return String(error?.message||'Não foi possível entrar. Confira sua conexão.');
   }
+  function showAccessTab(tab) {
+    if(busy)return;
+    const isSignup=tab==='signup';
+    $('tab-login').setAttribute('aria-selected',String(!isSignup));
+    $('tab-signup').setAttribute('aria-selected',String(isSignup));
+    $('login-view').hidden=isSignup;
+    $('signup-view').hidden=!isSignup;
+    $('access-title').textContent=isSignup?'Criar conta':'Entre na sua conta';
+  }
+  $('tab-login').addEventListener('click',()=>showAccessTab('login'));
+  $('tab-signup').addEventListener('click',()=>showAccessTab('signup'));
+
+  function chooseAccess(account,username) {
+    activeAccount={
+      role:account.role,table:normalize(account.tableCode),code:account.code||''
+    };
+    $('login-section').hidden=true;
+    $('role-section').hidden=false;
+    $('role-master').disabled=account.role!=='master';
+    $('role-player').disabled=account.role!=='player';
+    $('role-description').textContent='Conta '+username+' autenticada. Escolha como deseja acessar a campanha.';
+    $('role-status').textContent=account.role==='master'
+      ? 'Mestre autorizado. O acesso de jogador requer um convite vinculado a um personagem.'
+      : 'Jogador autorizado. O Escudo do Mestre é restrito à conta do mestre.';
+  }
+  $('role-master').addEventListener('click',()=>{
+    if(activeAccount?.role==='master')
+      destination('master',activeAccount.table,'');
+  });
+  $('role-player').addEventListener('click',()=>{
+    if(activeAccount?.role==='player'&&activeAccount.code)
+      destination('player',activeAccount.table,activeAccount.code);
+  });
+  $('role-other-account').addEventListener('click',async()=>{
+    if(!activeAccount)return;
+    const old=activeAccount;
+    activeAccount=null;
+    $('role-section').hidden=true;
+    $('login-section').hidden=false;
+    $('login-password').value='';
+    showAccessTab('login');
+    try{await OLNative.signOut(physicalRoom(old.table));}
+    catch(error){console.warn('Falha ao encerrar sessão anterior:',error);}
+    $('login-username').focus();
+  });
   async function accountLogin(username,password) {
     const account=await OLNative.lookupAccount(username,password);
     const table=normalize(account.tableCode),code=account.code||'';
+    if(!['master','player'].includes(account.role))
+      throw Error('Conta não possui acesso autorizado.');
     await OLNative.signInAccount(physicalRoom(table),account.role,code,username,password);
     localStorage.setItem('ol_last_username',username);
-    destination(account.role,table,code);
+    chooseAccess(account,username);
   }
   $('login-form').addEventListener('submit',async event=>{
     event.preventDefault();
@@ -225,6 +317,27 @@ footer strong{color:#b9bab5}
     }catch(error){show('change-master-status',loginError(error),true);}
     finally{busy=false;$('change-master-button').disabled=false;}
   });
+  function parseInviteLink(raw) {
+    let url;
+    try{url=new URL(String(raw||'').trim());}
+    catch{throw Error('Cole o link completo enviado pelo mestre.');}
+    const isPortal=url.pathname==='/' || /\/index\.html$/.test(url.pathname);
+    const query=url.searchParams,fragment=new URLSearchParams(url.hash.slice(1));
+    if(url.origin!==location.origin || !isPortal || query.get('convite')!=='1'
+        || !query.get('mesa') || !fragment.get('codigo') || !fragment.get('chave'))
+      throw Error('Convite inválido. Utilize o link original enviado pelo mestre.');
+    return {table:query.get('mesa'),code:fragment.get('codigo'),key:fragment.get('chave')};
+  }
+  $('signup-invite-form').addEventListener('submit',event=>{
+    event.preventDefault();
+    if(busy)return;
+    try{
+      const selected=parseInviteLink($('signup-invite-link').value);
+      // Do not store the private invitation key in browser persistent storage.
+      $('signup-invite-link').value='';
+      void enterPlayer(selected.table,selected.code,selected.key,'signup-status');
+    }catch(error){show('signup-status',loginError(error),true);}
+  });
   async function enterPlayer(table,code,key,statusNode) {
     if(busy)return;
     busy=true;$('invite-retry').disabled=true;
@@ -242,7 +355,7 @@ footer strong{color:#b9bab5}
       $('invite-section').hidden=false;
       $('player-setup-form').hidden=false;
       $('invite-retry').hidden=true;
-      show('invite-status','Convite confirmado. Crie seu usuário e senha, ou entre nesta vez sem cadastrar.');
+      show('invite-status','Convite confirmado. Cadastre seu usuário e senha para continuar.');
     }catch(error){
       show(statusNode,invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error),true);
       if(invite)$('invite-retry').hidden=false;
@@ -256,14 +369,15 @@ footer strong{color:#b9bab5}
       const username=credentials($('player-username').value,$('player-password').value,$('player-confirm').value);
       show('invite-status','Salvando seu login...');
       await OLNative.registerPlayerAccount(pendingPlayer.physical,username,$('player-password').value);
-      localStorage.setItem('ol_last_username',username);
-      destination('player',pendingPlayer.table,pendingPlayer.code);
+      // Sign in with the new account and display the protected role chooser.
+      // Creating an invited player never grants the master role.
+      await accountLogin(username,$('player-password').value);
+      $('invite-section').hidden=true;
+      $('player-password').value='';
+      $('player-confirm').value='';
     }catch(error){
       show('invite-status',error?.message==='username_taken'?'Esse usuário já está em uso. Escolha outro.':loginError(error),true);
     }finally{busy=false;$('player-create-account').disabled=false;}
-  });
-  $('player-skip-account').addEventListener('click',()=>{
-    if(pendingPlayer)destination('player',pendingPlayer.table,pendingPlayer.code);
   });
   if(invite) {
     $('login-section').hidden=true;
