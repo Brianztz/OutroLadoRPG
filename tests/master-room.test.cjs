@@ -123,7 +123,7 @@ test('portal exige login e senha sem acesso antigo de mestre', () => {
   const worker=fs.readFileSync(path.join(root,'src/worker.js'),'utf8');
   assert(portal.includes('id="login-username"'));
   assert(portal.includes('id="login-password"'));
-  assert(portal.includes('id="master-setup-form"'));
+  assert(portal.includes('id="change-master-form"'));
   assert(portal.includes('OLNative.changeMasterCredentials('));
   assert(!portal.includes('recoveryToken'));
   assert(!portal.includes('setupMasterAccount'));
@@ -132,7 +132,7 @@ test('portal exige login e senha sem acesso antigo de mestre', () => {
   assert(portal.includes('OLNative.signInAccount(physicalRoom(table)'));
   assert(!portal.includes('id="master-key"'));
   assert(worker.includes("new URL(request.url).pathname === '/api/master-key-check'"));
-  assert(worker.includes("getByName('SYSTEM_MASTER_PROFILE_V1')"));
+  assert(worker.includes("getByName('SYSTEM_MASTER_PROFILE_V2')"));
 });
 test('escudo Vestigios continua com seu codigo de mesa fixo e convite individual', () => {
   const master = fs.readFileSync(path.join(root, 'public/mestre-temporada.html'), 'utf8');
