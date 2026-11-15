@@ -50,30 +50,27 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
 <main>
 <span class="kicker">OUTRO LADO · VESTÍGIOS</span>
 <h1>Convidar jogador</h1>
-<p id="description">Escolha um nome fácil para cada personagem. O código será formado pelo nome da mesa e do personagem.</p>
-<label for="room-label">Nome da mesa</label>
-<input id="room-label" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Ex.: VESTÍGIOS">
+<p id="description">Crie um convite para o personagem. O jogador escolherá seu usuário e senha na primeira entrada.</p>
 <label for="character-name">Nome do personagem</label>
 <input id="character-name" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Ex.: Clara Valverde">
-<div id="code-preview" class="code-preview" aria-live="polite">Código da ficha: VESTIGIOS-CLARA-VALVERDE</div>
-<button type="button" id="create" class="primary">+ Criar convite para esse personagem</button>
+<button type="button" id="create" class="primary">+ CONVIDAR JOGADOR</button>
 <div id="result" hidden>
   <h2>Convite pronto!</h2>
-  <p>Copie e envie o link ao jogador. Ele entra automaticamente ao abrir.</p>
+  <p>Envie este convite uma vez. O jogador poderá criar seu usuário e senha mantendo a ficha.</p>
   <button id="copy" type="button" class="primary">Copiar link do jogador</button>
   <label for="invite-url">Link de convite</label>
   <input id="invite-url" readonly aria-label="Link de convite">
   <p id="created-code"></p>
-  <p class="warning">O link dá acesso à ficha desse jogador. Envie somente para a pessoa certa.</p>
+  <p class="warning">O convite dá acesso à ficha. Envie somente à pessoa certa; depois de criar a conta, ela poderá entrar com usuário e senha.</p>
 </div>
 <div id="status" role="status" aria-live="polite"></div>
 <section class="saved-players" aria-labelledby="saved-title">
   <h2 id="saved-title">Fichas já existentes</h2>
-  <p>Esqueceu o código? Encontre o personagem aqui e gere um novo link sem perder a ficha.</p>
+  <p>Encontre um personagem pelo nome e envie outro convite se ele precisar recuperar a conta. A ficha continua salva.</p>
   <div id="saved-list" class="saved-list" aria-live="polite"><p>Carregando fichas da mesa...</p></div>
 </section>
 <details id="recover">
-  <summary>Tenho um código antigo e quero recuperá-lo manualmente</summary>
+  <summary>Recuperação avançada de ficha antiga</summary>
   <p>Você também pode usar o código antigo da ficha. Isso cancela o convite anterior, mas mantém a ficha salva.</p>
   <label for="player-code">Código da ficha</label>
   <input id="player-code" maxlength="40" placeholder="Código antigo do personagem" autocomplete="off" spellcheck="false">
@@ -95,9 +92,7 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
   const back = document.getElementById('back');
   back.href = 'mestre-temporada.html?mesa=' + encodeURIComponent(table) + '&temporada=2';
   const code = document.getElementById('player-code');
-  const roomLabel = document.getElementById('room-label');
   const characterName = document.getElementById('character-name');
-  const preview = document.getElementById('code-preview');
   const savedList = document.getElementById('saved-list');
   const status = document.getElementById('status');
   const create = document.getElementById('create');
@@ -116,34 +111,15 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
     return;
   }
   document.getElementById('description').textContent =
-    'Mesa ' + table + ' · Vestígios. Use nomes fáceis para identificar seus jogadores.';
-  const friendlyKey = 'ol_friendly_room_label:' + physical;
-  const defaultLabel = /^M[A-F0-9]{20}$/.test(table) ? 'VESTIGIOS' : table;
-  roomLabel.value = localStorage.getItem(friendlyKey) || defaultLabel;
-
-  function slug(value) {
-    return String(value || '').normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '').toUpperCase()
-      .replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    'Vestígios · convide um personagem e ele poderá criar seu usuário e senha.';
+  // IDs are internal and deliberately not derived from the table or password.
+  function generateInternalCode() {
+    return 'J' + Array.from(crypto.getRandomValues(new Uint8Array(12)),
+      b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
   }
-  function friendlyCode() {
-    const prefix = slug(roomLabel.value).slice(0, 18).replace(/-+$/g, '');
-    const name = slug(characterName.value).slice(0, Math.max(0, 39 - prefix.length)).replace(/-+$/g, '');
-    return prefix && name ? prefix + '-' + name : '';
-  }
-  function updatePreview() {
-    const value = friendlyCode();
-    preview.textContent = 'Código da ficha: ' + (value || 'Digite a mesa e o nome do personagem');
-  }
-  roomLabel.addEventListener('input', () => {
-    localStorage.setItem(friendlyKey, roomLabel.value);
-    updatePreview();
-  });
-  characterName.addEventListener('input', updatePreview);
   characterName.addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); create.click(); }
   });
-  updatePreview();
 
   async function refreshSavedPlayers() {
     try {
@@ -162,7 +138,7 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
         const title = document.createElement('strong');
         title.textContent = item.name || item.code;
         const subcode = document.createElement('small');
-        subcode.textContent = 'Código: ' + item.code + (item.hasSheet ? '' : ' · Ainda sem dados de ficha');
+        subcode.textContent = item.hasSheet ? 'Ficha salva' : 'Aguardando a primeira entrada';
         detail.append(title, subcode);
         const button = document.createElement('button');
         button.type = 'button';
@@ -189,7 +165,8 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
     result.hidden = true;
     status.textContent = 'Criando convite...';
     try {
-      const data = await OLNative.provisionPlayer(physical, edition, playerCode, existing ? 'renew' : 'create');
+      const data = await OLNative.provisionPlayer(physical, edition, playerCode,
+        existing ? 'renew' : 'create', existing ? '' : characterName.value.trim());
       const invite = new URL('index.html', location.href);
       invite.search = '';
       invite.hash = '';
@@ -198,7 +175,8 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
       invite.searchParams.set('temporada', '2');
       invite.hash = new URLSearchParams({ codigo: playerCode, chave: data.playerKey }).toString();
       document.getElementById('invite-url').value = invite.href;
-      document.getElementById('created-code').textContent = 'Código da ficha: ' + playerCode + ' · disponível na lista de fichas existentes.';
+      document.getElementById('created-code').textContent = existing
+        ? 'Novo convite de recuperação pronto.' : 'Convite pronto para ' + characterName.value.trim() + '.';
       result.hidden = false;
       status.textContent = 'Pronto! Basta copiar o link e enviar.';
       await refreshSavedPlayers();
@@ -217,13 +195,12 @@ footer{border-top:1px solid #343c3e;margin-top:27px;padding-top:7px}
     }
   }
   create.onclick = () => {
-    const value = friendlyCode();
-    if (!value) {
-      status.textContent = 'Preencha o nome da mesa e do personagem para criar o convite.';
-      (roomLabel.value.trim() ? characterName : roomLabel).focus();
+    if (!characterName.value.trim()) {
+      status.textContent = 'Informe o nome do personagem.';
+      characterName.focus();
       return;
     }
-    issueInvite(value);
+    issueInvite(generateInternalCode());
   };
   void refreshSavedPlayers();
   renew.onclick = () => {
