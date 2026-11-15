@@ -12,7 +12,7 @@ const screen='mestre-temporada.html';
 function openPage() {
   const dom=new JSDOM(file(screen),{url:'https://example.test/'+screen,runScripts:'outside-only'});
   const w=dom.window;
-  w.eval("let monstersState=[]; function saveMonstersState(){window.__saved=JSON.parse(JSON.stringify(monstersState))}; function renderMonsters(){window.__renders=(window.__renders||0)+1}");
+  w.eval("var monstersState=[]; function saveMonstersState(){window.__saved=JSON.parse(JSON.stringify(monstersState))}; function renderMonsters(){window.__renders=(window.__renders||0)+1}");
   w.eval(data);
   w.eval(browser);
   return {dom,w};
