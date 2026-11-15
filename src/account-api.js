@@ -102,14 +102,12 @@ export async function handleAccountRequest(request,ctx,env) {
     return reply({error:'invalid_account_fields'},400);
 
   if(action==='reset-master'&&!internal){
-    // Only a server-side, Cloudflare-managed one-time recovery secret can
-    // invalidate earlier accounts. An anonymous user can NEVER claim a reset
-    // just because the previous master no longer has the old personal key.
+    // Only possession of a high-entropy, one-use recovery link permits
+    // a full reset. A missing old password never grants public ownership.
     const token=String(data?.recoveryToken||'');
-    // A 384-bit single-use capability, issued from the connected owner's
-    // GitHub account. Only its SHA-256 verifier is public in source control.
-    // No Cloudflare secret setup or previous master key is necessary.
-    const expectedHash='2851ceaac8928519c45118e77a2de1541376d1ea469d45c0c34c5fd8933a262d';
+    // Only the SHA-256 verifier of a 256-bit random token is stored in code.
+    // The token itself is never committed to the repository or Worker assets.
+    const expectedHash='ebee07a71f2f08c51a15fa1b654d1377a848bd5c4ff1bb24bd2bb4d0d1da6fc0';
     if(token.length!==64 || !equal(await sha(token),expectedHash))
       return reply({error:'invalid_recovery_link'},403);
     const consumedKey='owner:recovery-consumed:'+await sha(token);
@@ -118,24 +116,28 @@ export async function handleAccountRequest(request,ctx,env) {
     const room=await ctx.storage.get(ROOM_KEY);
     if(!room)return reply({error:'no_existing_room'},409);
     const accountName=await accountKey(username);
+    // A fresh, unpredictable internal room ID prevents any old browser caches
+    // from repopulating the new season even after the old room is wiped.
+    const newRoom=newTableCode();
     const salt=hex(crypto.getRandomValues(new Uint8Array(16)));
     const passwordHash=await hashPassword(password,salt);
     const reset=await ctx.storage.transaction(async t=>{
       if(await t.get(consumedKey))return false;
       const previous=await t.list({prefix:'account:'});
-      // Only access records are deleted. The permanent room, saved character
-      // sheets, clues, initiative and monster data live under other keys.
+      // Reset credentials and the permanent internal room identity. Content
+      // will be wiped from the OLD room through its private, admin-only route.
       for(const key of previous.keys())await t.delete(key);
       await t.delete(PERSONAL_HASH_KEY);
+      await t.put(ROOM_KEY,newRoom);
       await t.put(accountName,{
-        role:'master',username,salt,passwordHash,tableCode:room,createdAt:Date.now()
+        role:'master',username,salt,passwordHash,tableCode:newRoom,createdAt:Date.now()
       });
       await t.put(MASTER_ACCOUNT_KEY,accountName);
       await t.put(consumedKey,{usedAt:Date.now()});
       return true;
     });
     if(!reset)return reply({error:'recovery_already_used'},409);
-    let accessRevoked=false;
+    let oldRoomErased=false;
     try{
       const physical=roomId(room);
       const roomObject=env.TABLE_ROOMS.getByName(physical);
@@ -143,11 +145,11 @@ export async function handleAccountRequest(request,ctx,env) {
         method:'POST',
         headers:{'X-OL-Internal-Auth':serverKey}
       }));
-      accessRevoked=revoked.ok;
+      oldRoomErased=revoked.ok;
     }catch(error){
-      console.error('Old room sessions could not be revoked immediately:',error);
+      console.error('Old room could not be erased immediately:',error);
     }
-    return reply({ok:true,tableCode:room,oldAccessRevoked:accessRevoked});
+    return reply({ok:true,tableCode:newRoom,oldAccessRevoked:oldRoomErased,oldRoomErased});
   }
 
   if(action==='setup-master'&&!internal){
