@@ -130,7 +130,16 @@ function compactPlayer(data) {
         modoCombate: Boolean(data && data.modoCombate),
         armaDisparoAtiva: data && data.armaDisparoAtiva || null,
         status: data && data.status || {},
-        online: data && data.online !== false
+        online: data && data.online !== false,
+        openedByMaster: data && data.openedByMaster === true,
+        // Small gameplay summary: cards survive restarts without storing the
+        // entire sheet's images, clues and inventory in Durable Object memory.
+        exilioState: data && data.fullData && data.fullData.temporada && data.fullData.temporada.state
+            ? (() => { const st = data.fullData.temporada.state; return {
+                paranormalInfluence: st.paranormalInfluence || 0,
+                origin: st.origin || 'Mundano', occupation: st.occupation || '',
+                attrs: st.attrs || {}, resources: st.resources || {}
+            }; })() : data && data.exilioState || null
     };
 }
 
@@ -283,7 +292,8 @@ export class TableRoom extends DurableObject {
                 this.send(ws, 'auth_error', { reason: 'master_required' });
                 return;
             }
-            this.send(ws, 'players_snapshot', [...this.players.values()].filter(player => player && player.online !== false));
+            this.send(ws, 'players_snapshot', [...this.players.values()].filter(player =>
+                player && (player.online !== false || player.openedByMaster === true)));
             this.send(ws, 'initiative_state_updated', this.initiative);
             this.send(ws, 'lumina_state_updated', this.lumina);
             return;
@@ -400,7 +410,9 @@ export class TableRoom extends DurableObject {
             const freshConnection = registeredCode !== code
                 && !this.playerSockets(code).some(target => target !== ws);
             meta = this.updateMeta(ws, { playerCode: code });
-            const player = { ...data, codigo: code, id: code, mesa: this.table, online: true };
+            const previous = this.players.get(code) || {};
+            const player = { ...previous, ...data, codigo: code, id: code, mesa: this.table,
+                online: true, openedByMaster: previous.openedByMaster === true };
             this.players.set(code, player);
             await this.persistPlayer(player);
             if (freshConnection) {
@@ -410,12 +422,47 @@ export class TableRoom extends DurableObject {
             return;
         }
 
+        if (event === 'master_open_sheet') {
+            if (!meta.isMaster || !data || typeof data !== 'object'
+                || data.sheetType !== 'temporada' || !data.fullData?.temporada?.state) return;
+            const code = normalizePlayerCode(data.codigo || data.id);
+            if (!code) return;
+            const previous = this.players.get(code) || {};
+            const online = this.playerSockets(code).some(target => target.readyState === 1);
+            // A master's read-only opening is not a player connection and must
+            // never overwrite a live player's packet or push old data to them.
+            const player = { ...previous, ...(online ? {} : data), codigo: code,
+                id: code, mesa: this.table, online, openedByMaster: true };
+            this.players.set(code, player);
+            await this.persistPlayer(player);
+            this.broadcast('update_mestre', player);
+            return;
+        }
+
+        if (event === 'master_close_sheet') {
+            if (!meta.isMaster || !data || typeof data !== 'object') return;
+            const code = normalizePlayerCode(data.codigo || data.id);
+            const previous = this.players.get(code);
+            if (!code || !previous || !previous.openedByMaster) return;
+            const online = this.playerSockets(code).some(target => target.readyState === 1);
+            const player = { ...previous, online, openedByMaster: false };
+            this.players.set(code, player);
+            await this.persistPlayer(player);
+            if (online) this.broadcast('update_mestre', player);
+            else this.broadcast('player_disconnected', {
+                codigo: code, mesa: this.table, reason: 'closed_by_master'
+            });
+            return;
+        }
+
         if (event === 'master_update_player') {
             if (!meta.isMaster || !data || typeof data !== 'object' || !data.fullData) return;
             const code = normalizePlayerCode(data.codigo || data.id);
             if (!code) return;
             const previous = this.players.get(code) || {};
-            const player = { ...previous, ...data, codigo: code, id: code, mesa: this.table, online: true };
+            const player = { ...previous, ...data, codigo: code, id: code, mesa: this.table,
+                online: this.playerSockets(code).some(target => target.readyState === 1),
+                openedByMaster: previous.openedByMaster === true };
             this.players.set(code, player);
             await this.persistPlayer(player);
             for (const target of this.playerSockets(code)) this.send(target, 'player_data_updated', player);

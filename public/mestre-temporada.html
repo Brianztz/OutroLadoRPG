@@ -101,6 +101,12 @@
         .players-empty { grid-column: 1 / -1; padding: 45px 20px; border: 1px dashed rgba(74,153,218,0.3); border-radius: 12px; background: rgba(2,7,14,0.78); color: var(--text-secondary); text-align: center; }
         .players-empty strong { display: block; margin-bottom: 7px; color: var(--accent-green); }
         .player-card { padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-card); box-shadow: 0 8px 32px rgba(0,0,0,0.8); backdrop-filter: blur(8px); animation: card-in 0.25s ease-out; }
+        .player-card.master-opened-offline { border-color:rgba(214,145,94,.62); }
+        .player-card.master-opened-offline::before { background:#dfa071;box-shadow:0 0 9px rgba(223,160,113,.4); }
+        .player-origin-status { display:inline-block;margin-top:5px;color:#9ddbbb;font-size:.78em;font-weight:800; }
+        .player-card.master-opened-offline .player-origin-status { color:#eab58b; }
+        .btn-hide-master-sheet { width:100%;margin:0;padding:10px 6px;border-radius:6px;font-size:.72em;font-weight:900;cursor:pointer;border:1px solid rgba(234,165,120,.7);background:rgba(168,104,63,.14);color:#eac4a5; }
+        .btn-hide-master-sheet:hover { background:rgba(168,104,63,.3); }
         .player-card::before { content: ''; position: absolute; top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 9px rgba(74,153,218,0.8); }
         .player-header { display: flex; align-items: center; gap: 15px; padding: 0 20px 10px 0; border-bottom: 1px solid var(--border-color); }
         .player-img { width: 60px; height: 60px; flex: 0 0 60px; border: 2px solid var(--accent-blue); border-radius: 50%; background: #09090b; object-fit: cover; object-position: center top; }
@@ -3282,7 +3288,10 @@
 
         function updatePlayersCount() {
             const count = playersBoard.querySelectorAll('.player-card').length;
-            document.getElementById('players-count').textContent = `${count} ${count === 1 ? 'ONLINE' : 'ONLINE'}`;
+            const onlineCount = [...connectedPlayers.values()].filter(player => player?.online !== false).length;
+            const masterOpenedCount = count - onlineCount;
+            document.getElementById('players-count').textContent = onlineCount + ' ONLINE'
+                + (masterOpenedCount ? ' · ' + masterOpenedCount + ' ABERTA(S) PELO MESTRE' : '');
             let empty = document.getElementById('players-empty');
             if (!count && !empty) {
                 empty = document.createElement('div');
@@ -3302,13 +3311,15 @@
             const fromSeason = rawData.sheetType === 'temporada' || rawData.fullData?.sheetType === 'temporada';
             if (isSeasonMaster !== fromSeason) return;
             const data = rawData;
-            const exilioState = data.fullData?.temporada?.state || {};
+            const exilioState = data.fullData?.temporada?.state || data.exilioState || {};
             const exilioIp = Math.max(0,Math.min(10,exilioInteger(exilioState.paranormalInfluence??0)));
             const exilioClass = ['Mundano','Vanguarda','Analista','Canalizador'].includes(exilioState.origin)?exilioState.origin:'Mundano';
             const exilioOccupation = String(exilioState.occupation||'Sem ocupação');
             const exilioAttributes = EXILIO_MONSTER_ATTRIBUTES.map(([key,,abbr])=>'<span class="exilio-player-attribute">'+abbr+' <b>'+escapeHtml(exilioState.attrs?.[key]??0)+'</b></span>').join('');
             const code = String(data.codigo);
             connectedPlayers.set(code, data);
+            const online = data.online !== false;
+            const masterOpenedOffline = !online && data.openedByMaster === true;
             const initiativePlayer = initiativeState.entries.find(entry => entry.id === `player_${code}`);
             if (initiativePlayer && initiativePlayer.name !== String(data.nome || 'Personagem sem nome')) {
                 initiativePlayer.name = String(data.nome || 'Personagem sem nome');
@@ -3322,6 +3333,7 @@
                 card.id = `player-${code}`;
                 playersBoard.appendChild(card);
             }
+            card.classList.toggle('master-opened-offline', masterOpenedOffline);
 
             const lifeCurrent = safeNumber(exilioState.resources?.life?.current??data.vida_atual);
             const lifeMaximum = Math.max(0, safeNumber(exilioState.resources?.life?.max??data.vida_max));
@@ -3340,25 +3352,51 @@
             card.innerHTML = `
                 <div class="player-header">
                     <img src="${escapeHtml(data.foto || '')}" class="player-img" alt="">
-                    <div><h2 class="player-name">${escapeHtml(data.nome || 'Personagem sem nome')}</h2><div class="player-info">IP ${exilioIp} · ${escapeHtml(exilioClass)} · DEF ${escapeHtml(data.defesa ?? 0)}</div></div>
+                    <div><h2 class="player-name">${escapeHtml(data.nome || 'Personagem sem nome')}</h2><div class="player-info">IP ${exilioIp} · ${escapeHtml(exilioClass)} · DEF ${escapeHtml(data.defesa ?? 0)}</div><span class="player-origin-status">${online ? '● JOGADOR ONLINE' : '◇ ABERTA PELO MESTRE'}</span></div>
                 </div>
                 <div class="exilio-player-occupation">${escapeHtml(exilioOccupation)}</div><div class="exilio-player-attributes">${exilioAttributes}</div>
                 <div><div class="bar-label vida">PV · PONTOS DE VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
                 <div><div class="bar-label sanidade">PM · PONTOS MENTAIS</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
                 <div class="status-tags">${tags}</div>
-                <div class="player-actions"><button class="btn-ver-ficha" type="button">🔍 VER FICHA</button><button class="btn-remove-player" type="button">✕ REMOVER DA MESA</button></div>`;
+                <div class="player-actions"><button class="btn-ver-ficha" type="button">🔍 VER FICHA</button>${masterOpenedOffline
+                    ? '<button class="btn-hide-master-sheet" type="button">✕ FECHAR NO ESCUDO</button>'
+                    : '<button class="btn-remove-player" type="button">✕ REMOVER DA MESA</button>'}</div>`;
             card.querySelector('.btn-ver-ficha').onclick = () => abrirFicha(code);
-            card.querySelector('.btn-remove-player').onclick = () => removePlayerFromTable(code);
+            if (masterOpenedOffline) {
+                card.querySelector('.btn-hide-master-sheet').onclick = () => closeMasterOpenedSheetCard(code);
+            } else {
+                card.querySelector('.btn-remove-player').onclick = () => removePlayerFromTable(code);
+            }
             updatePlayersCount();
         }
 
-        function removePlayer(code, table = masterTableCode) {
+        function removePlayer(code, table = masterTableCode, reason = '') {
             if (normalizeTableCode(table) !== masterTableCode) return;
             code = String(code || '');
+            const current = connectedPlayers.get(code);
+            // A player disconnecting does not hide a sheet explicitly opened
+            // by the master. The card just changes to "Aberta pelo mestre".
+            if (current?.openedByMaster && reason !== 'removed_by_master'
+                && reason !== 'closed_by_master') {
+                renderPlayer({ ...current, online: false });
+                return;
+            }
             connectedPlayers.delete(code);
             const card = document.getElementById(`player-${code}`);
             if (card) card.remove();
             updatePlayersCount();
+        }
+
+        function closeMasterOpenedSheetCard(code) {
+            const current = connectedPlayers.get(String(code));
+            if (!current?.openedByMaster || current.online !== false) return;
+            const iframe = document.getElementById('iframe-ficha');
+            if (iframe.src) {
+                const openCode = new URL(iframe.src, location.href).searchParams.get('view');
+                if (openCode === code) fecharFicha();
+            }
+            socket.emit('master_close_sheet', { mesa: masterTableCode, codigo: code });
+            removePlayer(code, masterTableCode, 'closed_by_master');
         }
 
         function removePlayerFromInitiative(code) {
@@ -3444,7 +3482,7 @@
             }
             for (const entry of entries) {
                 const code = String(entry.code);
-                const online = connectedPlayers.has(code);
+                const online = connectedPlayers.get(code)?.online !== false && connectedPlayers.has(code);
                 const row = document.createElement('article');
                 row.className = 'master-sheet-entry';
                 const info = document.createElement('div');
@@ -3536,7 +3574,9 @@
             updatePlayersCount();
         });
         socket.on('update_mestre', renderPlayer);
-        socket.on('player_disconnected', data => removePlayer(data && data.codigo, data && data.mesa));
+        socket.on('player_disconnected', data => removePlayer(
+            data && data.codigo, data && data.mesa, data && data.reason
+        ));
         socket.on('novo_log', addPlayerRollResult);
         socket.on('initiative_rolled', applyPlayerInitiativeRoll);
         socket.on('lumina_state_updated', state => {
