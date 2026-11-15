@@ -8,7 +8,7 @@ const root=path.join(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const password='teste-senha-mestre-2026';
 const salt='a'.repeat(32);
-const passwordHash=pbkdf2Sync(password,Buffer.from(salt,'hex'),180000,32,'sha256').toString('hex');
+const passwordHash=pbkdf2Sync(password,Buffer.from(salt,'hex'),100000,32,'sha256').toString('hex');
 const source=read('src/account-api.js');
 assert(!source.includes(password),'A senha temporária nunca pode estar no repositório.');
 assert(source.includes('initializeFreshMasterRegistry'));

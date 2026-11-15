@@ -8,7 +8,8 @@ const INITIAL_MASTER_ROOM = 'M6C8604FBE737F0724FE5';
 // Pre-provisioned master password: only its PBKDF2-SHA256 verifier is deployed.
 // Replace username/password using the account settings form after signing in.
 const INITIAL_MASTER_SALT = '59e6ee6f9333255c576cc0d53908f630';
-const INITIAL_MASTER_PASSWORD_HASH = 'f86d915221829bd5da9be5c584f92f93300ecdbc4d487532023ca6e74ceb4241';
+const INITIAL_MASTER_PASSWORD_HASH = 'e87276dd5d4f2719b49e1d69070f5a5ccf723ae690b00d0affca4666471f3575';
+const LEGACY_INITIAL_MASTER_PASSWORD_HASH = 'f86d915221829bd5da9be5c584f92f93300ecdbc4d487532023ca6e74ceb4241';
 const MASTER_ACCOUNT_KEY = 'account:master:v1';
 const ACCOUNT_PREFIX = 'account:user:v1:';
 const PLAYER_INDEX = 'account:player-index:v1:';
@@ -16,7 +17,7 @@ const ROOM_OWNER = 'account:room-owner:v1:';
 const MASTER_SIGNUP_LIMIT = 5;
 const MASTER_SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 const FAILURE_PREFIX = 'account:fail:v1:';
-const WORK_FACTOR = 180000;
+const WORK_FACTOR = 100000;
 const encoder = new TextEncoder();
 
 function asUsername(input) {
@@ -77,15 +78,26 @@ async function accountLogin(ctx,username,password) {
   const salt=item?.salt||'00000000000000000000000000000000';
   const expected=item?.passwordHash||'0'.repeat(64);
   const calculated=await hashPassword(password,salt);
-  if(!item||!equal(expected,calculated)){
+  const legacySeed=Boolean(item && item.role==='master' &&
+    item.username==='mestre' && item.tableCode===INITIAL_MASTER_ROOM &&
+    item.salt===INITIAL_MASTER_SALT &&
+    equal(item.passwordHash,LEGACY_INITIAL_MASTER_PASSWORD_HASH));
+  const verified=Boolean(item) && (equal(expected,calculated) ||
+    (legacySeed && equal(calculated,INITIAL_MASTER_PASSWORD_HASH)));
+  if(!verified){
     const failures=(blocked?.count||0)+1;
     await ctx.storage.put(attemptsKey,{
       count:failures,lockedUntil:failures>=6?Date.now()+15*60*1000:0
     });
     return {error:'invalid_credentials',status:401};
   }
+  let authenticated=item;
+  if(legacySeed){
+    authenticated={...item,passwordHash:calculated};
+    await ctx.storage.put(key,authenticated);
+  }
   await ctx.storage.delete(attemptsKey);
-  return {item};
+  return {item:authenticated};
 }
 
 // A brand-new owner registry is provisioned by the deployed Worker, not by an
