@@ -58,6 +58,12 @@
       body:JSON.stringify({action:'lookup',username,password})
     });
   }
+  async function registerMasterAccount(username, password) {
+    return api(base+'account',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'register-master',username,password})
+    });
+  }
   async function changeMasterCredentials(username,password,newUsername,newPassword) {
     return api(base+'account',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -113,7 +119,7 @@
   }
   global.OLNative = Object.freeze({
     tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
-    lookupAccount, changeMasterCredentials, signInAccount, registerPlayerAccount,
+    lookupAccount, registerMasterAccount, changeMasterCredentials, signInAccount, registerPlayerAccount,
     provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);

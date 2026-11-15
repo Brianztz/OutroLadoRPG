@@ -12,6 +12,9 @@ const INITIAL_MASTER_PASSWORD_HASH = 'f86d915221829bd5da9be5c584f92f93300ecdbc4d
 const MASTER_ACCOUNT_KEY = 'account:master:v1';
 const ACCOUNT_PREFIX = 'account:user:v1:';
 const PLAYER_INDEX = 'account:player-index:v1:';
+const ROOM_OWNER = 'account:room-owner:v1:';
+const MASTER_SIGNUP_LIMIT = 5;
+const MASTER_SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 const FAILURE_PREFIX = 'account:fail:v1:';
 const WORK_FACTOR = 180000;
 const encoder = new TextEncoder();
@@ -145,6 +148,52 @@ export async function handleAccountRequest(request,ctx,env) {
     || (action==='register-player'&&!validPassword(password)))
     return reply({error:'invalid_account_fields'},400);
 
+  if(action==='register-master'&&!internal){
+    // Public signup creates a NEW independent room. Never permit a browser
+    // to choose an existing table or inherit another master's account.
+    const accountName=await accountKey(username);
+    if(await ctx.storage.get(accountName))return reply({error:'username_taken'},409);
+    const clientIP=String(request.headers.get('CF-Connecting-IP')||'').slice(0,80);
+    const limitKey=clientIP?'account:signup-rate:v1:'+await sha(clientIP):'';
+    const limit=limitKey?await ctx.storage.get(limitKey):null;
+    if(limit && limit.until>Date.now() && limit.count>=MASTER_SIGNUP_LIMIT)
+      return reply({error:'too_many_signups'},429);
+    const salt=hex(crypto.getRandomValues(new Uint8Array(16)));
+    const passwordHash=await hashPassword(password,salt);
+    const created=await ctx.storage.transaction(async t=>{
+      if(await t.get(accountName))return {error:'username_taken'};
+      if(limitKey){
+        const recent=await t.get(limitKey);
+        if(recent && recent.until>Date.now() && recent.count>=MASTER_SIGNUP_LIMIT)
+          return {error:'too_many_signups'};
+      }
+      let tableCode='',ownerKey='';
+      for(let i=0;i<5;i++){
+        const proposed=newTableCode();
+        const key=ROOM_OWNER+roomId(proposed);
+        if(!await t.get(key)){tableCode=proposed;ownerKey=key;break;}
+      }
+      if(!tableCode)return {error:'room_creation_failed'};
+      await t.put(accountName,{
+        role:'master',username,salt,passwordHash,
+        tableCode,createdAt:Date.now()
+      });
+      await t.put(ownerKey,accountName);
+      if(limitKey){
+        const recent=await t.get(limitKey);
+        const active=recent && recent.until>Date.now();
+        await t.put(limitKey,{
+          count:(active?recent.count:0)+1,
+          until:active?recent.until:Date.now()+MASTER_SIGNUP_WINDOW_MS
+        });
+      }
+      return {tableCode};
+    });
+    if(created.error)return reply({error:created.error},
+      created.error==='username_taken'?409:created.error==='too_many_signups'?429:503);
+    return reply({ok:true,role:'master',tableCode:created.tableCode},201);
+  }
+
   if(action==='change-master-credentials'&&!internal){
     const result=await accountLogin(ctx,username,password);
     if(!result.item)return reply({error:result.error},result.status);
@@ -163,7 +212,10 @@ export async function handleAccountRequest(request,ctx,env) {
       if(newKey!==oldKey && await t.get(newKey))return 'username_taken';
       await t.delete(oldKey);
       await t.put(newKey,{...stored,username:nextUsername,salt,passwordHash,updatedAt:Date.now()});
-      await t.put(MASTER_ACCOUNT_KEY,newKey);
+      const ownerKey=ROOM_OWNER+roomId(stored.tableCode);
+      if(await t.get(ownerKey)===oldKey)await t.put(ownerKey,newKey);
+      if(await t.get(MASTER_ACCOUNT_KEY)===oldKey)
+        await t.put(MASTER_ACCOUNT_KEY,newKey);
       return 'ok';
     });
     if(updated!=='ok')return reply({error:updated},updated==='username_taken'?409:401);
@@ -171,11 +223,18 @@ export async function handleAccountRequest(request,ctx,env) {
   }
 
   if(action==='register-player'&&internal){
-    const room=await ctx.storage.get(ROOM_KEY);
     const physical=String(data.physicalTable||'');
+    const roomOwnerKey=ROOM_OWNER+physical;
+    const ownerAccountKey=await ctx.storage.get(roomOwnerKey);
+    const ownerAccount=ownerAccountKey?await ctx.storage.get(ownerAccountKey):null;
+    const legacyRoom=await ctx.storage.get(ROOM_KEY);
+    const room=ownerAccount?.role==='master' && roomId(ownerAccount.tableCode)===physical
+      ? ownerAccount.tableCode
+      : legacyRoom && roomId(legacyRoom)===physical
+        ? legacyRoom : '';
     const code=String(data.code||'').trim().toUpperCase();
     const ownerHash=String(data.ownerHash||'');
-    if(!room || physical!==roomId(room) || !/^[A-Z0-9_-]{1,40}$/.test(code)
+    if(!room || !/^[A-Z0-9_-]{1,40}$/.test(code)
         || !/^[a-f0-9]{64}$/.test(ownerHash))
       return reply({error:'invalid_player_binding'},403);
     const key=await accountKey(username);

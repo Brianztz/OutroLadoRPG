@@ -105,8 +105,8 @@ footer strong{color:#b9bab5}
       </form>
       <p class="status" id="login-status" role="status" aria-live="polite"></p>
       <div class="panel-divider"></div>
-      <div class="player-note"><strong>Cadastro restrito</strong>
-        <p>Novas contas de jogador precisam de um convite do mestre. O acesso de mestre é reservado à conta autorizada.</p>
+      <div class="player-note"><strong>Como funciona?</strong>
+        <p>Qualquer pessoa pode criar uma conta de Mestre e administrar sua própria mesa. Para jogar na mesa de alguém, basta receber um convite.</p>
       </div>
       <details id="change-master-login">
         <summary>Alterar meu usuário ou senha de mestre</summary>
@@ -128,13 +128,33 @@ footer strong{color:#b9bab5}
       </details>
       </div>
       <div id="signup-view" role="tabpanel" aria-labelledby="tab-signup" hidden>
-        <p class="panel-hint">O cadastro é restrito aos jogadores convidados. Cole o link que o mestre enviou para criar seu usuário e senha. Não é possível criar uma conta de mestre por aqui.</p>
+        <p class="panel-hint">Crie uma conta como Mestre para ter sua própria mesa, ou escolha Jogador se já recebeu um convite.</p>
+        <div class="auth-tabs" role="group" aria-label="Tipo de conta">
+          <button id="signup-as-master" class="auth-tab" type="button" aria-pressed="true">♜ MESTRE</button>
+          <button id="signup-as-player" class="auth-tab" type="button" aria-pressed="false">♢ JOGADOR</button>
+        </div>
+        <div id="signup-master-view">
+          <form id="signup-master-form">
+            <label for="signup-master-username">Usuário</label>
+            <input id="signup-master-username" type="text" maxlength="32" autocomplete="username" required placeholder="Escolha seu usuário">
+            <label for="signup-master-password">Senha (mínimo de 10 caracteres)</label>
+            <input id="signup-master-password" type="password" minlength="10" maxlength="128" autocomplete="new-password" required>
+            <label for="signup-master-confirm">Confirmar senha</label>
+            <input id="signup-master-confirm" type="password" minlength="10" maxlength="128" autocomplete="new-password" required>
+            <button id="signup-master-submit" class="action" type="submit">CRIAR MINHA CONTA DE MESTRE</button>
+          </form>
+          <p id="signup-master-status" class="status" role="status" aria-live="polite"></p>
+          <p class="panel-hint" style="margin-top:10px">Sua mesa será criada automaticamente, sem links ou códigos para registrar o mestre.</p>
+        </div>
+        <div id="signup-player-view" hidden>
+        <p class="panel-hint">Para criar uma conta de Jogador, cole o convite enviado pelo mestre da campanha.</p>
         <form id="signup-invite-form">
           <label for="signup-invite-link">Link de convite</label>
           <input id="signup-invite-link" type="text" autocomplete="off" spellcheck="false" placeholder="Cole aqui o link enviado pelo mestre" required>
           <button id="signup-continue" class="action" type="submit">VALIDAR CONVITE E CRIAR CONTA</button>
         </form>
         <p class="status" id="signup-status" role="status" aria-live="polite"></p>
+        </div>
       </div>
     </div>
     <div id="role-section" class="invite-view" hidden aria-labelledby="role-title">
@@ -177,7 +197,7 @@ footer strong{color:#b9bab5}
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=restricted-roles-20261115"></script>
+<script src="/firebase-client.js?v=open-master-signup-20261115"></script>
 <script>
 (function () {
   'use strict';
@@ -225,6 +245,8 @@ footer strong{color:#b9bab5}
     if(error?.message==='invalid_credentials')return 'Usuário ou senha incorretos.';
     if(error?.message==='invalid_account_fields')return 'Confira seu usuário e sua senha.';
     if(error?.message==='username_taken')return 'Este usuário já está em uso. Escolha outro.';
+    if(error?.message==='too_many_signups')return 'Muitos cadastros neste momento. Tente novamente mais tarde.';
+    if(error?.message==='room_creation_failed')return 'Não foi possível criar sua mesa agora. Tente novamente.';
     if(error?.message==='master_required')return 'Somente o mestre pode alterar esta conta.';
     return String(error?.message||'Não foi possível entrar. Confira sua conexão.');
   }
@@ -239,6 +261,39 @@ footer strong{color:#b9bab5}
   }
   $('tab-login').addEventListener('click',()=>showAccessTab('login'));
   $('tab-signup').addEventListener('click',()=>showAccessTab('signup'));
+  function chooseSignupType(type) {
+    const isMaster=type==='master';
+    $('signup-master-view').hidden=!isMaster;
+    $('signup-player-view').hidden=isMaster;
+    $('signup-as-master').setAttribute('aria-pressed',String(isMaster));
+    $('signup-as-player').setAttribute('aria-pressed',String(!isMaster));
+  }
+  $('signup-as-master').addEventListener('click',()=>chooseSignupType('master'));
+  $('signup-as-player').addEventListener('click',()=>chooseSignupType('player'));
+  $('signup-master-form').addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(busy)return;
+    busy=true;
+    $('signup-master-submit').disabled=true;
+    try {
+      const username=credentials(
+        $('signup-master-username').value,
+        $('signup-master-password').value,
+        $('signup-master-confirm').value
+      );
+      const password=$('signup-master-password').value;
+      show('signup-master-status','Criando sua conta e uma nova mesa...');
+      await OLNative.registerMasterAccount(username,password);
+      await accountLogin(username,password);
+      $('signup-master-password').value='';
+      $('signup-master-confirm').value='';
+    }catch(error){
+      show('signup-master-status',loginError(error),true);
+    }finally{
+      busy=false;
+      $('signup-master-submit').disabled=false;
+    }
+  });
 
   function chooseAccess(account,username) {
     activeAccount={
