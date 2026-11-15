@@ -2,6 +2,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { handleStorageRequest } from './storage-api.js';
 import { currentSession, handleSessionRequest } from './session-api.js';
 import { handleMasterRoomRequest } from './master-room-api.js';
+import { handleAccountRequest } from './account-api.js';
 
 const DEFAULT_TABLE = 'PADRAO';
 const encoder = new TextEncoder();
@@ -191,6 +192,10 @@ export class TableRoom extends DurableObject {
         if (new URL(request.url).pathname === '/api/master-room'
             || new URL(request.url).pathname === '/api/master-key-check') {
             return handleMasterRoomRequest(request, this.ctx, this.env);
+        }
+        if (new URL(request.url).pathname === '/api/account'
+            || new URL(request.url).pathname === '/api/account-internal') {
+            return handleAccountRequest(request, this.ctx, this.env);
         }
         if (new URL(request.url).pathname === '/api/session') {
             return handleSessionRequest(request, this.ctx, this.env);
@@ -588,6 +593,9 @@ export default {
         }
         if (url.pathname === '/api/master-room') {
             // A fixed Durable Object holds the owner's code across devices and deployments.
+            return env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1').fetch(request);
+        }
+        if (url.pathname === '/api/account') {
             return env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V1').fetch(request);
         }
         if (url.pathname === '/api/storage' || url.pathname === '/api/session') {
