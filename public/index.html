@@ -246,6 +246,7 @@ footer strong{color:#b9bab5}
     if(error?.message==='invalid_account_fields')return 'Confira seu usuário e sua senha.';
     if(error?.message==='username_taken')return 'Este usuário já está em uso. Escolha outro.';
     if(error?.message==='too_many_signups')return 'Muitos cadastros neste momento. Tente novamente mais tarde.';
+    if(error?.message==='invalid_server_response')return 'O servidor não respondeu corretamente. Tente novamente em instantes.';
     if(error?.message==='room_creation_failed')return 'Não foi possível criar sua mesa agora. Tente novamente.';
     if(error?.message==='master_required')return 'Somente o mestre pode alterar esta conta.';
     return String(error?.message||'Não foi possível entrar. Confira sua conexão.');
