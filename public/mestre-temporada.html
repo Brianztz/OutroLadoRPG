@@ -124,6 +124,14 @@
         .tag-lesionado { border: 1px solid var(--accent-red); background: rgba(229,57,53,0.4); }
         .tag-morrendo { background: var(--accent-red); animation: pulse-red 1.5s infinite; }
         .tag-enlouquecendo { border: 1px solid var(--accent-blue); background: rgba(139,204,246,0.4); }
+        .exilio-player-trained-skills { display:grid;gap:8px;border-top:1px solid rgba(200,141,104,.25);padding-top:11px; }
+        .exilio-trained-title { display:flex;align-items:center;justify-content:space-between;gap:7px;color:#e1b7a0;font-size:.69em;font-weight:900;letter-spacing:.055em; }
+        .exilio-trained-count { border-radius:99px;background:rgba(199,116,82,.17);border:1px solid rgba(199,116,82,.35);padding:2px 7px;color:#f2c3a9;font-size:.94em; }
+        .exilio-trained-list { display:flex;gap:6px;flex-wrap:wrap;align-items:stretch; }
+        .exilio-trained-chip { display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px;padding:6px 8px;border:1px solid rgba(158,108,78,.53);border-radius:7px;background:rgba(58,37,29,.8);color:#f2e3d5;font-size:.71em;font-weight:850;line-height:1.25;overflow-wrap:anywhere; }
+        .exilio-trained-chip strong { color:#f9c199;font-size:1.02em;font-variant-numeric:tabular-nums; }
+        .exilio-trained-chip small { color:#d8a690;font-size:.88em;font-weight:750; }
+        .exilio-trained-empty { color:#998d83;font-size:.76em;line-height:1.5; }
         .player-actions { display: grid; grid-template-columns: 1fr; gap: 7px; }
         .btn-ver-ficha, .btn-remove-player { width: 100%; margin: 0; padding: 10px 6px; border-radius: 6px; font-size: 0.72em; font-weight: 900; cursor: pointer; transition: 0.2s; }
         .btn-ver-ficha { border: 1px solid var(--accent-blue); background: rgba(139,204,246,0.1); color: var(--accent-blue); }
@@ -3304,6 +3312,29 @@
             }
         }
 
+        function renderPlayerTrainedSkills(exilioState) {
+            const domains = exilioState && exilioState.skillDomains;
+            const hasTrainingData = domains && typeof domains === 'object' && !Array.isArray(domains);
+            const trained = hasTrainingData ? EXILIO_MONSTER_SKILLS
+                .map(([name]) => [name, exilioInteger(domains[name])])
+                .filter(([, degree]) => degree > 0)
+                .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR')) : [];
+            const count = trained.length;
+            const heading = '<div class="exilio-trained-title"><span>PERÍCIAS TREINADAS</span><span class="exilio-trained-count">'
+                + count + '</span></div>';
+            const chips = trained.map(([name, degree]) => {
+                const rank = degree >= 6 ? 'REFERÊNCIA' : degree >= 4 ? 'EXPERIENTE' : degree >= 2 ? 'PRATICANTE' : 'DOMÍNIO';
+                return '<span class="exilio-trained-chip"><span>' + escapeHtml(name)
+                    + '</span><strong>+' + degree + '</strong><small>' + rank + '</small></span>';
+            }).join('');
+            const fallback = hasTrainingData ? 'Nenhuma perícia treinada.'
+                : 'Abra a ficha para carregar os dados de treinamento.';
+            return '<section class="exilio-player-trained-skills" aria-label="Perícias treinadas do personagem">'
+                + heading + '<div class="exilio-trained-list">'
+                + (chips || '<span class="exilio-trained-empty">' + fallback + '</span>')
+                + '</div></section>';
+        }
+
         function renderPlayer(rawData) {
             if (!rawData || !rawData.codigo) return;
             if (normalizeTableCode(rawData.mesa) !== masterTableCode) return;
@@ -3316,6 +3347,7 @@
             const exilioClass = ['Mundano','Vanguarda','Analista','Canalizador'].includes(exilioState.origin)?exilioState.origin:'Mundano';
             const exilioOccupation = String(exilioState.occupation||'Sem ocupação');
             const exilioAttributes = EXILIO_MONSTER_ATTRIBUTES.map(([key,,abbr])=>'<span class="exilio-player-attribute">'+abbr+' <b>'+escapeHtml(exilioState.attrs?.[key]??0)+'</b></span>').join('');
+            const exilioTrainedSkills = renderPlayerTrainedSkills(exilioState);
             const code = String(data.codigo);
             connectedPlayers.set(code, data);
             const online = data.online !== false;
@@ -3355,6 +3387,7 @@
                     <div><h2 class="player-name">${escapeHtml(data.nome || 'Personagem sem nome')}</h2><div class="player-info">IP ${exilioIp} · ${escapeHtml(exilioClass)} · DEF ${escapeHtml(data.defesa ?? 0)}</div><span class="player-origin-status">${online ? '● JOGADOR ONLINE' : '◇ ABERTA PELO MESTRE'}</span></div>
                 </div>
                 <div class="exilio-player-occupation">${escapeHtml(exilioOccupation)}</div><div class="exilio-player-attributes">${exilioAttributes}</div>
+                ${exilioTrainedSkills}
                 <div><div class="bar-label vida">PV · PONTOS DE VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
                 <div><div class="bar-label sanidade">PM · PONTOS MENTAIS</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
                 <div class="status-tags">${tags}</div>
