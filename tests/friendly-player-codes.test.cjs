@@ -31,23 +31,15 @@ function request(kind, code='', mode='', auth=secret) {
   if(mode)url.searchParams.set(mode,'1');
   return new Request(url,{method:kind==='player-access'?'POST':'GET',headers:auth?{Authorization:'Bearer '+auth}:{}});
 }
-test('codigos amigaveis sao baseados em mesa e personagem e aceitam acentos', () => {
+test('convites novos utilizam IDs internos, mostrando apenas o nome do personagem',()=>{
   const page=fs.readFileSync(path.join(root,'public/acessos.html'),'utf8');
-  const start=page.indexOf('  function slug(value) {');
-  const end=page.indexOf('  function updatePreview() {',start);
-  assert(start>=0&&end>start);
-  const fixture=vm.runInNewContext(page.slice(start,end)+'\nfriendlyCode();',{
-    roomLabel:{value:'Vestígios'},characterName:{value:'Clára Valverde'}
-  });
-  assert.equal(fixture,'VESTIGIOS-CLARA-VALVERDE');
-  const long=vm.runInNewContext(page.slice(start,end)+'\nfriendlyCode();',{
-    roomLabel:{value:'Floresta da Serra dos Mortos'},characterName:{value:'João e Jéssica Pereira da Silva'}
-  });
-  assert.match(long,/^[A-Z0-9-]+$/);
-  assert(long.length<=40);
+  assert(page.includes('function generateInternalCode()'));
+  assert(page.includes("crypto.getRandomValues(new Uint8Array(12))"));
+  assert(!page.includes('id="room-label"'));
+  assert(!page.includes('id="code-preview"'));
+  assert(page.includes('id="character-name"'));
   assert(page.includes('id="saved-list"'));
   assert(page.includes('OLNative.listPlayers(physical, edition)'));
-  assert(!page.includes('function generateCode()'));
 });
 test('codigo existente nunca e substituido ao criar convite para mesmo nome', async () => {
   const handle=await load(),ctx=mockContext(),env={MASTER_DATA_TOKEN:secret};
