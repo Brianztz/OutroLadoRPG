@@ -743,3 +743,77 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     flex-basis:45px;min-width:45px;max-width:45px;width:45px;height:45px
   }
 }
+
+/* Cartões dos personagens: identidade e ocupação no cabeçalho;
+   PV e PM antes dos atributos, sem alterar os valores da ficha. */
+.player-card .player-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.player-card .player-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 6px;
+  line-height: 1.35;
+}
+.player-card .player-info > span {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.player-card .player-info .player-level,
+.player-card .player-info .player-defense {
+  color: #ceb0a1;
+  font: 800 10px/1.3 Arial,sans-serif;
+  white-space: nowrap;
+}
+.player-card .player-info .exilio-player-class,
+.player-card .player-info .exilio-player-occupation {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 4px 7px;
+  border: 1px solid #9f5038;
+  border-radius: 5px;
+  background: #4a251a;
+  color: #f6d3be;
+  font: 800 10px/1.35 Arial,sans-serif;
+}
+.player-card .player-info .exilio-player-occupation {
+  border-color: #795044;
+  background: #251713;
+  color: #dfbdac;
+}
+.player-card .exilio-player-resources {
+  display: grid;
+  gap: 10px;
+  padding: 2px 0 3px;
+}
+.player-card .exilio-player-resource { min-width: 0; }
+.player-card .exilio-player-resource .bar-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .055em;
+}
+.player-card .exilio-player-resource .bar-container {
+  height: 24px;
+  margin-top: 5px;
+}
+.player-card .exilio-player-resource .bar-text {
+  line-height: 22px;
+  font-size: 12px;
+}
+.player-card .exilio-player-attributes {
+  margin: 2px 0 4px;
+}
+@media(max-width: 520px) {
+  .player-card .player-header { gap: 10px; }
+  .player-card .player-info { gap: 5px; }
+  .player-card .player-info .exilio-player-class,
+  .player-card .player-info .exilio-player-occupation {
+    font-size: 9px;
+    padding: 4px 6px;
+  }
+}
