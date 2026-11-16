@@ -69,6 +69,116 @@ async function putStored(storage, root, payload) {
   return { hash: manifest.hash, updatedAt: manifest.updatedAt };
 }
 
+
+/* Entregas do mestre guardadas separadamente da ficha. Isso impede que um
+   salvamento antigo do jogador sobrescreva pistas ou equipamentos recebidos. */
+const MAX_GRANTS_PER_CHARACTER = 600;
+function nativeSheetHash(value) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+function normalizeMasterGrant(type, source, id) {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) return null;
+  if (type === 'item') {
+    const name = String(source.n || '').trim().slice(0, 120);
+    if (!name) return null;
+    const isWeapon = source.type === 'arma';
+    const ammo = source.type === 'municao';
+    const lines = [
+      String(source.d || '').slice(0, 5000),
+      ...(isWeapon ? [
+        'Dano: ' + String(source.dmg || '0').slice(0, 50),
+        'Crítico: ' + String(source.crit || '×2').slice(0, 50),
+        'Perícia: ' + String(source.skill || 'CONFRONTO').slice(0, 70),
+        'Munição: ' + String(source.ammo || 'Nenhuma').slice(0, 70),
+        'Capacidade: ' + String(source.capacity || 0).slice(0, 20),
+        'Ataques: ' + String(source.atk || 1).slice(0, 20),
+        'Alcance: ' + String(source.range || 'Curto').slice(0, 50)
+      ] : [])
+    ].filter(Boolean);
+    return { id: 'master_item_' + id, name, description: lines.join('\n'),
+      weight: Math.max(0, Math.min(999, Number(source.w) || 0)),
+      quantity: 1, location: 'equipment', type: isWeapon ? 'weapon' : 'gear',
+      image: String(source.img || '').slice(0, 3000),
+      masterGranted: true, masterAmmo: ammo };
+  }
+  if (type === 'clue') {
+    const name = String(source.title || '').trim().slice(0, 160);
+    if (!name) return null;
+    const clueType = source.type === 'book' ? 'book' : source.type === 'audio' ? 'audio' : 'object';
+    const pages = (Array.isArray(source.pages) ? source.pages : []).slice(0, 100)
+      .map(page => String(typeof page === 'string' ? page : page?.img || page?.src || ''))
+      .filter(Boolean);
+    const image = String(source.img || source.image || '');
+    return {
+      id: 'master_clue_' + id, title: name,
+      text: String(source.desc ?? source.text ?? '').slice(0, 5000),
+      image, type: clueType, backImg: String(source.backImg || ''),
+      coverImg: String(source.coverImg || ''), coverBackImg: String(source.coverBackImg || ''),
+      audioSrc: String(source.audioSrc || ''), audioImg: String(source.audioImg || ''),
+      thickness: Math.max(4, Math.min(40, Number(source.thickness) || 18)), pages,
+      masterGranted: true
+    };
+  }
+  return null;
+}
+async function mergeMasterGrants(storage, root, payload) {
+  if (!payload || typeof payload !== 'object' || typeof payload.sheetJson !== 'string') return payload;
+  const ids = await storage.get(root + ':master-grant-ids');
+  if (!Array.isArray(ids) || ids.length === 0) return payload;
+  let sheet;
+  try { sheet = JSON.parse(payload.sheetJson); } catch (_) { return payload; }
+  if (!sheet || sheet.version !== 1 || !sheet.state || typeof sheet.state !== 'object') return payload;
+  const state = sheet.state;
+  const applied = new Set(Array.isArray(state.masterGrantIds) ? state.masterGrantIds : []);
+  const missing = ids.filter(id => !applied.has(id));
+  if (!missing.length) return payload;
+  const grants = await Promise.all(missing.map(id => getStored(storage, root + ':master-grant:' + id)));
+  if (grants.some(grant => !grant?.data)) throw new Error('Incomplete master delivery');
+  for (let i = 0; i < missing.length; i++) {
+    const entry = grants[i].data;
+    const content = normalizeMasterGrant(entry.type, entry.payload, missing[i]);
+    if (!content) throw new Error('Invalid master delivery');
+    if (entry.type === 'item') {
+      if (!state.inventory || typeof state.inventory !== 'object') {
+        state.inventory = { items: [], equipped: { weapon: null, armor: null, important: null, backpack: null } };
+      }
+      if (!Array.isArray(state.inventory.items)) state.inventory.items = [];
+      if (!state.inventory.items.some(item => item.id === content.id)) state.inventory.items.push(content);
+    } else {
+      if (!Array.isArray(state.clues)) state.clues = [];
+      if (!state.clues.some(clue => clue.id === content.id)) state.clues.push(content);
+    }
+    applied.add(missing[i]);
+  }
+  state.masterGrantIds = [...applied];
+  const sheetJson = JSON.stringify(sheet);
+  return { ...payload, sheetJson, sheetHash: nativeSheetHash(sheetJson) };
+}
+async function persistMasterGrant(storage, root, type, payload) {
+  const id = crypto.randomUUID().replace(/-/g, '');
+  const indexKey = root + ':master-grant-ids';
+  const original = await storage.get(indexKey);
+  if (Array.isArray(original) && original.length >= MAX_GRANTS_PER_CHARACTER) {
+    throw new Error('delivery_limit_reached');
+  }
+  const saved = await putStored(storage, root + ':master-grant:' + id, { type, payload });
+  if (saved.error) throw new Error(saved.error);
+  const add = async store => {
+    const ids = await store.get(indexKey);
+    const existing = Array.isArray(ids) ? ids : [];
+    if (existing.length >= MAX_GRANTS_PER_CHARACTER) throw new Error('delivery_limit_reached');
+    await store.put(indexKey, [...existing, id]);
+  };
+  if (typeof storage.transaction === 'function') await storage.transaction(add);
+  else await add(storage);
+  return id;
+}
+
 export async function handleStorageRequest(request, ctx, env) {
   if (request.method !== 'GET' && request.method !== 'PUT' && request.method !== 'POST') {
     return json({ error: 'method_not_allowed' }, 405);
@@ -83,7 +193,7 @@ export async function handleStorageRequest(request, ctx, env) {
   const master = session?.role === 'master' || (masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret));
 
   if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access'
-    && kind !== 'player-list' && kind !== 'account-register')
+    && kind !== 'player-list' && kind !== 'account-register' && kind !== 'grant')
     return json({ error: 'invalid_kind' }, 400);
   if (kind === 'account-register') {
     // A one-time invitation lets a player bind a username and password to the
@@ -112,6 +222,40 @@ export async function handleStorageRequest(request, ctx, env) {
     }));
     const result=await registration.json().catch(()=>({error:'registration_failed'}));
     return json(result,registration.status);
+  }
+  if (kind === 'grant') {
+    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+    if (!master) return json({ error: 'master_credential_required' }, 403);
+    if (edition !== 'temporada') return json({ error: 'season_required' }, 400);
+    const serialized = await request.text();
+    if (serialized.length > MAX_JSON_LENGTH) return json({ error: 'payload_too_large' }, 413);
+    let grant;
+    try { grant = JSON.parse(serialized); } catch (_) { return json({ error: 'invalid_json' }, 400); }
+    const codes = [...new Set((Array.isArray(grant?.codes) ? grant.codes : []).map(asCode).filter(Boolean))];
+    if (!codes.length || codes.length > 200) return json({ error: 'invalid_recipients' }, 400);
+    if (!['item', 'clue'].includes(grant?.type)
+      || !normalizeMasterGrant(grant.type, grant.payload, 'check')) {
+      return json({ error: 'invalid_delivery' }, 400);
+    }
+    const invalidCodes = [];
+    for (const playerCode of codes) {
+      const root = 'sheet:temporada:' + playerCode;
+      if (!await ctx.storage.get(root + ':owner-sha256')
+        && !await ctx.storage.get(root + ':manifest')) invalidCodes.push(playerCode);
+    }
+    if (invalidCodes.length) return json({ error: 'unknown_recipients', codes: invalidCodes }, 404);
+    const delivered = [];
+    try {
+      for (const playerCode of codes) {
+        await persistMasterGrant(ctx.storage, 'sheet:temporada:' + playerCode,
+          grant.type, grant.payload);
+        delivered.push(playerCode);
+      }
+    } catch (error) {
+      console.error('Master delivery failed', error);
+      return json({ error: 'delivery_failed', delivered, remaining: codes.filter(c => !delivered.includes(c)) }, 500);
+    }
+    return json({ ok: true, delivered, count: delivered.length });
   }
   if (kind === 'player-list') {
     // List only characters belonging to this physical room and edition.
@@ -190,7 +334,11 @@ export async function handleStorageRequest(request, ctx, env) {
   if (request.method === 'GET') {
     try {
       const result = await getStored(ctx.storage, root);
-      return result ? json({ ok: true, ...result }) : json({ error: 'not_found' }, 404);
+      if (!result) return json({ error: 'not_found' }, 404);
+      if (kind === 'character' && edition === 'temporada') {
+        result.data = await mergeMasterGrants(ctx.storage, root, result.data);
+      }
+      return json({ ok: true, ...result });
     } catch (error) {
       console.error('Storage read failed', error);
       return json({ error: 'storage_read_failed' }, 500);
@@ -201,8 +349,11 @@ export async function handleStorageRequest(request, ctx, env) {
   let payload;
   try { payload = JSON.parse(serialized); } catch { return json({ error: 'invalid_json' }, 400); }
   try {
+    if (kind === 'character' && edition === 'temporada') {
+      payload = await mergeMasterGrants(ctx.storage, root, payload);
+    }
     const result = await putStored(ctx.storage, root, payload);
-    return result.error ? json(result, 413) : json({ ok: true, ...result });
+    return result.error ? json(result, 413) : json({ ok: true, ...result, ...(kind === 'character' && payload?.sheetHash ? { sheetHash: payload.sheetHash } : {}) });
   } catch (error) {
     console.error('Storage write failed', error);
     return json({ error: 'storage_write_failed' }, 500);
