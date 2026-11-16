@@ -34,6 +34,32 @@ window.startSeasonSync=async function startSeasonSync(){
   }
   function storePreferences(){localStorage.setItem(metadataKey,JSON.stringify(preferences));$('season-color').value=preferences.color;$('season-combat').checked=preferences.combat;}
   async function applySnapshot(value){if(value?.version!==1||!value.state)throw Error('Formato de ficha incompatível.');applying=true;try{api.applyState(value.state);await portrait.apply(value.portrait);preferences={...preferences,...value.presentation};storePreferences();}finally{applying=false;}}
+  // Se houver edições locais offline, acrescentar somente as entregas inéditas
+  // do mestre, sem substituir atributos, PV, inventário ou outras edições locais.
+  async function mergeOfflineMasterDeliveries(remote){
+    const local=snapshot();
+    const from=remote?.state,to=local.state;
+    if(!from||!to)return;
+    const seen=new Set(Array.isArray(to.masterGrantIds)?to.masterGrantIds:[]);
+    const delivered=Array.isArray(from.masterGrantIds)?from.masterGrantIds:[];
+    let changed=false;
+    for(const id of delivered){
+      if(seen.has(id))continue;
+      const item=Array.isArray(from.inventory?.items)?from.inventory.items.find(i=>i.id==='master_item_'+id):null;
+      const clue=Array.isArray(from.clues)?from.clues.find(c=>c.id==='master_clue_'+id):null;
+      if(item){
+        if(!to.inventory||typeof to.inventory!=='object')to.inventory={items:[],equipped:{weapon:null,armor:null,important:null,backpack:null}};
+        if(!Array.isArray(to.inventory.items))to.inventory.items=[];
+        if(!to.inventory.items.some(existing=>existing.id===item.id))to.inventory.items.push(item);
+      }
+      if(clue){
+        if(!Array.isArray(to.clues))to.clues=[];
+        if(!to.clues.some(existing=>existing.id===clue.id))to.clues.push(clue);
+      }
+      seen.add(id);changed=true;
+    }
+    if(changed){to.masterGrantIds=[...seen];await applySnapshot(local);}
+  }
   async function flush(){clearTimeout(timer);if(!ready||applying||busy||closed)return;if(!cloudReady){broadcast();status('MODO LOCAL · atributos salvos neste dispositivo; tente sincronizar depois.');return;}busy=true;try{do{dirty=false;const value=snapshot();broadcast();const json=JSON.stringify(value),hash=OLFirebase.hashCharacterSheet(json);if(hash!==lastHash){status('Salvando…');const result=await OLFirebase.saveCharacter(table,json,{sheetVariant:'temporada',playerCode:code,characterName:value.state.name||'Personagem',overlayColor:preferences.color});lastHash=result.sheetHash;localStorage.setItem(markerKey,lastHash);}if(!dirty)localStorage.removeItem(dirtyKey);status(socket.connected?'Salvo · conectado':'Salvo · reconectando');}while(dirty&&!closed);}catch(error){
     dirty=true;
     const quota=/resource.exhausted|quota limit exceeded|cota diária/i.test(String(error?.code||'')+' '+String(error?.message||''));
@@ -102,6 +128,9 @@ window.startSeasonSync=async function startSeasonSync(){
     }
     status('Carregando a ficha da temporada…');
     try{const cloud=await OLFirebase.loadCharacter(table,'temporada');const marker=localStorage.getItem(markerKey);if(cloud){const locallyDirty=localStorage.getItem(dirtyKey)==='1';if(locallyDirty&&(!marker||marker!==cloud.sheetHash)){
+        // A cópia local continua prevalecendo para mudanças do jogador;
+        // presentes do mestre entram mesmo enquanto houver conflito de edição.
+        await mergeOfflineMasterDeliveries(JSON.parse(cloud.sheetJson));
         ready=true;cloudReady=false;lock(false);
         status('Alterações locais e da nuvem diferem. Exporte o backup antes de sincronizar; seus atributos continuam editáveis.');
         return;
