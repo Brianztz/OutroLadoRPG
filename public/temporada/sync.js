@@ -18,6 +18,7 @@ window.startSeasonSync=async function startSeasonSync(){
       document.getElementById(id).inert=Boolean(locked && !editable);
     }
     document.getElementById('season-import').disabled=locked;
+    document.getElementById('import-sheet').disabled=locked;
   };
   lock(true);
   const status=text=>$('season-status').textContent=text;
@@ -93,6 +94,8 @@ window.startSeasonSync=async function startSeasonSync(){
   if(!view)socket.on('catalog_item_granted',data=>{if(!data?.item)return;const p=packet();p.fullData.inv.push(data.item);receive(p);});
   $('download-preview').addEventListener('click',e=>{e.stopImmediatePropagation();$('season-export').click();},true);
   $('season-export').onclick=()=>{const blob=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='ficha-temporada-'+code+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+  // Atalho visível para a importação já existente, sem duplicar lógica ou formato.
+  $('import-sheet').onclick=()=>$('season-import').click();
   $('season-import').onclick=()=>$('season-import-file').click();
   $('season-import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>8*1024*1024)throw Error('O arquivo deve ter até 8 MB.');const data=JSON.parse(await file.text());if(data.version!==1||!data.state?.attrs||!data.state?.skills)throw Error('Escolha um backup da ficha da temporada.');await applySnapshot(data);changed();await flush();}catch(error){status('Importação recusada: '+error.message);}};
   let unsubscribe=null;
