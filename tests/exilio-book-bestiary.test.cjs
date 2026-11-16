@@ -110,14 +110,18 @@ test('importar gera cópia única, com Matriz, NA, PV, RD, fraquezas, exposiçã
   assert.equal(entry.attrs.destreza,2);
   assert.equal(api.makeMonster('exilio-999'),null);
 });
-test('a aba CATÁLOGO do escudo virou BESTIÁRIO, sem eliminar os monstros ativos',()=>{
-  assert(master.includes('data-master-tab="catalog" onclick="switchMasterTab(\'catalog\')">📖 BESTIÁRIO'));
-  assert(master.includes('id="master-tab-catalog" class="monsters-workspace master-tab-panel"'));
+test('o Bestiário fica como aba interna no pop-up Novo Monstro, sem perder o catálogo de equipamentos',()=>{
+  assert(!master.includes('data-master-tab="catalog"'));
+  assert(!master.includes('id="master-tab-catalog"'));
+  assert(master.includes('id="monster-modal-form-panel"'));
+  assert(master.includes('id="monster-modal-bestiary-panel"'));
+  assert(master.includes('id="monster-modal-bestiary-tab"'));
   assert(master.includes('id="master-bestiary-library"'));
-  assert(master.includes('id="master-items-catalog-legacy"'));
-  assert(master.includes('style="display:none" aria-hidden="true"'));
+  assert(master.includes('id="master-tab-equipment"'));
+  assert(master.includes('id="catalog-grid"'));
+  assert(master.includes('switchMonsterModalTab(tab)'));
   assert(master.includes('<script src="/bestiary-exilio.js?v=1"></script>'));
-  assert(master.includes('<script src="/bestiary-exilio-master.js?v=1"></script>'));
+  assert(master.includes('<script src="/bestiary-exilio-master.js?v=monster-modal-v2"></script>'));
   assert(!master.includes('<script src="/bestiary-outrolado.js?v=2"></script>'));
   assert(master.includes('id="monsters-grid"'));
   assert(master.includes('Criaturas da mesa · Exílio 3.0'));
