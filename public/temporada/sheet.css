@@ -463,3 +463,10 @@ body.season-readable-zoom #page-principal:not([hidden]){
      As regras específicas ficam em mobile.css. */
   #page-principal .viewport{transition:none}
 }
+
+/* Esconder o bloco antigo de conexão/exportação/combate sem remover seus
+   controles do DOM: a sincronização e a exportação do cabeçalho dependem deles. */
+#season-online,
+#panel #season-online{
+  display:none!important;
+}
