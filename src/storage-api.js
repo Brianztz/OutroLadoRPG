@@ -159,10 +159,10 @@ async function mergeMasterGrants(storage, root, payload) {
   const sheetJson = JSON.stringify(sheet);
   return { ...payload, sheetJson, sheetHash: nativeSheetHash(sheetJson) };
 }
-async function persistMasterGrant(storage, root, type, payload) {
-  const id = crypto.randomUUID().replace(/-/g, '');
+async function persistMasterGrant(storage, root, type, payload, id) {
   const indexKey = root + ':master-grant-ids';
   const original = await storage.get(indexKey);
+  if (Array.isArray(original) && original.includes(id)) return id;
   if (Array.isArray(original) && original.length >= MAX_GRANTS_PER_CHARACTER) {
     throw new Error('delivery_limit_reached');
   }
@@ -171,6 +171,7 @@ async function persistMasterGrant(storage, root, type, payload) {
   const add = async store => {
     const ids = await store.get(indexKey);
     const existing = Array.isArray(ids) ? ids : [];
+    if (existing.includes(id)) return;
     if (existing.length >= MAX_GRANTS_PER_CHARACTER) throw new Error('delivery_limit_reached');
     await store.put(indexKey, [...existing, id]);
   };
@@ -244,11 +245,13 @@ export async function handleStorageRequest(request, ctx, env) {
         && !await ctx.storage.get(root + ':manifest')) invalidCodes.push(playerCode);
     }
     if (invalidCodes.length) return json({ error: 'unknown_recipients', codes: invalidCodes }, 404);
+    const deliveryId = /^[a-zA-Z0-9_-]{8,80}$/.test(String(grant.deliveryId || ''))
+      ? grant.deliveryId : crypto.randomUUID().replace(/-/g, '');
     const delivered = [];
     try {
       for (const playerCode of codes) {
         await persistMasterGrant(ctx.storage, 'sheet:temporada:' + playerCode,
-          grant.type, grant.payload);
+          grant.type, grant.payload, deliveryId);
         delivered.push(playerCode);
       }
     } catch (error) {
