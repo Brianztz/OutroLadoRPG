@@ -729,6 +729,7 @@
                     <div class="monster-form-grid exilio-skills-form">
                        <div class="monster-form-field"><label for="monster-form-skill-atletismo">ATLETISMO</label><input id="monster-form-skill-atletismo" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-confronto">CONFRONTO</label><input id="monster-form-skill-confronto" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-crime">CRIME</label><input id="monster-form-skill-crime" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-precisao">PONTARIA</label><input id="monster-form-skill-precisao" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-mobilidade">MOBILIDADE</label><input id="monster-form-skill-mobilidade" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-discricao">FURTIVIDADE</label><input id="monster-form-skill-discricao" class="monster-input" type="number" step="1" value="0"></div>
@@ -1019,8 +1020,8 @@
         let luminaEnabled = loadLuminaAccess(masterTableCode);
         let initiativeState = loadInitiativeState();
         const EXILIO_MONSTER_ATTRIBUTES=[["potencia","POTÊNCIA","POT"],["destreza","DESTREZA","DES"],["constituicao","CONSTITUIÇÃO","CON"],["raciocinio","RACIOCÍNIO","RAC"],["consciencia","CONSCIÊNCIA","CNS"],["expressao","EXPRESSÃO","EXP"]];
-        const EXILIO_MONSTER_SKILLS=[["ATLETISMO","potencia"],["CONFRONTO","potencia"],["PRECISÃO","destreza"],["MOBILIDADE","destreza"],["DISCRIÇÃO","destreza"],["RESISTÊNCIA","constituicao"],["OBSERVAÇÃO","consciencia"],["INVESTIGAÇÃO","raciocinio"],["CONHECIMENTO","raciocinio"],["TECNOLOGIA","raciocinio"],["MEDICINA","raciocinio"],["INFLUÊNCIA","expressao"],["SENSIBILIDADE","consciencia"],["SOBREVIVÊNCIA","consciencia"],["OFÍCIO","raciocinio"],["ANOMALIAS","consciencia"]];
-        const exilioMonsterDisplayNames={"DISCRIÇÃO":"FURTIVIDADE","PRECISÃO":"PONTARIA","SENSIBILIDADE":"EMPATIA"};
+        const EXILIO_MONSTER_SKILLS=[["ATLETISMO","potencia"],["CONFRONTO","potencia"],["CRIME","destreza"],["PRECISÃO","destreza"],["MOBILIDADE","destreza"],["DISCRIÇÃO","destreza"],["RESISTÊNCIA","constituicao"],["OBSERVAÇÃO","consciencia"],["INVESTIGAÇÃO","raciocinio"],["CONHECIMENTO","raciocinio"],["TECNOLOGIA","raciocinio"],["MEDICINA","raciocinio"],["INFLUÊNCIA","expressao"],["SENSIBILIDADE","consciencia"],["SOBREVIVÊNCIA","consciencia"],["OFÍCIO","raciocinio"],["ANOMALIAS","consciencia"]];
+        const exilioMonsterDisplayNames={"DISCRIÇÃO":"FURTIVIDADE","PRECISÃO":"PONTARIA","SENSIBILIDADE":"DISCERNIMENTO"};
         const displayExilioMonsterSkill=name=>exilioMonsterDisplayNames[name]||name;
         const EXILIO_MONSTER_MATRICES=["Medo","Lembrança","Carne","Ruptura","Eco","Vazio"];
         const exilioSkillId=name=>'monster-form-skill-'+String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
@@ -3028,7 +3029,7 @@
                     <div class="exilio-monster-mental"><label>PM <input class="monster-current-mental" type="number" min="0" max="${monster.maxMental}" value="${monster.mental}" aria-label="PM atuais"> / ${monster.maxMental}</label><div class="exilio-mental-meter"><div style="width:${mentalPercent}%"></div></div></div>
                     <div class="exilio-monster-movement">DEFESA <b>${monster.bestiary?.book ? '—' : monster.defense}</b> · DESLOCAMENTO <b>${monster.move} m</b></div>
                     <div class="monster-info-line"><strong>Resistência:</strong> ${escapeHtml(monster.resistance||'—')}<br><strong>Vulnerabilidades:</strong> ${escapeHtml(monster.vulnerabilities||'—')}</div>
-                    <details class="exilio-monster-skills"><summary>PERÍCIAS (16) E INICIATIVA</summary><div class="monster-skills-summary">${skillButtons+initiativeButton}</div></details>
+                    <details class="exilio-monster-skills"><summary>PERÍCIAS (17) E INICIATIVA</summary><div class="monster-skills-summary">${skillButtons+initiativeButton}</div></details>
                     <div class="monster-presence-row"><div class="monster-info-line"><strong>Presença Perturbadora:</strong> ${escapeHtml(monster.presence||'—')}<br><strong>Dano:</strong> ${escapeHtml(monster.damage||'—')}</div><button class="monster-roll-button damage monster-main-damage" type="button" ${monster.damage?'':'disabled'}>DANO</button></div>
                     <div class="monster-actions-summary">${actions}</div>`;
                 card.querySelector('.monster-edit').onclick=()=>openMonsterPopup(monster.id);
