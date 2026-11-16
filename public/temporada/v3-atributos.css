@@ -1834,3 +1834,12 @@ body.season-rulebook-v3 #origin-dialog .origin-ip-progression .origin-ip-footnot
     padding:8px 5px;
   }
 }
+
+/* Exílio 3.0 — as 17 perícias precisam caber no painel da ficha desktop.
+   Cinco colunas em quatro linhas; a organização de uma coluna no celular permanece intacta. */
+body.season-rulebook-v3:not(.is-mobile-season) #sheet > #sheet-skills-grid.exilio-skill-tiles{
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+}
+body.season-rulebook-v3:not(.is-mobile-season) #sheet > #sheet-skills-grid.exilio-skill-tiles .sheet-skill-details strong{
+  font:800 11px/16px Georgia,serif!important;
+}
