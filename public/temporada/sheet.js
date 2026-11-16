@@ -293,7 +293,7 @@
     card.addEventListener('click',()=>choose(details.name));$('occupation-list').append(card);
   }
   const panel=$('panel');
-  function openPanel(){panel.classList.add('open');$('season-retry').focus();}
+  function openPanel(){panel.classList.add('open');$('photo-panel-add').focus();}
   function closePanel(){panel.classList.remove('open')}
   $('edit').addEventListener('click',openPanel);
   $('close-panel').addEventListener('click',closePanel);
