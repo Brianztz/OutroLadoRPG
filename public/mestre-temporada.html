@@ -528,7 +528,7 @@
         .master-player-clue-overlay.active { background: #7c2720 !important; border-color: #e28d72 !important; }
         @media (max-width: 600px) { .master-player-clue-stage { height: 46vh; } .master-player-clue-tools button { padding: 7px 9px; } }
 </style>
-    <link rel="stylesheet" href="/temporada/master-theme.css?v=exilio-3-escudo-v3">
+    <link rel="stylesheet" href="/temporada/master-theme.css?v=exilio-3-escudo-v4">
     <link rel="stylesheet" href="/bestiary-outrolado.css?v=monster-modal-v2">
 </head>
 <body>
@@ -3481,12 +3481,23 @@
             card.innerHTML = `
                 <div class="player-header">
                     <img src="${escapeHtml(data.foto || '')}" class="player-img" alt="">
-                    <div><h2 class="player-name">${escapeHtml(data.nome || 'Personagem sem nome')}</h2><div class="player-info">IP ${exilioIp} · ${escapeHtml(exilioClass)} · DEF ${escapeHtml(data.defesa ?? 0)}</div><span class="player-origin-status">${online ? '● JOGADOR ONLINE' : '◇ ABERTA PELO MESTRE'}</span></div>
+                    <div class="player-heading">
+                        <h2 class="player-name">${escapeHtml(data.nome || 'Personagem sem nome')}</h2>
+                        <div class="player-info">
+                            <span class="player-level">IP ${exilioIp}</span>
+                            <span class="exilio-player-class">${escapeHtml(exilioClass)}</span>
+                            <span class="exilio-player-occupation">${escapeHtml(exilioOccupation)}</span>
+                            <span class="player-defense">DEF ${escapeHtml(data.defesa ?? 0)}</span>
+                        </div>
+                        <span class="player-origin-status">${online ? '● JOGADOR ONLINE' : '◇ ABERTA PELO MESTRE'}</span>
+                    </div>
                 </div>
-                <div class="exilio-player-occupation">${escapeHtml(exilioOccupation)}</div><div class="exilio-player-attributes">${exilioAttributes}</div>
+                <div class="exilio-player-resources" aria-label="Vida e Pontos Mentais do personagem">
+                    <div class="exilio-player-resource"><div class="bar-label vida">PV · PONTOS DE VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
+                    <div class="exilio-player-resource"><div class="bar-label sanidade">PM · PONTOS MENTAIS</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
+                </div>
+                <div class="exilio-player-attributes">${exilioAttributes}</div>
                 ${exilioTrainedSkills}
-                <div><div class="bar-label vida">PV · PONTOS DE VIDA</div><div class="bar-container"><div class="bar-fill fill-vida" style="width:${lifePercent}%"></div><div class="bar-text">${lifeCurrent} / ${lifeMaximum}</div></div></div>
-                <div><div class="bar-label sanidade">PM · PONTOS MENTAIS</div><div class="bar-container"><div class="bar-fill fill-sani" style="width:${sanityPercent}%"></div><div class="bar-text">${sanityCurrent} / ${sanityMaximum}</div></div></div>
                 <div class="status-tags">${tags}</div>
                 <div class="player-actions"><button class="btn-ver-ficha" type="button">🔍 VER FICHA</button>${masterOpenedOffline
                     ? '<button class="btn-hide-master-sheet" type="button">✕ FECHAR NO ESCUDO</button>'
