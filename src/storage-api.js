@@ -73,6 +73,17 @@ async function putStored(storage, root, payload) {
 /* Entregas do mestre guardadas separadamente da ficha. Isso impede que um
    salvamento antigo do jogador sobrescreva pistas ou equipamentos recebidos. */
 const MAX_GRANTS_PER_CHARACTER = 600;
+// Cada importação de outra ficha inicia uma geração própria de entregas.
+// A geração vazia preserva todos os registros históricos anteriores a esta mudança.
+function masterGrantScope(value) {
+  return typeof value === 'string' && /^[a-zA-Z0-9_-]{8,80}$/.test(value) ? value : '';
+}
+function masterGrantIndex(root, scope = '') {
+  return root + ':master-grant-ids' + (scope ? ':' + scope : '');
+}
+function masterGrantRecord(root, scope, id) {
+  return root + ':master-grant:' + (scope ? scope + ':' : '') + id;
+}
 function nativeSheetHash(value) {
   let hash = 0x811c9dc5;
   for (let i = 0; i < value.length; i++) {
@@ -128,16 +139,18 @@ function normalizeMasterGrant(type, source, id) {
 }
 async function mergeMasterGrants(storage, root, payload) {
   if (!payload || typeof payload !== 'object' || typeof payload.sheetJson !== 'string') return payload;
-  const ids = await storage.get(root + ':master-grant-ids');
-  if (!Array.isArray(ids) || ids.length === 0) return payload;
   let sheet;
   try { sheet = JSON.parse(payload.sheetJson); } catch (_) { return payload; }
   if (!sheet || sheet.version !== 1 || !sheet.state || typeof sheet.state !== 'object') return payload;
   const state = sheet.state;
+  const scope = masterGrantScope(state.masterGrantScope);
+  // Jamais reaplicar entregas da ficha anterior, mesmo que o código do jogador seja o mesmo.
+  const ids = await storage.get(masterGrantIndex(root, scope));
+  if (!Array.isArray(ids) || ids.length === 0) return payload;
   const applied = new Set(Array.isArray(state.masterGrantIds) ? state.masterGrantIds : []);
   const missing = ids.filter(id => !applied.has(id));
   if (!missing.length) return payload;
-  const grants = await Promise.all(missing.map(id => getStored(storage, root + ':master-grant:' + id)));
+  const grants = await Promise.all(missing.map(id => getStored(storage, masterGrantRecord(root, scope, id))));
   if (grants.some(grant => !grant?.data)) throw new Error('Incomplete master delivery');
   for (let i = 0; i < missing.length; i++) {
     const entry = grants[i].data;
@@ -160,13 +173,15 @@ async function mergeMasterGrants(storage, root, payload) {
   return { ...payload, sheetJson, sheetHash: nativeSheetHash(sheetJson) };
 }
 async function persistMasterGrant(storage, root, type, payload, id) {
-  const indexKey = root + ':master-grant-ids';
+  // O escudo grava na geração da ficha atualmente salva no servidor.
+  const scope = masterGrantScope(await storage.get(root + ':active-master-grant-scope'));
+  const indexKey = masterGrantIndex(root, scope);
   const original = await storage.get(indexKey);
   if (Array.isArray(original) && original.includes(id)) return id;
   if (Array.isArray(original) && original.length >= MAX_GRANTS_PER_CHARACTER) {
     throw new Error('delivery_limit_reached');
   }
-  const saved = await putStored(storage, root + ':master-grant:' + id, { type, payload });
+  const saved = await putStored(storage, masterGrantRecord(root, scope, id), { type, payload });
   if (saved.error) throw new Error(saved.error);
   const add = async store => {
     const ids = await store.get(indexKey);
@@ -356,6 +371,13 @@ export async function handleStorageRequest(request, ctx, env) {
       payload = await mergeMasterGrants(ctx.storage, root, payload);
     }
     const result = await putStored(ctx.storage, root, payload);
+    if (!result.error && kind === 'character' && edition === 'temporada') {
+      // Atualizar a geração ativa somente após o salvamento completo da ficha.
+      // Preservar a geração vazia permite abrir fichas legadas sem migração destrutiva.
+      const sheet = typeof payload?.sheetJson === 'string' ? JSON.parse(payload.sheetJson) : null;
+      const scope = masterGrantScope(sheet?.state?.masterGrantScope);
+      await ctx.storage.put(root + ':active-master-grant-scope', scope);
+    }
     return result.error ? json(result, 413) : json({ ok: true, ...result, ...(kind === 'character' && payload?.sheetHash ? { sheetHash: payload.sheetHash } : {}) });
   } catch (error) {
     console.error('Storage write failed', error);
