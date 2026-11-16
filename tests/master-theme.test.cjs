@@ -9,7 +9,7 @@ const theme = fs.readFileSync(path.join(root, 'public/temporada/master-theme.css
 
 test('Escudo de Vestigios tem identidade visual exclusiva do Exilio 3.0', () => {
   const originalStyle = html.indexOf('</style>');
-  const themeLink = html.indexOf('href="/temporada/master-theme.css?v=exilio-3-escudo-v3"');
+  const themeLink = html.indexOf('href="/temporada/master-theme.css?v=exilio-3-escudo-v4"');
   assert(originalStyle >= 0 && themeLink > originalStyle);
   assert(html.includes('OUTRO LADO: VESTÍGIOS · EXÍLIO 3.0'));
   assert(html.includes('Escudo do Mestre · Vestígios'));
@@ -51,4 +51,37 @@ test('Master controls and game content still use the existing identifiers', () =
   }
   assert(!html.includes('function chooseMasterTable('), 'O codigo da mesa nao deve ser editavel');
   assert(!html.includes('function switchMasterTable('), 'O mestre deve manter o codigo definitivo');
+});
+
+test('Cartões de personagens: ocupação junto da classe, PV e PM antes dos atributos', () => {
+  const start = html.indexOf('function renderPlayer(rawData)');
+  const end = html.indexOf('function removePlayer(', start);
+  assert(start >= 0 && end > start, 'Renderizador do cartão não localizado');
+  const render = html.slice(start, end);
+  const cardStart = render.indexOf('card.innerHTML = `');
+  const cardEnd = render.indexOf("card.querySelector('.btn-ver-ficha')", cardStart);
+  const card = render.slice(cardStart, cardEnd);
+  const infoStart = card.indexOf('<div class="player-info">');
+  const infoEnd = card.indexOf('</div>', infoStart);
+  assert(infoStart >= 0 && infoEnd > infoStart);
+  const info = card.slice(infoStart, infoEnd);
+  assert(info.includes('class="exilio-player-class"'), 'Classe ausente no cabeçalho');
+  assert(info.includes('class="exilio-player-occupation"'), 'Ocupação deve estar junto da classe');
+  assert(info.indexOf('exilio-player-class') < info.indexOf('exilio-player-occupation'));
+  assert(info.includes('class="player-defense"'));
+  assert.equal((card.match(/class="exilio-player-occupation"/g) || []).length, 1);
+  const resourcesStart = card.indexOf('class="exilio-player-resources"');
+  const lifeStart = card.indexOf('PV · PONTOS DE VIDA');
+  const mentalStart = card.indexOf('PM · PONTOS MENTAIS');
+  const attrStart = card.indexOf('class="exilio-player-attributes"');
+  const trainedStart = card.indexOf('${exilioTrainedSkills}');
+  assert(resourcesStart > infoEnd);
+  assert(lifeStart > resourcesStart && mentalStart > lifeStart);
+  assert(attrStart > mentalStart && trainedStart > attrStart);
+  for (const field of ['lifeCurrent', 'lifeMaximum', 'sanityCurrent', 'sanityMaximum', 'lifePercent', 'sanityPercent']) {
+    assert(render.includes(field), 'Valor preservado: '+field);
+  }
+  assert(theme.includes('.player-card .player-info .exilio-player-occupation'));
+  assert(theme.includes('.player-card .exilio-player-resources'));
+  assert(theme.includes('@media(max-width: 520px)'));
 });
