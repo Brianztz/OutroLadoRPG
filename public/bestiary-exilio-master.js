@@ -43,10 +43,15 @@
   function makeCard(entry){
     const card=element('article','bestiary-reference-card bestiary-book-card');
     card.dataset.entryId=entry.id;
+    card.dataset.matrix=entry.matrix;
     const header=element('div','bestiary-book-heading');
     const index=element('span','bestiary-book-index',String(entry.order).padStart(2,'0'));
-    const name=element('h3','bestiary-reference-name',entry.name);
-    header.append(index,name);
+    const heading=element('div','bestiary-book-identity');
+    heading.append(element('span','bestiary-book-overline','MANIFESTAÇÃO · REGISTRO '+String(entry.order).padStart(2,'0')),
+      element('h3','bestiary-reference-name',entry.name));
+    const seal=element('span','bestiary-book-seal','✧');
+    seal.setAttribute('aria-hidden','true');
+    header.append(index,heading,seal);
     const tags=element('div','bestiary-reference-tags');
     const matrix=element('span','bestiary-reference-element',entry.matrix);
     matrix.dataset.element=entry.matrix;
@@ -61,11 +66,14 @@
     }
     const attack=title('ATAQUE','2d10 + '+entry.attackBonus+
       ' · '+entry.damage+' '+entry.damageType+' · corpo a corpo 2m');
+    attack.classList.add('bestiary-book-attack');
     const ability=title('HABILIDADE',entry.ability);
+    ability.classList.add('bestiary-book-ability');
     const weakness=title('FRAQUEZA',entry.weakness);
     weakness.classList.add('bestiary-book-weakness');
     const exposure=title('EXPOSIÇÃO',entry.exposure.level+' · DT'+entry.exposure.dt+
       ' · '+entry.exposure.pm+' PM');
+    exposure.classList.add('bestiary-book-exposure');
     const details=element('details','bestiary-book-more');
     details.append(element('summary','','ATRIBUTOS E DOMÍNIOS'));
     const detailContent=element('div','bestiary-book-detail-content');
@@ -92,10 +100,12 @@
         status.textContent='Erro ao adicionar '+entry.name+': '+String(error?.message||error);
         return;
       }
-      status.textContent=entry.name+' foi adicionado às suas criaturas na aba MONSTROS.';
+      status.textContent=entry.name+' foi adicionado à sua mesa. Feche o pop-up para ver a ficha na aba Monstros.';
       button.textContent='✓ ADICIONADO · ADICIONAR OUTRO';
     });
-    card.append(header,tags,stats,attack,ability,weakness,exposure,details,button);
+    const lore=element('div','bestiary-book-lore');
+    lore.append(attack,ability,weakness,exposure);
+    card.append(header,tags,stats,lore,details,button);
     return card;
   }
   function render(){
@@ -126,8 +136,6 @@
   matrixSelect.addEventListener('change',reset);
   naSelect.addEventListener('change',reset);
   more.addEventListener('click',()=>{page++;render();});
-  container.querySelector('summary').setAttribute('aria-label',
-    'Mostrar ou ocultar o bestiário oficial do Livro Exílio 3.0');
   window.renderExilioBestiary=render;
   render();
 })();
