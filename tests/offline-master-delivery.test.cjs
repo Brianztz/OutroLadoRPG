@@ -153,3 +153,89 @@ test('escudo oculta o cabeçalho online e o histórico, mas mantém os cartões 
   assert(native.includes("query(table, 'grant', 'temporada')"));
   assert(sync.includes('mergeOfflineMasterDeliveries('));
 });
+
+test('importação de outro personagem não reenvia equipamentos e pistas anteriores', async () => {
+  const { ctx, handle } = await ready();
+  assert.equal((await handle('PUT', 'character', MASTER, character('Antigo'))).status, 200);
+  const oldItem = { codes: ['HERO'], deliveryId: 'present-old-001', type: 'item',
+    payload: { n: 'Lanterna anterior', type: 'comum' } };
+  const oldClue = { codes: ['HERO'], deliveryId: 'clue-old-0001', type: 'clue',
+    payload: { title: 'Pista anterior', type: 'object' } };
+  assert.equal((await handle('POST', 'grant', MASTER, oldItem)).status, 200);
+  assert.equal((await handle('POST', 'grant', MASTER, oldClue)).status, 200);
+  let response = await handle('GET', 'character', MASTER);
+  let saved = JSON.parse((await response.json()).data.sheetJson);
+  assert.deepEqual(saved.state.inventory.items.map(item => item.name), ['Lanterna anterior']);
+  assert.deepEqual(saved.state.clues.map(clue => clue.title), ['Pista anterior']);
+
+  // Uma nova ficha importada usa o mesmo código do jogador, mas outra geração.
+  const imported = character('Novo personagem');
+  const importedState = JSON.parse(imported.sheetJson);
+  importedState.state.masterGrantScope = 'new-character-0001';
+  imported.sheetJson = JSON.stringify(importedState);
+  assert.equal((await handle('PUT', 'character', MASTER, imported)).status, 200);
+  response = await handle('GET', 'character', MASTER);
+  saved = JSON.parse((await response.json()).data.sheetJson);
+  assert.equal(saved.state.name, 'Novo personagem');
+  assert.deepEqual(saved.state.inventory.items, []);
+  assert.deepEqual(saved.state.clues, []);
+  assert.equal(await ctx.storage.get('sheet:temporada:HERO:active-master-grant-scope'),
+    'new-character-0001');
+
+  const newItem = { codes: ['HERO'], deliveryId: 'present-new-001', type: 'item',
+    payload: { n: 'Kit enviado ao novo personagem', type: 'comum' } };
+  assert.equal((await handle('POST', 'grant', MASTER, newItem)).status, 200);
+  assert.equal((await handle('POST', 'grant', MASTER, newItem)).status, 200);
+  assert.deepEqual(await ctx.storage.get(
+    'sheet:temporada:HERO:master-grant-ids:new-character-0001'), ['present-new-001']);
+  response = await handle('GET', 'character', MASTER);
+  saved = JSON.parse((await response.json()).data.sheetJson);
+  assert.deepEqual(saved.state.inventory.items.map(item => item.name),
+    ['Kit enviado ao novo personagem']);
+  assert.deepEqual(saved.state.masterGrantIds, ['present-new-001']);
+  assert.deepEqual(saved.state.clues, []);
+
+  // Um salvamento antigo da MESMA nova ficha deve continuar recebendo seu presente.
+  assert.equal((await handle('PUT', 'character', MASTER, imported)).status, 200);
+  response = await handle('GET', 'character', MASTER);
+  saved = JSON.parse((await response.json()).data.sheetJson);
+  assert.deepEqual(saved.state.inventory.items.map(item => item.name),
+    ['Kit enviado ao novo personagem']);
+
+  // Uma terceira ficha não deve herdar presentes nem da primeira nem da segunda.
+  const next = character('Terceiro personagem');
+  const third = JSON.parse(next.sheetJson);
+  third.state.masterGrantScope = 'new-character-0002';
+  next.sheetJson = JSON.stringify(third);
+  assert.equal((await handle('PUT', 'character', MASTER, next)).status, 200);
+  response = await handle('GET', 'character', MASTER);
+  saved = JSON.parse((await response.json()).data.sheetJson);
+  assert.deepEqual(saved.state.inventory.items, []);
+  assert.deepEqual(saved.state.clues, []);
+});
+
+test('nova ficha pode receber o mesmo ID de entrega antiga quando o mestre enviar novamente', async () => {
+  const { handle } = await ready();
+  assert.equal((await handle('PUT', 'character', MASTER, character('Anterior'))).status, 200);
+  const delivery = { codes: ['HERO'], deliveryId: 'reused-item-001', type: 'item',
+    payload: { n: 'Primeiro pacote' } };
+  assert.equal((await handle('POST', 'grant', MASTER, delivery)).status, 200);
+  const imported = character('Novo');
+  const importedState = JSON.parse(imported.sheetJson);
+  importedState.state.masterGrantScope = 'new-character-0003';
+  imported.sheetJson = JSON.stringify(importedState);
+  assert.equal((await handle('PUT', 'character', MASTER, imported)).status, 200);
+  assert.equal((await handle('POST', 'grant', MASTER, { ...delivery,
+    payload: { n: 'Novo pacote' } })).status, 200);
+  const response = await handle('GET', 'character', MASTER);
+  const saved = JSON.parse((await response.json()).data.sheetJson);
+  assert.deepEqual(saved.state.inventory.items.map(item => item.name), ['Novo pacote']);
+});
+
+test('importação troca a geração de entregas e impede a mesclagem offline da ficha anterior', () => {
+  const sync = fs.readFileSync(path.join(root, 'public/temporada/sync.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'public/ficha-temporada.html'), 'utf8');
+  assert(sync.includes('masterGrantScope:crypto.randomUUID()'));
+  assert(sync.includes('if(scopeOf(from)!==scopeOf(to))return;'));
+  assert(html.includes('sync.js?v=entregas-por-ficha-20261116'));
+});
