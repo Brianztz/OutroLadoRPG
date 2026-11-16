@@ -1130,3 +1130,30 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   #master-tab-equipment .catalog-card-actions button { transition: none; }
   #master-tab-equipment .catalog-card:hover { transform: none; }
 }
+
+/* Textos extensos ficam disponíveis sem forçar cartões altos. */
+#master-tab-equipment .catalog-description-details {
+  margin: -3px 0 0;
+  border: 1px solid #604136;
+  border-radius: 6px;
+  background: #120e0c;
+  color: #d6b7a3;
+}
+#master-tab-equipment .catalog-description-details summary {
+  min-height: 32px;
+  padding: 9px;
+  color: #dda88c;
+  font: 900 9px/1.3 Arial,sans-serif;
+  cursor: pointer;
+}
+#master-tab-equipment .catalog-description-details summary:focus-visible {
+  outline: 2px solid #ffc69f;
+  outline-offset: 2px;
+}
+#master-tab-equipment .catalog-description-details p {
+  margin: 0;
+  padding: 0 9px 10px;
+  overflow-wrap: anywhere;
+  color: #dec3b5;
+  font: 12px/1.55 Arial,sans-serif;
+}
