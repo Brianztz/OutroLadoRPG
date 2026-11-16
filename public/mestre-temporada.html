@@ -528,7 +528,7 @@
         .master-player-clue-overlay.active { background: #7c2720 !important; border-color: #e28d72 !important; }
         @media (max-width: 600px) { .master-player-clue-stage { height: 46vh; } .master-player-clue-tools button { padding: 7px 9px; } }
 </style>
-    <link rel="stylesheet" href="/temporada/master-theme.css?v=exilio-3-escudo-v4">
+    <link rel="stylesheet" href="/temporada/master-theme.css?v=exilio-3-escudo-v5">
     <link rel="stylesheet" href="/bestiary-outrolado.css?v=monster-modal-v2">
 </head>
 <body>
@@ -623,7 +623,7 @@
         <div class="monsters-toolbar">
             <div>
                 <h2 class="monsters-toolbar-title">🎒 Equipamentos · Catálogo</h2>
-                <div class="monsters-toolbar-info">Armas e itens oficiais e personalizados da sua mesa</div>
+                <div class="monsters-toolbar-info">Equipamentos oficiais e criações da sua mesa. Escolha quem vai receber cada item.</div>
             </div>
             <button class="btn-create-catalog-entry" type="button" onclick="openCatalogCreator()">+ CRIAR ITEM / ARMA</button>
         </div>
@@ -633,6 +633,7 @@
                 <button class="catalog-filter active" type="button" data-catalog-filter="all" onclick="setMasterCatalogFilter('all')">TODOS</button>
                 <button class="catalog-filter" type="button" data-catalog-filter="weapons" onclick="setMasterCatalogFilter('weapons')">ARMAS</button>
                 <button class="catalog-filter" type="button" data-catalog-filter="items" onclick="setMasterCatalogFilter('items')">ITENS</button>
+                <button class="catalog-filter" type="button" data-catalog-filter="custom" onclick="setMasterCatalogFilter('custom')">CRIADOS POR MIM</button>
             </div>
             <span id="catalog-count" class="catalog-count">0 RESULTADOS</span>
         </div>
@@ -1451,61 +1452,157 @@
         }
 
         function setMasterCatalogFilter(filter) {
-            masterCatalogFilter = ['weapons','items'].includes(filter) ? filter : 'all';
+            masterCatalogFilter = ['weapons','items','custom'].includes(filter) ? filter : 'all';
             document.querySelectorAll('.catalog-filter').forEach(button => button.classList.toggle('active', button.dataset.catalogFilter === masterCatalogFilter));
             renderMasterCatalog();
+        }
+
+        function removeCustomCatalogEntry(id) {
+            const index = customCatalogEntries.findIndex(entry => entry.custom === true && entry.id === String(id));
+            if (index < 0) return false;
+            const item = customCatalogEntries[index];
+            const label = item.catalogKind === 'weapons' ? 'a arma' : 'o item';
+            if (!window.confirm('Excluir ' + label + ' "' + item.name + '" do catálogo?\n\nEssa ação não remove cópias já enviadas aos personagens.')) return false;
+
+            const previous = customCatalogEntries.slice();
+            customCatalogEntries.splice(index, 1);
+            try {
+                saveCustomCatalogEntries();
+            } catch (error) {
+                customCatalogEntries = previous;
+                window.alert('Não foi possível salvar a exclusão. Tente novamente.');
+                return false;
+            }
+            renderMasterCatalog();
+            return true;
         }
 
         function renderMasterCatalog() {
             const grid = document.getElementById('catalog-grid');
             if (!grid) return;
-            const data = {items: EXILIO_MASTER_CATALOG.filter(i=>i.catalogKind==='items'),meleeWeapons:EXILIO_MASTER_CATALOG.filter(i=>i.catalogType==='Corpo a corpo'),rangedWeapons:EXILIO_MASTER_CATALOG.filter(i=>i.catalogType==='Disparo')};
-            const entries = [
-                ...data.meleeWeapons,
-                ...data.rangedWeapons,
-                ...data.items,
-                ...customCatalogEntries
-            ];
-            const query = normalizeCatalogText(document.getElementById('catalog-search').value);
+            const entries = [...customCatalogEntries, ...EXILIO_MASTER_CATALOG];
+            const query = normalizeCatalogText(document.getElementById('catalog-search').value.trim());
             const filtered = entries.filter(item => {
-                if (masterCatalogFilter !== 'all' && item.catalogKind !== masterCatalogFilter) return false;
-                const searchable = normalizeCatalogText([item.name,item.desc,item.dmg,item.crit,item.range,item.skill,item.ammo,item.catalogType].join(' '));
+                if (masterCatalogFilter === 'custom' && !item.custom) return false;
+                if (masterCatalogFilter === 'weapons' && item.catalogKind !== 'weapons') return false;
+                if (masterCatalogFilter === 'items' && item.catalogKind !== 'items') return false;
+                const searchable = normalizeCatalogText([
+                    item.name, item.desc, item.dmg, item.crit, item.range,
+                    item.skill, item.ammo, item.catalogType, item.custom ? 'personalizado criado' : 'oficial'
+                ].join(' '));
                 return !query || searchable.includes(query);
             });
-            document.getElementById('catalog-count').textContent = `${filtered.length} ${filtered.length === 1 ? 'RESULTADO' : 'RESULTADOS'}`;
-            grid.innerHTML = '';
+            const total = filtered.length;
+            document.getElementById('catalog-count').textContent = total + (total === 1 ? ' RESULTADO' : ' RESULTADOS');
+            grid.replaceChildren();
             if (!filtered.length) {
-                grid.innerHTML = '<div class="catalog-empty">Nenhuma arma ou item encontrado.</div>';
+                const empty = document.createElement('div');
+                empty.className = 'catalog-empty';
+                empty.textContent = masterCatalogFilter === 'custom' && !query
+                    ? 'Nenhum equipamento personalizado cadastrado. Use "Criar item / arma" para adicionar o primeiro.'
+                    : 'Nenhuma arma ou item encontrado. Experimente outro filtro ou termo de busca.';
+                grid.append(empty);
                 return;
             }
 
-            filtered.forEach(item => {
-                const isWeapon = item.catalogKind === 'weapons';
-                const imageHtml = item.img ? `<img class="catalog-image" src="${escapeHtml(item.img)}" alt="">` : `<div class="catalog-image-fallback">${isWeapon ? '⚔️' : '🎒'}</div>`;
-                const contentHtml = isWeapon ? `
-                    <div class="catalog-stats">
-                        <div class="catalog-stat"><span>Dano</span><strong>${escapeHtml(item.dmg)}</strong></div>
-                        <div class="catalog-stat"><span>Crítico</span><strong>${escapeHtml(item.crit)}</strong></div>
-                        <div class="catalog-stat"><span>Ataques</span><strong>${escapeHtml(item.atk)}</strong></div>
-                        <div class="catalog-stat"><span>Alcance</span><strong>${escapeHtml(item.range)}</strong></div>
-                        <div class="catalog-stat"><span>Perícia</span><strong>${escapeHtml(item.skill)}</strong></div>
-                        <div class="catalog-stat"><span>Espaços</span><strong>${escapeHtml(item.weight)}</strong></div>
+            const groups = [
+                { title: 'Suas criações', subtitle: 'Armas e itens criados para a mesa', type: 'custom',
+                    items: filtered.filter(item => item.custom) },
+                { title: 'Armas do catálogo', subtitle: 'Equipamentos oficiais', type: 'weapons',
+                    items: filtered.filter(item => !item.custom && item.catalogKind === 'weapons') },
+                { title: 'Itens do catálogo', subtitle: 'Equipamentos, proteções e munições oficiais', type: 'items',
+                    items: filtered.filter(item => !item.custom && item.catalogKind === 'items') }
+            ];
+
+            for (const group of groups) {
+                if (!group.items.length) continue;
+                const section = document.createElement('section');
+                section.className = 'catalog-group';
+                section.dataset.catalogGroup = group.type;
+                const header = document.createElement('div');
+                header.className = 'catalog-group-heading';
+                const name = document.createElement('div');
+                const title = document.createElement('h3');
+                title.textContent = group.title;
+                const subtitle = document.createElement('p');
+                subtitle.textContent = group.subtitle;
+                name.append(title, subtitle);
+                const count = document.createElement('span');
+                count.className = 'catalog-group-count';
+                count.textContent = String(group.items.length).padStart(2, '0');
+                header.append(name, count);
+                const cards = document.createElement('div');
+                cards.className = 'catalog-group-grid';
+
+                group.items.forEach(item => {
+                    const isWeapon = item.catalogKind === 'weapons';
+                    const isCustom = item.custom === true;
+                    const imageHtml = item.img
+                        ? `<img class="catalog-image" src="${escapeHtml(item.img)}" alt="" loading="lazy">`
+                        : `<div class="catalog-image-fallback" aria-hidden="true">${isWeapon ? '⚔' : '🎒'}</div>`;
+                    const statsHtml = isWeapon
+                        ? `<div class="catalog-stats">
+                            <div class="catalog-stat"><span>DANO</span><strong>${escapeHtml(item.dmg)}</strong></div>
+                            <div class="catalog-stat"><span>CRÍTICO</span><strong>${escapeHtml(item.crit)}</strong></div>
+                            <div class="catalog-stat"><span>ESPAÇOS</span><strong>${escapeHtml(item.weight)}</strong></div>
+                           </div>
+                           <div class="catalog-details">
+                            <span class="catalog-detail">${escapeHtml(item.atk)} ataque(s)</span>
+                            <span class="catalog-detail">${escapeHtml(item.range)}</span>
+                            <span class="catalog-detail">${escapeHtml(item.skill)}</span>
+                            ${item.ammo ? `<span class="catalog-detail">Munição: ${escapeHtml(item.ammo)}</span>` : ''}
+                            ${item.capacity ? `<span class="catalog-detail">Capacidade: ${escapeHtml(item.capacity)}</span>` : ''}
+                           </div>`
+                        : `<p class="catalog-description">${escapeHtml(item.desc || 'Item de equipamento.')}</p>
+                           <div class="catalog-details">
+                            <span class="catalog-detail">${escapeHtml(item.weight)} espaço(s)</span>
+                            ${item.ammo ? `<span class="catalog-detail">Munição: ${escapeHtml(item.ammo)}</span>` : ''}
+                           </div>`;
+
+                    const card = document.createElement('article');
+                    card.className = `catalog-card ${isWeapon ? 'weapon' : 'item'}${isCustom ? ' custom' : ''}`;
+                    card.dataset.catalogId = item.id;
+                    card.innerHTML = `<div class="catalog-image-wrap">
+                        ${imageHtml}
+                        <span class="catalog-type">${escapeHtml(item.catalogType)}</span>
+                        ${isCustom ? '<span class="catalog-custom-tag">CRIADO POR VOCÊ</span>' : ''}
                     </div>
-                    <div class="catalog-details">${item.ammo ? `<span class="catalog-detail">Munição: ${escapeHtml(item.ammo)}</span>` : ''}${item.capacity ? `<span class="catalog-detail">Capacidade: ${escapeHtml(item.capacity)}</span>` : ''}</div>` : `
-                    <p class="catalog-description">${escapeHtml(item.desc)}</p>
-                    <div class="catalog-details"><span class="catalog-detail">Espaços: ${escapeHtml(item.weight)}</span>${item.ammo ? `<span class="catalog-detail">Tipo: ${escapeHtml(item.ammo)}</span>` : ''}</div>`;
-                const card = document.createElement('article');
-                card.className = `catalog-card ${isWeapon ? 'weapon' : 'item'}`;
-                card.tabIndex = 0;
-                card.setAttribute('role', 'button');
-                card.setAttribute('aria-label', `Enviar ${item.name} para todos os jogadores`);
-                card.innerHTML = `<div class="catalog-image-wrap">${imageHtml}<span class="catalog-type">${escapeHtml(item.catalogType)}</span></div><div class="catalog-card-body"><h3 class="catalog-card-name">${escapeHtml(item.name)}</h3>${contentHtml}</div>`;
-                const image = card.querySelector('.catalog-image');
-                if (image) image.onerror = () => { const fallback = document.createElement('div'); fallback.className = 'catalog-image-fallback'; fallback.textContent = isWeapon ? '⚔️' : '🎒'; image.replaceWith(fallback); };
-                card.onclick = () => openCatalogRecipientPopup(item);
-                card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openCatalogRecipientPopup(item); } };
-                grid.appendChild(card);
-            });
+                    <div class="catalog-card-body">
+                        <h4 class="catalog-card-name">${escapeHtml(item.name)}</h4>
+                        ${statsHtml}
+                        <div class="catalog-card-actions"></div>
+                    </div>`;
+
+                    const image = card.querySelector('.catalog-image');
+                    if (image) image.onerror = () => {
+                        const fallback = document.createElement('div');
+                        fallback.className = 'catalog-image-fallback';
+                        fallback.setAttribute('aria-hidden', 'true');
+                        fallback.textContent = isWeapon ? '⚔' : '🎒';
+                        image.replaceWith(fallback);
+                    };
+                    const actions = card.querySelector('.catalog-card-actions');
+                    const send = document.createElement('button');
+                    send.type = 'button';
+                    send.className = 'catalog-send-button';
+                    send.textContent = 'ENVIAR';
+                    send.setAttribute('aria-label', 'Enviar ' + item.name + ' para personagens');
+                    send.addEventListener('click', () => openCatalogRecipientPopup(item));
+                    actions.append(send);
+                    if (isCustom) {
+                        const remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.className = 'catalog-delete-button';
+                        remove.textContent = 'EXCLUIR';
+                        remove.setAttribute('aria-label', 'Excluir ' + item.name + ' do catálogo');
+                        remove.addEventListener('click', () => removeCustomCatalogEntry(item.id));
+                        actions.append(remove);
+                    }
+                    cards.append(card);
+                });
+                section.append(header, cards);
+                grid.append(section);
+            }
         }
 
         function openCatalogRecipientPopup(item) {
