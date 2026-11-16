@@ -712,9 +712,9 @@
                     <div class="monster-form-grid exilio-skills-form">
                        <div class="monster-form-field"><label for="monster-form-skill-atletismo">ATLETISMO</label><input id="monster-form-skill-atletismo" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-confronto">CONFRONTO</label><input id="monster-form-skill-confronto" class="monster-input" type="number" step="1" value="0"></div>
-                       <div class="monster-form-field"><label for="monster-form-skill-precisao">PRECISÃO</label><input id="monster-form-skill-precisao" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-precisao">PONTARIA</label><input id="monster-form-skill-precisao" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-mobilidade">MOBILIDADE</label><input id="monster-form-skill-mobilidade" class="monster-input" type="number" step="1" value="0"></div>
-                       <div class="monster-form-field"><label for="monster-form-skill-discricao">DISCRIÇÃO</label><input id="monster-form-skill-discricao" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-discricao">FURTIVIDADE</label><input id="monster-form-skill-discricao" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-resistencia">RESISTÊNCIA</label><input id="monster-form-skill-resistencia" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-observacao">OBSERVAÇÃO</label><input id="monster-form-skill-observacao" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-investigacao">INVESTIGAÇÃO</label><input id="monster-form-skill-investigacao" class="monster-input" type="number" step="1" value="0"></div>
@@ -722,7 +722,7 @@
                        <div class="monster-form-field"><label for="monster-form-skill-tecnologia">TECNOLOGIA</label><input id="monster-form-skill-tecnologia" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-medicina">MEDICINA</label><input id="monster-form-skill-medicina" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-influencia">INFLUÊNCIA</label><input id="monster-form-skill-influencia" class="monster-input" type="number" step="1" value="0"></div>
-                       <div class="monster-form-field"><label for="monster-form-skill-sensibilidade">SENSIBILIDADE</label><input id="monster-form-skill-sensibilidade" class="monster-input" type="number" step="1" value="0"></div>
+                       <div class="monster-form-field"><label for="monster-form-skill-sensibilidade">EMPATIA</label><input id="monster-form-skill-sensibilidade" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-sobrevivencia">SOBREVIVÊNCIA</label><input id="monster-form-skill-sobrevivencia" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-oficio">OFÍCIO</label><input id="monster-form-skill-oficio" class="monster-input" type="number" step="1" value="0"></div>
                        <div class="monster-form-field"><label for="monster-form-skill-anomalias">ANOMALIAS</label><input id="monster-form-skill-anomalias" class="monster-input" type="number" step="1" value="0"></div>
@@ -1003,6 +1003,8 @@
         let initiativeState = loadInitiativeState();
         const EXILIO_MONSTER_ATTRIBUTES=[["potencia","POTÊNCIA","POT"],["destreza","DESTREZA","DES"],["constituicao","CONSTITUIÇÃO","CON"],["raciocinio","RACIOCÍNIO","RAC"],["consciencia","CONSCIÊNCIA","CNS"],["expressao","EXPRESSÃO","EXP"]];
         const EXILIO_MONSTER_SKILLS=[["ATLETISMO","potencia"],["CONFRONTO","potencia"],["PRECISÃO","destreza"],["MOBILIDADE","destreza"],["DISCRIÇÃO","destreza"],["RESISTÊNCIA","constituicao"],["OBSERVAÇÃO","consciencia"],["INVESTIGAÇÃO","raciocinio"],["CONHECIMENTO","raciocinio"],["TECNOLOGIA","raciocinio"],["MEDICINA","raciocinio"],["INFLUÊNCIA","expressao"],["SENSIBILIDADE","consciencia"],["SOBREVIVÊNCIA","consciencia"],["OFÍCIO","raciocinio"],["ANOMALIAS","consciencia"]];
+        const exilioMonsterDisplayNames={"DISCRIÇÃO":"FURTIVIDADE","PRECISÃO":"PONTARIA","SENSIBILIDADE":"EMPATIA"};
+        const displayExilioMonsterSkill=name=>exilioMonsterDisplayNames[name]||name;
         const EXILIO_MONSTER_MATRICES=["Medo","Lembrança","Carne","Ruptura","Eco","Vazio"];
         const exilioSkillId=name=>'monster-form-skill-'+String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
         const exilioInteger=value=>Number.isFinite(Number(value))?Math.trunc(Number(value)):0;
@@ -2948,7 +2950,7 @@
             const monster=monstersState.find(item=>item.id===monsterId);
             const action=monster?.actions[index];if(!action)return;
             const modifier=extractMonsterTestValue(action.test);
-            if(modifier===null)return alert('Informe o bônus da ação, por exemplo: Confronto +2 ou Precisão +4.');
+            if(modifier===null)return alert('Informe o bônus da ação, por exemplo: Confronto +2 ou Pontaria +4.');
             const pool=rollExilioMonsterDice(modifier);
             const multiplier=Math.max(1,exilioInteger(action.multiplier)||2);
             exilioMonsterCriticalState.set(action.id,pool.matched&&multiplier>1);
@@ -2991,8 +2993,8 @@
                 const mentalPercent=monster.maxMental?Math.max(0,Math.min(100,monster.mental/monster.maxMental*100)):0;
                 const attributesHtml=EXILIO_MONSTER_ATTRIBUTES.map(([key,,label])=>
                   '<button class="monster-attribute" type="button" data-attr-key="'+key+'" data-roll-label="'+label+'"><span>'+label+'</span><strong>'+(monster.attrs[key]||0)+'</strong><small class="monster-roll-targets">'+formatMonsterRanges(monster.attrs[key])+'</small></button>').join('');
-                const skillButtons=EXILIO_MONSTER_SKILLS.map(([key])=>
-                  '<button class="monster-skill-chip" type="button" data-skill-key="'+escapeHtml(key)+'" data-roll-label="'+escapeHtml(key)+'">'+escapeHtml(key)+' <strong>'+(monster.skills[key]||0)+'</strong><small class="monster-roll-targets">'+formatMonsterRanges(monsterSkillModifier(monster,key))+'</small></button>').join('');
+                const skillButtons=[...EXILIO_MONSTER_SKILLS].sort((a,b)=>displayExilioMonsterSkill(a[0]).localeCompare(displayExilioMonsterSkill(b[0]),'pt-BR')).map(([key])=>
+                  '<button class="monster-skill-chip" type="button" data-skill-key="'+escapeHtml(key)+'" data-roll-label="'+escapeHtml(displayExilioMonsterSkill(key))+'">'+escapeHtml(displayExilioMonsterSkill(key))+' <strong>'+(monster.skills[key]||0)+'</strong><small class="monster-roll-targets">'+formatMonsterRanges(monsterSkillModifier(monster,key))+'</small></button>').join('');
                 const initiativeButton='<button class="monster-skill-chip" type="button" data-skill-key="INICIATIVA" data-roll-label="Iniciativa">INICIATIVA <strong>'+(monster.skills.INICIATIVA||0)+'</strong><small class="monster-roll-targets">'+formatMonsterRanges(monsterSkillModifier(monster,'INICIATIVA'))+'</small></button>';
                 const actions=monster.actions.length?monster.actions.map((action,index)=>
                   '<div class="monster-action-summary"><div class="monster-action-text"><strong>'+escapeHtml(action.name||'Ação')+'</strong> · '+escapeHtml(action.test||'Sem teste')+' · CRÍTICO ×'+(action.multiplier||2)+(action.damage?'<br>Dano: '+escapeHtml(action.damage):'')+(action.description?'<br>'+escapeHtml(action.description):'')+'</div><div class="monster-roll-buttons"><button class="monster-roll-button action-attack-roll" type="button" data-action-index="'+index+'" '+(action.test?'':'disabled')+'>2d10</button><button class="monster-roll-button damage action-damage-roll" type="button" data-action-index="'+index+'" '+(action.damage?'':'disabled')+'>DANO</button></div></div>').join(''):'<div class="monster-info-line">Nenhuma ação cadastrada.</div>';
@@ -3330,13 +3332,13 @@
             const trained = hasTrainingData ? EXILIO_MONSTER_SKILLS
                 .map(([name]) => [name, exilioInteger(domains[name])])
                 .filter(([, degree]) => degree > 0)
-                .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR')) : [];
+                .sort((a, b) => displayExilioMonsterSkill(a[0]).localeCompare(displayExilioMonsterSkill(b[0]), 'pt-BR')) : [];
             const count = trained.length;
             const heading = '<div class="exilio-trained-title"><span>PERÍCIAS TREINADAS</span><span class="exilio-trained-count">'
                 + count + '</span></div>';
             const chips = trained.map(([name, degree]) => {
                 const rank = degree >= 6 ? 'REFERÊNCIA' : degree >= 4 ? 'EXPERIENTE' : degree >= 2 ? 'PRATICANTE' : 'DOMÍNIO';
-                return '<span class="exilio-trained-chip"><span>' + escapeHtml(name)
+                return '<span class="exilio-trained-chip"><span>' + escapeHtml(displayExilioMonsterSkill(name))
                     + '</span><strong>+' + degree + '</strong><small>' + rank + '</small></span>';
             }).join('');
             const fallback = hasTrainingData ? 'Nenhuma perícia treinada.'
