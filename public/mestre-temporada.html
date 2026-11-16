@@ -6,7 +6,7 @@
     <title>Vestígios · Escudo do Mestre · Vestígios</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <script src="/season-space.js?v=3"></script>
-    <script src="firebase-client.js?v=master-saved-sheets-1"></script>
+    <script src="firebase-client.js?v=offline-grants-1"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => OLFirebase.guardPage('master'));
     </script>
@@ -441,6 +441,7 @@
         .catalog-recipient-body { min-height: 120px; padding: 15px 18px; overflow-y: auto; }
         .catalog-recipient-all { margin-bottom: 9px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(210,232,248,0.28); border-radius: 8px; background: rgba(210,232,248,0.06); color: var(--accent-yellow); font-size: 0.72em; font-weight: 900; cursor: pointer; }
         .catalog-recipient-list { display: flex; flex-direction: column; gap: 8px; }
+        .catalog-recipient-status { margin: 7px 0 0; min-height: 18px; color: #e5a98d; font: 700 12px/1.45 Arial,sans-serif; }
         .catalog-recipient-option { padding: 10px 12px; display: grid; grid-template-columns: 22px 42px minmax(0,1fr); gap: 10px; align-items: center; border: 1px solid #31485b; border-radius: 8px; background: #040a13; cursor: pointer; transition: 0.16s; }
         .catalog-recipient-option:hover { border-color: var(--accent-green); background: rgba(74,153,218,0.06); }
         .catalog-recipient-option:has(input:checked) { border-color: var(--accent-green); background: rgba(74,153,218,0.1); }
