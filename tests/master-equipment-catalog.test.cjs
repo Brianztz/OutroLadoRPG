@@ -149,4 +149,6 @@ test('Cartões compactos usam layout adaptável e botões acessíveis',()=>{
     assert(theme.includes('#master-tab-equipment .catalog-delete-button'));
     assert(theme.includes('@media(max-width: 420px)'));
     assert(html.includes('master-theme.css?v=exilio-3-escudo-v5'));
+    assert(html.includes('class="catalog-description-details"'));
+    assert(theme.includes('#master-tab-equipment .catalog-description-details'));
 });
