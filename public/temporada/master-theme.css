@@ -730,3 +730,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   #master-tab-monsters .exilio-monster-card:hover,
   #master-tab-monsters .monster-attribute:hover{transform:none}
 }
+
+/* O novo selo precede o título; sobrescreve a regra legada para o primeiro div. */
+#master-tab-monsters .exilio-monster-card .monster-card-header > .monster-card-sigil {
+  flex:0 0 49px;min-width:49px;max-width:49px;
+}
+#master-tab-monsters .exilio-monster-card .monster-card-header > .monster-card-identity {
+  flex:1 1 0;min-width:0;
+}
+@media(max-width:520px){
+  #master-tab-monsters .exilio-monster-card .monster-card-header > .monster-card-sigil {
+    flex-basis:45px;min-width:45px;max-width:45px;width:45px;height:45px
+  }
+}
