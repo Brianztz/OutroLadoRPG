@@ -290,12 +290,12 @@
     const saved = await global.OLNative.writeCharacter(seasonScopedTable(requestedTable),
       metadata.sheetVariant || (global.OLSeasonSpace?.isSeasonPage?.() ? 'temporada' : 'classic'),
       code, payload);
-    // O servidor pode acrescentar entregas que chegaram durante o salvamento.
-    const confirmedHash = saved.sheetHash || sheetHash;
+    // O hash local permanece separado do hash remoto caso uma entrega do
+    // mestre tenha sido incluída no servidor durante o salvamento.
     global.dispatchEvent(new CustomEvent('ol:character-sync', {
-      detail: { state: 'saved', tableId: seasonScopedTable(requestedTable), sheetHash: confirmedHash }
+      detail: { state: 'saved', tableId: seasonScopedTable(requestedTable), sheetHash }
     }));
-    return { sheetHash: confirmedHash, playerCode: code, skipped: false };
+    return { sheetHash, serverSheetHash: saved.sheetHash || sheetHash, playerCode: code, skipped: false };
   }
   async function loadMasterClues(table) {
     try {
