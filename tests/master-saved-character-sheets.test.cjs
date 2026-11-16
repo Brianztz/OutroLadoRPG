@@ -69,8 +69,8 @@ test('o visualizador carrega a ficha na nuvem e salva edições do mestre', () =
   assert(!sync.includes("if(view){status('Alterações enviadas ao jogador');break;}"));
   assert(sync.includes('await OLFirebase.saveCharacter(table,json,'));
   assert(sync.includes('playerCode:code'));
-  assert(sheet.includes('temporada/sync.js?v=master-saved-sheets-1'));
-  assert(sheet.includes('firebase-client.js?v=master-saved-sheets-1'));
+  assert(sheet.includes('temporada/sync.js?v=offline-grants-1'));
+  assert(sheet.includes('firebase-client.js?v=offline-grants-1'));
 });
 
 test('os scripts inline do escudo continuam com sintaxe válida', () => {
