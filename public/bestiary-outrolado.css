@@ -99,58 +99,203 @@
   .bestiary-reference-grid{grid-template-columns:minmax(0,1fr)}
 }
 
-/* Catálogo oficial de criaturas do Livro Exílio 3.0 — exclusivo da aba BESTIÁRIO. */
-#master-tab-catalog .master-bestiary-library{margin:0;min-height:0;overflow:auto}
-#master-tab-catalog .master-bestiary-filters{
+/* Catálogo oficial de criaturas do Livro Exílio 3.0 — incorporado ao pop-up Novo Monstro. */
+#monster-modal-bestiary-panel .master-bestiary-library{margin:0;min-height:0;overflow:auto}
+#monster-modal-bestiary-panel .master-bestiary-filters{
   grid-template-columns:minmax(180px,2fr) minmax(110px,1fr) minmax(130px,1fr)
 }
-#master-tab-catalog .bestiary-reference-grid{
+#monster-modal-bestiary-panel .bestiary-reference-grid{
   grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:14px
 }
-#master-tab-catalog .bestiary-book-card{
+#monster-modal-bestiary-panel .bestiary-book-card{
   padding:16px;gap:12px;background:linear-gradient(150deg,rgba(36,21,25,.96),rgba(13,16,24,.98));
   border-color:rgba(162,109,95,.5)
 }
-#master-tab-catalog .bestiary-book-card:hover{border-color:rgba(237,170,141,.78)}
-#master-tab-catalog .bestiary-book-heading{display:flex;align-items:start;gap:11px}
-#master-tab-catalog .bestiary-book-index{flex:none;font:900 13px/1.6 Georgia,serif;color:#deb29b;opacity:.8}
-#master-tab-catalog .bestiary-reference-name{margin:0;font-size:17px;line-height:1.4}
-#master-tab-catalog .bestiary-book-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-#master-tab-catalog .bestiary-book-stat{
+#monster-modal-bestiary-panel .bestiary-book-card:hover{border-color:rgba(237,170,141,.78)}
+#monster-modal-bestiary-panel .bestiary-book-heading{display:flex;align-items:start;gap:11px}
+#monster-modal-bestiary-panel .bestiary-book-index{flex:none;font:900 13px/1.6 Georgia,serif;color:#deb29b;opacity:.8}
+#monster-modal-bestiary-panel .bestiary-reference-name{margin:0;font-size:17px;line-height:1.4}
+#monster-modal-bestiary-panel .bestiary-book-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#monster-modal-bestiary-panel .bestiary-book-stat{
   padding:9px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;
   background:rgba(0,0,0,.24);border:1px solid rgba(167,118,104,.34);border-radius:5px
 }
-#master-tab-catalog .bestiary-book-stat small{font:800 10px/1.2 Arial,sans-serif;color:#bbaaa2}
-#master-tab-catalog .bestiary-book-stat strong{font:900 16px/1.2 Georgia,serif;color:#f1ded1}
-#master-tab-catalog .bestiary-book-field{
+#monster-modal-bestiary-panel .bestiary-book-stat small{font:800 10px/1.2 Arial,sans-serif;color:#bbaaa2}
+#monster-modal-bestiary-panel .bestiary-book-stat strong{font:900 16px/1.2 Georgia,serif;color:#f1ded1}
+#monster-modal-bestiary-panel .bestiary-book-field{
   margin:0;line-height:1.55;font:12px/1.55 Arial,sans-serif;
   color:var(--text-secondary,#c6afa3);overflow-wrap:anywhere
 }
-#master-tab-catalog .bestiary-book-field strong{color:#f3c5ac;letter-spacing:.025em}
-#master-tab-catalog .bestiary-book-weakness{
+#monster-modal-bestiary-panel .bestiary-book-field strong{color:#f3c5ac;letter-spacing:.025em}
+#monster-modal-bestiary-panel .bestiary-book-weakness{
   padding:10px;border-left:3px solid #a96a51;background:rgba(143,77,54,.11);border-radius:4px
 }
-#master-tab-catalog .bestiary-book-more{
+#monster-modal-bestiary-panel .bestiary-book-more{
   padding:10px;border-radius:6px;border:1px solid rgba(166,116,95,.34);background:rgba(0,0,0,.12)
 }
-#master-tab-catalog .bestiary-book-more summary{
+#monster-modal-bestiary-panel .bestiary-book-more summary{
   color:#e1b8a3;font:800 11px/1.4 Arial,sans-serif;letter-spacing:.04em;cursor:pointer
 }
-#master-tab-catalog .bestiary-book-detail-content{display:grid;gap:8px;margin-top:10px}
-#master-tab-catalog .bestiary-reference-import{
+#monster-modal-bestiary-panel .bestiary-book-detail-content{display:grid;gap:8px;margin-top:10px}
+#monster-modal-bestiary-panel .bestiary-reference-import{
   margin-top:auto;min-height:42px;border-radius:7px;background:rgba(134,67,49,.38)
 }
-#master-tab-catalog .bestiary-reference-element[data-element="Lembrança"]{color:#f1d9a9;background:#42331c}
-#master-tab-catalog .bestiary-reference-element[data-element="Carne"]{color:#faa99a;background:#4c211d}
-#master-tab-catalog .bestiary-reference-element[data-element="Ruptura"]{color:#cdb4ff;background:#30234e}
-#master-tab-catalog .bestiary-reference-element[data-element="Eco"]{color:#b2dbf3;background:#203446}
-#master-tab-catalog .bestiary-reference-element[data-element="Vazio"]{color:#d9dae1;background:#292a34}
+#monster-modal-bestiary-panel .bestiary-reference-element[data-element="Lembrança"]{color:#f1d9a9;background:#42331c}
+#monster-modal-bestiary-panel .bestiary-reference-element[data-element="Carne"]{color:#faa99a;background:#4c211d}
+#monster-modal-bestiary-panel .bestiary-reference-element[data-element="Ruptura"]{color:#cdb4ff;background:#30234e}
+#monster-modal-bestiary-panel .bestiary-reference-element[data-element="Eco"]{color:#b2dbf3;background:#203446}
+#monster-modal-bestiary-panel .bestiary-reference-element[data-element="Vazio"]{color:#d9dae1;background:#292a34}
 @media(max-width:700px){
-  #master-tab-catalog .master-bestiary-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #master-tab-catalog .master-bestiary-filters input{grid-column:1/-1}
+  #monster-modal-bestiary-panel .master-bestiary-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #monster-modal-bestiary-panel .master-bestiary-filters input{grid-column:1/-1}
 }
 @media(max-width:480px){
-  #master-tab-catalog .master-bestiary-filters{grid-template-columns:1fr}
-  #master-tab-catalog .master-bestiary-filters input{grid-column:auto}
-  #master-tab-catalog .bestiary-reference-grid{grid-template-columns:minmax(0,1fr)}
+  #monster-modal-bestiary-panel .master-bestiary-filters{grid-template-columns:1fr}
+  #monster-modal-bestiary-panel .master-bestiary-filters input{grid-column:auto}
+  #monster-modal-bestiary-panel .bestiary-reference-grid{grid-template-columns:minmax(0,1fr)}
+}
+
+/* Enciclopédia de monstros: cartas inspiradas em páginas de arquivo e Matriz paranormal. */
+#monster-modal-bestiary-panel { padding:0 18px 24px; }
+#monster-modal-bestiary-panel .master-bestiary-library {
+  margin:0;border:0;background:transparent;box-shadow:none;overflow:visible;
+}
+.bestiary-library-heading {
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:23px 22px;margin:16px 0 18px;
+  border:1px solid #764337;border-radius:13px;
+  background:radial-gradient(circle at 93% 20%,rgba(179,56,37,.20),transparent 38%),
+    linear-gradient(125deg,#2c1713,#0d0a0b 70%);
+  box-shadow:0 14px 30px #0006,inset 0 1px #f5aa7330;
+}
+.bestiary-library-eyebrow {display:block;color:#de987c;font:800 10px/1.4 Arial,sans-serif;letter-spacing:.17em}
+.bestiary-library-heading h3 {margin:5px 0 4px;color:#fff0df;font:900 clamp(22px,3vw,32px)/1.16 Georgia,serif;letter-spacing:.02em}
+.bestiary-library-heading p {margin:0;color:#ccafa1;font:12px/1.45 Arial,sans-serif}
+.bestiary-library-seal {display:grid;place-items:center;flex:none;width:64px;height:64px;border:1px solid #b26147;border-radius:50%;color:#e8b393;font:40px Georgia,serif;background:#6b30242b}
+#monster-modal-bestiary-panel .master-bestiary-content {padding:0}
+#monster-modal-bestiary-panel .master-bestiary-description {
+  padding:0 6px;margin:0 0 17px;color:#c9aea0;font:13px/1.6 Arial,sans-serif
+}
+#monster-modal-bestiary-panel .master-bestiary-filters {
+  display:grid;grid-template-columns:minmax(210px,2.2fr) repeat(2,minmax(145px,1fr));
+  gap:10px;padding:12px;border:1px solid #624034;border-radius:11px;
+  background:linear-gradient(135deg,#211511,#120e0d);box-shadow:0 6px 20px #0005
+}
+#monster-modal-bestiary-panel .master-bestiary-filters input,
+#monster-modal-bestiary-panel .master-bestiary-filters select {
+  min-height:44px;border-radius:7px;border-color:#785143;background:#100c0c;
+  color:#f4e4d6;font:13px Arial,sans-serif
+}
+#monster-modal-bestiary-panel .master-bestiary-results {
+  padding:15px 4px 11px;color:#d7b8a5;font:800 11px/1.4 Arial,sans-serif;
+  letter-spacing:.045em;text-transform:uppercase
+}
+#monster-modal-bestiary-panel #bestiary-import-status:not(:empty){
+  padding:12px 14px;border:1px solid #60816c;border-radius:9px;
+  background:rgba(50,107,69,.15);color:#c3eed0;
+}
+#monster-modal-bestiary-panel .bestiary-reference-grid {
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px
+}
+#monster-modal-bestiary-panel .bestiary-book-card {
+  --matrix-accent:#b75d46;position:relative;overflow:hidden;
+  gap:12px;padding:18px;border:1px solid #70463b;border-top:3px solid var(--matrix-accent);
+  border-radius:13px;background:
+    radial-gradient(circle at 100% 0%,color-mix(in srgb,var(--matrix-accent) 19%,transparent),transparent 46%),
+    linear-gradient(165deg,#2a1a17,#110d0e 75%);
+  box-shadow:0 14px 30px #0008,inset 0 1px #ffbf9d15;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+#monster-modal-bestiary-panel .bestiary-book-card:hover {
+  border-color:var(--matrix-accent);transform:translateY(-3px);
+  box-shadow:0 18px 34px #0009,0 0 0 1px var(--matrix-accent)
+}
+#monster-modal-bestiary-panel [data-matrix="Medo"]{--matrix-accent:#d797bb}
+#monster-modal-bestiary-panel [data-matrix="Lembrança"]{--matrix-accent:#d9ba71}
+#monster-modal-bestiary-panel [data-matrix="Carne"]{--matrix-accent:#e07c69}
+#monster-modal-bestiary-panel [data-matrix="Ruptura"]{--matrix-accent:#b79bdf}
+#monster-modal-bestiary-panel [data-matrix="Eco"]{--matrix-accent:#83c7d8}
+#monster-modal-bestiary-panel [data-matrix="Vazio"]{--matrix-accent:#b3b7c8}
+#monster-modal-bestiary-panel .bestiary-book-heading {
+  display:flex;align-items:center;gap:10px;min-height:58px;
+  padding:0 0 11px;border-bottom:1px solid #9a604d66
+}
+#monster-modal-bestiary-panel .bestiary-book-index {
+  display:grid;place-items:center;flex:none;width:31px;height:31px;
+  border:1px solid #8a5a4b;border-radius:6px;
+  color:#e1af99;background:#130c0b;font:900 13px/1 Georgia,serif
+}
+.bestiary-book-identity {flex:1;min-width:0}
+.bestiary-book-overline {display:block;margin-bottom:4px;color:#c49886;font:800 9px/1.3 Arial,sans-serif;letter-spacing:.12em}
+#monster-modal-bestiary-panel .bestiary-reference-name {
+  font:900 clamp(18px,2vw,23px)/1.18 Georgia,serif;color:#fff2e4;margin:0
+}
+.bestiary-book-seal {
+  display:grid;place-items:center;flex:none;width:40px;height:40px;
+  border:1px solid var(--matrix-accent);border-radius:50%;
+  color:var(--matrix-accent);font:26px Georgia,serif;opacity:.86;
+}
+#monster-modal-bestiary-panel .bestiary-reference-tags span{
+  border-radius:20px;padding:5px 10px;font-size:10px;background:#231614;border-color:#82543d
+}
+#monster-modal-bestiary-panel .bestiary-reference-tags .bestiary-reference-element{
+  background:color-mix(in srgb,var(--matrix-accent) 21%,#171010);
+  border-color:var(--matrix-accent);color:#ffeddf
+}
+#monster-modal-bestiary-panel .bestiary-book-stats {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px
+}
+#monster-modal-bestiary-panel .bestiary-book-stat {
+  padding:11px 4px;min-width:0;min-height:68px;gap:6px;
+  background:linear-gradient(160deg,#100d0c,#241610);border:1px solid #784b3c;
+  border-radius:8px;align-items:center;justify-content:center
+}
+#monster-modal-bestiary-panel .bestiary-book-stat small{font:800 10px Arial,sans-serif;color:#d2a994;letter-spacing:.08em}
+#monster-modal-bestiary-panel .bestiary-book-stat strong{font:900 19px Georgia,serif;color:#fff0e5;overflow-wrap:anywhere}
+.bestiary-book-lore {display:grid;gap:9px}
+#monster-modal-bestiary-panel .bestiary-book-field{
+  display:grid;gap:5px;margin:0;padding:9px 11px;border:1px solid #56372e;
+  border-radius:7px;background:#120d0c9e;color:#e3c9ba;font:12px/1.55 Arial,sans-serif
+}
+#monster-modal-bestiary-panel .bestiary-book-field strong{
+  display:block;color:#df9c7f;font:900 10px/1.25 Arial,sans-serif;letter-spacing:.11em
+}
+#monster-modal-bestiary-panel .bestiary-book-attack{background:#4d251620;border-color:#8f4a30}
+#monster-modal-bestiary-panel .bestiary-book-ability{background:#3224185c}
+#monster-modal-bestiary-panel .bestiary-book-weakness{
+  background:rgba(163,85,71,.13);border:1px solid #8b5142;border-left:3px solid #d2765e
+}
+#monster-modal-bestiary-panel .bestiary-book-exposure{border-color:#5c4a61;background:#22172396}
+#monster-modal-bestiary-panel .bestiary-book-more{
+  border-radius:8px;border:1px solid #765043;background:#120d0ca8;padding:11px 12px
+}
+#monster-modal-bestiary-panel .bestiary-book-more summary{color:#e3bba6;font:900 11px Arial,sans-serif;letter-spacing:.06em}
+#monster-modal-bestiary-panel .bestiary-book-more .bestiary-book-field{padding:0;border:0;background:none}
+#monster-modal-bestiary-panel .bestiary-reference-import {
+  width:100%;min-height:44px;border:1px solid #d47b57;border-radius:8px;
+  background:linear-gradient(100deg,#7b3225,#4a231b);color:#fff1e5;
+  font:900 11px Arial,sans-serif;letter-spacing:.055em;
+}
+#monster-modal-bestiary-panel .bestiary-reference-import:hover{
+  background:linear-gradient(100deg,#a1442f,#722b1f);border-color:#ffc09b
+}
+#monster-modal-bestiary-panel .bestiary-load-more{
+  width:fit-content;border-radius:8px;background:#43241b;border-color:#a86348;color:#f8d9c7
+}
+@media(max-width:760px){
+  #monster-modal-bestiary-panel{padding:0 12px 18px}
+  #monster-modal-bestiary-panel .master-bestiary-filters{grid-template-columns:1fr 1fr}
+  #monster-modal-bestiary-panel .master-bestiary-filters input{grid-column:1/-1}
+  #monster-modal-bestiary-panel .bestiary-reference-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+}
+@media(max-width:520px){
+  .bestiary-library-heading{padding:17px 15px}
+  .bestiary-library-seal{width:45px;height:45px;font-size:30px}
+  #monster-modal-bestiary-panel .master-bestiary-filters{grid-template-columns:1fr}
+  #monster-modal-bestiary-panel .master-bestiary-filters input{grid-column:auto}
+  #monster-modal-bestiary-panel .bestiary-reference-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  #monster-modal-bestiary-panel .bestiary-book-card{transition:none}
+  #monster-modal-bestiary-panel .bestiary-book-card:hover{transform:none}
 }
