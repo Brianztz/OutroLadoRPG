@@ -824,10 +824,35 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
       $(id+'-bar').setAttribute('aria-valuemin','0');$(id+'-bar').setAttribute('aria-valuemax',String(value.max));$(id+'-bar').setAttribute('aria-valuenow',String(value.current));$(id+'-bar').setAttribute('aria-valuetext',value.current+' de '+value.max);
     }
   }
+  // Campos PV/PM atuais recebem variações: 10 recupera 10, -10 retira 10.
+  // O valor máximo continua sendo editado diretamente; os botões mudam 1 ponto.
+  function applyResourceDelta(id,delta){
+    const previous=normalizeResource(state.resources[id]||{current:0,max:1});
+    state.resources[id]=normalizeResource({current:previous.current+delta,max:previous.max});
+    displayResources();save();
+  }
   for(const id of ['life','sanity']){
-    const update=()=>{state.resources[id]=normalizeResource({current:$(id+'-current').value,max:$(id+'-max').value});displayResources();save();};
-    $(id+'-current').addEventListener('change',update);$(id+'-max').addEventListener('change',update);
-    for(const [suffix,delta] of [['minus',-1],['plus',1]])$(id+'-'+suffix).addEventListener('click',()=>{$(id+'-current').value=Number($(id+'-current').value)+delta;update();});
+    const currentInput=$(id+'-current');
+    const updateCurrent=()=>{
+      const typed=currentInput.value.trim().replace(/\u2212/g,'-');
+      if(!/^[+-]?\d+$/.test(typed)){displayResources();return;}
+      const delta=Number(typed);
+      if(!Number.isSafeInteger(delta)){displayResources();return;}
+      applyResourceDelta(id,delta);
+    };
+    currentInput.addEventListener('focus',()=>currentInput.select());
+    currentInput.addEventListener('keydown',event=>{if(event.key==='Enter')currentInput.blur();});
+    currentInput.addEventListener('change',updateCurrent);
+    $(id+'-max').addEventListener('change',()=>{
+      state.resources[id]=normalizeResource({
+        current:state.resources[id]?.current,
+        max:$(id+'-max').value
+      });
+      displayResources();save();
+    });
+    for(const [suffix,delta] of [['minus',-1],['plus',1]]){
+      $(id+'-'+suffix).addEventListener('click',()=>applyResourceDelta(id,delta));
+    }
   }
 
 
