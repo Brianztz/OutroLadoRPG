@@ -108,6 +108,14 @@
       body: JSON.stringify(sheet)
     });
   }
+  // Permite ao mestre entregar conteúdo à ficha salva, inclusive offline.
+  // O servidor, não a presença no websocket, confirma cada entrega.
+  async function grantCharacterContent(table, codes, type, payload) {
+    return api(query(table, 'grant', 'temporada'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codes, type, payload })
+    });
+  }
   async function readClues(table) {
     return api(query(table, 'clues'));
   }
@@ -119,6 +127,7 @@
   }
   global.OLNative = Object.freeze({
     tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
+    grantCharacterContent,
     lookupAccount, registerMasterAccount, changeMasterCredentials, signInAccount, registerPlayerAccount,
     provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
@@ -278,13 +287,15 @@
       characterName: String(metadata.characterName || '').slice(0, 120),
       updatedAt: new Date().toISOString()
     };
-    await global.OLNative.writeCharacter(seasonScopedTable(requestedTable),
+    const saved = await global.OLNative.writeCharacter(seasonScopedTable(requestedTable),
       metadata.sheetVariant || (global.OLSeasonSpace?.isSeasonPage?.() ? 'temporada' : 'classic'),
       code, payload);
+    // O servidor pode acrescentar entregas que chegaram durante o salvamento.
+    const confirmedHash = saved.sheetHash || sheetHash;
     global.dispatchEvent(new CustomEvent('ol:character-sync', {
-      detail: { state: 'saved', tableId: seasonScopedTable(requestedTable), sheetHash }
+      detail: { state: 'saved', tableId: seasonScopedTable(requestedTable), sheetHash: confirmedHash }
     }));
-    return { sheetHash, playerCode: code, skipped: false };
+    return { sheetHash: confirmedHash, playerCode: code, skipped: false };
   }
   async function loadMasterClues(table) {
     try {
