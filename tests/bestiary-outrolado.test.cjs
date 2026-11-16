@@ -23,8 +23,8 @@ test('escudo de Vestígios exibe biblioteca de 30 criaturas do livro Exílio 3.0
     'bestiary-tier','bestiary-reference-grid','bestiary-results-count'])
     assert(html.includes('id="'+id+'"'),id+' ausente');
   assert(html.includes('bestiary-exilio.js?v=1'));
-  assert(html.includes('bestiary-exilio-master.js?v=1'));
-  assert(html.includes('bestiary-outrolado.css?v=exilio-book-30'));
+  assert(html.includes('bestiary-exilio-master.js?v=monster-modal-v2'));
+  assert(html.includes('bestiary-outrolado.css?v=monster-modal-v2'));
   assert(html.includes('📖 BESTIÁRIO'));
   assert(html.includes('master-theme.css?v=exilio-3-escudo-v2'));
 });
