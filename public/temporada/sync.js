@@ -94,10 +94,37 @@ window.startSeasonSync=async function startSeasonSync(){
   if(!view)socket.on('catalog_item_granted',data=>{if(!data?.item)return;const p=packet();p.fullData.inv.push(data.item);receive(p);});
   $('download-preview').addEventListener('click',e=>{e.stopImmediatePropagation();$('season-export').click();},true);
   $('season-export').onclick=()=>{const blob=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='ficha-temporada-'+code+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-  // Atalho visível para a importação já existente, sem duplicar lógica ou formato.
-  $('import-sheet').onclick=()=>$('season-import').click();
-  $('season-import').onclick=()=>$('season-import-file').click();
-  $('season-import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>8*1024*1024)throw Error('O arquivo deve ter até 8 MB.');const data=JSON.parse(await file.text());if(data.version!==1||!data.state?.attrs||!data.state?.skills)throw Error('Escolha um backup da ficha da temporada.');await applySnapshot(data);changed();await flush();}catch(error){status('Importação recusada: '+error.message);}};
+  // O seletor fica fora do painel oculto. Abri-lo diretamente pelo clique
+  // visível preserva a ativação do usuário (inclusive em navegadores móveis).
+  const importPicker=$('season-import-file');
+  function openImportPicker(){
+    importPicker.value='';
+    if(typeof importPicker.showPicker==='function'){
+      try{importPicker.showPicker();return;}catch(error){console.warn('Seletor nativo indisponível:',error);}
+    }
+    importPicker.click();
+  }
+  $('import-sheet').onclick=openImportPicker;
+  $('season-import').onclick=openImportPicker;
+  importPicker.onchange=async event=>{
+    const file=event.target.files?.[0];
+    event.target.value='';
+    if(!file)return;
+    try{
+      if(file.size>8*1024*1024)throw Error('O arquivo deve ter até 8 MB.');
+      const data=JSON.parse(await file.text());
+      if(data.version!==1||!data.state?.attrs||!data.state?.skills)
+        throw Error('Escolha um backup JSON válido da ficha da temporada.');
+      await applySnapshot(data);
+      changed();
+      await flush();
+      api.notify('Ficha importada e carregada neste dispositivo.');
+    }catch(error){
+      const message='Não foi possível importar: '+(error?.message||String(error));
+      status(message);
+      api.notify(message);
+    }
+  };
   let unsubscribe=null;
   let initializing=false;
   async function initialize(){
