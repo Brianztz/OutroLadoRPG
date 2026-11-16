@@ -1540,6 +1540,14 @@
                     const imageHtml = item.img
                         ? `<img class="catalog-image" src="${escapeHtml(item.img)}" alt="" loading="lazy">`
                         : `<div class="catalog-image-fallback" aria-hidden="true">${isWeapon ? '⚔' : '🎒'}</div>`;
+                    const description = String(item.desc || 'Item de equipamento.');
+                    const descriptionHtml = description.length > 95
+                        ? `<p class="catalog-description">${escapeHtml(description.slice(0, 95).trimEnd())}…</p>
+                           <details class="catalog-description-details">
+                               <summary>LER DESCRIÇÃO COMPLETA</summary>
+                               <p>${escapeHtml(description)}</p>
+                           </details>`
+                        : `<p class="catalog-description">${escapeHtml(description)}</p>`;
                     const statsHtml = isWeapon
                         ? `<div class="catalog-stats">
                             <div class="catalog-stat"><span>DANO</span><strong>${escapeHtml(item.dmg)}</strong></div>
@@ -1553,7 +1561,7 @@
                             ${item.ammo ? `<span class="catalog-detail">Munição: ${escapeHtml(item.ammo)}</span>` : ''}
                             ${item.capacity ? `<span class="catalog-detail">Capacidade: ${escapeHtml(item.capacity)}</span>` : ''}
                            </div>`
-                        : `<p class="catalog-description">${escapeHtml(item.desc || 'Item de equipamento.')}</p>
+                        : `${descriptionHtml}
                            <div class="catalog-details">
                             <span class="catalog-detail">${escapeHtml(item.weight)} espaço(s)</span>
                             ${item.ammo ? `<span class="catalog-detail">Munição: ${escapeHtml(item.ammo)}</span>` : ''}
