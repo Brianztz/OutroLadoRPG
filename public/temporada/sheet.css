@@ -470,3 +470,12 @@ body.season-readable-zoom #page-principal:not([hidden]){
 #panel #season-online{
   display:none!important;
 }
+
+/* Controles legados removidos visualmente do menu de ajustes.
+   Os elementos permanecem montados para não quebrar eventos e integração. */
+#tools-panel #photo-header-upload,
+#tools-panel #exilio-rest-short,
+#tools-panel #exilio-rest-long,
+#tools-panel #fit-mode{
+  display:none!important;
+}
