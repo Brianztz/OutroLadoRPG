@@ -9,7 +9,7 @@ const theme = fs.readFileSync(path.join(root, 'public/temporada/master-theme.css
 
 test('Escudo de Vestigios tem identidade visual exclusiva do Exilio 3.0', () => {
   const originalStyle = html.indexOf('</style>');
-  const themeLink = html.indexOf('href="/temporada/master-theme.css?v=exilio-3-escudo-v4"');
+  const themeLink = html.indexOf('href="/temporada/master-theme.css?v=exilio-3-escudo-v5"');
   assert(originalStyle >= 0 && themeLink > originalStyle);
   assert(html.includes('OUTRO LADO: VESTÍGIOS · EXÍLIO 3.0'));
   assert(html.includes('Escudo do Mestre · Vestígios'));
