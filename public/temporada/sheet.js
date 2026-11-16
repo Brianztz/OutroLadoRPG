@@ -7,8 +7,12 @@
   const $=id=>document.getElementById(id);
   const attrIds=['forca','agilidade','vigor','intelecto','presenca'];
   const newAttributeNames={potencia:'POTÊNCIA',destreza:'DESTREZA',constituicao:'CONSTITUIÇÃO',raciocinio:'RACIOCÍNIO',consciencia:'CONSCIÊNCIA',expressao:'EXPRESSÃO'};
+  // Mantém as chaves históricas para preservar fichas, domínio, bônus e sincronização.
+  const skillDisplayNames={"DISCRIÇÃO":"FURTIVIDADE","PRECISÃO":"PONTARIA","SENSIBILIDADE":"EMPATIA"};
+  const displaySkillName=name=>skillDisplayNames[name]||name;
+  const displaySkillTerms=text=>String(text||'').replace(/Discrição/g,'Furtividade').replace(/Precisão/g,'Pontaria').replace(/Sensibilidade/g,'Empatia');
   const skillNames=["ANOMALIAS","ATLETISMO","CONFRONTO","CONHECIMENTO","DISCRIÇÃO","INFLUÊNCIA","INVESTIGAÇÃO","MEDICINA","MOBILIDADE","OBSERVAÇÃO","OFÍCIO","PRECISÃO","RESISTÊNCIA","SENSIBILIDADE","SOBREVIVÊNCIA","TECNOLOGIA"];
-  const exilioDescriptions=["Fenômenos e manifestações do Exílio.","Correr, saltar, escalar, nadar e superar obstáculos físicos.","Combate corpo a corpo, agarrões e golpes.","Ciências, cultura, história e teoria.","Furtividade, infiltração e ocultação.","Persuadir, negociar, intimidar e enganar.","Examinar evidências e reconstruir acontecimentos.","Diagnóstico, tratamentos e primeiros socorros.","Equilíbrio, acrobacias, esquivas e deslocamento.","Identificar sinais, movimentos e detalhes.","Atividade profissional ou artística; requer especialidade.","Disparos, arremessos e mira.","Resistir a pressão física e mental.","Interpretar emoções, atitudes e contradições.","Orientação, rastreamento e adaptação.","Computadores, eletrônica e sistemas."];
+  const exilioDescriptions=["Identificar, compreender e interagir com fenômenos sobrenaturais ligados ao Exílio. Permite reconhecer manifestações, perceber alterações na realidade e interpretar sinais de atividade paranormal.","Realizar atividades que exigem força, esforço físico e condicionamento, como correr longas distâncias, saltar obstáculos, escalar superfícies, nadar ou carregar objetos pesados.","Enfrentar adversários em combate corpo a corpo, utilizando socos, chutes, agarrões, armas brancas e outras técnicas de combate próximo.","Recordar e aplicar informações adquiridas por estudo ou experiência, incluindo história, geografia, ciências, cultura, acontecimentos e assuntos acadêmicos.","Mover-se sem ser percebido, esconder-se, evitar fazer barulho, passar despercebido por pessoas e infiltrar-se em locais sem chamar atenção.","Convencer, negociar, intimidar, mentir ou manipular pessoas por meio de palavras, comportamento e presença social.","Analisar pistas, procurar evidências, relacionar informações e reconstruir acontecimentos para descobrir o que ocorreu em determinada situação.","Reconhecer doenças e ferimentos, prestar primeiros socorros, estabilizar pessoas feridas e realizar tratamentos de acordo com os recursos disponíveis.","Executar movimentos que exigem equilíbrio, flexibilidade, coordenação e controle corporal, como cambalhotas, aterrissagens difíceis e travessias por superfícies estreitas.","Notar detalhes do ambiente por meio dos sentidos, como ouvir passos, perceber movimentos, identificar cheiros, detectar alguém escondido ou encontrar algo fora do lugar.","Executar atividades práticas ou artísticas de uma especialidade escolhida, como mecânica, culinária, carpintaria, pintura ou outros trabalhos que exigem habilidade técnica.","Acertar alvos à distância utilizando armas de fogo, arcos, objetos arremessados ou outros equipamentos que dependem de mira e precisão.","Suportar condições físicas ou mentais adversas, como venenos, doenças, exaustão, dor, medo intenso, pressão psicológica e tentativas de desestabilização.","Compreender emoções e intenções por meio de expressões, gestos e comportamentos. Permite perceber nervosismo, desconforto, possíveis mentiras e mudanças emocionais.","Orientar-se em ambientes perigosos ou desconhecidos, encontrar recursos naturais, seguir rastros, reconhecer perigos ambientais e sobreviver em condições hostis.","Utilizar, compreender e solucionar problemas relacionados a computadores, sistemas digitais, dispositivos eletrônicos, redes e equipamentos tecnológicos."];
   const exilioDefaultAttributes={"ATLETISMO":"potencia","CONFRONTO":"potencia","PRECISÃO":"destreza","MOBILIDADE":"destreza","DISCRIÇÃO":"destreza","RESISTÊNCIA":"constituicao","OBSERVAÇÃO":"consciencia","INVESTIGAÇÃO":"raciocinio","CONHECIMENTO":"raciocinio","TECNOLOGIA":"raciocinio","MEDICINA":"raciocinio","INFLUÊNCIA":"expressao","SENSIBILIDADE":"consciencia","SOBREVIVÊNCIA":"consciencia","OFÍCIO":"raciocinio","ANOMALIAS":"consciencia"};
   const exilioAttributeLabels={"potencia":"POT","destreza":"DES","constituicao":"CON","raciocinio":"RAC","consciencia":"CNS","expressao":"EXP"};
   function buildExilioSkillTable(){
@@ -16,14 +20,15 @@
     grid.classList.add('exilio-skill-tables','exilio-skill-tiles');
     grid.setAttribute('aria-label','Perícias do Exílio. Clique para rolar escolhendo um atributo; mantenha pressionado para abrir treinamento.');
     grid.replaceChildren();
-    for(const name of skillNames){
+    // Ordem alfabética pelos nomes exibidos, mantendo as chaves legadas.
+    for(const name of [...skillNames].sort((a,b)=>displaySkillName(a).localeCompare(displaySkillName(b),'pt-BR'))){
       const row=document.createElement('article');
       row.className='sheet-skill-card';row.dataset.skill=name;
       const btn=document.createElement('button');
       btn.className='sheet-skill-details';btn.type='button';
-      btn.setAttribute('aria-label','Abrir perícia '+name);
+      btn.setAttribute('aria-label','Abrir perícia '+displaySkillName(name));
       btn.title='Clique esquerdo: teste com escolha de atributo. Segure o botão esquerdo: treinamento e detalhes.';
-      const label=document.createElement('strong');label.textContent=name;
+      const label=document.createElement('strong');label.textContent=displaySkillName(name);
       const rank=document.createElement('span');rank.className='sheet-skill-training';rank.textContent='SEM TREINAMENTO';
       const modifier=document.createElement('span');modifier.className='sheet-skill-score';modifier.textContent='0';
       btn.append(label,rank,modifier);
@@ -81,7 +86,7 @@
       el.querySelector('.sheet-skill-training').textContent=rank;
       el.querySelector('.sheet-skill-score').textContent=(modifier>0?'+':'')+modifier;
       const button=el.querySelector('.sheet-skill-details');
-      button.setAttribute('aria-label',name+', '+rank+', bônus sem atributo '+(modifier>=0?'+':'')+modifier+'. Clique para escolher atributo e rolar; segure para treinamento.');
+      button.setAttribute('aria-label',displaySkillName(name)+', '+rank+', bônus sem atributo '+(modifier>=0?'+':'')+modifier+'. Clique para escolher atributo e rolar; segure para treinamento.');
       updateSkillEdgeBadge(el);
     });
   }
@@ -282,8 +287,8 @@
     const card=document.createElement('button');card.type='button';card.className='occupation-card';
     const title=document.createElement('strong');title.textContent=details.name;
     const description=document.createElement('span');description.textContent=details.description;
-    const domains=document.createElement('small');domains.textContent='Domínios (Praticante +2): '+details.domains;
-    const vivencia=document.createElement('small');vivencia.textContent='Vivência — '+details.vivenciaName+': '+details.vivencia;
+    const domains=document.createElement('small');domains.textContent='Domínios (Praticante +2): '+displaySkillTerms(details.domains);
+    const vivencia=document.createElement('small');vivencia.textContent='Vivência — '+details.vivenciaName+': '+displaySkillTerms(details.vivencia);
     card.append(title,description,domains,vivencia);
     card.addEventListener('click',()=>choose(details.name));$('occupation-list').append(card);
   }
@@ -332,7 +337,7 @@
   }
   function openSkill(el){
     selectedSkill=el;const name=el.dataset.skill;
-    $('skill-name').textContent=name;$('skill-description').textContent=skillDescriptions[skillNames.indexOf(name)]||'';
+    $('skill-name').textContent=displaySkillName(name);$('skill-description').textContent=skillDescriptions[skillNames.indexOf(name)]||'';
     $('skill-training').value=String(Number(state.skillDomains?.[name])||0);
     $('skill-bonus').value=Number(state.skillBonuses?.[name])||0;
     const occupationHint=$('skill-occupation-hint'),isGranted=occupationDomainNames().includes(name);
@@ -344,18 +349,18 @@
   // Seletor rápido: não abre nem altera o painel de treinamento.
   function openQuickSkillRoll(el){
     const name=el.dataset.skill,dialog=$('skill-quick-roll-dialog'),options=$('skill-quick-roll-options');
-    $('skill-quick-roll-title').textContent=name+' · Escolha o atributo';
+    $('skill-quick-roll-title').textContent=displaySkillName(name)+' · Escolha o atributo';
     options.replaceChildren();
     for(const [key,label] of Object.entries(newAttributeNames)){
       const value=Number(state.attrs[key])||0;
       const button=document.createElement('button');
       button.type='button';
       button.textContent=label+' ('+(value>=0?'+':'')+value+')';
-      button.setAttribute('aria-label','Rolar '+name+' com '+label);
+      button.setAttribute('aria-label','Rolar '+displaySkillName(name)+' com '+label);
       button.addEventListener('click',()=>{
         const pool=rollExilioSkill(name,key);
         dialog.close();
-        showSkillDice(pool,'TOTAL',name);
+        showSkillDice(pool,'TOTAL',displaySkillName(name));
       });
       options.append(button);
     }
@@ -414,13 +419,13 @@
       const attr=Number(state.attrs[key])||0;
       const button=document.createElement('button');button.type='button';
       button.textContent=label+' ('+(attr>=0?'+':'')+attr+')';
-      button.setAttribute('aria-label','Rolar '+selectedSkill.dataset.skill+' com '+label+' ('+attr+')');
+      button.setAttribute('aria-label','Rolar '+displaySkillName(selectedSkill.dataset.skill)+' com '+label+' ('+attr+')');
       button.addEventListener('click',()=>{
         if(!selectedSkill)return;
         const name=selectedSkill.dataset.skill,pool=rollExilioSkill(name,key);
         const output=$('skill-result');output.dataset.result='TOTAL';output.textContent=pool.detail;
         picker.hidden=true;
-        showSkillDice(pool,'TOTAL',name);
+        showSkillDice(pool,'TOTAL',displaySkillName(name));
       });
       options.append(button);
     }
@@ -715,7 +720,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
     for(const level of [2,4,7,10]){
       if(level>ip)continue;
       const list=p.domains[level]||[],area=block(root,'IP '+level+' · 2 melhorias de Domínio',list.length+'/2 recebidas. Cada perícia só pode avançar uma vez por marco.');
-      for(const item of list){const line=document.createElement('p');line.textContent=item.name+' · +'+item.from+' → +'+item.to;area.append(line);}
+      for(const item of list){const line=document.createElement('p');line.textContent=displaySkillName(item.name)+' · +'+item.from+' → +'+item.to;area.append(line);}
       if(list.length<2){
         const row=document.createElement('div');row.className='exilio-progress-row';
         const select=document.createElement('select');select.setAttribute('aria-label','Melhoria de Domínio no IP '+level);
@@ -723,7 +728,7 @@ window.dispatchEvent(new CustomEvent('season:roll',{detail:{pool,label,name}}));
           const value=Number(state.skillDomains?.[name])||0;
           if(value===6||value===2&&level<4||value===4&&level<7||list.some(x=>x.name===name))continue;
           if(value===4&&skillNames.filter(n=>Number(state.skillDomains?.[n])===6).length>=2)continue;
-          const option=document.createElement('option');option.value=name;option.textContent=name+' (+ '+value+' → '+(value+2)+')';select.append(option);
+          const option=document.createElement('option');option.value=name;option.textContent=displaySkillName(name)+' (+ '+value+' → '+(value+2)+')';select.append(option);
         }
         if(select.options.length){row.append(select);action(row,'APLICAR',()=>chooseDomain(level,select.value));area.append(row);}
         else{const hint=document.createElement('p');hint.textContent='Sem perícia elegível para melhoria neste momento.';area.append(hint);}
@@ -1276,7 +1281,7 @@ function appendWeaponAmmo(card,a){const spec=weaponAmmoSpec(a);if(!spec)return;c
       lines.push('Crítico: ×'+criticalMultiplierFromText(item.crit));
       lines.push('Ataques: '+(Number(item.atk)||1));
       lines.push('Alcance: '+(item.range||'—'));
-      lines.push('Perícia: '+(/pontaria|precisão/i.test(item.skill)?'PRECISÃO':'CONFRONTO'));
+      lines.push('Perícia: '+(/pontaria|precisão/i.test(item.skill)?'PONTARIA':'CONFRONTO'));
     }
     if(item.ammo)lines.push('Munição: '+item.ammo);
     if(item.capacity)lines.push('Capacidade: '+item.capacity);
