@@ -41,6 +41,10 @@ window.startSeasonSync=async function startSeasonSync(){
     const local=snapshot();
     const from=remote?.state,to=local.state;
     if(!from||!to)return;
+    // Fichas diferentes podem ter o mesmo código de acesso, mas não as mesmas entregas.
+    // O marcador vazio representa uma ficha legada, anterior à separação por importação.
+    const scopeOf=state=>typeof state.masterGrantScope==='string'?state.masterGrantScope:'';
+    if(scopeOf(from)!==scopeOf(to))return;
     const seen=new Set(Array.isArray(to.masterGrantIds)?to.masterGrantIds:[]);
     const delivered=Array.isArray(from.masterGrantIds)?from.masterGrantIds:[];
     let changed=false;
@@ -115,10 +119,14 @@ window.startSeasonSync=async function startSeasonSync(){
       const data=JSON.parse(await file.text());
       if(data.version!==1||!data.state?.attrs||!data.state?.skills)
         throw Error('Escolha um backup JSON válido da ficha da temporada.');
-      await applySnapshot(data);
+      // Importar é trocar de personagem: não herdar entregas pendentes
+      // da ficha anterior só porque ambas usam o mesmo código de jogador.
+      // O backup continua intacto; a geração pertence à cópia importada.
+      const imported={...data,state:{...data.state,masterGrantScope:crypto.randomUUID()}};
+      await applySnapshot(imported);
       changed();
       await flush();
-      api.notify('Ficha importada e carregada neste dispositivo.');
+      api.notify('Ficha importada. Entregas anteriores de outro personagem não serão reaplicadas.');
     }catch(error){
       const message='Não foi possível importar: '+(error?.message||String(error));
       status(message);
