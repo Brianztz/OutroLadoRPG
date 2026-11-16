@@ -598,17 +598,12 @@
 
     <main id="master-tab-combat" class="content-wrapper master-tab-panel active">
         <section class="players-section">
-            <div class="section-heading"><span>Jogadores conectados automaticamente</span><span id="players-count" class="players-count">0 ONLINE</span></div>
+            
             <div id="players-board" class="players-container">
                 <div id="players-empty" class="players-empty"><strong>Aguardando jogadores</strong>Assim que uma ficha for aberta, ela aparecerá aqui automaticamente.</div>
             </div>
         </section>
-        <div class="combat-sidebar">
-            <section class="player-rolls-container" aria-label="Resultados das rolagens dos jogadores">
-                <div class="player-rolls-title"><span>🎲 ÚLTIMAS ROLAGENS</span><button class="player-rolls-clear" type="button" onclick="clearPlayerRollResults()">LIMPAR</button></div>
-                <div id="player-rolls-list" class="player-rolls-list" aria-live="polite"></div>
-            </section>
-        </div>
+
     </main>
 
     <section id="master-tab-monsters" class="monsters-workspace master-tab-panel">
@@ -971,6 +966,7 @@
             <div class="catalog-recipient-body">
                 <label id="catalog-recipient-all-row" class="catalog-recipient-all"><input id="catalog-recipient-all" type="checkbox" onchange="toggleAllCatalogRecipients(this.checked)"><span>SELECIONAR TODOS</span></label>
                 <div id="catalog-recipient-list" class="catalog-recipient-list"></div>
+                <p id="catalog-recipient-status" class="catalog-recipient-status" role="status" aria-live="polite"></p>
             </div>
             <div class="catalog-recipient-footer">
                 <button class="catalog-recipient-cancel" type="button" onclick="closeCatalogRecipientPopup()">CANCELAR</button>
@@ -1048,6 +1044,7 @@
         let customCatalogEntries = loadCustomCatalogEntries();
         let pendingCatalogItem = null;
         let pendingClueToSend = null;
+        let pendingDeliveryId = '';
         let masterCluesState = loadMasterCluesState();
         let masterCluesCloudReady = false;
         let masterCluesCloudApplying = false;
@@ -1514,52 +1511,92 @@
             if (!item) return;
             pendingCatalogItem = item;
             pendingClueToSend = null;
+            pendingDeliveryId = crypto.randomUUID().replace(/-/g, '');
+            document.getElementById('catalog-recipient-status').textContent = '';
             document.getElementById('catalog-recipient-title').textContent = item.catalogKind === 'weapons' ? 'Enviar arma' : 'Enviar item';
             document.getElementById('catalog-recipient-item').textContent = item.name;
             renderCatalogRecipients();
             document.getElementById('catalog-recipient-modal').classList.add('open');
+            void refreshSavedPlayerSheets();
         }
 
         function openClueRecipientPopup(clue) {
             if (!clue) return;
             pendingCatalogItem = null;
             pendingClueToSend = clue;
+            pendingDeliveryId = crypto.randomUUID().replace(/-/g, '');
+            document.getElementById('catalog-recipient-status').textContent = '';
             document.getElementById('catalog-recipient-title').textContent = 'Enviar pista';
             document.getElementById('catalog-recipient-item').textContent = clue.title || 'Pista';
             renderCatalogRecipients();
             document.getElementById('catalog-recipient-modal').classList.add('open');
+            void refreshSavedPlayerSheets();
         }
 
         function closeCatalogRecipientPopup() {
             document.getElementById('catalog-recipient-modal').classList.remove('open');
             pendingCatalogItem = null;
             pendingClueToSend = null;
+            pendingDeliveryId = '';
         }
 
         function renderCatalogRecipients() {
             const list = document.getElementById('catalog-recipient-list');
             const selectAllRow = document.getElementById('catalog-recipient-all-row');
-            const players = Array.from(connectedPlayers.entries()).filter(([, player]) => player && player.fullData);
-            list.innerHTML = '';
-            document.getElementById('catalog-recipient-all').checked = false;
-
+            const selected = new Set([...list.querySelectorAll('.catalog-recipient-checkbox:checked')].map(input => input.value));
+            const available = new Map();
+            // Personagens registrados no armazenamento continuam selecionáveis offline.
+            for (const saved of savedPlayerSheets) {
+                if (saved && saved.code) available.set(String(saved.code), {
+                    code: String(saved.code), name: String(saved.name || saved.code)
+                });
+            }
+            for (const [code, connected] of connectedPlayers) {
+                if (!available.has(String(code))) available.set(String(code), {
+                    code: String(code), name: String(connected?.nome || code)
+                });
+            }
+            list.replaceChildren();
+            const players = [...available.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
             if (!players.length) {
                 selectAllRow.style.display = 'none';
-                list.innerHTML = '<div class="catalog-recipient-empty"><strong>Nenhum jogador disponível.</strong><br>Abra uma ficha de jogador e aguarde ela aparecer como conectada.</div>';
+                const empty = document.createElement('p');
+                empty.className = 'catalog-recipient-empty';
+                empty.textContent = savedPlayerSheetsLoading ? 'Carregando personagens da mesa…' : 'Nenhum personagem cadastrado nesta mesa.';
+                list.append(empty);
                 updateCatalogRecipientButton();
                 return;
             }
-
             selectAllRow.style.display = 'flex';
-            players.forEach(([code, player]) => {
-                const option = document.createElement('label');
-                option.className = 'catalog-recipient-option';
-                const playerName = String(player.nome || (player.fullData.info && player.fullData.info.char_nome) || 'Personagem sem nome');
-                const avatar = player.foto ? `<img src="${escapeHtml(player.foto)}" alt="">` : escapeHtml(playerName.charAt(0).toUpperCase() || '?');
-                option.innerHTML = `<input class="catalog-recipient-checkbox" type="checkbox" value="${escapeHtml(code)}"><span class="catalog-recipient-avatar">${avatar}</span><span><span class="catalog-recipient-name">${escapeHtml(playerName)}</span><span class="catalog-recipient-code">CÓDIGO ${escapeHtml(code)}</span></span>`;
-                option.querySelector('input').addEventListener('change', updateCatalogRecipientButton);
-                list.appendChild(option);
-            });
+            for (const player of players) {
+                const code = player.code, connected = connectedPlayers.get(code);
+                const name = String(connected?.nome || player.name || code);
+                const label = document.createElement('label');
+                label.className = 'catalog-recipient-option';
+                const checkbox = document.createElement('input');
+                checkbox.className = 'catalog-recipient-checkbox';
+                checkbox.type = 'checkbox';
+                checkbox.value = code;
+                checkbox.checked = selected.has(code);
+                const avatar = document.createElement('span');
+                avatar.className = 'catalog-recipient-avatar';
+                if (connected?.foto) {
+                    const photo = document.createElement('img');
+                    photo.src = connected.foto; photo.alt = ''; avatar.append(photo);
+                } else avatar.textContent = name.charAt(0).toUpperCase() || '?';
+                const info = document.createElement('span');
+                const title = document.createElement('span');
+                title.className = 'catalog-recipient-name';
+                title.textContent = name;
+                const detail = document.createElement('span');
+                detail.className = 'catalog-recipient-code';
+                detail.textContent = 'CÓDIGO ' + code + ' · ' +
+                    (connected && connected.online !== false ? 'ONLINE' : 'OFFLINE · ENTREGA SALVA');
+                info.append(title,detail);
+                label.append(checkbox,avatar,info);
+                checkbox.addEventListener('change',updateCatalogRecipientButton);
+                list.append(label);
+            }
             updateCatalogRecipientButton();
         }
 
@@ -1579,71 +1616,50 @@
             sendButton.textContent = selectedCount > 0 ? `ENVIAR PARA ${selectedCount}` : 'ENVIAR';
         }
 
-        function confirmCatalogSend() {
+        async function confirmCatalogSend() {
             if (!pendingCatalogItem && !pendingClueToSend) return;
-            const selectedCodes = Array.from(document.querySelectorAll('.catalog-recipient-checkbox:checked')).map(input => input.value);
+            const selectedCodes = [...document.querySelectorAll('.catalog-recipient-checkbox:checked')].map(input=>input.value);
             if (!selectedCodes.length) return;
-            if (pendingClueToSend) sendClueToPlayers(pendingClueToSend, selectedCodes);
-            else sendCatalogEntryToPlayers(pendingCatalogItem, selectedCodes);
-            closeCatalogRecipientPopup();
+            const sendButton = document.getElementById('catalog-recipient-send');
+            const status = document.getElementById('catalog-recipient-status');
+            sendButton.disabled = true;
+            sendButton.textContent = 'SALVANDO NAS FICHAS…';
+            status.textContent = '';
+            try {
+                if (pendingClueToSend) await sendClueToPlayers(pendingClueToSend, selectedCodes);
+                else await sendCatalogEntryToPlayers(pendingCatalogItem, selectedCodes);
+                closeCatalogRecipientPopup();
+            } catch (error) {
+                status.textContent = 'Não foi possível confirmar a entrega: ' + (error.message || 'Tente novamente.');
+            } finally {
+                updateCatalogRecipientButton();
+            }
         }
 
-        function sendCatalogEntryToPlayers(item, playerCodes) {
-            if (!socket || !socket.connected || !item) return;
-            const recipients = new Set((Array.isArray(playerCodes) ? playerCodes : []).map(String));
-            if (!recipients.size) return;
+        async function sendCatalogEntryToPlayers(item, playerCodes) {
+            if (!item) return;
             const isWeapon = item.catalogKind === 'weapons';
             const isRanged = item.catalogType === 'Disparo';
             const description = isWeapon ? 'Ataques: '+item.atk+' | Dano: '+item.dmg+' | Crítico: '+item.crit+' (2d10 iguais se acertar) | Alcance: '+item.range+' | Munição: '+(item.ammo||'Nenhuma')+' | Perícia: '+item.skill : item.desc;
             const catalogItem = {
-                n: item.name,
-                w: item.weight,
-                d: description,
-                eq: true,
-                type: isWeapon ? 'arma' : (item.ammo ? 'municao' : 'comum'),
-                dmg: isWeapon ? item.dmg : '0',
-                extra: '0',
-                crit: isWeapon ? item.crit : '×1',
-                skill: isWeapon ? item.skill : 'CONFRONTO',
-                img: item.img || '',
-                atkType: isWeapon ? (isRanged ? 'Disparo' : 'Corpo a corpo') : 'Corpo a corpo',
-                atk: isWeapon ? item.atk : 1,
-                range: isWeapon ? item.range : 'Curto',
-                ammo: item.ammo || 'Nenhuma',
-                capacity: isRanged ? item.capacity : 0,
-                currentShots: isRanged ? item.capacity : 0
+                n:item.name, w:item.weight, d:description, eq:false,
+                type:isWeapon?'arma':(item.ammo?'municao':'comum'),
+                dmg:isWeapon?item.dmg:'0', extra:'0', crit:isWeapon?item.crit:'×1',
+                skill:isWeapon?item.skill:'CONFRONTO',img:item.img||'',
+                atkType:isWeapon?(isRanged?'Disparo':'Corpo a corpo'):'Corpo a corpo',
+                atk:isWeapon?item.atk:1,range:isWeapon?item.range:'Curto',
+                ammo:item.ammo||'Nenhuma',capacity:isRanged?item.capacity:0,
+                currentShots:isRanged?item.capacity:0
             };
-
-            connectedPlayers.forEach((player, code) => {
-                if (!recipients.has(String(code)) || !player || !player.fullData) return;
-                const fullData = JSON.parse(JSON.stringify(player.fullData));
-                if (!Array.isArray(fullData.inv)) fullData.inv = [];
-                fullData.inv.push({
-                    ...catalogItem,
-                    id: `master_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
-                });
-
-                const updatedPlayer = { ...player, codigo: String(code), id: String(code), mesa: masterTableCode, fullData };
-                connectedPlayers.set(String(code), updatedPlayer);
-                socket.emit('master_update_player', updatedPlayer);
-            });
+            const physical = OLFirebase.seasonScopedTable(masterTableCode);
+            return OLNative.grantCharacterContent(physical, playerCodes, 'item', catalogItem, pendingDeliveryId);
         }
 
-        function sendClueToPlayers(clue, playerCodes) {
-            if (!socket || !socket.connected || !clue) return;
-            const recipients = new Set((Array.isArray(playerCodes) ? playerCodes : []).map(String));
-            if (!recipients.size) return;
-            const clueCopy = normalizeMasterClue(clue);
-
-            connectedPlayers.forEach((player, code) => {
-                if (!recipients.has(String(code)) || !player || !player.fullData) return;
-                const fullData = JSON.parse(JSON.stringify(player.fullData));
-                if (!Array.isArray(fullData.clues)) fullData.clues = [];
-                fullData.clues.push({ ...clueCopy, id: `master_clue_${Date.now()}_${Math.random().toString(36).slice(2,7)}` });
-                const updatedPlayer = { ...player, codigo: String(code), id: String(code), mesa: masterTableCode, fullData };
-                connectedPlayers.set(String(code), updatedPlayer);
-                socket.emit('master_update_player', updatedPlayer);
-            });
+        async function sendClueToPlayers(clue, playerCodes) {
+            if (!clue) return;
+            const physical = OLFirebase.seasonScopedTable(masterTableCode);
+            return OLNative.grantCharacterContent(physical, playerCodes, 'clue',
+                normalizeMasterClue(clue), pendingDeliveryId);
         }
 
         function normalizeMasterCluePages(pages) {
@@ -3379,8 +3395,7 @@
             const count = playersBoard.querySelectorAll('.player-card').length;
             const onlineCount = [...connectedPlayers.values()].filter(player => player?.online !== false).length;
             const masterOpenedCount = count - onlineCount;
-            document.getElementById('players-count').textContent = onlineCount + ' ONLINE'
-                + (masterOpenedCount ? ' · ' + masterOpenedCount + ' ABERTA(S) PELO MESTRE' : '');
+            void onlineCount; void masterOpenedCount; // Sem indicador visível.
             let empty = document.getElementById('players-empty');
             if (!count && !empty) {
                 empty = document.createElement('div');
@@ -3656,7 +3671,10 @@
                 status.textContent = 'Não foi possível consultar as fichas salvas. Tente atualizar a lista.';
             } finally {
                 savedPlayerSheetsLoading = false;
-                if (tableAtStart === masterTableCode) renderSavedPlayerSheets();
+                if (tableAtStart === masterTableCode) {
+                    renderSavedPlayerSheets();
+                    if (document.getElementById('catalog-recipient-modal').classList.contains('open')) renderCatalogRecipients();
+                }
             }
         }
 
@@ -3691,7 +3709,7 @@
         socket.on('player_disconnected', data => removePlayer(
             data && data.codigo, data && data.mesa, data && data.reason
         ));
-        socket.on('novo_log', addPlayerRollResult);
+        
         socket.on('initiative_rolled', applyPlayerInitiativeRoll);
         socket.on('lumina_state_updated', state => {
             if (normalizeTableCode(state && state.mesa) !== masterTableCode) return;
@@ -3714,7 +3732,6 @@
         });
         updatePlayersCount();
         renderInitiative();
-        renderPlayerRollResults();
         renderMonsters();
         renderMasterClues();
         initializeMasterCluesCloudSync();
