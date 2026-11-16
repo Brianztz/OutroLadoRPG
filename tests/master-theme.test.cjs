@@ -34,9 +34,10 @@ test('Theme uses the season red, black and parchment palette without hiding game
 
 test('Master controls and game content still use the existing identifiers', () => {
   for (const id of [
-    'master-table-button','combat-mode-button','players-board',
+    'master-invite-table','combat-mode-button','players-board',
     'initiative-drawer','master-tab-combat','master-tab-monsters',
-    'master-tab-catalog','master-tab-clues','master-tab-lumina',
+    'monster-modal-bestiary-tab','monster-modal-bestiary-panel',
+    'master-tab-equipment','master-tab-clues','master-tab-lumina',
     'monsters-grid','catalog-grid','master-clues-grid',
     'master-invite-dialog','master-overlay-button'
   ]) {
