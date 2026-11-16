@@ -485,3 +485,248 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 @media (max-width: 700px) {
   .mestre-top-bar { padding: 15px; border-radius: 12px; }
 }
+
+/* Exílio 3.0 · Livro das Manifestações: janela única de criação e consulta. */
+.monster-modal {padding:clamp(8px,2vw,22px);background:rgba(4,3,5,.93);backdrop-filter:blur(6px)}
+.monster-modal .monster-modal-dialog {
+  width:min(1160px,100%);max-height:calc(100dvh - 26px);height:min(910px,calc(100dvh - 26px));
+  display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid #9d4f37;border-radius:16px;
+  background:linear-gradient(150deg,#211411,#090808 65%);
+  box-shadow:0 28px 95px #000e,0 0 0 1px #e7a0761c,inset 0 1px #ffcc9e24
+}
+.monster-modal .monster-modal-header {
+  position:relative;top:auto;z-index:2;flex:none;padding:18px 22px;
+  border-bottom:1px solid #643328;
+  background:radial-gradient(circle at 80% 0,#76311d4d,transparent 52%),linear-gradient(110deg,#24120f,#100b0b)
+}
+.monster-modal-heading{min-width:0}
+.monster-modal-eyebrow{display:block;margin-bottom:5px;color:#d78e72;font:900 10px/1.3 Arial,sans-serif;letter-spacing:.16em}
+.monster-modal .monster-modal-title{font:900 clamp(20px,2.8vw,29px)/1.16 Georgia,serif;color:#fff0df;letter-spacing:.01em;text-transform:none}
+.monster-modal .monster-modal-close{
+  flex:none;width:39px;height:39px;border:1px solid #a75e46;
+  border-radius:9px;background:#4e221a;color:#ffd6bf;font-size:23px
+}
+.monster-modal .monster-modal-close:hover{background:#78301e;border-color:#e58b61}
+.monster-modal-tabs {
+  flex:none;display:flex;gap:8px;align-items:center;padding:11px 20px;
+  background:#100b0a;border-bottom:1px solid #60372b
+}
+.monster-modal-tab {
+  flex:1 1 0;min-width:0;min-height:44px;padding:11px 15px;
+  border:1px solid #5e392e;border-radius:9px;background:#231713;color:#c9a99a;
+  font:900 11px/1.2 Arial,sans-serif;letter-spacing:.075em;cursor:pointer;
+  transition:background .2s,border-color .2s,color .2s
+}
+.monster-modal-tab:hover {color:#ffe7d6;border-color:#c77b5c;background:#3d2119}
+.monster-modal-tab.active,.monster-modal-tab[aria-selected="true"]{
+  color:#fff4e9;border-color:#d37958;
+  background:linear-gradient(130deg,#8e3826,#61271c);
+  box-shadow:inset 0 1px #ffb08440,0 5px 15px #0005
+}
+.monster-modal-tab:focus-visible,.monster-modal .monster-modal-close:focus-visible{
+  outline:2px solid #ffd1a9;outline-offset:2px
+}
+.monster-modal-panel {flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#874332 #170e0b}
+.monster-modal-panel[hidden]{display:none!important}
+.monster-modal-panel .monster-modal-body{padding:20px;gap:18px}
+.monster-modal .monster-form-section{
+  border:1px solid #694338;border-radius:11px;padding:18px;
+  background:linear-gradient(155deg,rgba(48,28,23,.86),rgba(18,13,12,.9));
+  box-shadow:inset 0 1px #ffc39d14
+}
+.monster-modal .monster-form-section-title{
+  margin:0 0 15px;padding:0 0 10px;border-bottom:1px solid #74483a;
+  color:#f1c1a8;font:900 12px/1.3 Arial,sans-serif;letter-spacing:.11em
+}
+.monster-modal .monster-form-field label{color:#d7b6a4;font:800 10px/1.4 Arial,sans-serif;letter-spacing:.055em}
+.monster-modal .monster-input,.monster-modal .monster-textarea{
+  padding:12px 11px;min-height:43px;border:1px solid #745044;border-radius:7px;
+  background:#110d0d;color:#fff0e6;font:14px/1.35 Arial,sans-serif
+}
+.monster-modal .monster-input:focus-visible,.monster-modal .monster-textarea:focus-visible{
+  outline:2px solid #e5ab85;outline-offset:1px;border-color:#ca7957
+}
+.monster-modal .monster-form-section .exilio-monster-hint{color:#ccb09e;font:12px/1.6 Arial,sans-serif}
+.monster-modal .monster-action-editor{
+  border:1px solid #795247;border-radius:9px;background:#160f0e;padding:13px
+}
+.monster-modal .monster-add-action{border-color:#d37f5b;border-radius:7px;background:#603020;color:#ffe2cb}
+.monster-modal .monster-modal-footer{
+  z-index:1;position:sticky;bottom:0;padding:14px 19px;
+  border-top:1px solid #7b4434;background:#170f0eec;backdrop-filter:blur(10px)
+}
+.monster-modal .monster-modal-footer button{min-height:41px;padding:10px 17px;border-radius:8px}
+.monster-modal .monster-save-button{border-color:#d77150;background:#9a3c27;color:#fff2e8}
+.monster-modal .monster-save-button:hover{background:#bc4a2b}
+.monster-modal .monster-cancel-button{border-color:#6f4b41;background:#291c18;color:#ead0c3}
+
+/* Fichas ativas: leitura de bestiário sem perder rolagem, edição ou PV/PM. */
+#master-tab-monsters .monsters-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,430px),1fr));gap:20px;padding:4px 5px 20px}
+#master-tab-monsters .monsters-empty {
+  padding:50px 24px;border:1px dashed #a75c43;border-radius:14px;
+  background:radial-gradient(circle at 50% 0%,#792b2140,transparent 64%),#150e0d
+}
+.monster-empty-sigil{display:block;margin:0 auto 10px;color:#cc8668;font:50px/1 Georgia,serif}
+#master-tab-monsters .monsters-empty strong{font:900 clamp(21px,2.4vw,28px)/1.3 Georgia,serif;color:#ffe9d9}
+#master-tab-monsters .monsters-empty p{font:13px/1.5 Arial,sans-serif;color:#c7a99a}
+.monster-empty-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.monster-empty-actions button{min-height:42px;padding:11px 16px;border:1px solid #a96147;border-radius:8px;background:#54251b;color:#ffe5d3;font:900 11px Arial,sans-serif;cursor:pointer}
+.monster-empty-actions button:hover{background:#853522;border-color:#e28b63}
+#master-tab-monsters .exilio-monster-card {
+  --monster-matrix:#c06e51;position:relative;overflow:hidden;padding:0;gap:0;
+  border:1px solid #795042;border-top:4px solid var(--monster-matrix);
+  border-radius:15px;background:
+    radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--monster-matrix) 14%,transparent),transparent 48%),
+    linear-gradient(165deg,#2b1b17,#130d0c 63%,#0b0a0a);
+  box-shadow:0 15px 36px #000a,inset 0 1px #ffdfc716;
+  transition:transform .18s,border-color .18s,box-shadow .18s
+}
+#master-tab-monsters .exilio-monster-card:hover{
+  transform:translateY(-2px);border-color:var(--monster-matrix);
+  box-shadow:0 21px 44px #000d,inset 0 1px #ffdfc720
+}
+#master-tab-monsters .exilio-monster-card[data-matrix="Medo"]{--monster-matrix:#d598b8}
+#master-tab-monsters .exilio-monster-card[data-matrix="Lembrança"]{--monster-matrix:#d7b573}
+#master-tab-monsters .exilio-monster-card[data-matrix="Carne"]{--monster-matrix:#e37e6e}
+#master-tab-monsters .exilio-monster-card[data-matrix="Ruptura"]{--monster-matrix:#b6a0dd}
+#master-tab-monsters .exilio-monster-card[data-matrix="Eco"]{--monster-matrix:#7fc2d7}
+#master-tab-monsters .exilio-monster-card[data-matrix="Vazio"]{--monster-matrix:#b5b7c7}
+#master-tab-monsters .monster-card-header{
+  display:flex;align-items:flex-start;gap:13px;flex-wrap:nowrap;
+  padding:19px 18px 15px;border-bottom:1px solid #935b4855
+}
+.monster-card-sigil{
+  display:grid;place-items:center;flex:none;width:49px;height:49px;
+  border:1px solid var(--monster-matrix);border-radius:50%;
+  background:color-mix(in srgb,var(--monster-matrix) 18%,#170d0c);
+  color:var(--monster-matrix);font:31px Georgia,serif;
+  box-shadow:0 0 20px color-mix(in srgb,var(--monster-matrix) 12%,transparent)
+}
+.monster-card-identity{flex:1;min-width:0}
+.monster-card-eyebrow{display:block;margin:0 0 5px;color:#cca18c;font:900 9px/1.35 Arial,sans-serif;letter-spacing:.13em}
+#master-tab-monsters .monster-card-name {
+  color:#fff0e4;font:900 clamp(19px,2vw,25px)/1.16 Georgia,serif;
+  letter-spacing:.005em;text-transform:none
+}
+#master-tab-monsters .monster-card-tools{display:flex;gap:6px;align-items:flex-start;flex:none}
+#master-tab-monsters .monster-card-button {
+  height:32px;padding:0 10px;border-radius:7px;border:1px solid #96654e;
+  background:#2f1c16;color:#f7d9c6;font:900 10px Arial,sans-serif
+}
+#master-tab-monsters .monster-card-button:hover{background:#603022;border-color:#e49a71}
+#master-tab-monsters .monster-card-button.remove{width:32px;padding:0;border-color:#94503f;background:#391611;color:#eeb19c;font-size:18px}
+#master-tab-monsters .exilio-monster-tags{margin-top:10px;gap:6px}
+#master-tab-monsters .exilio-monster-tags span {
+  border-radius:20px;padding:5px 9px;border-color:#81503b;
+  color:#eacabb;background:#2a1713;font:800 10px/1.2 Arial,sans-serif
+}
+#master-tab-monsters .exilio-monster-tags .exilio-matrix-tag {
+  border-color:var(--monster-matrix);color:#fff0e3;
+  background:color-mix(in srgb,var(--monster-matrix) 23%,#24120e)
+}
+.monster-card-core {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+  margin:15px 18px 0
+}
+.monster-card-core div {
+  min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:11px 6px;border:1px solid #7c4d3c;border-radius:9px;
+  background:linear-gradient(160deg,#100d0c,#2e1b15)
+}
+.monster-card-core span{color:#cda28e;font:900 9px Arial,sans-serif;letter-spacing:.07em}
+.monster-card-core strong{color:#fff2e6;font:900 18px/1.15 Georgia,serif}
+.monster-section-label{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  margin:18px 18px 10px;padding:0 0 7px;border-bottom:1px solid #89514278;
+  color:#f2b99b;font:900 10px/1.4 Arial,sans-serif;letter-spacing:.10em
+}
+.monster-section-label small{color:#9e8074;font:800 9px/1.3 Arial,sans-serif;letter-spacing:.045em}
+#master-tab-monsters .monster-attributes{margin:0 18px;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+#master-tab-monsters .monster-attribute {
+  min-height:74px;border:1px solid #795142;border-radius:8px;
+  background:linear-gradient(160deg,#33221b,#18100e);
+  transition:background .18s,border-color .18s,transform .18s
+}
+#master-tab-monsters .monster-attribute:hover,#master-tab-monsters .monster-attribute:focus-visible{
+  border-color:var(--monster-matrix);background:#4a2b20;transform:translateY(-1px)
+}
+#master-tab-monsters .monster-attribute span{color:#e3b69e;font:900 10px Arial,sans-serif}
+#master-tab-monsters .monster-attribute strong{font:900 22px Georgia,serif;color:#fff2e5}
+#master-tab-monsters .monster-roll-targets{color:#ca9e89;font-size:10px}
+#master-tab-monsters .monster-life-controls{margin:0 18px;grid-template-columns:36px 1fr 36px;gap:8px}
+#master-tab-monsters .monster-life-button{height:39px;border-radius:8px;border-color:#a65346;background:#4c211b;font-size:19px}
+#master-tab-monsters .monster-life-button:hover{border-color:#ee9e86;background:#7a2c23}
+#master-tab-monsters .monster-life-meter{height:39px;border-radius:8px;border-color:#8b3b37;background:#180c0c}
+#master-tab-monsters .monster-life-fill{background:linear-gradient(90deg,#7d211b,#d34a3b)}
+#master-tab-monsters .monster-life-text{font:900 13px Arial,sans-serif;color:#fff8f0}
+#master-tab-monsters .monster-life-text input{font-size:15px}
+#master-tab-monsters .exilio-monster-mental{
+  display:grid;grid-template-columns:120px 1fr;gap:9px;
+  margin:10px 18px 0;padding:10px 12px;border-radius:9px;
+  background:linear-gradient(110deg,#25182a,#18121b);border-color:#695377
+}
+#master-tab-monsters .exilio-monster-mental label{font:900 12px Arial,sans-serif;color:#e7d3f1}
+#master-tab-monsters .exilio-mental-meter{height:13px}
+#master-tab-monsters .monster-traits{
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 18px;padding:0;
+  border:0;background:none
+}
+#master-tab-monsters .monster-traits>div{
+  min-width:0;padding:12px;border:1px solid #6f4135;border-radius:8px;
+  background:#1c1210;overflow-wrap:anywhere
+}
+#master-tab-monsters .monster-traits strong{
+  display:block;margin-bottom:5px;color:#df987e;font:900 10px Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase
+}
+#master-tab-monsters .monster-traits span{color:#e5cabc;font:12px/1.5 Arial,sans-serif}
+#master-tab-monsters .exilio-monster-skills{margin:17px 18px 0;border-color:#7f4b3c;border-radius:8px;background:#1b1210}
+#master-tab-monsters .exilio-monster-skills>summary{color:#f0c2a9;padding:12px 14px}
+#master-tab-monsters .monster-presence-row{
+  margin:13px 18px 0;padding:0;display:flex;gap:9px;align-items:stretch
+}
+#master-tab-monsters .monster-presence-row .monster-info-line{
+  flex:1;min-width:0;border-radius:8px;border-color:#715043;background:#1b1310;
+  color:#e5c5b6;padding:12px
+}
+#master-tab-monsters .monster-presence-row .monster-info-line strong{color:#e3a989}
+#master-tab-monsters .monster-actions-summary{display:grid;gap:9px;margin:0 18px 18px}
+#master-tab-monsters .monster-action-summary{
+  border:1px solid #754735;border-radius:9px;
+  background:linear-gradient(140deg,#281711,#130d0c);padding:11px
+}
+#master-tab-monsters .monster-action-text{color:#edcfbd;line-height:1.5}
+#master-tab-monsters .monster-action-text strong{color:#ffc9a8}
+#master-tab-monsters .monster-roll-button{
+  border-radius:7px;border-color:#9c5139;background:#4e2318;color:#ffdfcb
+}
+#master-tab-monsters .monster-roll-button:hover:not(:disabled){border-color:#e48b66;background:#7d321f}
+@media(max-width:800px){
+  .monster-modal .monster-modal-dialog{width:100%;max-height:calc(100dvh - 16px);height:calc(100dvh - 16px)}
+  .monster-modal-panel .monster-modal-body{padding:13px;gap:13px}
+  .monster-modal .monster-form-section{padding:13px}
+}
+@media(max-width:520px){
+  .monster-modal{padding:7px}
+  .monster-modal .monster-modal-dialog{max-height:calc(100dvh - 14px);height:calc(100dvh - 14px)}
+  .monster-modal .monster-modal-header{padding:14px}
+  .monster-modal-tabs{padding:9px;gap:7px}
+  .monster-modal-tab{padding:10px 6px;font-size:10px;letter-spacing:0}
+  #master-tab-monsters .monster-card-header{flex-wrap:wrap;padding:14px}
+  #master-tab-monsters .monster-card-tools{width:100%;justify-content:flex-end}
+  #master-tab-monsters .monster-card-core{margin:12px 12px 0}
+  #master-tab-monsters .monster-attributes{margin:0 12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+  #master-tab-monsters .monster-section-label{margin:17px 12px 9px}
+  #master-tab-monsters .monster-life-controls{margin:0 12px}
+  #master-tab-monsters .exilio-monster-mental{margin:10px 12px 0;grid-template-columns:105px 1fr}
+  #master-tab-monsters .monster-traits{grid-template-columns:1fr;margin:0 12px}
+  #master-tab-monsters .exilio-monster-skills{margin:14px 12px 0}
+  #master-tab-monsters .monster-presence-row{margin:12px 12px 0}
+  #master-tab-monsters .monster-actions-summary{margin:0 12px 14px}
+}
+@media(prefers-reduced-motion:reduce){
+  #master-tab-monsters .exilio-monster-card,
+  #master-tab-monsters .monster-attribute,.monster-modal-tab{transition:none}
+  #master-tab-monsters .exilio-monster-card:hover,
+  #master-tab-monsters .monster-attribute:hover{transform:none}
+}
