@@ -110,10 +110,10 @@
   }
   // Permite ao mestre entregar conteúdo à ficha salva, inclusive offline.
   // O servidor, não a presença no websocket, confirma cada entrega.
-  async function grantCharacterContent(table, codes, type, payload) {
+  async function grantCharacterContent(table, codes, type, payload, deliveryId = '') {
     return api(query(table, 'grant', 'temporada'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codes, type, payload })
+      body: JSON.stringify({ codes, type, payload, deliveryId })
     });
   }
   async function readClues(table) {
