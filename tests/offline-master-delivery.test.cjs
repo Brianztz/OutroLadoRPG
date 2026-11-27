@@ -237,5 +237,5 @@ test('importação troca a geração de entregas e impede a mesclagem offline da
   const html = fs.readFileSync(path.join(root, 'public/ficha-temporada.html'), 'utf8');
   assert(sync.includes('masterGrantScope:crypto.randomUUID()'));
   assert(sync.includes('if(scopeOf(from)!==scopeOf(to))return;'));
-  assert(html.includes('sync.js?v=entregas-por-ficha-20261116'));
+  assert.match(html, /src="\/temporada\/sync\.js\?v=[^"\s]+"/);
 });
