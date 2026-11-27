@@ -2,16 +2,18 @@ const {test}=require('node:test');const assert=require('node:assert/strict');con
 const root=path.join(__dirname,'..');
 const hash=value=>require('node:crypto').createHash('sha256').update(value).digest('hex');
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
-async function setup({view='',cloud=null}={}){
- const errors=[],writes=[],sent=[],handlers={};let watcher;
+async function setup({view='',cloud=null,solo=false,extraQuery='',storage={}}={}){
+ const errors=[],writes=[],sent=[],handlers={},authCalls=[];let watcher;
  const console=new VirtualConsole();console.on('jsdomError',e=>errors.push(e));console.on('error',e=>errors.push(e));
- const dom=new JSDOM(fs.readFileSync(path.join(root,'public/ficha-temporada.html'),'utf8'),{url:'https://example.test/ficha-temporada.html?mesa=TESTE'+(view?'&view='+view:''),runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:console});
+ const dom=new JSDOM(fs.readFileSync(path.join(root,'public/ficha-temporada.html'),'utf8'),{url:'https://example.test/ficha-temporada.html?'+(solo?'solo=1':'mesa=TESTE')+(view?'&view='+view:'')+extraQuery,runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:console});
  const w=dom.window;w.matchMedia=()=>({matches:true});w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};w.HTMLElement.prototype.animate=()=>({finished:Promise.resolve(),cancel(){}});w.HTMLElement.prototype.getAnimations=()=>[];w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
- w.OLFirebase={guardPage:async()=>true,getCurrentUser:async()=>({uid:'user1'}),normalizeTableCode:s=>(s||'PADRAO').toUpperCase(),hashCharacterSheet:hash,loadCharacter:async(t,v)=>{assert.equal(v,'temporada');return cloud;},saveCharacter:async(t,s,m)=>{assert.equal(m.sheetVariant,'temporada');writes.push(JSON.parse(s));return {sheetHash:hash(s)};},watchCharacter:async(t,fn,v)=>{assert.equal(v,'temporada');watcher=fn;return ()=>{};}};
- w.io=()=>({connected:true,on:(e,f)=>handlers[e]=f,emit:(e,d)=>sent.push({e,d})});
+ for(const [key,value] of Object.entries(storage))w.localStorage.setItem(key,value);
+ w.confirm=()=>true;
+ w.OLFirebase={guardPage:async role=>{authCalls.push(role);return true;},getCurrentUser:async()=>({uid:'user1'}),normalizeTableCode:s=>(s||'PADRAO').toUpperCase(),hashCharacterSheet:hash,loadCharacter:async(t,v)=>{assert.equal(v,'temporada');return cloud;},saveCharacter:async(t,s,m)=>{assert.equal(m.sheetVariant,'temporada');writes.push(JSON.parse(s));return {sheetHash:hash(s)};},watchCharacter:async(t,fn,v)=>{assert.equal(v,'temporada');watcher=fn;return ()=>{};}};
+ w.io=()=>{if(solo)throw Error('Ficha avulsa não deve abrir socket');return {connected:true,on:(e,f)=>handlers[e]=f,emit:(e,d)=>sent.push({e,d})};};
  w.eval(fs.readFileSync(path.join(root,'public/temporada/sync.js'),'utf8'));w.eval(fs.readFileSync(path.join(root,'public/temporada/sheet.js'),'utf8'));
  await delay(80);assert.deepEqual(errors,[]);assert(w.SeasonSheet,'sheet initialized');
- return {dom,w,writes,sent,handlers,errors,watcher};
+ return {dom,w,writes,sent,handlers,errors,watcher,authCalls};
 }
 test('season boots, preserves all panels, sends vitals and rolls to existing master/overlay events',async()=>{const app=await setup();try{const {w,sent,writes}=app;assert.equal(w.document.querySelectorAll('[data-skill]').length,17);assert(w.document.querySelector('[data-skill="CRIME"]'));assert(writes.length);assert.equal(writes[0].version,1);assert.equal(w.localStorage.getItem('ordem_save_local'),null);const last=sent.filter(p=>p.e==='status_change').at(-1);assert.equal(last.d.sheetType,'temporada');const st=w.SeasonSheet.getState(),pv=st.exilioCreationRolls.pv,pm=st.exilioCreationRolls.pm;assert.equal(pv.length,3);assert.equal(pm.length,3);assert([...pv,...pm].every(n=>Number.isInteger(n)&&n>=1&&n<=6));assert.equal(last.d.vida_max,pv.reduce((a,b)=>a+b,0)+8);assert.equal(last.d.sani_max,pm.reduce((a,b)=>a+b,0)+14);w.document.getElementById('life-minus').click();await delay(650);assert.equal(sent.filter(p=>p.e==='status_change').at(-1).d.vida_atual,last.d.vida_max-1);w.document.querySelector('.sheet-skill-details').click();w.document.querySelector('#skill-quick-roll-options button').click();assert(sent.some(p=>p.e==='rolagem_feita'));assert.equal(app.errors.length,0);}finally{app.dom.window.close();}});
 test('master changes and grants roundtrip to season without replacing original or duplicating items',async()=>{const app=await setup();try{const {w,handlers,sent}=app;const p=JSON.parse(JSON.stringify(sent.find(p=>p.e==='status_change').d));p.fullData.info.vida_max=40;p.fullData.info.vida_atual=37;p.fullData.inv.push({id:'gift',n:'Lanterna',w:1,d:'Luz',type:'comum',img:''});p.fullData.clues.push({id:'clue',title:'Carta',desc:'Investigue',img:'',type:'object'});handlers.player_data_updated(p);await delay(650);assert.equal(w.SeasonSheet.getState().resources.life.current,37);assert.equal(w.SeasonSheet.getState().resources.life.max,40);assert.equal(w.SeasonSheet.getState().inventory.items.length,1);assert.equal(w.SeasonSheet.getState().clues[0].text,'Investigue');const updated=sent.filter(p=>p.e==='status_change').at(-1).d;handlers.player_data_updated(updated);await delay(40);assert.equal(w.SeasonSheet.getState().inventory.items.length,1);assert.equal(app.errors.length,0);}finally{app.dom.window.close();}});
@@ -155,4 +157,47 @@ test('compact season combat card separates readable attack, damage and critical 
     assert(mobileCSS.includes('grid-column:1/-1!important'));
     assert.equal(app.errors.length,0);
   }finally{app.dom.window.close();}
+});
+
+test('ficha avulsa funciona sem autenticação, socket, código de mesa ou gravação remota e reabre localmente',async()=>{
+ const a=await setup({solo:true,storage:{player_sync_code:'CODIGO-EXISTENTE'}});
+ let saved;
+ try{
+  const {w}=a;
+  assert.equal(w.SeasonContext.solo,true);
+  assert.equal(w.SeasonContext.stateKey,'ol_temporada_solo_v1:state');
+  assert.deepEqual(a.authCalls,[]);assert.deepEqual(a.writes,[]);assert.deepEqual(a.sent,[]);
+  assert.equal(w.localStorage.getItem('player_sync_code'),'CODIGO-EXISTENTE');
+  assert.equal(w.document.getElementById('season-join-table').hidden,false);
+  assert.equal(w.document.getElementById('season-copy-solo').hidden,true);
+  const name=w.document.getElementById('char-name');name.value='Clara avulsa';name.dispatchEvent(new w.Event('input',{bubbles:true}));
+  name.dispatchEvent(new w.Event('change',{bubbles:true}));
+  w.document.querySelector('.v3-attributes[data-attr="potencia"]').click();
+  saved=w.localStorage.getItem(w.SeasonContext.stateKey);
+  assert.equal(JSON.parse(saved).name,'Clara avulsa');
+  assert.equal(JSON.parse(saved).attrs.potencia,1);
+ }finally{a.dom.window.close();}
+ const b=await setup({solo:true,storage:{'ol_temporada_solo_v1:state':saved}});
+ try{assert.equal(b.w.SeasonSheet.getState().name,'Clara avulsa');assert.equal(b.w.SeasonSheet.getState().attrs.potencia,1);assert.deepEqual(b.authCalls,[]);}
+ finally{b.dom.window.close();}
+});
+test('parâmetro solo junto de mesa não contorna autenticação',async()=>{
+ const a=await setup({extraQuery:'&solo=1'});
+ try{assert.equal(a.w.SeasonContext.solo,false);assert.deepEqual(a.authCalls,['player']);assert.equal(a.w.SeasonContext.table,'TESTE');}
+ finally{a.dom.window.close();}
+});
+test('jogador copia ficha avulsa mediante confirmação, com geração nova e original intacta',async()=>{
+ const draft=JSON.stringify({name:'Clara avulsa',attrs:{potencia:2},skills:{},masterGrantScope:'antiga'});
+ const a=await setup({storage:{'ol_temporada_solo_v1:state':draft}});
+ try{
+  const {w}=a,button=w.document.getElementById('season-copy-solo');
+  assert.equal(button.hidden,false);
+  w.confirm=()=>false;button.click();assert.notEqual(w.SeasonSheet.getState().name,'Clara avulsa');
+  w.confirm=()=>true;button.click();await delay(150);
+  assert.equal(w.SeasonSheet.getState().name,'Clara avulsa');
+  assert.equal(w.SeasonSheet.getState().attrs.potencia,2);
+  assert.notEqual(w.SeasonSheet.getState().masterGrantScope,'antiga');
+  assert.equal(w.localStorage.getItem('ol_temporada_solo_v1:state'),draft);
+  assert.equal(a.writes.at(-1).state.name,'Clara avulsa');
+ }finally{a.dom.window.close();}
 });
