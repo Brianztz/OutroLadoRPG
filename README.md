@@ -1,0 +1,69 @@
+# Outro Lado RPG — Vestígios
+
+Plataforma digital da campanha **Outro Lado: Vestígios**, baseada no sistema **Exílio 3.0**. Outro Lado é a campanha; Exílio é o sistema de regras.
+
+## Funcionalidades
+
+- Ficha digital: atributos, perícias, pontos de vida e mentais, inventário, rituais, importação e exportação.
+- Escudo do mestre: acompanhamento de personagens, equipamentos, pistas, monstros e bestiário.
+- Entrega de itens e pistas mesmo com a ficha fechada, com isolamento entre personagens importados.
+- Convites de jogadores, acesso do mestre e overlays para transmissão.
+
+## Desenvolvimento local
+
+Use Node.js 22 (a mesma versão da CI) e npm. Na raiz do repositório:
+
+```sh
+npm ci
+npm run dev:worker
+```
+
+Abra a URL local indicada pelo Wrangler (normalmente http://localhost:8787).
+O comando `npm start` inicia o servidor Express legado; para testar o backend atual, prefira o Worker.
+
+| Caminho | Função |
+| --- | --- |
+| `/` | Portal |
+| `/ficha-temporada.html` | Ficha de Vestígios |
+| `/mestre-temporada.html` | Escudo do mestre |
+| `/acessos.html` | Acessos e convites |
+| `/overlay.html` | Overlay |
+| `/health` | Verificação do serviço |
+
+## Arquitetura
+
+| Arquivo ou pasta | Responsabilidade |
+| --- | --- |
+| `public/` | Interface, catálogo, bestiário e recursos estáticos |
+| `public/temporada/sheet.js` | Estado, controles e regras da ficha |
+| `public/temporada/sync.js` | Salvamento, importação e sincronização |
+| `public/native-client.js` | Cliente da API nativa |
+| `src/worker.js` | Entrada do Cloudflare Worker |
+| `wrangler.jsonc` | Configuração do Worker e Durable Objects |
+| `tests/` | Testes automatizados |
+| `server.js` | Servidor Express/Socket.IO legado |
+
+O armazenamento ativo configurado no Worker usa Durable Objects com SQLite. Arquivos Firebase e nomes de adaptadores legados permanecem para compatibilidade; não representam o backend de produção configurado.
+
+## Testes e publicação
+
+```sh
+npm test
+node --test tests/offline-master-delivery.test.cjs
+npx wrangler deploy --dry-run
+```
+
+Acompanhe os resultados em [GitHub Actions](https://github.com/Brianztz/OutroLadoRPG/actions). Antes de publicar, execute a suíte completa e o dry-run; falhas devem ser investigadas, não ignoradas. Com autorização e credenciais adequadas, `npm run deploy` publica o Worker. O dry-run não publica.
+
+Validação manual em uma mesa de teste, sem usar fichas reais:
+
+1. Abra o portal, autentique mestre e jogador e confirme o acesso correto.
+2. Importe e exporte uma ficha, recarregue e confira PV, PM, atributos e inventário.
+3. Feche a ficha e envie um item e uma pista pelo mestre; reabra e confirme a entrega única.
+4. Importe outra ficha e confirme que ela não herda as entregas anteriores; envie uma nova entrega e confira.
+5. Verifique bestiário, overlays e layout em desktop e celular.
+6. Confira o endpoint `/health` e os logs de produção após a publicação.
+
+Não publique credenciais, chaves privadas, códigos de acesso ou backups de jogadores. Não use dados reais em testes. Evite alterações de esquema ou exclusões de armazenamento sem revisão e backup.
+
+Mais informações: [documentação de Vestígios](docs/vestigios.md). [Documentação histórica da ficha](docs/ficha-temporada.md) descreve a integração anterior e não deve ser usada como guia de publicação atual.
