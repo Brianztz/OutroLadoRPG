@@ -1,7 +1,8 @@
 name: Verify Vestigios season 2
 on:
   push:
-    branches: [migration/firebase-to-durable-storage]
+    branches: [main, migration/firebase-to-durable-storage]
+  workflow_dispatch:
   pull_request:
     branches: [main]
 permissions:
