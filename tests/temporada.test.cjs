@@ -174,11 +174,11 @@ test('ficha avulsa funciona sem autenticação, socket, código de mesa ou grava
   name.dispatchEvent(new w.Event('change',{bubbles:true}));
   w.document.querySelector('.v3-attributes[data-attr="potencia"]').click();
   saved=w.localStorage.getItem(w.SeasonContext.stateKey);
-  assert.equal(JSON.parse(saved).name,'Clara avulsa');
+  assert.equal(JSON.parse(saved).name,'CLARA AVULSA');
   assert.equal(JSON.parse(saved).attrs.potencia,1);
  }finally{a.dom.window.close();}
  const b=await setup({solo:true,storage:{'ol_temporada_solo_v1:state':saved}});
- try{assert.equal(b.w.SeasonSheet.getState().name,'Clara avulsa');assert.equal(b.w.SeasonSheet.getState().attrs.potencia,1);assert.deepEqual(b.authCalls,[]);}
+ try{assert.equal(b.w.SeasonSheet.getState().name,'CLARA AVULSA');assert.equal(b.w.SeasonSheet.getState().attrs.potencia,1);assert.deepEqual(b.authCalls,[]);}
  finally{b.dom.window.close();}
 });
 test('parâmetro solo junto de mesa não contorna autenticação',async()=>{
