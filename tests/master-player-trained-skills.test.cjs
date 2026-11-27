@@ -71,7 +71,10 @@ function renderer() {
     exilioInteger:v=>Number.isFinite(Number(v))?Math.trunc(Number(v)):0,
     escapeHtml:v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
   });
-  vm.runInContext(master.slice(start,end),ctx);
+  const displayNames=master.match(/const exilioMonsterDisplayNames=[^;]+;/)?.[0];
+  const displaySkill=master.match(/const displayExilioMonsterSkill=[^;]+;/)?.[0];
+  assert(displayNames && displaySkill,'aliases de perícias devem existir');
+  vm.runInContext(displayNames+'\n'+displaySkill+'\n'+master.slice(start,end),ctx);
   return vm.runInContext('renderPlayerTrainedSkills',ctx);
 }
 test('mostra nome, grau, bônus e ordem alfabética, sem perícias não treinadas',()=>{
@@ -87,6 +90,11 @@ test('mostra nome, grau, bônus e ordem alfabética, sem perícias não treinada
   assert(!html.includes('OUTRA'));
   assert(html.indexOf('ANOMALIAS</span>')<html.indexOf('ATLETISMO</span>'));
   assert(html.indexOf('ATLETISMO</span>')<html.indexOf('INVESTIGAÇÃO</span>'));
+});
+test('nomes atualizados das perícias são exibidos sem perder as chaves salvas',()=>{
+  const html=renderer()({skillDomains:{'DISCRIÇÃO':2,'PRECISÃO':4,'SENSIBILIDADE':6,'CRIME':2}});
+  for(const name of ['FURTIVIDADE','PONTARIA','DISCERNIMENTO','CRIME'])assert(html.includes(name+'</span>'),name);
+  assert(!html.includes('DISCRIÇÃO</span>'));
 });
 test('ausência de perícias não se confunde com ficha ainda não carregada',()=>{
   assert(renderer()({skillDomains:{}}).includes('Nenhuma perícia treinada.'));

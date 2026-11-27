@@ -64,9 +64,10 @@ test('os seis atributos do novo livro funcionam mesmo quando Firebase está indi
       assert.equal(w.SeasonSheet.getState().attrs[name],-1);
       roll.click();
       const result=rollEvents.at(-1);
-      assert(result && result.pool.dice.length===2,'negative attribute should roll two d20');
-      assert.equal(result.pool.lowest,true,'negative attribute must use lowest die');
-      assert.equal(result.pool.value,Math.min(...result.pool.dice));
+      assert(result && result.pool.dice.length===2,'negative attribute rolls two d10');
+      assert(result.pool.dice.every(d=>Number.isInteger(d)&&d>=1&&d<=10),'each die is a d10');
+      assert.equal(result.pool.lowest,false,'Exílio soma ambos os dados');
+      assert.equal(result.pool.value,result.pool.dice.reduce((a,b)=>a+b,0)-1);
       w.document.getElementById('skill-dice-popup').close();
       control.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true,cancelable:true}));
       assert.equal(w.SeasonSheet.getState().attrs[name],0);
@@ -76,7 +77,8 @@ test('os seis atributos do novo livro funcionam mesmo quando Firebase está indi
     const potencia=w.document.querySelector('.v3-attributes[data-attr="potencia"]');
     potencia.dispatchEvent(new w.MouseEvent('click',{shiftKey:true,bubbles:true}));
     assert.equal(w.SeasonSheet.getState().attrs.potencia,0);
-    assert.equal(rollEvents.at(-1).pool.dice.length,1);
+    assert.equal(rollEvents.at(-1).pool.dice.length,2);
+    assert.equal(rollEvents.at(-1).pool.value,rollEvents.at(-1).pool.dice.reduce((a,b)=>a+b,0));
     await delay(240);
     assert(sent.some(packet=>packet.name==='status_change'&&packet.data.fullData.temporada.state.attrs.potencia===0),
       'realtime sync should keep working without cloud writes');

@@ -14,7 +14,7 @@ const store = fs.readFileSync(path.join(root,'src/storage-api.js'),'utf8');
 test('o escudo tem acesso visível às fichas salvas, mesmo sem jogador online', () => {
   assert(master.includes('id="master-saved-sheets-button"'));
   assert(master.includes('onclick="openSavedPlayerSheets()"'));
-  assert(master.includes('FICHAS DOS PERSONAGENS'));
+  assert.match(master, /<button\b[^>]*id="master-saved-sheets-button"[^>]*aria-label="Fichas dos personagens"[^>]*>\s*<svg\b/);
   assert(master.includes('id="master-sheets-dialog"'));
   assert(master.includes('id="master-sheets-search"'));
   assert(master.includes('id="master-sheets-list"'));
@@ -69,8 +69,8 @@ test('o visualizador carrega a ficha na nuvem e salva edições do mestre', () =
   assert(!sync.includes("if(view){status('Alterações enviadas ao jogador');break;}"));
   assert(sync.includes('await OLFirebase.saveCharacter(table,json,'));
   assert(sync.includes('playerCode:code'));
-  assert(sheet.includes('temporada/sync.js?v=offline-grants-1'));
-  assert(sheet.includes('firebase-client.js?v=offline-grants-1'));
+  assert.match(sheet, /src="\/temporada\/sync\.js\?v=[^"\s]+"/);
+  assert.match(sheet, /src="\/firebase-client\.js\?v=[^"\s]+"/);
 });
 
 test('os scripts inline do escudo continuam com sintaxe válida', () => {

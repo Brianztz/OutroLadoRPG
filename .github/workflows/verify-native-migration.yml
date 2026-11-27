@@ -19,7 +19,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --test tests/exilio-book-bestiary.test.cjs tests/cloudflare-password-hashing.test.cjs tests/master-account-registration.test.cjs tests/restricted-account-roles.test.cjs tests/master-access-reset.test.cjs tests/username-password-login.test.cjs tests/master-player-trained-skills.test.cjs tests/master-opened-sheet-cards.test.cjs tests/master-saved-character-sheets.test.cjs tests/master-back-to-menu.test.cjs tests/master-clues-cache.test.cjs tests/master-player-clue-viewer.test.cjs tests/friendly-player-codes.test.cjs tests/sheet-refresh-session.test.cjs tests/legacy-route-redirects.test.cjs tests/master-room.test.cjs tests/storage-api.test.cjs tests/season-portal-rest.test.cjs tests/firestore-write-optimizations.test.cjs tests/season-isolation.test.cjs tests/season2-reinvite-overlay.test.cjs
-      - run: npx wrangler deploy --dry-run
   full-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -31,3 +30,32 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  worker-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx wrangler deploy --dry-run
+  production-smoke:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: https://outroladorpg.bryanferreira2454.workers.dev
+    steps:
+      - name: Verificar saúde do Worker e páginas públicas (somente leitura)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 20 "$BASE_URL/health" -o health.json
+          node -e 'const h=require("./health.json"); if(h.ok!==true||h.realtime!==true) process.exit(1)'
+          for route in / /ficha-temporada.html /mestre-temporada.html; do
+            curl --fail --silent --show-error --location --retry 2 --max-time 20 "$BASE_URL$route" -o page.html
+            test -s page.html
+          done

@@ -5,13 +5,14 @@ const j=fs.readFileSync(path.join(root,'public/temporada/sheet.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'public/temporada/v3-atributos.css'),'utf8');
 test('nova ficha usa a arte enviada e mostra só seis controles de atributo',()=>{
   assert(h.includes('class="season-rulebook-v3"'));
-  assert(h.includes('/temporada/v3-atributos.css?v=3'));
-  assert(css.includes("/temporada/assets/fundo-original-1920x909.jpg"));
-  assert(!css.includes("novo-fundo-enviado.webp"),'não reutilizar imagem antiga de baixa qualidade');
-  const original=fs.readFileSync(path.join(root,'public/temporada/assets/fundo-original-1920x909.jpg'));
-  assert.equal(original.byteLength,797950,'fundo deve manter tamanho original sem recompressão');
-  assert.equal(original.readUInt16BE(0),0xffd8,'arquivo deve ser JPEG válido');
-  assert.equal(original.readUInt16BE(original.length-2),0xffd9,'marcador final JPEG deve estar presente');
+  assert.match(h, /href="\/temporada\/v3-atributos\.css\?v=[^"\s]+"/);
+  assert(css.includes("/temporada/assets/fundo-exilio-t2-20261110.webp"));
+  assert(css.includes("/temporada/assets/fundo-exilio-t2-20261111.webp"));
+  for(const asset of ['fundo-exilio-t2-20261110.webp','fundo-exilio-t2-20261111.webp']){
+    const art=fs.readFileSync(path.join(root,'public/temporada/assets',asset));
+    assert.equal(art.toString('ascii',0,4),'RIFF','imagem WebP válida');
+    assert.equal(art.toString('ascii',8,12),'WEBP','imagem WebP válida');
+  }
   assert(css.includes("#sheet > :not(.v3-attributes)"));
   const keys=['potencia','destreza','constituicao','raciocinio','consciencia','expressao'];
   for(const key of keys){
@@ -20,7 +21,7 @@ test('nova ficha usa a arte enviada e mostra só seis controles de atributo',()=
   }
   assert.equal((h.match(/class="attr v3-attributes"/g)||[]).length,6);
   assert(!h.includes('src="/temporada/mobile.js?v=responsive-1"'));
-  assert(h.includes('src="/temporada/sheet.js?v=v3-atributos-2"'));
+  assert.match(h, /src="\/temporada\/sheet\.js\?v=[^"\s]+"/);
 });
 test('coordenadas dos losangos na arte correspondem aos seis atributos',()=>{
  const values=[['potencia',802,201],['destreza',773,232],['constituicao',743,262],['raciocinio',711,293],['consciencia',681,323],['expressao',649,355]];
@@ -39,7 +40,9 @@ test('outros dados e histórico permanecem no HTML e nas rotinas',()=>{
 
 test('atributos visíveis preservam aumentar, diminuir, rolar e salvar',()=>{
   assert(j.includes("const newAttributeNames={potencia:'POTÊNCIA'"));
-  assert(j.includes("const next=Math.max(-1,Math.min(5,current+delta))"));
+  assert(j.includes("const next=Math.max(-1,Math.min(creation?3:5,current+delta))"));
+  assert(j.includes("values.reduce((sum,v)=>sum+v,0)>6"));
+  assert(j.includes("values.filter(v=>v===-1).length>1"));
   assert(j.includes("el.addEventListener('contextmenu'"));
   assert(j.includes("showSkillDice(pool,'ATRIBUTO'"));
   assert(j.includes("el.addEventListener('keydown'"));
@@ -57,5 +60,5 @@ test('tela deixa de bloquear os atributos em falha de Firebase e preserva modo l
   assert(sync.includes("const editable=alwaysEditableAttributes && id==='page-principal'"));
   assert(sync.includes("if(!cloudReady){broadcast();status('MODO LOCAL"));
   assert(sync.includes("()=>cloudReady?flush():initialize()"));
-  assert(h.includes('/temporada/sync.js?v=master-saved-sheets-1'));
+  assert.match(h, /src="\/temporada\/sync\.js\?v=[^"\s]+"/);
 });

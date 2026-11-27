@@ -38,8 +38,8 @@ function runButton({ pending = false, accept = true } = {}) {
 test('Escudo tem botão visível de voltar ao menu principal', () => {
   assert(master.includes('id="master-back-menu"'));
   assert(master.includes('onclick="returnToMasterMenu()"'));
-  assert(master.includes('← VOLTAR AO MENU'));
-  assert(master.includes('.master-menu-button:hover'));
+  assert.match(master, /<button\b[^>]*id="master-back-menu"[^>]*aria-label="Voltar ao menu principal"[^>]*>\s*<svg\b/);
+  assert(master.includes('.master-top-actions .master-action-icon:hover'));
 });
 
 test('Botão navega para menu sem encerrar a sessão e sem loop de login', async () => {

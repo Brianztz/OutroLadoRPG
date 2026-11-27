@@ -66,7 +66,7 @@ test('mesmo breakpoint para JS e os três trechos de estilo mobile',()=>{
 
 test('o navegador carrega a nova versão responsiva, preservando aba e dados da temporada',()=>{
  for(const filename of ['sheet.css','mobile.css','sheet.js','mobile.js']){
-   assert(html.includes('/temporada/'+filename+'?v=responsive-1'),'asset não versionado: '+filename);
+   assert(new RegExp('/temporada/'+filename.replace('.','\\.')+'\\?v=[^"\\s]+"').test(html),'asset não versionado: '+filename);
  }
  for(const tab of ['tab-principal','tab-inventario','tab-rituais']){
    assert(html.includes('id="'+tab+'"'),'aba ausente: '+tab);
