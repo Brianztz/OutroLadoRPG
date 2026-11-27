@@ -1,8 +1,95 @@
 /* Vestigios / Exilio 3.0: realtime and Cloudflare native storage adapter. */
+const SOLO_PREFIX='ol_temporada_solo_v1:';
+function soloFilePicker(input){
+  input.value='';
+  if(typeof input.showPicker==='function'){
+    try{input.showPicker();return;}catch(_){}
+  }
+  input.click();
+}
+function validateSoloBackup(data){
+  if(data?.version!==1||!data.state?.attrs||!data.state?.skills)throw Error('Escolha um backup JSON válido da ficha da temporada.');
+  if(data.portrait?.image&&!/^data:image\/png;base64,/.test(data.portrait.image))throw Error('Imagem de personagem inválida.');
+  return data;
+}
+async function startStandaloneSheet(){
+  const api=window.SeasonSheet,portrait=window.SeasonPortrait,$=id=>document.getElementById(id);
+  const note=$('season-solo-note'),picker=$('season-import-file');
+  note.hidden=false;$('season-join-table').hidden=false;
+  $('season-identity').textContent='Ficha avulsa · sem mesa';
+  const snapshot=()=>({version:1,state:api.getState(),portrait:portrait.snapshot(),presentation:{}});
+  const status=message=>{note.textContent=message;$('season-status').textContent=message;};
+  function persist(){
+    try{localStorage.setItem(SOLO_PREFIX+'state',JSON.stringify(api.getState()));
+      status('SEM MESA · salva neste navegador. Exporte um backup para guardar ou levar a outro dispositivo.');}
+    catch(_){status('SEM MESA · armazenamento indisponível. Exporte o backup antes de sair.');}
+  }
+  function exportSheet(){
+    const blob=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download='ficha-avulsa-exilio.json';link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  $('download-preview').addEventListener('click',event=>{event.stopImmediatePropagation();exportSheet();},true);
+  $('season-export').onclick=exportSheet;
+  $('import-sheet').onclick=$('season-import').onclick=()=>soloFilePicker(picker);
+  picker.onchange=async event=>{
+    const file=event.target.files?.[0];event.target.value='';
+    if(!file)return;
+    try{
+      if(file.size>8*1024*1024)throw Error('O arquivo deve ter até 8 MB.');
+      const data=validateSoloBackup(JSON.parse(await file.text()));
+      if(!window.confirm('Substituir a ficha avulsa atual pelo backup?'))return;
+      await portrait.apply(data.portrait);
+      api.applyState({...data.state,masterGrantScope:crypto.randomUUID()});
+      persist();api.notify('Ficha avulsa importada.');
+    }catch(error){api.notify('Não foi possível importar: '+error.message);}
+  };
+  $('season-retry').onclick=persist;
+  $('season-join-table').onclick=()=>{
+    persist();
+    const url=new URL('./index.html',location.href);url.searchParams.set('entrar','1');
+    location.assign(url.href);
+  };
+  window.addEventListener('season:change',persist);
+  persist();
+}
+// Lê a cópia avulsa deste dispositivo sem modificar seu estado nem suas imagens.
+async function readStandaloneBackup(){
+  const state=JSON.parse(localStorage.getItem(SOLO_PREFIX+'state')||'null');
+  if(!state?.attrs||!state?.skills)throw Error('Não existe ficha avulsa neste navegador.');
+  const settings=JSON.parse(localStorage.getItem(SOLO_PREFIX+'outrolado_offline_foto_posicao_v3')||'{}');
+  let image=localStorage.getItem(SOLO_PREFIX+'outrolado_offline_foto_png_v1')||'';
+  if(window.indexedDB){
+    let db;
+    try{
+      db=await new Promise((resolve,reject)=>{
+        const req=indexedDB.open(SOLO_PREFIX+'outrolado_offline_foto_personagem_v1',1);
+        req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos');};
+        req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>reject(Error('Banco de imagens bloqueado.'));
+      });
+      const blob=await new Promise((resolve,reject)=>{
+        const tx=db.transaction('photos','readonly'),req=tx.objectStore('photos').get('main');
+        req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+      });
+      if(blob)image=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);
+      });
+    }catch(error){
+      if(!image)throw Error('Não foi possível ler a imagem avulsa. Exporte e importe o backup manualmente.');
+    }finally{db?.close();}
+  }
+  return validateSoloBackup({version:1,state,portrait:{image,settings},presentation:{}});
+}
 window.startSeasonSync=async function startSeasonSync(){
-  const {table,view,user,prefix,stateKey}=window.SeasonContext;
+  const {table,view,user,prefix,stateKey,solo}=window.SeasonContext;
+  if(solo)return startStandaloneSheet();
   const api=window.SeasonSheet,portrait=window.SeasonPortrait,$=id=>document.getElementById(id);
   const socket=window.io();window.SeasonSocket=socket;
+  const soloCopy=$('season-copy-solo');
+  if(soloCopy&&!view){
+    try{soloCopy.hidden=!localStorage.getItem(SOLO_PREFIX+'state');}catch(_){}
+  }
   let ready=false,cloudReady=false,applying=false,dirty=false,busy=false,timer=null,realtimeTimer=null,lastHash='',closed=false;
   let preferences={color:'#b83b25',combat:false,status:{}};
   const metadataKey=prefix+'presentation',markerKey=prefix+'cloudHash',dirtyKey=prefix+'dirty';
@@ -19,6 +106,7 @@ window.startSeasonSync=async function startSeasonSync(){
     }
     document.getElementById('season-import').disabled=locked;
     document.getElementById('import-sheet').disabled=locked;
+    if(soloCopy)soloCopy.disabled=locked;
   };
   lock(true);
   const status=text=>$('season-status').textContent=text;
@@ -132,6 +220,19 @@ window.startSeasonSync=async function startSeasonSync(){
       status(message);
       api.notify(message);
     }
+  };
+  if(soloCopy&&!view)soloCopy.onclick=async()=>{
+    if(!ready||!cloudReady||applying||busy){api.notify('Aguarde a sincronização da mesa antes de usar a ficha avulsa.');return;}
+    if(!window.confirm('Usar uma cópia da ficha avulsa nesta mesa? Isso substitui a ficha atual da mesa. A ficha avulsa permanece salva neste navegador.'))return;
+    soloCopy.disabled=true;
+    try{
+      const data=await readStandaloneBackup();
+      // Uma nova geração não herda entregas pendentes de outra ficha.
+      await applySnapshot({...data,state:{...data.state,masterGrantScope:crypto.randomUUID()}});
+      changed();await flush();
+      api.notify('Cópia da ficha avulsa aplicada à mesa. A original continua no navegador.');
+    }catch(error){api.notify('Não foi possível usar a ficha avulsa: '+error.message);}
+    finally{soloCopy.disabled=false;}
   };
   let unsubscribe=null;
   let initializing=false;

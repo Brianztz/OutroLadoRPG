@@ -105,6 +105,8 @@ footer strong{color:#b9bab5}
       </form>
       <p class="status" id="login-status" role="status" aria-live="polite"></p>
       <div class="panel-divider"></div>
+      <a id="solo-sheet-link" class="action" href="./ficha-temporada.html?solo=1" style="display:block;text-align:center;text-decoration:none">CRIAR / ABRIR FICHA SEM MESA</a>
+      <p class="panel-hint">Sua ficha avulsa fica salva neste navegador. Você pode entrar em uma mesa depois, pelo convite do mestre.</p>
       <div class="player-note"><strong>Como funciona?</strong>
         <p>Qualquer pessoa pode criar uma conta de Mestre e administrar sua própria mesa. Para jogar na mesa de alguém, basta receber um convite.</p>
       </div>
@@ -147,7 +149,8 @@ footer strong{color:#b9bab5}
           <p class="panel-hint" style="margin-top:10px">Sua mesa será criada automaticamente, sem links ou códigos para registrar o mestre.</p>
         </div>
         <div id="signup-player-view" hidden>
-        <p class="panel-hint">Para criar uma conta de Jogador, cole o convite enviado pelo mestre da campanha.</p>
+        <p class="panel-hint">Para criar uma conta de Jogador, cole o convite enviado pelo mestre da campanha. Você também pode criar sua ficha antes, sem conta ou mesa.</p>
+        <a class="action" href="./ficha-temporada.html?solo=1" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">ABRIR FICHA SEM MESA</a>
         <form id="signup-invite-form">
           <label for="signup-invite-link">Link de convite</label>
           <input id="signup-invite-link" type="text" autocomplete="off" spellcheck="false" placeholder="Cole aqui o link enviado pelo mestre" required>
@@ -454,6 +457,7 @@ footer strong{color:#b9bab5}
     $('login-username').value=localStorage.getItem('ol_last_username')||'';
     $('change-current-user').value=$('login-username').value;
     if(params.get('aviso'))show('login-status',params.get('aviso'),true);
+    if(params.get('entrar')==='1'){showAccessTab('signup');chooseSignupType('player');$('signup-invite-link').focus();}
   }
 })();
 </script>

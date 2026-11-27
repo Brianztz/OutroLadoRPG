@@ -1,4 +1,12 @@
-(async function initializeSeasonSheet(){'use strict';try{const params=new URLSearchParams(location.search),view=params.get('view');if(!await OLFirebase.guardPage(view?'master':'player'))return;const user=await OLFirebase.getCurrentUser();const table=OLFirebase.normalizeTableCode(params.get('mesa'));const prefix='ol_temporada_v1:'+user.uid+':'+table+':'+(view||'own')+':';window.SeasonContext={table,view,user,prefix,stateKey:prefix+'state'};
+(async function initializeSeasonSheet(){'use strict';try{
+const params=new URLSearchParams(location.search),view=params.get('view');
+// Avulsa é um contexto local explícito; nunca concede acesso a mesa ou a ficha de outro jogador.
+const solo=params.get('solo')==='1'&&!params.has('mesa')&&!params.has('view')&&!params.has('personagem');
+if(!solo&&!await OLFirebase.guardPage(view?'master':'player'))return;
+const user=solo?{uid:'local-player',role:'local'}:await OLFirebase.getCurrentUser();
+const table=solo?'SEM-MESA':OLFirebase.normalizeTableCode(params.get('mesa'));
+const prefix=solo?'ol_temporada_solo_v1:':'ol_temporada_v1:'+user.uid+':'+table+':'+(view||'own')+':';
+window.SeasonContext={table,view,user,prefix,stateKey:prefix+'state',solo};
 (function(){
   'use strict';
   const W=1920,H=909;

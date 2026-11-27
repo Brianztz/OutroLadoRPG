@@ -479,3 +479,7 @@ body.season-readable-zoom #page-principal:not([hidden]){
 #tools-panel #fit-mode{
   display:none!important;
 }
+
+/* Ficha avulsa: controles só aparecem quando o contexto permite. */
+#season-copy-solo[hidden],#season-join-table[hidden],#season-solo-note[hidden]{display:none!important}
+#season-solo-note{flex-basis:100%;font:12px/1.5 Arial,sans-serif;color:#e5c3ab;padding:4px 2px}

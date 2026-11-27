@@ -550,17 +550,22 @@
     <dialog id="master-invite-dialog" class="master-invite-dialog" aria-labelledby="master-invite-title">
         <div class="master-invite-content">
             <h2 id="master-invite-title">✉ Convite para a mesa</h2>
-            <p>Este é o código fixo da sua mesa. Cada jogador receberá seu próprio link de convite.</p>
+            <p>Gere um link privado para cada jogador. Ele poderá entrar na sua mesa e trazer uma ficha avulsa que já tenha criado.</p>
             <label for="master-invite-table">CÓDIGO DA MESA
                 <input id="master-invite-table" type="text" maxlength="40" readonly autocomplete="off" spellcheck="false" placeholder="Ex.: AURORA">
             </label>
+            <label for="master-invite-name">NOME DO JOGADOR OU PERSONAGEM (OPCIONAL)
+                <input id="master-invite-name" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: Clara">
+            </label>
             <div class="master-invite-actions">
-                <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">GERENCIAR CONVITES</button>
-                <button type="button" onclick="copyMasterTableCode()">COPIAR CÓDIGO</button>
+                <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">GERAR LINK</button>
+                <button type="button" onclick="manageMasterInvites()">GERENCIAR ACESSOS</button>
                 <button type="button" onclick="closeMasterInvite()">FECHAR</button>
             </div>
-            <input id="master-invite-link" type="hidden" value="">
-            <button id="master-invite-copy" type="button" hidden disabled></button>
+            <label for="master-invite-link">LINK DE CONVITE
+                <input id="master-invite-link" type="text" readonly autocomplete="off" placeholder="Gere um link acima">
+            </label>
+            <div class="master-invite-actions"><button id="master-invite-copy" type="button" onclick="copyMasterInvite()" disabled>COPIAR LINK</button></div>
             <div id="master-invite-status" class="master-invite-status" role="status" aria-live="polite"></div>
         </div>
     </dialog>
@@ -1175,11 +1180,10 @@
         function openMasterInvite() {
             const dialog = document.getElementById('master-invite-dialog');
             document.getElementById('master-invite-table').value = masterTableCode;
-            document.getElementById('master-invite-link').value = '';
-            document.getElementById('master-invite-copy').disabled = true;
+            const link = document.getElementById('master-invite-link');
+            document.getElementById('master-invite-copy').disabled = !link.value;
             const status = document.getElementById('master-invite-status');
-            status.textContent = '';
-            status.classList.remove('error');
+            if(!masterInvitePending){status.textContent=link.value?'Link pronto. Compartilhe somente com o jogador.':'';status.classList.remove('error');}
             dialog.showModal();
             document.getElementById('master-invite-table').focus();
         }
@@ -1188,11 +1192,34 @@
             document.getElementById('master-invite-dialog').close();
         }
 
+        let masterInvitePending=false;
         async function generateMasterInvite() {
+            if(masterInvitePending)return;
+            const button=document.getElementById('master-invite-generate'),copy=document.getElementById('master-invite-copy');
+            const link=document.getElementById('master-invite-link'),status=document.getElementById('master-invite-status');
+            const name=document.getElementById('master-invite-name').value.trim();
+            const table=masterTableCode;
+            masterInvitePending=true;button.disabled=true;copy.disabled=true;
+            status.classList.remove('error');status.textContent='Gerando convite privado…';
+            try{
+                const physical=OLFirebase.seasonScopedTable(table,'temporada');
+                const code='J'+Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+                const data=await OLNative.provisionPlayer(physical,'temporada',code,'create',name);
+                if(!/^[a-f0-9]{96}$/i.test(String(data.playerKey||'')))throw Error('O servidor não retornou uma chave válida.');
+                const url=new URL('./index.html',location.href);
+                url.search='';url.hash='';
+                url.searchParams.set('mesa',table);url.searchParams.set('convite','1');url.searchParams.set('temporada','2');
+                url.hash=new URLSearchParams({codigo:code,chave:data.playerKey}).toString();
+                link.value=url.href;
+                status.textContent='Convite pronto! Copie e envie somente ao jogador.';
+            }catch(error){
+                status.classList.add('error');status.textContent='Não foi possível gerar o link: '+(error.message||'tente novamente.');
+            }finally{masterInvitePending=false;button.disabled=false;copy.disabled=!link.value;}
+        }
+        function manageMasterInvites() {
             const url = new URL('./acessos.html', location.href);
             url.searchParams.set('mesa', masterTableCode);
             if (isSeasonMaster) url.searchParams.set('temporada', '2');
-            // Only the access manager issues player keys for the fixed room.
             location.assign(url.href);
         }
 
@@ -1215,7 +1242,7 @@
             }
         }
 
-        document.getElementById('master-invite-table').addEventListener('keydown', event => {
+        document.getElementById('master-invite-name').addEventListener('keydown', event => {
             if (event.key === 'Enter') { event.preventDefault(); generateMasterInvite(); }
         });
 

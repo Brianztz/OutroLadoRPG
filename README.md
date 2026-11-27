@@ -67,3 +67,9 @@ Validação manual em uma mesa de teste, sem usar fichas reais:
 Não publique credenciais, chaves privadas, códigos de acesso ou backups de jogadores. Não use dados reais em testes. Evite alterações de esquema ou exclusões de armazenamento sem revisão e backup.
 
 Mais informações: [documentação de Vestígios](docs/vestigios.md). [Documentação histórica da ficha](docs/ficha-temporada.md) descreve a integração anterior e não deve ser usada como guia de publicação atual.
+
+## Ficha avulsa e entrada na mesa
+
+No portal, escolha **Criar / abrir ficha sem mesa**. A ficha avulsa funciona sem sessão de mesa e fica isolada no armazenamento local do navegador. Ela não envia rolagens, pistas ou itens ao mestre. Exporte um backup JSON para transportar a ficha entre dispositivos ou evitar perda caso os dados do navegador sejam apagados.
+
+No escudo, abra **Convidar jogador**, informe um nome opcional, clique em **Gerar link** e copie o convite individual. O jogador cria o login vinculado ao convite. Na ficha da mesa, em **Ajustes**, escolha **Usar ficha avulsa** (quando houver uma no mesmo navegador) e confirme a substituição da ficha atual. A original permanece local. Em outro dispositivo, use **Importar ficha** com o backup JSON. Recuperação de convites existentes continua em Gerenciar acessos.
