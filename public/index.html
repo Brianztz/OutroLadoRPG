@@ -559,7 +559,7 @@ footer strong{color:#b9bab5}
       }
       destination('player',normalizedTable,normalizedCode);
     }catch(error){
-      const message=error?.message==='existing_access_required'?'Você já tinha uma ficha nesta mesa. Peça ao mestre um link individual de acesso para recuperar seu personagem.':error?.message==='master_session_active'?'Este navegador está conectado como mestre nesta mesa. Use outro perfil de navegador para entrar como jogador.':error?.message==='invite_limit'?'Limite de novos acessos atingido. Fale com o mestre.':invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error);
+      const message=error?.message==='existing_access_required'?'Você já tinha uma ficha nesta mesa. Peça ao mestre um link individual de acesso para voltar ao seu personagem.':error?.message==='master_session_active'?'Este navegador está conectado como mestre nesta mesa. Use outro perfil de navegador para entrar como jogador.':error?.message==='invite_limit'?'Limite de novos acessos atingido. Fale com o mestre.':invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error);
       show(statusNode,message,true);
       if(invite)$('invite-retry').hidden=false;
     }finally{busy=false;$('invite-retry').disabled=false;}
