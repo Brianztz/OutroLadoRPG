@@ -1739,9 +1739,10 @@ renderRituals();
     }finally{URL.revokeObjectURL(url);}
   }
   let photoSequence=0;
-  async function setPhoto(blob){
-    const sequence=++photoSequence;seasonPhotoData=blob?await fileToDataURL(blob):'';
+  async function setPhoto(blob,nextSettings){
+    const sequence=++photoSequence;
     if(!blob){
+      seasonPhotoData='';
       seasonAvatarData='';
       if(currentObjectURL){URL.revokeObjectURL(currentObjectURL);currentObjectURL=null;}
       picture.removeAttribute('src');picture.hidden=true;hint.hidden=false;replace.hidden=true;window.dispatchEvent(new Event('season:change'));
@@ -1749,13 +1750,17 @@ renderRituals();
     }
     const framed=await prepararEnquadramento(blob);
     const avatar=await createPortraitAvatar(framed);
-    if(sequence!==photoSequence)return;
+    const data=await fileToDataURL(blob);
+    if(sequence!==photoSequence)return false;
+    seasonPhotoData=data;
     seasonAvatarData=avatar;
+    if(nextSettings){settings=nextSettings;applySettings();persistSettings();}
     if(currentObjectURL){URL.revokeObjectURL(currentObjectURL);currentObjectURL=null;}
     currentObjectURL=URL.createObjectURL(framed);
     picture.onload=()=>{if(sequence===photoSequence){picture.hidden=false;hint.hidden=true;replace.hidden=false;}};
-    picture.onerror=()=>{if(sequence===photoSequence){picture.hidden=true;hint.hidden=false;replace.hidden=true;notify('Não consegui abrir esse PNG. Tente outra imagem.');}};
+    picture.onerror=()=>{if(sequence===photoSequence){picture.hidden=true;hint.hidden=false;replace.hidden=true;notify('Não consegui abrir essa foto. Tente outra imagem.');}};
     picture.src=currentObjectURL;window.dispatchEvent(new Event('season:change'));
+    return true;
   }
   function openDB(){
     return new Promise((resolve,reject)=>{
@@ -1817,16 +1822,51 @@ renderRituals();
       }catch(_){return false;}
     }
   }
-  async function loadPNG(file){
+  async function preparePortraitFile(file){
+    const url=URL.createObjectURL(file);
+    const image=new Image();
+    try{
+      await new Promise((resolve,reject)=>{
+        image.onload=resolve;
+        image.onerror=()=>reject(new Error('O navegador não conseguiu abrir essa imagem.'));
+        image.src=url;
+      });
+      const width=image.naturalWidth,height=image.naturalHeight;
+      if(!width||!height)throw new Error('A imagem está vazia.');
+      const maxBytes=1200000;
+      const header=new Uint8Array(await file.slice(0,8).arrayBuffer());
+      const isPNG=header.join(',')==='137,80,78,71,13,10,26,10';
+      if(isPNG&&file.size<=maxBytes&&Math.max(width,height)<=2048){
+        return file.slice(0,file.size,'image/png');
+      }
+      const canvas=document.createElement('canvas');
+      const ctx=canvas.getContext('2d');
+      if(!ctx)throw new Error('Não foi possível preparar a foto.');
+      let scale=Math.min(1,1600/Math.max(width,height));
+      for(let attempt=0;attempt<8;attempt++){
+        canvas.width=Math.max(1,Math.round(width*scale));
+        canvas.height=Math.max(1,Math.round(height*scale));
+        ctx.drawImage(image,0,0,canvas.width,canvas.height);
+        const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+        if(png&&png.size<=maxBytes)return png;
+        scale*=0.75;
+      }
+      throw new Error('Não foi possível reduzir a foto para salvar na ficha.');
+    }finally{URL.revokeObjectURL(url);}
+  }
+  let portraitUpload=0;
+  async function loadPortrait(file){
     if(!file)return;
-    if(!(file.type==='image/png'||/\.png$/i.test(file.name))){notify('Escolha uma imagem PNG (.png).');return;}
-    if(file.size>15000000){notify('O PNG precisa ter no máximo 15 MB.');return;}
-    settings={...defaults};
-    applySettings();
-    persistSettings();
-    setPhoto(file);
-    const saved=await saveFile(file);
-    notify(saved?'PNG enquadrado automaticamente! Imagem original salva no navegador.':'PNG enquadrado automaticamente! O navegador não conseguiu guardar a imagem para reabrir depois.');
+    const upload=++portraitUpload;
+    try{
+      const photo=await preparePortraitFile(file);
+      if(upload!==portraitUpload)return;
+      if(!await setPhoto(photo,{...defaults}))return;
+      const saved=await saveFile(photo);
+      if(upload===portraitUpload)notify(saved?'Foto salva na ficha.':'Foto carregada, mas o navegador não conseguiu salvá-la neste aparelho.');
+    }catch(error){
+      if(upload===portraitUpload)notify(error.message||'Não foi possível carregar a foto.');
+    }
   }
   async function restorePhoto(){
     try{
@@ -1839,10 +1879,11 @@ renderRituals();
     }catch(_){ }
   }
   async function removePhoto(){
-    setPhoto(null);input.value='';
+    ++portraitUpload;
+    await setPhoto(null);input.value='';
     try{await deleteInDB()}catch(_){ }
     try{localStorage.removeItem(fallbackKey)}catch(_){ }
-    notify('PNG removido da prévia.');
+    notify('Foto removida da ficha.');
   }
   const pick=()=>input.click();
   get('photo-header-upload').addEventListener('click',pick);
@@ -1850,8 +1891,8 @@ renderRituals();
   hint.addEventListener('click',pick);
   replace.addEventListener('click',pick);
   get('photo-remove').addEventListener('click',removePhoto);
-  input.addEventListener('change',ev=>{void loadPNG(ev.target.files?.[0]);ev.target.value='';});
-  // Arrastar um PNG para a silhueta ou o quadro também funciona offline.
+  input.addEventListener('change',ev=>{void loadPortrait(ev.target.files?.[0]);ev.target.value='';});
+  // Arrastar uma imagem para a silhueta ou o quadro também funciona offline.
   for(const event of ['dragenter','dragover'])stage.addEventListener(event,ev=>{
     ev.preventDefault();stage.classList.add('dragging');
     if(ev.dataTransfer)ev.dataTransfer.dropEffect='copy';
@@ -1859,7 +1900,7 @@ renderRituals();
   for(const event of ['dragleave','drop'])stage.addEventListener(event,ev=>{
     ev.preventDefault();stage.classList.remove('dragging');
   });
-  stage.addEventListener('drop',ev=>{void loadPNG(ev.dataTransfer?.files?.[0]);});
+  stage.addEventListener('drop',ev=>{void loadPortrait(ev.dataTransfer?.files?.[0]);});
   window.addEventListener('beforeunload',()=>{if(currentObjectURL)URL.revokeObjectURL(currentObjectURL)});
   window.SeasonPortrait={avatar:()=>seasonAvatarData,snapshot:()=>({image:seasonPhotoData,settings:{...settings}}),async apply(value){const image=value?.image||'';if(image&&!/^data:image\/png;base64,/.test(image))throw Error('Imagem de personagem inválida');if(image!==seasonPhotoData){if(image){const blob=dataURLToBlob(image);await setPhoto(blob);await saveFile(blob);}else{await removePhoto();}}settings={...defaults,...(value?.settings||{})};applySettings();persistSettings();}};
   window.SeasonPortrait.ready=restorePhoto();
