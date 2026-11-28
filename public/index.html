@@ -240,9 +240,10 @@ footer strong{color:#b9bab5}
     try{localStorage.setItem(PLAYER_TABLES_KEY,JSON.stringify([entry,...list.filter(t=>t.tableCode!==table)].slice(0,50)));}catch(_){}
     return entry;
   }
-  function showPlayerMenu(){
+  function showPlayerMenu(primary=''){
     const tables=deviceTables();
-    chooseAccess({role:'player',tableCode:tables[0]?.tableCode||'',code:tables[0]?.code||'',tables},'',true);
+    const selected=tables.find(t=>t.tableCode===primary)||tables[0];
+    chooseAccess({role:'player',tableCode:selected?.tableCode||'',code:selected?.code||'',tables},'',true);
   }
 
   function show(id, message, error=false) {
@@ -462,7 +463,7 @@ footer strong{color:#b9bab5}
       }
     }
     localStorage.setItem('ol_last_username',username);
-    if(account.role==='player')showPlayerMenu();else chooseAccess(account,username);
+    if(account.role==='player')showPlayerMenu(table);else chooseAccess(account,username);
     $('login-password').value='';
   }
   $('login-form').addEventListener('submit',async event=>{
