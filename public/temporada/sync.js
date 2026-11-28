@@ -87,6 +87,12 @@ window.startSeasonSync=async function startSeasonSync(){
   const api=window.SeasonSheet,portrait=window.SeasonPortrait,$=id=>document.getElementById(id);
   const socket=window.io();window.SeasonSocket=socket;
   const soloCopy=$('season-copy-solo');
+  const menu=$('season-tables-menu');
+  if(menu&&!view){menu.hidden=false;menu.onclick=()=>{
+    const url=new URL('./index.html',location.href);url.searchParams.set('menu','1');
+    // Preserve local unsynced edits for this character, rather than carrying them to a different room.
+    location.assign(url.href);
+  };}
   if(soloCopy&&!view){
     try{soloCopy.hidden=!localStorage.getItem(SOLO_PREFIX+'state');}catch(_){}
   }
@@ -95,7 +101,7 @@ window.startSeasonSync=async function startSeasonSync(){
   const metadataKey=prefix+'presentation',markerKey=prefix+'cloudHash',dirtyKey=prefix+'dirty';
   dirty=localStorage.getItem(dirtyKey)==='1';
   try{preferences={...preferences,...JSON.parse(localStorage.getItem(metadataKey)||'{}')};}catch(_){}
-  let code=view||localStorage.getItem('player_sync_code');
+  let code=view||user.code||new URLSearchParams(location.search).get('personagem')||localStorage.getItem('player_sync_code');
   if(!code){code=crypto.randomUUID().replace(/-/g,'').slice(0,8).toUpperCase();localStorage.setItem('player_sync_code',code);}
   const alwaysEditableAttributes=!view && document.body.classList.contains('season-rulebook-v3');
   const lock=locked=>{

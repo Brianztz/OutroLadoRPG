@@ -56,6 +56,10 @@ export async function currentSession(request, ctx) {
   const key = 'session:' + (await digest(token));
   const session = await ctx.storage.get(key);
   if (!session) return null;
+  if(session.accountTokenHash){
+    const account=cookieToken(request,'ol_account_session');
+    if(!account||!fixedEqual(await digest(account),session.accountTokenHash))return null;
+  }
   if (session.expiresAt < Date.now()) {
     await ctx.storage.delete(key);
     return null;
@@ -99,24 +103,30 @@ export async function handleSessionRequest(request, ctx, env) {
   let edition = data && data.edition === 'temporada' ? 'temporada' : 'classic';
   let code = '';
   let credentialHash = '';
+  let accountTokenHash='',accountExpiresAt=Date.now()+SESSION_TTL_MS;
+  const useAccount=data?.useAccount===true;
   // The registry checks username/password internally; no password is
   // persisted in a room session, cookie, localStorage or sheet.
   async function verifyAccount(roleToCheck, codeToCheck = '') {
     const serverKey = String(env.MASTER_DATA_TOKEN || '');
     if (serverKey.length < 32 || !env.TABLE_ROOMS) return null;
-    if (typeof data.username !== 'string' || typeof data.password !== 'string')return null;
+    const account=cookieToken(request,'ol_account_session');
+    if(useAccount&&!account)return null;
+    if(!useAccount&&(typeof data.username!=='string'||typeof data.password!=='string'))return null;
     const registry = env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V2');
     const check = await registry.fetch(new Request('https://internal.invalid/api/account-internal', {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-OL-Internal-Auth':serverKey},
+      headers:{'Content-Type':'application/json','X-OL-Internal-Auth':serverKey,...(useAccount?{Cookie:'ol_account_session='+account}:{})},
       body:JSON.stringify({
-        action:'check',username:data.username,password:data.password,
+        action:useAccount?'check-session':'check',username:data.username,password:data.password,
         role:roleToCheck,code:codeToCheck,
         physicalTable:new URL(request.url).searchParams.get('mesa')||''
       })
     }));
     if(!check.ok)return null;
-    return check.json();
+    const verified=await check.json();
+    if(useAccount){accountTokenHash=await digest(account);accountExpiresAt=verified.expiresAt;}
+    return verified;
   }
 
   if (role === 'master') {
@@ -127,7 +137,7 @@ export async function handleSessionRequest(request, ctx, env) {
   } else if (role === 'player') {
     code = playerCode(data && data.code);
     const ownerHash = await ctx.storage.get('sheet:' + edition + ':' + code + ':owner-sha256');
-    if (typeof data.username === 'string') {
+    if (useAccount || typeof data.username === 'string') {
       if (edition !== 'temporada' || !code || !ownerHash)
         return response({error:'invalid_credentials'},401);
       const verified=await verifyAccount('player',code);
@@ -151,7 +161,9 @@ export async function handleSessionRequest(request, ctx, env) {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte =>
     byte.toString(16).padStart(2, '0')).join('');
   await ctx.storage.put('session:' + await digest(token), {
-    role, code, edition, credentialHash, expiresAt: Date.now() + SESSION_TTL_MS
+    role, code, edition, credentialHash, accountTokenHash,
+    invited:role==='player'&&!useAccount&&typeof data.username!=='string',
+    expiresAt:Math.min(Date.now()+SESSION_TTL_MS,accountExpiresAt)
   });
   return response({ ok: true, role, code }, 200, sessionCookie(request, token));
 }

@@ -67,7 +67,7 @@
   async function createMasterTable(username,password,name) {
     return api(base+'account',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'create-master-table',username,password,name})
+      body:JSON.stringify(username?{action:'create-master-table',username,password,name}:{action:'create-master-table',useSession:true,name})
     });
   }
   async function changeMasterCredentials(username,password,newUsername,newPassword) {
@@ -81,8 +81,17 @@
   async function signInAccount(table, role, code, username, password) {
     return api(sessionUrl(table),{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({role,edition:'temporada',code,username,password})
+      body:JSON.stringify(username?{role,edition:'temporada',code,username,password}:{role,edition:'temporada',code,useAccount:true})
     });
+  }
+  async function getAccountSession(){
+    return api(base+'account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'current-account'})});
+  }
+  async function logoutAccount(){
+    return api(base+'account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout-account'})});
+  }
+  async function joinPlayerAccount(table){
+    return api(query(table,'account-register','temporada'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({useSession:true})});
   }
   async function registerPlayerAccount(table,username,password) {
     return api(query(table,'account-register','temporada'),{
@@ -126,6 +135,7 @@
   global.OLNative = Object.freeze({
     tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
     lookupAccount, registerMasterAccount, createMasterTable, changeMasterCredentials, signInAccount, registerPlayerAccount,
+    getAccountSession, logoutAccount, joinPlayerAccount,
     provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);
