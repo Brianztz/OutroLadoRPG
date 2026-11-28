@@ -58,7 +58,7 @@ test('convite automatico esconde o login e remove o segredo da URL', () => {
   assert(portal.includes("$('login-section').hidden=true"));
   assert(portal.includes("$('invite-section').hidden=false"));
   assert(portal.includes("history.replaceState(null,'',location.pathname+location.search)"));
-  assert(portal.includes("enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status')"));
+  assert(portal.includes("enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status',inviteCredentials.shared)"));
   assert(portal.includes('Convite incompleto.'));
 });
 

@@ -134,7 +134,7 @@ test('portal exige login e senha sem acesso antigo de mestre', () => {
   assert(worker.includes("new URL(request.url).pathname === '/api/master-key-check'"));
   assert(worker.includes("getByName('SYSTEM_MASTER_PROFILE_V2')"));
 });
-test('escudo Vestigios continua com seu codigo de mesa fixo e convite individual', () => {
+test('escudo Vestigios continua com seu codigo de mesa fixo e suporta convite individual', () => {
   const master = fs.readFileSync(path.join(root, 'public/mestre-temporada.html'), 'utf8');
   const portal = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
   assert(master.includes('onclick="copyMasterTableCode()"'));
