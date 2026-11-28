@@ -50,7 +50,7 @@ function playerCode(value) {
   return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 40);
 }
 
-export async function currentSession(request, ctx) {
+export async function currentSession(request, ctx, env) {
   const token = sessionToken(request);
   if (!token) return null;
   const key = 'session:' + (await digest(token));
@@ -59,6 +59,14 @@ export async function currentSession(request, ctx) {
   if(session.accountTokenHash){
     const account=cookieToken(request,'ol_account_session');
     if(!account||!fixedEqual(await digest(account),session.accountTokenHash))return null;
+    // The opaque account token must still be valid (logout/password change revokes it).
+    if(!env?.TABLE_ROOMS||String(env.MASTER_DATA_TOKEN||'').length<32)return null;
+    const registry=env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V2');
+    const verified=await registry.fetch(new Request('https://internal.invalid/api/account-internal',{
+      method:'POST',headers:{'Content-Type':'application/json','X-OL-Internal-Auth':env.MASTER_DATA_TOKEN,Cookie:'ol_account_session='+account},
+      body:JSON.stringify({action:'check-session',role:session.role,code:session.code,physicalTable:new URL(request.url).searchParams.get('mesa')||''})
+    }));
+    if(!verified.ok)return null;
   }
   if (session.expiresAt < Date.now()) {
     await ctx.storage.delete(key);
@@ -75,7 +83,7 @@ export async function currentSession(request, ctx) {
 
 export async function handleSessionRequest(request, ctx, env) {
   if (request.method === 'GET') {
-    const session = await currentSession(request, ctx);
+    const session = await currentSession(request, ctx, env);
     return response(session
       ? { ok: true, role: session.role, code: session.code || '' }
       : { ok: false }, session ? 200 : 401);

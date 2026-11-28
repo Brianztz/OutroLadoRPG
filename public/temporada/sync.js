@@ -88,9 +88,10 @@ window.startSeasonSync=async function startSeasonSync(){
   const socket=window.io();window.SeasonSocket=socket;
   const soloCopy=$('season-copy-solo');
   const menu=$('season-tables-menu');
-  if(menu&&!view){menu.hidden=false;menu.onclick=()=>{
+  if(menu&&!view){menu.hidden=false;menu.onclick=async()=>{
+    if(dirty&&cloudReady&&!busy)await flush();
+    if((dirty||busy)&&!window.confirm('Há alterações ainda não sincronizadas. Elas continuam salvas neste navegador. Voltar mesmo assim?'))return;
     const url=new URL('./index.html',location.href);url.searchParams.set('menu','1');
-    // Preserve local unsynced edits for this character, rather than carrying them to a different room.
     location.assign(url.href);
   };}
   if(soloCopy&&!view){

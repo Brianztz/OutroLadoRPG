@@ -53,7 +53,7 @@ function harness(){
       sessionHandle=(await load(sessionSource)).handleSessionRequest;
       storageHandle=(await load(storageSource)).handleStorageRequest;
     },
-    account:(action,body)=>registryHandle(post('/api/account',{action,...body}),registry,env),
+    account:(action,body,cookie='')=>registryHandle(post('/api/account',{action,...body},cookie?{Cookie:cookie}:{}),registry,env),
     internal:(action,body)=>registryHandle(post('/api/account-internal',{action,...body},
       {'X-OL-Internal-Auth':S}),registry,env),
     session:(table,body,cookie='')=>sessionHandle(new Request(
@@ -120,7 +120,8 @@ test('jogador só pode criar login para a ficha que seu convite autoriza',async(
   assert.equal((await res.json()).ok,true);
   res=await h.account('lookup',{username:'clara',password:PS});
   assert.deepEqual(JSON.parse(JSON.stringify(await res.json())),{
-    ok:true,role:'player',tableCode:'VESTIGIOS',code:'VESTIGIOS-CLARA'
+    ok:true,role:'player',tableCode:'VESTIGIOS',code:'VESTIGIOS-CLARA',
+    tables:[{tableCode:'VESTIGIOS',code:'VESTIGIOS-CLARA',name:'Mesa VESTIGIOS'}]
   });
   assert.equal((await h.session('T2_VESTIGIOS',{
     role:'player',edition:'temporada',code:'OUTRO',username:'clara',password:PS
@@ -179,4 +180,61 @@ test('scripts inline da interface continuam válidos',()=>{
       if(match[1].trim())assert.doesNotThrow(()=>new vm.Script(match[1],{filename:file+':'+i}));
     }
   }
+});
+
+test('sessão da conta cria e abre mesas sem senha, recusa outras contas e é revogada no logout',async()=>{
+  const h=harness();await h.init();await setup(h);
+  const auth=await h.account('lookup',{username:'narrador',password:PA});
+  const account=auth.headers.get('set-cookie').split(';')[0];
+  assert.match(auth.headers.get('set-cookie'),/ol_account_session=[a-f0-9]{64}; Path=\/; Secure; HttpOnly; SameSite=Lax/);
+  assert.equal((await h.account('create-master-table',{useSession:true,name:'Grupo B'})).status,401);
+  const creation=await h.account('create-master-table',{useSession:true,name:'Grupo B'},account);
+  assert.equal(creation.status,201);
+  const table=(await creation.json()).tableCode;
+  const current=await (await h.account('current-account',{},account)).json();
+  assert.equal(current.tables.length,2);
+  assert.equal(current.username,'narrador');
+  const room=await h.session('T2_'+table,{role:'master',useAccount:true},account);
+  assert.equal(room.status,200);
+  const roomCookie=room.headers.get('set-cookie').split(';')[0];
+  assert.equal((await h.session('T2_'+table,null,roomCookie)).status,401);
+  assert.equal((await h.session('T2_'+table,null,account+'; '+roomCookie)).status,200);
+  assert.equal((await h.session('T2_OUTRA',{role:'master',useAccount:true},account)).status,401);
+  assert.equal((await h.account('logout-account',{},account)).status,200);
+  assert.equal((await h.account('current-account',{},account)).status,401);
+  assert.equal((await h.session('T2_'+table,null,account+'; '+roomCookie)).status,401);
+});
+test('jogador aceita convite adicional na mesma conta, mantém duas fichas e não acessa mesa alheia',async()=>{
+  const h=harness();await h.init();await setup(h);
+  const master=await h.account('lookup',{username:'narrador',password:PA});
+  const masterCookie=master.headers.get('set-cookie').split(';')[0];
+  const second=await (await h.account('create-master-table',{useSession:true,name:'Grupo B'},masterCookie)).json();
+  const physical='T2_'+second.tableCode;
+  const inviteA='a'.repeat(96),inviteB='b'.repeat(96);
+  const hash=value=>createHash('sha256').update(value).digest('hex');
+  h.room.data.set('sheet:temporada:CLARA1:owner-sha256',hash(inviteA));
+  h.room.data.set('sheet:temporada:CLARA2:owner-sha256',hash(inviteB));
+  const first=await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA1',key:inviteA});
+  const firstCookie=first.headers.get('set-cookie').split(';')[0];
+  assert.equal((await h.register('T2_VESTIGIOS',firstCookie,{username:'clara',password:PS})).status,200);
+  const login=await h.account('lookup',{username:'clara',password:PS});
+  const account=login.headers.get('set-cookie').split(';')[0];
+  const secondInvite=await h.session(physical,{role:'player',edition:'temporada',code:'CLARA2',key:inviteB});
+  const secondCookie=secondInvite.headers.get('set-cookie').split(';')[0];
+  assert.equal((await h.register(physical,secondCookie+'; '+masterCookie,{useSession:true})).status,403);
+  assert.equal((await h.register(physical,secondCookie+'; '+account,{useSession:true})).status,200);
+  const current=await (await h.account('current-account',{},account)).json();
+  assert.equal(current.tables.length,2);
+  assert.deepEqual(current.tables.map(t=>t.code),['CLARA1','CLARA2']);
+  const room1=await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA1',useAccount:true},account);
+  const room2=await h.session(physical,{role:'player',edition:'temporada',code:'CLARA2',useAccount:true},account);
+  assert.equal(room1.status,200);assert.equal(room2.status,200);
+  assert.equal((await h.session(physical,{role:'player',edition:'temporada',code:'CLARA1',useAccount:true},account)).status,401);
+  assert.equal((await h.session(physical,{role:'master',useAccount:true},account)).status,401);
+  assert.equal((await h.register(physical,room2.headers.get('set-cookie').split(';')[0]+'; '+account,{useSession:true})).status,403);
+  const reuse=await h.session(physical,{role:'player',edition:'temporada',code:'CLARA2',key:inviteB});
+  assert.equal((await h.register(physical,reuse.headers.get('set-cookie').split(';')[0],{username:'intruso',password:PS})).status,409);
+  h.room.data.set('sheet:temporada:CLARA2:owner-sha256',hash('c'.repeat(96)));
+  assert.equal((await h.session(physical,{role:'player',edition:'temporada',code:'CLARA2',useAccount:true},account)).status,401);
+  assert.equal((await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA1',useAccount:true},account)).status,200);
 });

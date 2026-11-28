@@ -205,7 +205,7 @@ export async function handleStorageRequest(request, ctx, env) {
   const edition = url.searchParams.get('edicao') === 'temporada' ? 'temporada' : 'classic';
   const bearer = /^Bearer (.+)$/.exec(request.headers.get('Authorization') || '')?.[1] || '';
   const masterSecret = String(env.MASTER_DATA_TOKEN || '');
-  const session = await currentSession(request, ctx);
+  const session = await currentSession(request, ctx, env);
   const master = session?.role === 'master' || (masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret));
 
   if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access'

@@ -211,6 +211,16 @@
   }
   async function restoreSession(role, requestedTable = tableFromURL()) {
     const physical = seasonScopedTable(requestedTable);
+    // Restore the room from the authenticated account, never from a client-chosen role.
+    try{
+      const account=await global.OLNative.getAccountSession();
+      const member=account.tables?.find(t=>seasonScopedTable(t.tableCode)===physical);
+      const expected=expectedPlayerCode();
+      if(account.role===role&&member&&(!expected||role==='master'||member.code===expected)){
+        await global.OLNative.signInAccount(physical,role,role==='player'?member.code:'');
+        return true;
+      }
+    }catch(error){if(error?.status&&error.status!==401&&error.status!==403)throw error;}
     if (role === 'master') {
       const secret = global.localStorage.getItem('ol_personal_master_key_v1');
       if (!/^OLM-[A-F0-9]{64}$/.test(secret || '')) return false;
