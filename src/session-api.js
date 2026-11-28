@@ -2,6 +2,8 @@
 // Each room persists sessions in its own Durable Object storage.
 // A credential is submitted to the server only; never commit it to Git.
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+// Invitation holders can reopen their sheets on this device without an account.
+const PLAYER_DEVICE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = 'ol_room_session';
 const encode = new TextEncoder();
 
@@ -34,10 +36,10 @@ function sessionToken(request) {
   // Accept the old cookie for sessions established before this update.
   return cookieToken(request, scopedCookieName(request)) || cookieToken(request, SESSION_COOKIE);
 }
-function sessionCookie(request, token, clear = false, legacy = false) {
+function sessionCookie(request, token, clear = false, legacy = false, ttl = SESSION_TTL_MS) {
   return (legacy ? SESSION_COOKIE : scopedCookieName(request)) + '=' + (clear ? '' : token) +
     '; Path=/; Secure; HttpOnly; SameSite=Lax' +
-    (clear ? '; Max-Age=0' : '; Max-Age=28800');
+    (clear ? '; Max-Age=0' : '; Max-Age='+Math.floor(ttl/1000));
 }
 function response(payload, status = 200, cookies = []) {
   const headers = new Headers({ 'Cache-Control': 'no-store' });
@@ -166,12 +168,17 @@ export async function handleSessionRequest(request, ctx, env) {
   } else {
     return response({ error: 'invalid_role' }, 400);
   }
+  // A valid invitation, or a verified legacy player explicitly saving this device,
+  // grants a persistent per-room session, never a master session or a reusable key.
+  const invited=role==='player'&&!useAccount&&typeof data.username!=='string';
+  const remembered=role==='player'&&(invited||(useAccount&&data.rememberPlayer===true));
+  const ttl=remembered?PLAYER_DEVICE_TTL_MS:SESSION_TTL_MS;
+  if(remembered){accountTokenHash='';accountExpiresAt=Date.now()+ttl;}
   const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte =>
     byte.toString(16).padStart(2, '0')).join('');
   await ctx.storage.put('session:' + await digest(token), {
     role, code, edition, credentialHash, accountTokenHash,
-    invited:role==='player'&&!useAccount&&typeof data.username!=='string',
-    expiresAt:Math.min(Date.now()+SESSION_TTL_MS,accountExpiresAt)
+    invited, expiresAt:Math.min(Date.now()+ttl,accountExpiresAt)
   });
-  return response({ ok: true, role, code }, 200, sessionCookie(request, token));
+  return response({ ok: true, role, code }, 200, sessionCookie(request, token,false,false,ttl));
 }

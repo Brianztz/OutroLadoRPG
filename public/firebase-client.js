@@ -78,10 +78,10 @@
       })
     });
   }
-  async function signInAccount(table, role, code, username, password) {
+  async function signInAccount(table, role, code, username, password, rememberPlayer = false) {
     return api(sessionUrl(table),{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(username?{role,edition:'temporada',code,username,password}:{role,edition:'temporada',code,useAccount:true})
+      body:JSON.stringify(username?{role,edition:'temporada',code,username,password}:{role,edition:'temporada',code,useAccount:true,...(rememberPlayer?{rememberPlayer:true}:{})})
     });
   }
   async function getAccountSession(){

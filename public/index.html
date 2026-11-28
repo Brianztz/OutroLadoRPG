@@ -92,10 +92,11 @@ footer strong{color:#b9bab5}
       <div class="panel-top"><div><span class="panel-kicker">Mestre e jogadores</span><h2 id="access-title">Entre na sua conta</h2></div></div>
       <div class="auth-tabs" role="tablist" aria-label="Acesso ao Outro Lado">
         <button id="tab-login" class="auth-tab" type="button" role="tab" aria-selected="true" aria-controls="login-view">ENTRAR</button>
-        <button id="tab-signup" class="auth-tab" type="button" role="tab" aria-selected="false" aria-controls="signup-view">CRIAR CONTA</button>
+        <button id="tab-signup" class="auth-tab" type="button" role="tab" aria-selected="false" aria-controls="signup-view">CRIAR CONTA DE MESTRE</button>
       </div>
       <div id="login-view" role="tabpanel" aria-labelledby="tab-login">
-      <p class="panel-hint">Use seu usuário e senha. Depois, escolha seu tipo de acesso.</p>
+      <button id="guest-player-menu" class="action" type="button">JOGAR SEM LOGIN / MINHAS MESAS</button>
+      <p class="panel-hint">Jogadores entram pelo convite, sem criar conta. O login abaixo é para mestres ou jogadores com uma conta antiga.</p>
       <form id="login-form">
         <label for="login-username">Usuário</label>
         <input id="login-username" type="text" maxlength="32" autocomplete="username" placeholder="Seu nome de usuário" required>
@@ -130,7 +131,7 @@ footer strong{color:#b9bab5}
       </details>
       </div>
       <div id="signup-view" role="tabpanel" aria-labelledby="tab-signup" hidden>
-        <p class="panel-hint">Crie uma conta como Mestre para ter sua própria mesa, ou escolha Jogador se já recebeu um convite.</p>
+        <p class="panel-hint">Crie uma conta de Mestre ou entre como Jogador sem login.</p>
         <div class="auth-tabs" role="group" aria-label="Tipo de conta">
           <button id="signup-as-master" class="auth-tab" type="button" aria-pressed="true">♜ MESTRE</button>
           <button id="signup-as-player" class="auth-tab" type="button" aria-pressed="false">♢ JOGADOR</button>
@@ -149,12 +150,12 @@ footer strong{color:#b9bab5}
           <p class="panel-hint" style="margin-top:10px">Sua mesa será criada automaticamente, sem links ou códigos para registrar o mestre.</p>
         </div>
         <div id="signup-player-view" hidden>
-        <p class="panel-hint">Para criar uma conta de Jogador, cole o convite enviado pelo mestre da campanha. Você também pode criar sua ficha antes, sem conta ou mesa.</p>
+        <p class="panel-hint">Para jogar, cole o convite enviado pelo mestre da campanha. Não precisa de usuário ou senha. Você também pode criar sua ficha antes, sem conta ou mesa.</p>
         <a class="action" href="./ficha-temporada.html?solo=1" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">ABRIR FICHA SEM MESA</a>
         <form id="signup-invite-form">
           <label for="signup-invite-link">Link de convite</label>
           <input id="signup-invite-link" type="text" autocomplete="off" spellcheck="false" placeholder="Cole aqui o link enviado pelo mestre" required>
-          <button id="signup-continue" class="action" type="submit">VALIDAR CONVITE E CRIAR CONTA</button>
+          <button id="signup-continue" class="action" type="submit">ENTRAR NA MESA</button>
         </form>
         <p class="status" id="signup-status" role="status" aria-live="polite"></p>
         </div>
@@ -194,35 +195,28 @@ footer strong{color:#b9bab5}
           <input id="player-join-link" autocomplete="off" spellcheck="false" placeholder="Cole o link enviado pelo mestre" required>
           <button class="action" type="submit">ENTRAR EM NOVA MESA</button>
         </form>
+        <button id="player-forget-table" class="subtle-link" type="button">Remover acesso desta mesa neste navegador</button>
         <a class="subtle-link" href="./ficha-temporada.html?solo=1">Abrir ficha avulsa</a>
+        <p class="panel-hint">Os acessos ficam neste navegador por até 90 dias. Guarde seus convites para usar em outro aparelho ou renovar o acesso.</p>
       </div>
       <p id="role-status" class="role-note" role="status" aria-live="polite"></p>
-      <button id="role-other-account" class="subtle-link" type="button">Trocar conta</button>
+      <button id="master-to-player" class="subtle-link" type="button">Ir para minhas mesas de jogador</button>
+      <button id="role-other-account" class="subtle-link" type="button">Voltar ao portal</button>
     </div>
     <div id="invite-section" class="invite-view" hidden>
       <div class="invite-icon" aria-hidden="true">◇</div>
       <span class="panel-kicker">Primeiro acesso</span>
       <h2>Sua ficha está pronta.</h2>
-      <p class="panel-hint">Convite validado. Use sua conta de jogador existente ou crie uma nova para entrar nesta mesa.</p>
-      <button id="invite-join-account" class="action" type="button" hidden>ACEITAR COM MINHA CONTA</button>
-      <button id="invite-other-account" class="subtle-link" type="button" hidden>Usar outra conta</button>
+      <p class="panel-hint">Entrando diretamente na sua ficha, sem cadastro.</p>
       <p id="invite-status" class="status" role="status" aria-live="polite">Autenticando convite...</p>
-      <form id="player-setup-form" hidden>
-        <label for="player-username">Seu usuário</label>
-        <input id="player-username" maxlength="32" autocomplete="username" required placeholder="Escolha seu usuário">
-        <label for="player-password">Sua senha (mínimo de 10 caracteres)</label>
-        <input id="player-password" type="password" minlength="10" autocomplete="new-password" required>
-        <label for="player-confirm">Confirmar senha</label>
-        <input id="player-confirm" type="password" minlength="10" autocomplete="new-password" required>
-        <button id="player-create-account" class="action" type="submit">ENTRAR / CRIAR CONTA</button>
-      </form>
+      <a class="subtle-link" href="./index.html?entrar=1">Voltar para minhas mesas</a>
       <button id="invite-retry" class="action" hidden type="button">Tentar novamente</button>
     </div>
   </section>
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=sessao-multimesas-20261128"></script>
+<script src="/firebase-client.js?v=jogador-sem-login-20261128"></script>
 <script>
 (function () {
   'use strict';
@@ -230,8 +224,26 @@ footer strong{color:#b9bab5}
   const invite = params.get('convite') === '1';
   const edition = 'temporada';
   const $ = id => document.getElementById(id);
-  let busy = false, pendingPlayer = null, inviteCredentials = null;
+  let busy = false, inviteCredentials = null;
   let activeAccount = null;
+  const PLAYER_TABLES_KEY='ol_player_device_tables_v1';
+  function deviceTables(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(PLAYER_TABLES_KEY)||'[]');
+      return Array.isArray(saved)?saved.filter(t=>typeof t?.tableCode==='string'&&/^[A-Z0-9_-]{1,40}$/.test(t.tableCode)&&typeof t.code==='string'&&/^[A-Z0-9_-]{1,40}$/.test(t.code)).slice(0,50):[];
+    }catch(_){return [];}
+  }
+  function rememberTable(table,code,name){
+    const list=deviceTables(),previous=list.find(t=>t.tableCode===table);
+    const entry={tableCode:table,code,name:String(name||previous?.name||'Mesa '+table).slice(0,100)};
+    // Only non-secret routing metadata is stored here. The server checks the HttpOnly cookie.
+    try{localStorage.setItem(PLAYER_TABLES_KEY,JSON.stringify([entry,...list.filter(t=>t.tableCode!==table)].slice(0,50)));}catch(_){}
+    return entry;
+  }
+  function showPlayerMenu(){
+    const tables=deviceTables();
+    chooseAccess({role:'player',tableCode:tables[0]?.tableCode||'',code:tables[0]?.code||'',tables},'',true);
+  }
 
   function show(id, message, error=false) {
     const node=$(id);
@@ -327,16 +339,19 @@ footer strong{color:#b9bab5}
     }
   });
 
-  function chooseAccess(account,username) {
+  function chooseAccess(account,username,device=false) {
     activeAccount={
-      role:account.role,table:normalize(account.tableCode),code:account.code||'',username,
+      role:account.role,table:account.tableCode?normalize(account.tableCode):'',code:account.code||'',username,device,
       tables:Array.isArray(account.tables)?account.tables:[{tableCode:account.tableCode,code:account.code,name:'Mesa principal'}]
     };
     $('login-section').hidden=true;
     $('invite-section').hidden=true;
     $('role-section').hidden=false;
     $('role-master').disabled=account.role!=='master';
-    $('role-player').disabled=account.role!=='player';
+    $('role-player').disabled=account.role!=='player'||!activeAccount.tables.length;
+    $('master-to-player').hidden=account.role!=='master';
+    $('player-forget-table').hidden=!device||!activeAccount.tables.length;
+    $('role-other-account').textContent=device?'Voltar ao portal':'Trocar conta';
     $('master-tables-panel').hidden=account.role!=='master';
     $('player-tables-panel').hidden=account.role!=='player';
     $('master-new-table-name').value='';
@@ -350,10 +365,10 @@ footer strong{color:#b9bab5}
     }
     const preferred=localStorage.getItem(account.role==='master'?'master_table_code':'player_table_code');
     select.value=activeAccount.tables.some(t=>normalize(t.tableCode)===preferred)?preferred:activeAccount.table;
-    $('role-description').textContent='Conta '+username+' autenticada. Selecione sua mesa.';
+    $('role-description').textContent=device?'Entre em uma mesa por convite ou abra uma ficha já autorizada neste navegador.':'Conta '+username+' autenticada. Selecione sua mesa.';
     $('role-status').textContent=account.role==='master'
       ?'Crie e alterne entre suas mesas sem digitar a senha novamente.'
-      :'Suas fichas são independentes em cada mesa. Aceite novos convites com a mesma conta.';
+      :device?(activeAccount.tables.length?'Escolha uma das suas mesas ou cole um novo convite.':'Nenhuma mesa neste navegador. Cole um convite para começar.'):'Selecione uma mesa antiga para salvar o acesso neste navegador.';
   }
   async function openSelected(role,selected){
     if(activeAccount?.role!==role||busy)return;
@@ -363,11 +378,34 @@ footer strong{color:#b9bab5}
     $('role-master').disabled=true;$('role-player').disabled=true;$('master-create-table').disabled=true;
     try{
       const code=role==='player'?table.code||activeAccount.code:'';
-      await OLNative.signInAccount(physicalRoom(selected),role,code);
+      if(role==='player'&&activeAccount.device){
+        const session=await OLNative.getSession(physicalRoom(selected));
+        if(session?.role!=='player'||session.code!==code)throw Error('player_invite_required');
+      }else if(role==='player'){
+        await OLNative.signInAccount(physicalRoom(selected),role,code,undefined,undefined,true);
+        rememberTable(selected,code,table.name);
+      }else await OLNative.signInAccount(physicalRoom(selected),role,code);
       destination(role,selected,code);
-    }catch(error){show('role-status',loginError(error),true);}
-    finally{busy=false;$('role-master').disabled=role!=='master';$('role-player').disabled=role!=='player';$('master-create-table').disabled=false;}
+    }catch(error){show('role-status',role==='player'&&(error?.status===401||error?.message==='player_invite_required')?'Este acesso expirou ou foi alterado pelo mestre. Abra novamente o convite original ou peça um novo.':loginError(error),true);}
+    finally{busy=false;$('role-master').disabled=role!=='master';$('role-player').disabled=role!=='player'||!activeAccount.tables.length;$('master-create-table').disabled=false;}
   }
+  $('guest-player-menu').addEventListener('click',()=>{if(!busy)showPlayerMenu();});
+  $('master-to-player').addEventListener('click',()=>{if(!busy)showPlayerMenu();});
+  $('player-forget-table').addEventListener('click',async()=>{
+    if(busy||!activeAccount?.device)return;
+    const selected=$('player-table-select').value;
+    const table=activeAccount.tables.find(t=>t.tableCode===selected);
+    if(!table||!window.confirm('Remover o acesso desta mesa deste navegador? Sua ficha não será excluída.'))return;
+    busy=true;
+    try{
+      // Never sign out a master session merely because the player list is stale.
+      let session=null;try{session=await OLNative.getSession(physicalRoom(selected));}catch(error){if(error?.status!==401)throw error;}
+      if(session?.role==='player'&&session.code===table.code)await OLNative.signOut(physicalRoom(selected));
+      localStorage.setItem(PLAYER_TABLES_KEY,JSON.stringify(deviceTables().filter(t=>t.tableCode!==selected)));
+      showPlayerMenu();
+    }catch(error){show('role-status',loginError(error),true);}
+    finally{busy=false;}
+  });
   $('role-master').addEventListener('click',()=>openSelected('master',$('master-table-select').value));
   $('role-player').addEventListener('click',()=>openSelected('player',$('player-table-select').value));
   $('master-create-table-form').addEventListener('submit',async event=>{
@@ -394,10 +432,13 @@ footer strong{color:#b9bab5}
     busy=true;
     const old=activeAccount;
     try{
-      await OLNative.logoutAccount();
-      // Remove any legacy invitation resume keys for this account on this tab.
-      for(const member of old.tables||[]){try{sessionStorage.removeItem('ol_player_resume_v1:'+physicalRoom(member.tableCode)+':'+member.code);}catch(_){}}
-      await OLNative.signOut(physicalRoom(old.table)).catch(()=>{});
+      if(!old.device){
+        await OLNative.logoutAccount();
+        // Master sign-out must not erase a player's independent invitation access.
+        if(old.role==='master'){
+          for(const member of old.tables||[]){try{const s=await OLNative.getSession(physicalRoom(member.tableCode));if(s?.role==='master')await OLNative.signOut(physicalRoom(member.tableCode));}catch(_){}}
+        }
+      }
       activeAccount=null;
       $('role-section').hidden=true;$('login-section').hidden=false;$('login-password').value='';
     }catch(error){show('role-status',loginError(error),true);}
@@ -409,10 +450,19 @@ footer strong{color:#b9bab5}
     const table=normalize(account.tableCode),code=account.code||'';
     if(!['master','player'].includes(account.role))throw Error('Conta não possui acesso autorizado.');
     // A revoked primary player invitation must not prevent opening other memberships.
-    try{await OLNative.signInAccount(physicalRoom(table),account.role,code);}
-    catch(error){if(account.role!=='player')throw error;}
+    if(account.role==='master')await OLNative.signInAccount(physicalRoom(table),account.role,code);
+    else{
+      // Optional one-time migration of pre-existing player accounts. The room
+      // validates ownership; revoked invitations are not silently reactivated.
+      for(const member of account.tables||[{tableCode:table,code}]){
+        try{
+          await OLNative.signInAccount(physicalRoom(member.tableCode),'player',member.code,undefined,undefined,true);
+          rememberTable(normalize(member.tableCode),member.code,member.name);
+        }catch(_){}
+      }
+    }
     localStorage.setItem('ol_last_username',username);
-    chooseAccess(account,username);
+    if(account.role==='player')showPlayerMenu();else chooseAccess(account,username);
     $('login-password').value='';
   }
   $('login-form').addEventListener('submit',async event=>{
@@ -490,58 +540,14 @@ footer strong{color:#b9bab5}
       if(!table||!normalizedCode||!key)throw Error('Convite incompleto. Peça um novo link ao mestre.');
       const physical=physicalRoom(normalizedTable);
       await OLNative.signInPlayer(physical,edition,normalizedCode,key);
-      pendingPlayer={table:normalizedTable,code:normalizedCode,physical};
-      let signed=null;
-      try{signed=await OLNative.getAccountSession();}catch(_){}
-      $('login-section').hidden=true;$('role-section').hidden=true;
-      $('invite-section').hidden=false;
-      const existing=signed?.role==='player';
-      $('invite-join-account').hidden=!existing;
-      $('invite-other-account').hidden=!existing;
-      $('player-setup-form').hidden=existing;
-      $('invite-retry').hidden=true;
-      show('invite-status',existing?'Aceite o convite com a conta '+signed.username+' ou escolha outra conta.':'Convite confirmado. Use seu login de jogador ou crie uma conta.');
+      rememberTable(normalizedTable,normalizedCode);
+      // A valid invitation is sufficient. No signup or password screen.
+      destination('player',normalizedTable,normalizedCode);
     }catch(error){
       show(statusNode,invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error),true);
       if(invite)$('invite-retry').hidden=false;
     }finally{busy=false;$('invite-retry').disabled=false;}
   }
-  $('invite-other-account').addEventListener('click',()=>{
-    if(busy)return;
-    $('invite-join-account').hidden=true;$('invite-other-account').hidden=true;$('player-setup-form').hidden=false;
-  });
-  $('invite-join-account').addEventListener('click',async()=>{
-    if(busy||!pendingPlayer)return;
-    busy=true;$('invite-join-account').disabled=true;
-    try{
-      await OLNative.joinPlayerAccount(pendingPlayer.physical);
-      const account=await OLNative.getAccountSession();
-      chooseAccess(account,account.username);
-      $('player-table-select').value=pendingPlayer.table;
-      pendingPlayer=null;
-    }catch(error){show('invite-status',loginError(error),true);}
-    finally{busy=false;$('invite-join-account').disabled=false;}
-  });
-  $('player-setup-form').addEventListener('submit',async event=>{
-    event.preventDefault();
-    if(busy||!pendingPlayer)return;
-    busy=true;$('player-create-account').disabled=true;
-    try{
-      const username=credentials($('player-username').value,$('player-password').value,$('player-confirm').value);
-      show('invite-status','Salvando seu login...');
-      await OLNative.registerPlayerAccount(pendingPlayer.physical,username,$('player-password').value);
-      // Sign in with the new account and display the protected role chooser.
-      // Creating an invited player never grants the master role.
-      await accountLogin(username,$('player-password').value);
-      $('player-table-select').value=pendingPlayer.table;
-      pendingPlayer=null;
-      $('invite-section').hidden=true;
-      $('player-password').value='';
-      $('player-confirm').value='';
-    }catch(error){
-      show('invite-status',error?.message==='username_taken'?'Esse usuário já está em uso. Escolha outro.':loginError(error),true);
-    }finally{busy=false;$('player-create-account').disabled=false;}
-  });
   if(invite) {
     $('login-section').hidden=true;
     $('invite-section').hidden=false;
@@ -561,10 +567,16 @@ footer strong{color:#b9bab5}
     $('login-username').value=localStorage.getItem('ol_last_username')||'';
     $('change-current-user').value=$('login-username').value;
     if(params.get('aviso'))show('login-status',params.get('aviso'),true);
-    if(params.get('entrar')==='1'){showAccessTab('signup');chooseSignupType('player');$('signup-invite-link').focus();}
-    if(!params.get('aviso')&&typeof OLNative.getAccountSession==='function'){
+    if(params.get('entrar')==='1'||params.get('jogador')==='1'){showPlayerMenu();$('player-join-link').focus();}
+    if(!activeAccount&&!params.get('aviso')&&typeof OLNative.getAccountSession==='function'){
       void OLNative.getAccountSession().then(account=>{
-        if(!busy&&!activeAccount&&account?.role){chooseAccess(account,account.username);if(params.get('entrar')==='1'&&account.role==='player')$('player-join-link').focus();}
+        if(!busy&&!activeAccount&&account?.role){
+          if(account.role==='master')chooseAccess(account,account.username);
+          else {
+            // Existing player sessions can migrate on selection without a new login.
+            chooseAccess(account,account.username);
+          }
+        }
       }).catch(()=>{});
     }
   }
