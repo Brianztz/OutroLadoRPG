@@ -276,7 +276,7 @@ footer strong{color:#b9bab5}
     if(error?.message==='invalid_table_name')return 'Informe um nome de mesa de 1 a 80 caracteres.';
     if(error?.message==='table_limit')return 'Sua conta atingiu o limite de 50 mesas.';
     if(error?.message==='account_session_required')return 'Sua sessão expirou. Entre novamente na conta.';
-    if(error?.message==='table_already_joined')return 'Sua conta já possui uma ficha nesta mesa. Use a ficha existente ou solicite recuperação ao mestre.';
+    if(error?.message==='table_already_joined')return 'Sua conta já possui uma ficha nesta mesa. Use a ficha existente ou peça um novo convite ao mestre.';
     if(error?.message==='invite_already_used')return 'Este convite já foi utilizado. Peça outro ao mestre.';
     if(error?.message==='player_required')return 'Entre com uma conta de jogador para aceitar este convite.';
     if(error?.message==='master_required')return 'Somente o mestre pode alterar esta conta.';
@@ -395,6 +395,8 @@ footer strong{color:#b9bab5}
     const old=activeAccount;
     try{
       await OLNative.logoutAccount();
+      // Remove any legacy invitation resume keys for this account on this tab.
+      for(const member of old.tables||[]){try{sessionStorage.removeItem('ol_player_resume_v1:'+physicalRoom(member.tableCode)+':'+member.code);}catch(_){}}
       await OLNative.signOut(physicalRoom(old.table)).catch(()=>{});
       activeAccount=null;
       $('role-section').hidden=true;$('login-section').hidden=false;$('login-password').value='';

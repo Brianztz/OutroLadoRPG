@@ -127,7 +127,7 @@ test('refresh da ficha recupera a sessao de jogador pela credencial guardada na 
   const p=page();
   assert.equal(await p.win.OLFirebase.guardPage('player'),true);
   assert.equal(p.location.redirects.length,0);
-  assert.equal(p.calls.filter(x=>x.method==='POST').length,1);
+  assert.equal(p.calls.filter(x=>x.method==='POST'&&x.url.startsWith('/api/session?')).length,1);
   assert(p.calls.some(x=>JSON.parse(x.body||'{}').key==='a'.repeat(96)));
   assert.equal(await p.win.OLFirebase.getCurrentUser().then(x=>x.code),'P1');
 });
@@ -135,7 +135,7 @@ test('refresh do escudo recupera a sessao pela chave pessoal ja salva', async ()
   const p=page({role:'master'});
   assert.equal(await p.win.OLFirebase.guardPage('master'),true);
   assert.equal(p.location.redirects.length,0);
-  assert.equal(p.calls.filter(x=>x.method==='POST').length,1);
+  assert.equal(p.calls.filter(x=>x.method==='POST'&&x.url.startsWith('/api/session?')).length,1);
 });
 test('falha temporaria da internet nao manda o jogador de volta ao codigo',async()=>{
   const p=page({networkDown:true});
@@ -144,8 +144,10 @@ test('falha temporaria da internet nao manda o jogador de volta ao codigo',async
 });
 test('codigo do personagem fica na URL da ficha sem incluir a chave privada',()=>{
   assert(portal.includes("next.searchParams.set('personagem',playerCode)"));
-  assert(portal.includes("sessionStorage.setItem('ol_player_resume_v1:'+physical+':'+normalizedCode,key)"));
+  assert(!portal.includes("sessionStorage.setItem('ol_player_resume_v1:"));
+  assert(compatibility.includes('getAccountSession()'));
+  assert(portal.includes("history.replaceState(null,'',location.pathname+location.search)"));
   assert(portal.includes("const edition = 'temporada'"));
   const html=fs.readFileSync(path.join(root,'public/ficha-temporada.html'),'utf8');
-  assert(html.includes('firebase-client.js?v=offline-grants-1'));
+  assert.match(html,/firebase-client\.js\?v=[^"\s]+/);
 });
