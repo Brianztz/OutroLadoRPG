@@ -209,8 +209,23 @@ export async function handleStorageRequest(request, ctx, env) {
   const master = session?.role === 'master' || (masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret));
 
   if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access'
-    && kind !== 'player-list' && kind !== 'account-register' && kind !== 'grant')
+    && kind !== 'player-list' && kind !== 'account-register' && kind !== 'grant' && kind !== 'table-invite')
     return json({ error: 'invalid_kind' }, 400);
+  if(kind==='table-invite'){
+    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
+    if(!master)return json({error:'master_credential_required'},403);
+    if(edition!=='temporada')return json({error:'invalid_edition'},400);
+    const rotate=url.searchParams.get('rotate')==='1';
+    const record=await ctx.storage.transaction(async storage=>{
+      const prior=await storage.get('invite:shared:v1');
+      if(prior&&!rotate)return prior;
+      const key=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+      const next={key,total:prior?.total||0,window:prior?.window||0,count:prior?.count||0};
+      await storage.put('invite:shared:v1',next);
+      return next;
+    });
+    return json({ok:true,invite:record.key});
+  }
   if (kind === 'account-register') {
     // A one-time invitation lets a player bind a username and password to the
     // EXISTING character. No new character is created or moved between tables.

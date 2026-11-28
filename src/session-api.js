@@ -6,6 +6,10 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 const PLAYER_DEVICE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = 'ol_room_session';
 const encode = new TextEncoder();
+const SHARED_INVITE_KEY = 'invite:shared:v1';
+const SHARED_JOIN_LIMIT = 200;
+const SHARED_HOURLY_LIMIT = 30;
+function randomHex(size){return Array.from(crypto.getRandomValues(new Uint8Array(size)),b=>b.toString(16).padStart(2,'0')).join('');}
 
 function fixedEqual(left, right) {
   const a = String(left || ''), b = String(right || '');
@@ -108,6 +112,45 @@ export async function handleSessionRequest(request, ctx, env) {
   if (raw.length > 2048) return response({ error: 'request_too_large' }, 413);
   let data;
   try { data = JSON.parse(raw); } catch { return response({ error: 'invalid_json' }, 400); }
+
+  // The shared link can provision a fresh identity, but cannot select an existing code.
+  if(data?.action==='join-table'){
+    const invite=String(data.invite||'');
+    if(!/^[a-f0-9]{64}$/.test(invite))return response({error:'invalid_invite'},403);
+    const existing=await currentSession(request,ctx,env);
+    if(existing?.role==='master')return response({error:'master_session_active'},409);
+    if(existing?.role==='player'&&existing.edition==='temporada'){
+      // A room session is itself proof of access; reopening does not create duplicates.
+      const stored=await ctx.storage.get(SHARED_INVITE_KEY);
+      if(!stored||!fixedEqual(stored.key,invite))return response({error:'invalid_invite'},403);
+      return response({ok:true,role:'player',code:existing.code,reused:true});
+    }
+    // A previously remembered browser must recover its own character, not silently replace it.
+    if(data.previouslyJoined===true)return response({error:'existing_access_required'},409);
+    const code='J'+randomHex(16).toUpperCase();
+    const credentialHash=await digest(randomHex(48));
+    const token=randomHex(32), tokenHash=await digest(token);
+    const now=Date.now();
+    const result=await ctx.storage.transaction(async storage=>{
+      const state=await storage.get(SHARED_INVITE_KEY);
+      if(!state||!fixedEqual(state.key,invite))return {error:'invalid_invite',status:403};
+      const total=Number(state.total)||0;
+      const window=state.window>now-3600000?state.window:now;
+      const count=window===state.window?(Number(state.count)||0):0;
+      if(total>=SHARED_JOIN_LIMIT||count>=SHARED_HOURLY_LIMIT)return {error:'invite_limit',status:429};
+      const root='sheet:temporada:'+code;
+      if(await storage.get(root+':owner-sha256')||await storage.get(root+':manifest'))return {error:'try_again',status:409};
+      await storage.put(root+':owner-sha256',credentialHash);
+      await storage.put('session:'+tokenHash,{
+        role:'player',code,edition:'temporada',credentialHash,accountTokenHash:'',
+        invited:false,expiresAt:now+PLAYER_DEVICE_TTL_MS
+      });
+      await storage.put(SHARED_INVITE_KEY,{...state,total:total+1,window,count:count+1});
+      return {ok:true};
+    });
+    if(!result.ok)return response({error:result.error},result.status);
+    return response({ok:true,role:'player',code,reused:false},200,sessionCookie(request,token,false,false,PLAYER_DEVICE_TTL_MS));
+  }
 
   const role = data && data.role;
   let edition = data && data.edition === 'temporada' ? 'temporada' : 'classic';

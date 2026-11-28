@@ -54,6 +54,14 @@ function harness(role='master',initialSession=false,initialStorage={},query='',f
     async getAccountSession(){if(!signed)throw Error('account_session_required');return {...accounts[role],username};},
     async logoutAccount(){calls.push(['logoutAccount']);signed=false;},
     async joinPlayerAccount(table){calls.push(['joinPlayerAccount',table]);accounts.player.tables.push({tableCode:'MNOVA',code:'JOGADOR03',name:'Nova'});},
+    async joinTableInvite(table,key,previouslyJoined){
+      calls.push(['joinTableInvite',table,key,previouslyJoined]);
+      if(key==='INVALID')throw Object.assign(Error('invalid_invite'),{status:403});
+      if(rooms.has(table))return rooms.get(table);
+      if(previouslyJoined)throw Error('existing_access_required');
+      const result={ok:true,role:'player',code:'JNOVO'+(rooms.size+1)};
+      rooms.set(table,result);return result;
+    },
     async signInPlayer(table,edition,code,key) {
       calls.push(['signInPlayer',table,edition,code,key]);
       if(key==='INVALID')throw Object.assign(Error('invalid_credentials'),{status:401});
@@ -281,4 +289,27 @@ test('remover acesso local não apaga ficha nem encerra outras mesas',async()=>{
   assert.deepEqual(JSON.parse(h.storage.get('ol_player_device_tables_v1')).map(t=>t.tableCode),['MOUTRA']);
   assert(h.rooms.has('T2_MOUTRA'));
   assert(!h.rooms.has('T2_MTEST123'));
+});
+
+test('link compartilhado sem código abre personagem novo e lembra a mesa',async()=>{
+ const h=harness('player',false,{},'?convite=1&mesa=MTEST123&tipo=mesa','#chave=CHAVESEGURA');
+ await settle();
+ assert.equal(new URL(h.location.navigations[0]).searchParams.get('personagem'),'JNOVO1');
+ assert.deepEqual(h.calls.find(c=>c[0]==='joinTableInvite'),['joinTableInvite','T2_MTEST123','CHAVESEGURA',false]);
+ assert(!h.calls.some(c=>c[0]==='signInPlayer'||c[0]==='lookup'));
+ const saved=JSON.parse(h.storage.get('ol_player_device_tables_v1'));
+ assert.equal(saved[0].code,'JNOVO1');
+ assert(!JSON.stringify([...h.storage]).includes('CHAVESEGURA'));
+});
+test('reabrir link comum com ficha lembrada usa o mesmo personagem, não cria outro',async()=>{
+ const h=harness('player',false,{'ol_player_device_tables_v1':JSON.stringify([{tableCode:'MTEST123',code:'P1'}])},'?jogador=1');
+ h.rooms.set('T2_MTEST123',{ok:true,role:'player',code:'P1'});
+ h.el('player-join-link').value='https://outroladorpg.example/?convite=1&mesa=MTEST123&tipo=mesa#chave=CHAVE';
+ await submit(h,'player-join-form');await settle();
+ assert.equal(new URL(h.location.navigations[0]).searchParams.get('personagem'),'P1');
+ assert.deepEqual(h.calls.find(c=>c[0]==='joinTableInvite'),['joinTableInvite','T2_MTEST123','CHAVE',true]);
+ h.rooms.clear();
+ await (async()=>{h.el('player-join-link').value='https://outroladorpg.example/?convite=1&mesa=MTEST123&tipo=mesa#chave=CHAVE';await submit(h,'player-join-form');await settle();})();
+ assert.equal(h.location.navigations.length,1);
+ assert.match(h.el('role-status').textContent,/já tinha uma ficha/);
 });
