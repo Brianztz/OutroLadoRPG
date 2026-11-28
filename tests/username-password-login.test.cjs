@@ -153,12 +153,13 @@ test('limite de tentativas e usuário reservado evitam força bruta e colisão',
 test('portal usa só usuário e senha; convites novos ativam jogador',()=>{
   const html=read('public/index.html');
   for(const id of ['login-username','login-password','login-form',
-    'change-master-form','player-setup-form','player-username','player-password'])
+    'change-master-form','guest-player-menu','player-join-form'])
     assert(html.includes('id="'+id+'"'),id);
   assert(!html.includes('id="master-key"'));
   assert(!html.includes('id="room-label"'));
   assert(html.includes('OLNative.lookupAccount(username,password)'));
-  assert(html.includes('OLNative.registerPlayerAccount(pendingPlayer.physical,username'));
+  assert(!html.includes('id="player-setup-form"'));
+  assert(html.includes("destination('player',normalizedTable,normalizedCode)"));
   assert(html.includes('enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key'));
   assert(html.includes("history.replaceState(null,'',location.pathname+location.search)"));
   assert(!html.includes('localStorage.setItem(KEY_STORAGE'));
@@ -237,4 +238,35 @@ test('jogador aceita convite adicional na mesma conta, mantém duas fichas e nã
   h.room.data.set('sheet:temporada:CLARA2:owner-sha256',hash('c'.repeat(96)));
   assert.equal((await h.session(physical,{role:'player',edition:'temporada',code:'CLARA2',useAccount:true},account)).status,401);
   assert.equal((await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA1',useAccount:true},account)).status,200);
+});
+
+test('convite concede sessão de jogador durável por mesa sem conta, revogável pelo mestre',async()=>{
+  const h=harness();await h.init();await setup(h);
+  const key='a'.repeat(96),hash=createHash('sha256').update(key).digest('hex');
+  h.room.data.set('sheet:temporada:CLARA:owner-sha256',hash);
+  const res=await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA',key});
+  assert.equal(res.status,200);
+  assert.match(res.headers.get('set-cookie'),/Secure; HttpOnly; SameSite=Lax; Max-Age=7776000/);
+  const cookie=res.headers.get('set-cookie').split(';')[0];
+  assert.equal((await h.session('T2_VESTIGIOS',null,cookie)).status,200);
+  assert.equal((await h.session('T2_OUTRA',null,cookie)).status,401);
+  assert.equal((await h.session('T2_VESTIGIOS',{role:'master',key})).status,401);
+  h.room.data.set('sheet:temporada:CLARA:owner-sha256','b'.repeat(64));
+  assert.equal((await h.session('T2_VESTIGIOS',null,cookie)).status,401);
+  assert.equal((await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA',key})).status,401);
+});
+test('conta antiga pode autorizar dispositivo sem depender de sessão de conta posterior',async()=>{
+  const h=harness();await h.init();await setup(h);
+  const key='a'.repeat(96);
+  h.room.data.set('sheet:temporada:CLARA:owner-sha256',createHash('sha256').update(key).digest('hex'));
+  const invited=await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA',key});
+  assert.equal((await h.register('T2_VESTIGIOS',invited.headers.get('set-cookie').split(';')[0],{username:'clara',password:PS})).status,200);
+  const login=await h.account('lookup',{username:'clara',password:PS});
+  const account=login.headers.get('set-cookie').split(';')[0];
+  const remembered=await h.session('T2_VESTIGIOS',{role:'player',edition:'temporada',code:'CLARA',useAccount:true,rememberPlayer:true},account);
+  assert.equal(remembered.status,200);
+  const room=remembered.headers.get('set-cookie').split(';')[0];
+  assert.equal((await h.account('logout-account',{},account)).status,200);
+  assert.equal((await h.session('T2_VESTIGIOS',null,room)).status,200);
+  assert.equal((await h.register('T2_VESTIGIOS',room,{username:'intruso',password:PS})).status,403);
 });

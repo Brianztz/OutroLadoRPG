@@ -567,7 +567,10 @@ footer strong{color:#b9bab5}
     $('login-username').value=localStorage.getItem('ol_last_username')||'';
     $('change-current-user').value=$('login-username').value;
     if(params.get('aviso'))show('login-status',params.get('aviso'),true);
-    if(params.get('entrar')==='1'||params.get('jogador')==='1'){showPlayerMenu();$('player-join-link').focus();}
+    if(params.get('entrar')==='1'||params.get('jogador')==='1'){
+      showPlayerMenu();$('player-join-link').focus();
+      if(params.get('aviso'))show('role-status',params.get('aviso'),true);
+    }
     if(!activeAccount&&!params.get('aviso')&&typeof OLNative.getAccountSession==='function'){
       void OLNative.getAccountSession().then(account=>{
         if(!busy&&!activeAccount&&account?.role){
@@ -577,7 +580,7 @@ footer strong{color:#b9bab5}
             chooseAccess(account,account.username);
           }
         }
-      }).catch(()=>{});
+      }).catch(()=>{if(!busy&&!activeAccount&&deviceTables().length)showPlayerMenu();});
     }
   }
 })();
