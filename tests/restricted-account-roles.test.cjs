@@ -8,14 +8,15 @@ const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map(match=>match[1]).filter(s=>s.trim()).at(-1);
 assert(script);
 const eventsOf = element => element.events;
-function harness(role='master',initialSession=false) {
+function harness(role='master',initialSession=false,initialStorage={},query='',fragment='') {
   const elements = new Map();
-  const storage = new Map();
+  const storage = new Map(Object.entries(initialStorage));
+  const rooms = new Map();
   const calls = [];
   const location = {
-    href:'https://outroladorpg.example/index.html',
+    href:'https://outroladorpg.example/index.html'+query+fragment,
     origin:'https://outroladorpg.example',
-    search:'',hash:'',pathname:'/index.html',
+    search:query,hash:fragment,pathname:'/index.html',
     navigations:[],
     assign(url){this.navigations.push(url);}
   };
@@ -41,9 +42,11 @@ function harness(role='master',initialSession=false) {
       calls.push(['lookup',username,password]);signed=true;
       return accounts[role];
     },
-    async signInAccount(table,selectedRole,code,username,password) {
-      calls.push(['signInAccount',table,selectedRole,code,username,password]);
+    async signInAccount(table,selectedRole,code,username,password,rememberPlayer) {
+      calls.push(['signInAccount',table,selectedRole,code,username,password,rememberPlayer]);
+      rooms.set(table,{ok:true,role:selectedRole,code});
     },
+    async getSession(table){calls.push(['getSession',table]);if(!rooms.has(table))throw Object.assign(Error('expired'),{status:401});return rooms.get(table);},
     async createMasterTable(username,password,name) {
       calls.push(['createMasterTable',username,password,name]);
       return {ok:true,tableCode:'MNOVA',name};
@@ -53,6 +56,8 @@ function harness(role='master',initialSession=false) {
     async joinPlayerAccount(table){calls.push(['joinPlayerAccount',table]);accounts.player.tables.push({tableCode:'MNOVA',code:'JOGADOR03',name:'Nova'});},
     async signInPlayer(table,edition,code,key) {
       calls.push(['signInPlayer',table,edition,code,key]);
+      if(key==='INVALID')throw Object.assign(Error('invalid_credentials'),{status:401});
+      rooms.set(table,{ok:true,role:'player',code});
     },
     async registerPlayerAccount(table,username,password) {
       calls.push(['registerPlayerAccount',table,username,password]);
@@ -61,11 +66,11 @@ function harness(role='master',initialSession=false) {
       calls.push(['registerMasterAccount',username,password]);
       return {ok:true,role:'master',tableCode:'MTEST123'};
     },
-    async signOut(table){calls.push(['signOut',table]);},
+    async signOut(table){calls.push(['signOut',table]);rooms.delete(table);},
     async changeMasterCredentials(){calls.push(['changeMasterCredentials']);}
   };
   const ctx={
-    location,URL,URLSearchParams,console,history:{replaceState(){}},
+    location,URL,URLSearchParams,console,window:{confirm:()=>true},history:{replaceState(){}},
     localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},
     sessionStorage:{setItem:(key,value)=>storage.set(key,value)},
     document:{getElementById:el,createElement:()=>({value:'',textContent:''})},
@@ -76,7 +81,7 @@ function harness(role='master',initialSession=false) {
     OLNative:client
   };
   vm.runInNewContext(script,ctx,{filename:'portal.js'});
-  return {elements,el,location,calls,ctx,client};
+  return {elements,el,location,calls,ctx,client,rooms,storage};
 }
 async function submit(h,id) {
   const event = {preventDefault(){}};
@@ -93,10 +98,12 @@ test('portal apresenta Criar Conta como Mestre sem convite e Jogador por convite
     'signup-invite-form','signup-invite-link','signup-master-form',
     'signup-master-username','signup-master-password','signup-master-confirm',
     'signup-as-master','signup-as-player','role-section','role-master',
-    'role-player','role-other-account','player-setup-form'])
+    'role-player','role-other-account','guest-player-menu','player-join-form'])
     assert(html.includes('id="'+id+'"'),id);
   assert(html.includes('Qualquer pessoa pode criar uma conta de Mestre'));
-  assert(html.includes('Para criar uma conta de Jogador, cole o convite'));
+  assert(html.includes('Para jogar, cole o convite'));
+  assert(!html.includes('id="player-setup-form"'));
+  assert(!html.includes('id="player-password"'));
   assert(!html.includes('role="master"') && !html.includes('value="master"'));
   assert(!html.includes('id="player-skip-account"'));
   assert.doesNotThrow(()=>new vm.Script(script));
@@ -174,27 +181,20 @@ test('criar conta exige convite de mesma origem e nunca aceita link de terceiros
   await submit(h,'signup-invite-form');
   await settle();
   assert(h.calls.some(c=>c[0]==='signInPlayer'&&c[3]==='JOGADOR01'&&c[4]==='CHAVESEGURA'));
-  assert.equal(h.el('invite-section').hidden,false);
-  assert.equal(h.el('login-section').hidden,true);
-  assert.equal(h.el('player-setup-form').hidden,false);
+  assert.equal(new URL(h.location.navigations.at(-1)).pathname,'/ficha-temporada.html');
+  assert.equal(new URL(h.location.navigations.at(-1)).searchParams.get('personagem'),'JOGADOR01');
+  assert(!h.calls.some(c=>c[0]==='lookup'||c[0]==='registerPlayerAccount'));
   assert.equal(h.el('signup-invite-link').value,'','o link com chave não deve ficar no campo');
 });
-test('após cadastrar jogador convidado, mostra escolha restrita antes da ficha',async()=>{
-  const h=harness('player');
-  h.el('signup-invite-link').value='https://outroladorpg.example/?convite=1&mesa=MTEST123#codigo=JOGADOR01&chave=CHAVESEGURA';
-  await submit(h,'signup-invite-form');
+test('convite direto abre ficha sem cadastro, senha ou conta',async()=>{
+  const h=harness('player',false,{},'?convite=1&mesa=MTEST123','#codigo=JOGADOR01&chave=CHAVESEGURA');
   await settle();
-  h.el('player-username').value='clara';
-  h.el('player-password').value='senha-da-clara-123';
-  h.el('player-confirm').value='senha-da-clara-123';
-  await submit(h,'player-setup-form');
-  assert(h.calls.some(c=>c[0]==='registerPlayerAccount'&&c[2]==='clara'));
-  assert.equal(h.location.navigations.length,0,'cadastro não pula escolha de papel');
-  assert.equal(h.el('invite-section').hidden,true);
-  assert.equal(h.el('role-section').hidden,false);
-  assert.equal(h.el('role-master').disabled,true);
-  await h.el('role-player').events.click();
   assert.equal(new URL(h.location.navigations[0]).pathname,'/ficha-temporada.html');
+  assert.equal(new URL(h.location.navigations[0]).searchParams.get('personagem'),'JOGADOR01');
+  assert(!h.calls.some(c=>c[0]==='lookup'||c[0]==='registerPlayerAccount'||c[0]==='joinPlayerAccount'));
+  const saved=JSON.parse(h.storage.get('ol_player_device_tables_v1'));
+  assert.equal(saved[0].tableCode,'MTEST123');
+  assert(!JSON.stringify([...h.storage]).includes('CHAVESEGURA'));
 });
 test('trocar conta encerra sessão antes de aceitar outro usuário',async()=>{
   const h=harness('master');
@@ -234,19 +234,51 @@ test('mestre cria mesa no portal e jogador não tem acesso à criação',async()
   assert(!p.calls.some(c=>c[0]==='createMasterTable'));
 });
 
-test('jogador conectado lista todas as mesas, abre outra ficha e aceita novo convite sem senha',async()=>{
-  const h=harness('player',true);await settle();
+test('jogador sem conta aceita várias mesas e reabre fichas diferentes sem senha',async()=>{
+  const h=harness('player');await settle();
+  h.el('guest-player-menu').events.click();
   assert.equal(h.el('player-tables-panel').hidden,false);
-  h.el('player-table-select').value='MOUTRA';
+  assert.equal(h.el('role-master').disabled,true);
+  for(const [table,code] of [['MTEST123','JOGADOR01'],['MOUTRA','JOGADOR02']]){
+    h.el('player-join-link').value='https://outroladorpg.example/?convite=1&mesa='+table+'#codigo='+code+'&chave=CHAVE';
+    await submit(h,'player-join-form');await settle();
+    assert.equal(new URL(h.location.navigations.at(-1)).searchParams.get('personagem'),code);
+  }
+  const stored=JSON.parse(h.storage.get('ol_player_device_tables_v1'));
+  assert.equal(stored.length,2);
+  assert(!JSON.stringify(stored).includes('CHAVE'));
+  const next=harness('player',false,Object.fromEntries(h.storage),'?jogador=1');
+  for(const [room,session] of h.rooms)next.rooms.set(room,session);
+  await settle();
+  next.el('player-table-select').value='MTEST123';
+  await next.el('role-player').events.click();
+  assert.equal(new URL(next.location.navigations.at(-1)).searchParams.get('personagem'),'JOGADOR01');
+  next.el('player-table-select').value='MOUTRA';
+  await next.el('role-player').events.click();
+  assert.equal(new URL(next.location.navigations.at(-1)).searchParams.get('personagem'),'JOGADOR02');
+  assert(!next.calls.some(c=>['lookup','signInAccount','registerPlayerAccount'].includes(c[0])));
+  next.rooms.delete('T2_MOUTRA');
+  const before=next.location.navigations.length;
+  await next.el('role-player').events.click();
+  assert.equal(next.location.navigations.length,before);
+  assert.match(next.el('role-status').textContent,/expirou/);
+});
+test('convite inválido e lista local manipulada não concedem acesso',async()=>{
+  const h=harness('player',false,{'ol_player_device_tables_v1':JSON.stringify([{tableCode:'MOUTRA',code:'FALSO'}])},'?jogador=1');
+  await settle();
   await h.el('role-player').events.click();
-  assert.equal(new URL(h.location.navigations.at(-1)).searchParams.get('personagem'),'JOGADOR02');
-  assert(h.calls.some(c=>c[0]==='signInAccount'&&c[1]==='T2_MOUTRA'&&c[3]==='JOGADOR02'&&c[4]===undefined));
-  h.el('player-join-link').value='https://outroladorpg.example/?convite=1&mesa=MNOVA#codigo=JOGADOR03&chave=CHAVE';
+  assert.equal(h.location.navigations.length,0);
+  h.el('player-join-link').value='https://outroladorpg.example/?convite=1&mesa=MOUTRA#codigo=FALSO&chave=INVALID';
   await submit(h,'player-join-form');await settle();
-  assert.equal(h.el('invite-join-account').hidden,false);
-  assert.equal(h.el('player-setup-form').hidden,true);
-  await h.el('invite-join-account').events.click();
-  assert(h.calls.some(c=>c[0]==='joinPlayerAccount'&&c[1]==='T2_MNOVA'));
-  assert.equal(h.el('player-table-select').value,'MNOVA');
-  assert.equal(h.el('role-section').hidden,false);
+  assert.equal(h.location.navigations.length,0);
+});
+test('remover acesso local não apaga ficha nem encerra outras mesas',async()=>{
+  const h=harness('player',false,{'ol_player_device_tables_v1':JSON.stringify([{tableCode:'MTEST123',code:'P1'},{tableCode:'MOUTRA',code:'P2'}])},'?jogador=1');
+  h.rooms.set('T2_MTEST123',{ok:true,role:'player',code:'P1'});h.rooms.set('T2_MOUTRA',{ok:true,role:'player',code:'P2'});
+  await settle();
+  h.el('player-table-select').value='MTEST123';
+  await h.el('player-forget-table').events.click();
+  assert.deepEqual(JSON.parse(h.storage.get('ol_player_device_tables_v1')).map(t=>t.tableCode),['MOUTRA']);
+  assert(h.rooms.has('T2_MOUTRA'));
+  assert(!h.rooms.has('T2_MTEST123'));
 });

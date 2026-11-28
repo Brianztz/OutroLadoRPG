@@ -78,10 +78,10 @@
       })
     });
   }
-  async function signInAccount(table, role, code, username, password) {
+  async function signInAccount(table, role, code, username, password, rememberPlayer = false) {
     return api(sessionUrl(table),{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(username?{role,edition:'temporada',code,username,password}:{role,edition:'temporada',code,useAccount:true})
+      body:JSON.stringify(username?{role,edition:'temporada',code,username,password}:{role,edition:'temporada',code,useAccount:true,...(rememberPlayer?{rememberPlayer:true}:{})})
     });
   }
   async function getAccountSession(){
@@ -217,7 +217,7 @@
       const member=account.tables?.find(t=>seasonScopedTable(t.tableCode)===physical);
       const expected=expectedPlayerCode();
       if(account.role===role&&member&&(!expected||role==='master'||member.code===expected)){
-        await global.OLNative.signInAccount(physical,role,role==='player'?member.code:'');
+        await global.OLNative.signInAccount(physical,role,role==='player'?member.code:'',undefined,undefined,role==='player');
         return true;
       }
     }catch(error){if(error?.status&&error.status!==401&&error.status!==403)throw error;}
@@ -281,7 +281,9 @@
       // Invalid or revoked credentials still lead to the login page.
     }
     document.documentElement.classList.remove('firebase-auth-pending');
-    global.location.replace(portalURL('Acesso expirado ou não autorizado. Entre novamente.'));
+    const redirect=new URL(portalURL(role==='player'?'Acesso expirado ou não autorizado. Abra seu convite original ou peça um novo ao mestre.':'Acesso expirado ou não autorizado. Entre novamente.'),global.location.href);
+    if(role==='player')redirect.searchParams.set('jogador','1');
+    global.location.replace(redirect.href);
     return false;
   }
   async function loadCharacter(requestedTable, variant, selectedCode = '') {

@@ -81,3 +81,7 @@ A conta de mestre conserva a mesa principal existente. Após o login, o portal m
 ## Sessão da conta e várias mesas do jogador
 
 O login gera uma sessão opaca, HttpOnly e segura com duração de oito horas. Criar ou alternar mesas não exige nova senha enquanto essa sessão está válida. Jogadores podem aceitar um convite adicional com a conta conectada ou usando seu usuário e senha existentes; a lista de mesas e o código da ficha de cada associação são independentes. As contas antigas mantêm a primeira mesa. Um convite já utilizado por outra conta não pode ser reaproveitado, salvo quando o mestre renova o acesso. Voltar ao portal não encerra a sessão; **Trocar conta** a encerra.
+
+## Jogadores sem login
+
+Jogadores abrem o convite individual e entram diretamente na ficha. O servidor guarda uma sessão de acesso por mesa em cookie seguro HttpOnly por 90 dias, invalidada quando o mestre renova ou revoga a chave. O menu de jogador lista as mesas lembradas neste navegador (somente código e nome, sem chaves). Em outro aparelho, use o convite original. Contas antigas permanecem válidas e podem migrar seus acessos ao entrar uma vez. Remover uma mesa do navegador encerra apenas o acesso local, não apaga a ficha. A autenticação de mestre continua obrigatória.

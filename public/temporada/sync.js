@@ -91,7 +91,7 @@ window.startSeasonSync=async function startSeasonSync(){
   if(menu&&!view){menu.hidden=false;menu.onclick=async()=>{
     if(dirty&&cloudReady&&!busy)await flush();
     if((dirty||busy)&&!window.confirm('Há alterações ainda não sincronizadas. Elas continuam salvas neste navegador. Voltar mesmo assim?'))return;
-    const url=new URL('./index.html',location.href);url.searchParams.set('menu','1');
+    const url=new URL('./index.html',location.href);url.searchParams.set('jogador','1');
     location.assign(url.href);
   };}
   if(soloCopy&&!view){
