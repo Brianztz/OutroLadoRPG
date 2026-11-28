@@ -539,7 +539,7 @@
             <div class="connection-info"><span id="connection-dot" class="connection-dot"></span><span id="connection-text">Conectando ao servidor...</span></div>
         </div>
         <div class="master-top-actions" role="group" aria-label="Ações rápidas do mestre">
-            <button id="master-back-menu" class="master-action-icon" type="button" onclick="returnToMasterMenu()" title="Voltar ao menu" aria-label="Voltar ao menu principal"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/></svg></button>
+            <button id="master-back-menu" class="master-action-icon" type="button" onclick="returnToMasterMenu()" title="Minhas mesas · voltar ao menu" aria-label="Voltar ao menu principal"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/></svg></button>
             <button id="master-saved-sheets-button" class="master-action-icon" type="button" onclick="openSavedPlayerSheets()" title="Fichas dos personagens" aria-label="Fichas dos personagens"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><rect x="3" y="3" width="14" height="18" rx="2"/><path d="M7 7h6M7 11h6M7 15h4M19 7h1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-1"/></svg></button>
             <button id="master-overlay-button" class="master-action-icon" type="button" onclick="openMasterOverlay()" title="Abrir overlay" aria-label="Abrir overlay"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></svg></button>
             <button id="master-invite-button" class="master-action-icon" type="button" onclick="openMasterInvite()" title="Convidar jogador" aria-label="Convidar jogador"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"><circle cx="9" cy="8" r="4"/><path d="M2 21v-2a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v2M19 8v6M16 11h6"/></svg></button>
@@ -1018,10 +1018,35 @@
         let playerRollHistory = [];
         const masterUrlParams = new URLSearchParams(window.location.search);
         const isSeasonMaster = true; // Página exclusiva da nova temporada.
-        const masterStorageKey = key => isSeasonMaster ? 't2_' + key : key;
+        const tableLocalKeys = new Set(['mestre_combat_mode','mestre_custom_catalog_state','mestre_monsters_state','mestre_active_tab']);
+        const masterStorageKey = key => isSeasonMaster
+            ? 't2_' + key + (tableLocalKeys.has(key)?'_'+masterTableCode:'') : key;
         let masterTableCode = normalizeTableCode(masterUrlParams.get('mesa') || localStorage.getItem(masterStorageKey('master_table_code')) || localStorage.getItem('master_table_code') || 'PADRAO');
+        // Assign old unscoped browser caches once, to the last legacy table.
+        // Never copy the same cache into every newly created table.
+        try {
+            const ownerKey='t2_master_legacy_cache_owner_v1';
+            let legacyOwner=localStorage.getItem(ownerKey);
+            if(!legacyOwner){
+                const oldTable=localStorage.getItem('t2_master_table_code')||localStorage.getItem('master_table_code');
+                legacyOwner=oldTable?normalizeTableCode(oldTable):'UNASSIGNED';
+                localStorage.setItem(ownerKey,legacyOwner);
+            }
+            const marker='t2_master_legacy_cache_migrated_v1:'+masterTableCode;
+            if(legacyOwner===masterTableCode&&!localStorage.getItem(marker)){
+                for(const key of tableLocalKeys){
+                    const old=localStorage.getItem('t2_'+key),scoped=masterStorageKey(key);
+                    if(old!==null&&localStorage.getItem(scoped)===null)localStorage.setItem(scoped,old);
+                }
+                localStorage.setItem(marker,'1');
+            }
+        } catch(error){console.warn('Não foi possível migrar o cache local da mesa:',error);}
         const seasonKicker = document.querySelector('.master-season-kicker');
-        if (seasonKicker) seasonKicker.textContent = 'OUTRO LADO: VESTÍGIOS · EXÍLIO 3.0';
+        if (seasonKicker) {
+            let tableName='';
+            try{tableName=localStorage.getItem('ol_master_table_name:'+masterTableCode)||'';}catch(_){}
+            seasonKicker.textContent = 'OUTRO LADO: VESTÍGIOS · EXÍLIO 3.0 · '+(tableName||masterTableCode);
+        }
         if (isSeasonMaster) {
             document.title = 'Escudo do Mestre · Vestígios';
             document.querySelector('.top-title').textContent = 'Escudo do Mestre · Vestígios';

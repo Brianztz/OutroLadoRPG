@@ -15,6 +15,7 @@ const ACCOUNT_PREFIX = 'account:user:v1:';
 const PLAYER_INDEX = 'account:player-index:v1:';
 const ROOM_OWNER = 'account:room-owner:v1:';
 const MASTER_SIGNUP_LIMIT = 5;
+const MAX_MASTER_TABLES = 50;
 const MASTER_SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 const FAILURE_PREFIX = 'account:fail:v1:';
 const WORK_FACTOR = 100000;
@@ -64,6 +65,22 @@ function roomId(code) {
 }
 function newTableCode() {
   return 'M'+hex(crypto.getRandomValues(new Uint8Array(10))).toUpperCase();
+}
+// Accounts created before multi-table support retain their original room as primary.
+function masterTables(account) {
+  if(account?.role!=='master')return [];
+  const primary=String(account.tableCode||'');
+  const result=[],seen=new Set();
+  for(const table of (Array.isArray(account.tables)?account.tables:[])){
+    const code=String(table?.tableCode||'');
+    if(!/^[A-Z0-9_-]{1,40}$/.test(code)||seen.has(code))continue;
+    seen.add(code);result.push({tableCode:code,name:String(table.name||'Mesa').slice(0,80)});
+  }
+  if(primary&&!seen.has(primary))result.unshift({tableCode:primary,name:'Mesa principal'});
+  return result;
+}
+function masterRoomFor(account,physical) {
+  return masterTables(account).find(table=>roomId(table.tableCode)===physical)?.tableCode||'';
 }
 async function accountKey(username) {
   return ACCOUNT_PREFIX+await sha(asUsername(username));
@@ -188,7 +205,7 @@ export async function handleAccountRequest(request,ctx,env) {
       if(!tableCode)return {error:'room_creation_failed'};
       await t.put(accountName,{
         role:'master',username,salt,passwordHash,
-        tableCode,createdAt:Date.now()
+        tableCode,tables:[{tableCode,name:'Mesa principal'}],createdAt:Date.now()
       });
       await t.put(ownerKey,accountName);
       if(limitKey){
@@ -204,6 +221,38 @@ export async function handleAccountRequest(request,ctx,env) {
     if(created.error)return reply({error:created.error},
       created.error==='username_taken'?409:created.error==='too_many_signups'?429:503);
     return reply({ok:true,role:'master',tableCode:created.tableCode},201);
+  }
+
+  if(action==='create-master-table'&&!internal){
+    const name=typeof data.name==='string'?data.name.trim().replace(/[\u0000-\u001f\u007f]/g,'').trim():'';
+    if(!name||name.length>80)return reply({error:'invalid_table_name'},400);
+    const result=await accountLogin(ctx,username,password);
+    if(!result.item)return reply({error:result.error},result.status);
+    if(result.item.role!=='master')return reply({error:'master_required'},403);
+    const key=await accountKey(username);
+    const created=await ctx.storage.transaction(async t=>{
+      const stored=await t.get(key);
+      if(!stored||stored.role!=='master'||!equal(stored.passwordHash,result.item.passwordHash))
+        return {error:'invalid_credentials'};
+      const tables=masterTables(stored);
+      if(tables.length>=MAX_MASTER_TABLES)return {error:'table_limit'};
+      let tableCode='',ownerKey='';
+      for(let i=0;i<5;i++){
+        const proposed=newTableCode(),candidate=ROOM_OWNER+roomId(proposed);
+        if(!await t.get(candidate)&&!masterRoomFor(stored,roomId(proposed))
+          &&roomId(await t.get(ROOM_KEY))!==roomId(proposed)){
+          tableCode=proposed;ownerKey=candidate;break;
+        }
+      }
+      if(!tableCode)return {error:'room_creation_failed'};
+      const table={tableCode,name};
+      await t.put(key,{...stored,tables:[...tables,table]});
+      await t.put(ownerKey,key);
+      return {table};
+    });
+    if(created.error)return reply({error:created.error},
+      created.error==='invalid_credentials'?401:created.error==='table_limit'?409:503);
+    return reply({ok:true,...created.table},201);
   }
 
   if(action==='change-master-credentials'&&!internal){
@@ -224,8 +273,11 @@ export async function handleAccountRequest(request,ctx,env) {
       if(newKey!==oldKey && await t.get(newKey))return 'username_taken';
       await t.delete(oldKey);
       await t.put(newKey,{...stored,username:nextUsername,salt,passwordHash,updatedAt:Date.now()});
-      const ownerKey=ROOM_OWNER+roomId(stored.tableCode);
-      if(await t.get(ownerKey)===oldKey)await t.put(ownerKey,newKey);
+      for(const table of masterTables(stored)){
+        const ownerKey=ROOM_OWNER+roomId(table.tableCode);
+        const owner=await t.get(ownerKey);
+        if(!owner||owner===oldKey)await t.put(ownerKey,newKey);
+      }
       if(await t.get(MASTER_ACCOUNT_KEY)===oldKey)
         await t.put(MASTER_ACCOUNT_KEY,newKey);
       return 'ok';
@@ -240,10 +292,8 @@ export async function handleAccountRequest(request,ctx,env) {
     const ownerAccountKey=await ctx.storage.get(roomOwnerKey);
     const ownerAccount=ownerAccountKey?await ctx.storage.get(ownerAccountKey):null;
     const legacyRoom=await ctx.storage.get(ROOM_KEY);
-    const room=ownerAccount?.role==='master' && roomId(ownerAccount.tableCode)===physical
-      ? ownerAccount.tableCode
-      : legacyRoom && roomId(legacyRoom)===physical
-        ? legacyRoom : '';
+    const room=masterRoomFor(ownerAccount,physical)
+      || (!ownerAccountKey && legacyRoom && roomId(legacyRoom)===physical ? legacyRoom : '');
     const code=String(data.code||'').trim().toUpperCase();
     const ownerHash=String(data.ownerHash||'');
     if(!room || !/^[A-Z0-9_-]{1,40}$/.test(code)
@@ -276,7 +326,10 @@ export async function handleAccountRequest(request,ctx,env) {
       const expectedRole=String(data.role||'');
       const expectedPhysical=String(data.physicalTable||'');
       const expectedCode=String(data.code||'');
-      if(account.role!==expectedRole||roomId(account.tableCode)!==expectedPhysical
+      const roomAllowed=account.role==='master'
+        ? Boolean(masterRoomFor(account,expectedPhysical))
+        : roomId(account.tableCode)===expectedPhysical;
+      if(account.role!==expectedRole||!roomAllowed
           ||(account.role==='player'&&account.code!==expectedCode))
         return reply({error:'invalid_credentials'},401);
       return reply({ok:true,role:account.role,code:account.code||'',
@@ -284,7 +337,8 @@ export async function handleAccountRequest(request,ctx,env) {
     }
     // Only a successful password check can reveal the internal routing fields.
     return reply({ok:true,role:account.role,tableCode:account.tableCode,
-      code:account.role==='player'?account.code:''});
+      code:account.role==='player'?account.code:'',
+      ...(account.role==='master'?{tables:masterTables(account)}:{})});
   }
 
   return reply({error:'invalid_action'},400);

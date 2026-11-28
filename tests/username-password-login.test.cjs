@@ -86,7 +86,8 @@ test('login do mestre exige usuário e senha e não permite primeiro visitante c
   res=await h.account('lookup',{username:'NARRADOR',password:PA});
   assert.equal(res.status,200);
   assert.deepEqual(JSON.parse(JSON.stringify(await res.json())),{
-    ok:true,role:'master',tableCode:'VESTIGIOS',code:''
+    ok:true,role:'master',tableCode:'VESTIGIOS',code:'',
+    tables:[{tableCode:'VESTIGIOS',name:'Mesa principal'}]
   });
   const stored=JSON.stringify([...h.registry.data]);
   assert(!stored.includes(PA));

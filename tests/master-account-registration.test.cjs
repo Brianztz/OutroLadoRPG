@@ -157,3 +157,46 @@ test('limita cadastro automático por IP sem bloquear acesso de mestre existente
   assert.equal((await denied.json()).error,'too_many_signups');
   assert.equal((await h.call('lookup',{username:'teste0',password})).status,200);
 });
+
+test('uma conta pode criar várias mesas nomeadas e autenticar apenas nas próprias',async()=>{
+  const h=await harness();
+  const a=await (await h.call('register-master',{username:'ana',password})).json();
+  const b=await (await h.call('register-master',{username:'bruno',password:pass2})).json();
+  const res=await h.call('create-master-table',{username:'ana',password,name:'Grupo B',tableCode:b.tableCode});
+  assert.equal(res.status,201);
+  const second=await res.json();assert.equal(second.name,'Grupo B');
+  assert.notEqual(second.tableCode,a.tableCode);assert.notEqual(second.tableCode,b.tableCode);
+  const third=await (await h.call('create-master-table',{username:'ana',password,name:'Grupo C'})).json();
+  const login=await (await h.call('lookup',{username:'ana',password})).json();
+  assert.equal(login.tableCode,a.tableCode);
+  assert.deepEqual(login.tables,[{tableCode:a.tableCode,name:'Mesa principal'},{tableCode:second.tableCode,name:'Grupo B'},{tableCode:third.tableCode,name:'Grupo C'}]);
+  for(const table of login.tables){
+    assert.equal((await h.call('check',{username:'ana',password,role:'master',physicalTable:physical(table.tableCode)},true)).status,200);
+    assert.equal((await h.call('check',{username:'bruno',password:pass2,role:'master',physicalTable:physical(table.tableCode)},true)).status,401);
+  }
+  assert.equal((await h.call('create-master-table',{username:'ana',password:pass2,name:'Sem permissão'})).status,401);
+  assert.equal((await h.call('create-master-table',{username:'ana',password,name:' '})).status,400);
+  const player={username:'clara',password:'senha-da-clara-2026',physicalTable:physical(second.tableCode),code:'PERSONAGEM1',ownerHash:'a'.repeat(64)};
+  assert.equal((await h.call('register-player',player,true)).status,200);
+  assert.equal((await h.call('create-master-table',{username:player.username,password:player.password,name:'Proibida'})).status,403);
+  const invited=await (await h.call('lookup',{username:player.username,password:player.password})).json();
+  assert.equal(invited.tableCode,second.tableCode);
+  assert.equal((await h.call('check',{username:player.username,password:player.password,role:'player',code:player.code,physicalTable:physical(a.tableCode)},true)).status,401);
+  assert.equal((await h.call('change-master-credentials',{username:'ana',password,newUsername:'nova_ana',newPassword:pass2})).status,200);
+  const renamed=await (await h.call('lookup',{username:'nova_ana',password:pass2})).json();
+  assert.deepEqual(renamed.tables,login.tables);
+  for(const table of renamed.tables){
+    const owner=h.ctx.data.get('account:room-owner:v1:'+physical(table.tableCode));
+    assert.equal(h.ctx.data.get(owner).username,'nova_ana');
+  }
+  assert.equal((await h.call('register-player',{...player,username:'clara2',physicalTable:physical(third.tableCode)},true)).status,200);
+});
+test('conta antiga sem lista preserva mesa e código principal ao criar outra',async()=>{
+  const h=await harness();
+  const a=await (await h.call('register-master',{username:'antigo',password})).json();
+  const key=h.ctx.data.get('account:room-owner:v1:'+physical(a.tableCode));
+  const old=h.ctx.data.get(key);delete old.tables;h.ctx.data.set(key,old);
+  assert.equal((await h.call('create-master-table',{username:'antigo',password,name:'Nova'})).status,201);
+  const login=await (await h.call('lookup',{username:'antigo',password})).json();
+  assert.equal(login.tableCode,a.tableCode);assert.equal(login.tables[0].tableCode,a.tableCode);assert.equal(login.tables.length,2);
+});
