@@ -205,7 +205,7 @@ export async function handleStorageRequest(request, ctx, env) {
   const edition = url.searchParams.get('edicao') === 'temporada' ? 'temporada' : 'classic';
   const bearer = /^Bearer (.+)$/.exec(request.headers.get('Authorization') || '')?.[1] || '';
   const masterSecret = String(env.MASTER_DATA_TOKEN || '');
-  const session = await currentSession(request, ctx);
+  const session = await currentSession(request, ctx, env);
   const master = session?.role === 'master' || (masterSecret.length >= 32 && constantTimeEqual(bearer, masterSecret));
 
   if (kind !== 'character' && kind !== 'clues' && kind !== 'player-access'
@@ -222,6 +222,9 @@ export async function handleStorageRequest(request, ctx, env) {
     const raw=await request.text();
     if(raw.length>512)return json({error:'request_too_large'},413);
     let payload;try{payload=JSON.parse(raw);}catch{return json({error:'invalid_json'},400);}
+    // Only an invitation-authenticated room session may add a membership.
+    // Normal account room sessions never authorize registering another login.
+    if(session.invited!==true)return json({error:'invitation_required'},403);
     const code=session.code;
     const ownerHash=await ctx.storage.get('sheet:temporada:'+code+':owner-sha256');
     if (!ownerHash || !env.TABLE_ROOMS || masterSecret.length<32)
@@ -230,10 +233,11 @@ export async function handleStorageRequest(request, ctx, env) {
     const registry=env.TABLE_ROOMS.getByName('SYSTEM_MASTER_PROFILE_V2');
     const registration=await registry.fetch(new Request('https://internal.invalid/api/account-internal',{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-OL-Internal-Auth':masterSecret},
+      headers:{'Content-Type':'application/json','X-OL-Internal-Auth':masterSecret,
+        ...(payload?.useSession===true?{Cookie:request.headers.get('Cookie')||''}:{})},
       body:JSON.stringify({
         action:'register-player',username:payload?.username,
-        password:payload?.password,physicalTable,code,ownerHash
+        password:payload?.password,useSession:payload?.useSession===true,physicalTable,code,ownerHash
       })
     }));
     const result=await registration.json().catch(()=>({error:'registration_failed'}));

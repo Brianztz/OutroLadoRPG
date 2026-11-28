@@ -238,7 +238,7 @@ export class TableRoom extends DurableObject {
         }
         const url = new URL(request.url);
         const protocols = requestProtocols(request);
-        const nativeSession = await currentSession(request, this.ctx);
+        const nativeSession = await currentSession(request, this.ctx, this.env);
         const requestedTable = normalizeTableCode(url.searchParams.get('mesa'));
         if (this.table === DEFAULT_TABLE && requestedTable !== this.table) {
             this.table = requestedTable;

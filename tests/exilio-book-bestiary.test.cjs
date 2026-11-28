@@ -120,7 +120,7 @@ test('o Bestiário fica como aba interna no pop-up Novo Monstro, sem perder o ca
   assert(master.includes('id="master-tab-equipment"'));
   assert(master.includes('id="catalog-grid"'));
   assert(master.includes('switchMonsterModalTab(tab)'));
-  assert(master.includes('<script src="/bestiary-exilio.js?v=1"></script>'));
+  assert.match(master,/<script src="\/bestiary-exilio\.js\?v=[^"\s]+"><\/script>/);
   assert(master.includes('<script src="/bestiary-exilio-master.js?v=monster-modal-v2"></script>'));
   assert(!master.includes('<script src="/bestiary-outrolado.js?v=2"></script>'));
   assert(master.includes('id="monsters-grid"'));

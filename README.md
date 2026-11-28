@@ -77,3 +77,7 @@ No escudo, abra **Convidar jogador**, informe um nome opcional, clique em **Gera
 ## Múltiplas mesas do mestre
 
 A conta de mestre conserva a mesa principal existente. Após o login, o portal mostra **Minhas mesas**: selecione uma delas e abra o Escudo do Mestre, ou informe o nome e confirme a senha para criar outra (até 50 por conta). Cada mesa possui código próprio, sessão, jogadores, convites, pistas e estado de combate separados. O botão de voltar ao menu do escudo permite escolher outra mesa após entrar na conta. Senhas não são persistidas para essa seleção. Os caches locais antigos são migrados apenas para a última mesa anteriormente usada, quando identificável. Nenhuma mesa existente é excluída.
+
+## Sessão da conta e várias mesas do jogador
+
+O login gera uma sessão opaca, HttpOnly e segura com duração de oito horas. Criar ou alternar mesas não exige nova senha enquanto essa sessão está válida. Jogadores podem aceitar um convite adicional com a conta conectada ou usando seu usuário e senha existentes; a lista de mesas e o código da ficha de cada associação são independentes. As contas antigas mantêm a primeira mesa. Um convite já utilizado por outra conta não pode ser reaproveitado, salvo quando o mestre renova o acesso. Voltar ao portal não encerra a sessão; **Trocar conta** a encerra.

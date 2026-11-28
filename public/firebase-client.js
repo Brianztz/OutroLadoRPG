@@ -67,7 +67,7 @@
   async function createMasterTable(username,password,name) {
     return api(base+'account',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'create-master-table',username,password,name})
+      body:JSON.stringify(username?{action:'create-master-table',username,password,name}:{action:'create-master-table',useSession:true,name})
     });
   }
   async function changeMasterCredentials(username,password,newUsername,newPassword) {
@@ -81,8 +81,17 @@
   async function signInAccount(table, role, code, username, password) {
     return api(sessionUrl(table),{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({role,edition:'temporada',code,username,password})
+      body:JSON.stringify(username?{role,edition:'temporada',code,username,password}:{role,edition:'temporada',code,useAccount:true})
     });
+  }
+  async function getAccountSession(){
+    return api(base+'account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'current-account'})});
+  }
+  async function logoutAccount(){
+    return api(base+'account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout-account'})});
+  }
+  async function joinPlayerAccount(table){
+    return api(query(table,'account-register','temporada'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({useSession:true})});
   }
   async function registerPlayerAccount(table,username,password) {
     return api(query(table,'account-register','temporada'),{
@@ -135,6 +144,7 @@
     tableCode, getMasterRoom, signInMaster, signInPlayer, getSession, signOut,
     grantCharacterContent,
     lookupAccount, registerMasterAccount, createMasterTable, changeMasterCredentials, signInAccount, registerPlayerAccount,
+    getAccountSession, logoutAccount, joinPlayerAccount,
     provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);
@@ -201,6 +211,16 @@
   }
   async function restoreSession(role, requestedTable = tableFromURL()) {
     const physical = seasonScopedTable(requestedTable);
+    // Restore the room from the authenticated account, never from a client-chosen role.
+    try{
+      const account=await global.OLNative.getAccountSession();
+      const member=account.tables?.find(t=>seasonScopedTable(t.tableCode)===physical);
+      const expected=expectedPlayerCode();
+      if(account.role===role&&member&&(!expected||role==='master'||member.code===expected)){
+        await global.OLNative.signInAccount(physical,role,role==='player'?member.code:'');
+        return true;
+      }
+    }catch(error){if(error?.status&&error.status!==401&&error.status!==403)throw error;}
     if (role === 'master') {
       const secret = global.localStorage.getItem('ol_personal_master_key_v1');
       if (!/^OLM-[A-F0-9]{64}$/.test(secret || '')) return false;

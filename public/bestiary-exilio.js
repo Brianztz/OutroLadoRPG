@@ -10,7 +10,7 @@
   // nome, Matriz, NA, PV, RD, PM, bônus de ataque, dano, natureza do dano,
   // habilidade e fraqueza — transcritos da edição do Livro Básico.
   const rows=[
-    ['O Rastejante','Medo',1,16,0,null,3,'1d6+1','cortante','+2 Discrição em sombras quando tiver cobertura.','Luz forte impede seu bônus furtivo.'],
+    ['O Rastejante','Medo',1,16,0,null,3,'1d6+1','cortante','+2 Furtividade em sombras quando tiver cobertura.','Luz forte impede seu bônus furtivo.'],
     ['O Sussurrante','Medo',1,14,0,null,3,'1d4','paranormal','Amedrontado, ataque mental +3.','Gravação reproduzida revela sua posição.'],
     ['A Mulher sem Rosto','Medo',2,28,1,null,5,'1d8+2','cortante','Margem de acerto ≥5 aplica Confuso.','Espelho com seu verdadeiro reflexo a desorienta.'],
     ['O Caçador do Escuro','Medo',3,48,2,null,7,'1d10+3','cortante','+2 atacar alvos Amedrontados.','Iluminação reduz sua vantagem de perseguição.'],

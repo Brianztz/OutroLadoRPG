@@ -201,3 +201,35 @@ test('jogador copia ficha avulsa mediante confirmação, com geração nova e or
   assert.equal(a.writes.at(-1).state.name,'Clara avulsa');
  }finally{a.dom.window.close();}
 });
+
+test('ocupações usam perícias atuais no texto e mantêm domínios nas chaves históricas',async()=>{
+ const a=await setup({solo:true});
+ try{
+  const {w}=a,api=w.SeasonSheet,doc=w.document;
+  const initial=api.getState();
+  for(const [occupation,key] of [['Enfermeiro','SENSIBILIDADE'],['Policial','PRECISÃO'],['Criminoso','DISCRIÇÃO']]){
+   api.applyState({...initial,occupation,skillDomains:{},skillDomainBases:{},skills:{}});
+   assert.equal(api.getState().skillDomains[key],2,occupation);
+  }
+  assert.equal(doc.querySelector('[data-skill="DISCRIÇÃO"] strong').textContent,'FURTIVIDADE');
+  assert.equal(doc.querySelector('[data-skill="PRECISÃO"] strong').textContent,'PONTARIA');
+  assert.equal(doc.querySelector('[data-skill="SENSIBILIDADE"] strong').textContent,'DISCERNIMENTO');
+ }finally{a.dom.window.close();}
+});
+test('textos oficiais de vivências e rituais não referenciam nomes antigos de perícia',()=>{
+ const code=fs.readFileSync(path.join(root,'public/temporada/sheet.js'),'utf8');
+ const occupations=JSON.parse(code.match(/const occupations=(\[.*\]);/)[1]);
+ const rituals=JSON.parse(code.match(/const ritualCatalogOffline=(\[.*?\])\.map\(/)[1]);
+ const obsolete=/\b(?:Discrição|Precisão|Sensibilidade|Empatia|Ladinagem|Luta)\b/i;
+ for(const o of occupations){assert(!obsolete.test(o.domains),o.name);assert(!obsolete.test(o.vivencia),o.name);}
+ for(const [name,,,,resistance,desc] of rituals){assert(!obsolete.test(resistance),name);assert(!obsolete.test(desc),name);}
+ assert(occupations.some(o=>o.domains.includes('Discernimento')));
+ assert(rituals.some(r=>r[4]==='CNS + Discernimento'));
+ assert(rituals.some(r=>r[5].includes('Furtividade')));
+ assert.match(code,/:displaySkillTerms\(entry\.description\)/);
+ const master=fs.readFileSync(path.join(root,'public/mestre-temporada.html'),'utf8');
+ assert.match(master,/for="monster-form-skill-sensibilidade">DISCERNIMENTO</);
+ assert(!master.includes('value="Luta" placeholder='));
+ const bestiary=fs.readFileSync(path.join(root,'public/bestiary-exilio.js'),'utf8');
+ assert(bestiary.includes('+2 Furtividade em sombras'));
+});

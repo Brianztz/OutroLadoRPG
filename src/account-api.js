@@ -16,6 +16,10 @@ const PLAYER_INDEX = 'account:player-index:v1:';
 const ROOM_OWNER = 'account:room-owner:v1:';
 const MASTER_SIGNUP_LIMIT = 5;
 const MAX_MASTER_TABLES = 50;
+const MAX_PLAYER_TABLES = 50;
+const ACCOUNT_SESSION_COOKIE = 'ol_account_session';
+const ACCOUNT_SESSION_TTL = 8*60*60*1000;
+const ACCOUNT_SESSION_PREFIX = 'account:session:v1:';
 const MASTER_SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 const FAILURE_PREFIX = 'account:fail:v1:';
 const WORK_FACTOR = 100000;
@@ -32,8 +36,34 @@ function validPassword(input) {
   return typeof input === 'string' && input.length >= 10
     && input.length <= 128 && input.trim().length >= 10;
 }
-function reply(value, status = 200) {
-  return Response.json(value,{status,headers:{'Cache-Control':'no-store'}});
+function reply(value, status = 200, cookie = '') {
+  const headers={'Cache-Control':'no-store'};
+  if(cookie)headers['Set-Cookie']=cookie;
+  return Response.json(value,{status,headers});
+}
+function accountToken(request) {
+  const token=(request.headers.get('Cookie')||'').split(/;\s*/).find(c=>c.startsWith(ACCOUNT_SESSION_COOKIE+'='))?.slice(ACCOUNT_SESSION_COOKIE.length+1)||'';
+  return /^[a-f0-9]{64}$/i.test(token)?token:'';
+}
+function accountCookie(token='',clear=false){
+  return ACCOUNT_SESSION_COOKIE+'='+token+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age='+(clear?0:ACCOUNT_SESSION_TTL/1000);
+}
+async function readAccountSession(request,ctx){
+  const token=accountToken(request);if(!token)return null;
+  const session=await ctx.storage.get(ACCOUNT_SESSION_PREFIX+await sha(token));
+  if(!session||session.expiresAt<=Date.now())return null;
+  const account=await ctx.storage.get(session.key);
+  if(!account||!equal(account.passwordHash,session.credentialVersion))return null;
+  return {account,key:session.key,expiresAt:session.expiresAt};
+}
+async function issueAccountSession(request,ctx,account){
+  const previous=accountToken(request);
+  if(previous)await ctx.storage.delete(ACCOUNT_SESSION_PREFIX+await sha(previous));
+  const token=hex(crypto.getRandomValues(new Uint8Array(32)));
+  await ctx.storage.put(ACCOUNT_SESSION_PREFIX+await sha(token),{
+    key:await accountKey(account.username),credentialVersion:account.passwordHash,expiresAt:Date.now()+ACCOUNT_SESSION_TTL
+  });
+  return accountCookie(token);
 }
 function equal(a,b) {
   const aa=encoder.encode(String(a||'')),bb=encoder.encode(String(b||''));
@@ -81,6 +111,42 @@ function masterTables(account) {
 }
 function masterRoomFor(account,physical) {
   return masterTables(account).find(table=>roomId(table.tableCode)===physical)?.tableCode||'';
+}
+// Existing player accounts are read as a one-membership list, without data migration.
+function playerTables(account){
+  if(account?.role!=='player')return [];
+  const list=[],seen=new Set();
+  const entries=Array.isArray(account.memberships)?account.memberships:[{tableCode:account.tableCode,code:account.code,ownerHash:account.ownerHash}];
+  for(const item of entries){
+    if(!item?.tableCode||!item.code||!item.ownerHash||seen.has(item.tableCode))continue;
+    seen.add(item.tableCode);list.push({tableCode:item.tableCode,code:item.code,ownerHash:item.ownerHash});
+  }
+  return list;
+}
+function withPlayerTables(account,memberships){
+  const primary=memberships.find(x=>x.tableCode===account.tableCode)||memberships[0];
+  return {...account,tableCode:primary?.tableCode||'',code:primary?.code||'',ownerHash:primary?.ownerHash||'',memberships};
+}
+async function publicAccount(ctx,account,includeUsername=false){
+  const result={ok:true,role:account.role,tableCode:account.tableCode,code:account.role==='player'?account.code:''};
+  if(includeUsername)result.username=account.username;
+  if(account.role==='master')result.tables=masterTables(account);
+  else if(account.role==='player'){
+    result.tables=await Promise.all(playerTables(account).map(async membership=>{
+      const ownerKey=await ctx.storage.get(ROOM_OWNER+roomId(membership.tableCode));
+      const owner=ownerKey?await ctx.storage.get(ownerKey):null;
+      const name=masterTables(owner).find(t=>t.tableCode===membership.tableCode)?.name||'Mesa '+membership.tableCode;
+      return {tableCode:membership.tableCode,code:membership.code,name};
+    }));
+  }
+  return result;
+}
+function authorizeRoom(account,data){
+  const expectedPhysical=String(data.physicalTable||'');
+  if(account.role!==data.role)return null;
+  if(account.role==='master')return masterRoomFor(account,expectedPhysical)?{ok:true,role:'master',code:'',ownerHash:''}:null;
+  const member=playerTables(account).find(t=>roomId(t.tableCode)===expectedPhysical&&t.code===String(data.code||''));
+  return member?{ok:true,role:'player',code:member.code,ownerHash:member.ownerHash}:null;
 }
 async function accountKey(username) {
   return ACCOUNT_PREFIX+await sha(asUsername(username));
@@ -173,8 +239,23 @@ export async function handleAccountRequest(request,ctx,env) {
   const action=String(data?.action||'');
   const username=asUsername(data?.username);
   const password=data?.password;
-  if(!validUsername(username) || (action!=='register-player'&&!validPassword(password))
-    || (action==='register-player'&&!validPassword(password)))
+  if(action==='logout-account'&&!internal){
+    const token=accountToken(request);
+    if(token)await ctx.storage.delete(ACCOUNT_SESSION_PREFIX+await sha(token));
+    return reply({ok:true},200,accountCookie('',true));
+  }
+  if(action==='current-account'&&!internal){
+    const session=await readAccountSession(request,ctx);
+    return session?reply(await publicAccount(ctx,session.account,true)):reply({error:'account_session_required'},401);
+  }
+  if(action==='check-session'&&internal){
+    const session=await readAccountSession(request,ctx);
+    const authorization=session&&authorizeRoom(session.account,data);
+    return authorization?reply({...authorization,expiresAt:session.expiresAt}):reply({error:'invalid_credentials'},401);
+  }
+  const usesSession=(action==='create-master-table'&&!internal&&data.useSession===true)
+    ||(action==='register-player'&&internal&&data.useSession===true);
+  if(!usesSession&&(!validUsername(username)||!validPassword(password)))
     return reply({error:'invalid_account_fields'},400);
 
   if(action==='register-master'&&!internal){
@@ -226,10 +307,12 @@ export async function handleAccountRequest(request,ctx,env) {
   if(action==='create-master-table'&&!internal){
     const name=typeof data.name==='string'?data.name.trim().replace(/[\u0000-\u001f\u007f]/g,'').trim():'';
     if(!name||name.length>80)return reply({error:'invalid_table_name'},400);
-    const result=await accountLogin(ctx,username,password);
+    const signed=usesSession?await readAccountSession(request,ctx):null;
+    if(usesSession&&!signed)return reply({error:'account_session_required'},401);
+    const result=signed?{item:signed.account}:await accountLogin(ctx,username,password);
     if(!result.item)return reply({error:result.error},result.status);
     if(result.item.role!=='master')return reply({error:'master_required'},403);
-    const key=await accountKey(username);
+    const key=signed?.key||await accountKey(username);
     const created=await ctx.storage.transaction(async t=>{
       const stored=await t.get(key);
       if(!stored||stored.role!=='master'||!equal(stored.passwordHash,result.item.passwordHash))
@@ -299,22 +382,50 @@ export async function handleAccountRequest(request,ctx,env) {
     if(!room || !/^[A-Z0-9_-]{1,40}$/.test(code)
         || !/^[a-f0-9]{64}$/.test(ownerHash))
       return reply({error:'invalid_player_binding'},403);
-    const key=await accountKey(username);
+    const signed=usesSession?await readAccountSession(request,ctx):null;
+    if(usesSession&&!signed)return reply({error:'account_session_required'},401);
+    if(signed&&signed.account.role!=='player')return reply({error:'player_required'},403);
+    const name=signed?.account.username||username;
+    const key=signed?.key||await accountKey(name);
     const indexKey=PLAYER_INDEX+physical+':'+code;
     const existing=await ctx.storage.get(key);
-    if(existing && (existing.role!=='player'||existing.code!==code
-        ||existing.tableCode!==room))return reply({error:'username_taken'},409);
-    const salt=hex(crypto.getRandomValues(new Uint8Array(16)));
-    const passwordHash=await hashPassword(password,salt);
-    await ctx.storage.transaction(async t=>{
+    let authenticated=signed?.account||null;
+    if(existing&&!authenticated){
+      if(existing.role!=='player')return reply({error:'username_taken'},409);
+      const login=await accountLogin(ctx,name,password);
+      if(!login.item)return reply({error:login.error},login.status);
+      authenticated=login.item;
+    }
+    const salt=authenticated?.salt||hex(crypto.getRandomValues(new Uint8Array(16)));
+    const passwordHash=authenticated?.passwordHash||await hashPassword(password,salt);
+    const result=await ctx.storage.transaction(async t=>{
+      const current=await t.get(key);
+      if(authenticated&&(!current||!equal(current.passwordHash,authenticated.passwordHash)||current.role!=='player'))
+        return 'invalid_credentials';
+      if(!authenticated&&current)return 'username_taken';
+      const account=current||{role:'player',username:name,salt,passwordHash,createdAt:Date.now()};
+      const memberships=playerTables(account);
+      const previous=memberships.find(m=>m.tableCode===room);
+      if(previous&&previous.code!==code)return 'table_already_joined';
+      if(!previous&&memberships.length>=MAX_PLAYER_TABLES)return 'table_limit';
       const oldKey=await t.get(indexKey);
-      if(oldKey && oldKey!==key)await t.delete(oldKey);
-      await t.put(key,{
-        role:'player',username,salt,passwordHash,tableCode:room,
-        code,ownerHash,createdAt:existing?.createdAt||Date.now()
-      });
+      if(oldKey&&oldKey!==key){
+        const old=await t.get(oldKey);
+        const oldMembership=playerTables(old).find(m=>m.tableCode===room&&m.code===code);
+        // A still-valid invitation cannot be reused to take over another account.
+        if(oldMembership&&equal(oldMembership.ownerHash,ownerHash))return 'invite_already_used';
+        if(oldMembership){
+          const remaining=playerTables(old).filter(m=>m!==oldMembership&&!(m.tableCode===room&&m.code===code));
+          if(remaining.length)await t.put(oldKey,withPlayerTables(old,remaining));
+          else await t.delete(oldKey);
+        }
+      }
+      const next=[...memberships.filter(m=>m.tableCode!==room),{tableCode:room,code,ownerHash}];
+      await t.put(key,withPlayerTables(account,next));
       await t.put(indexKey,key);
+      return 'ok';
     });
+    if(result!=='ok')return reply({error:result},result==='invalid_credentials'?401:409);
     return reply({ok:true});
   }
 
@@ -323,22 +434,11 @@ export async function handleAccountRequest(request,ctx,env) {
     if(!result.item)return reply({error:result.error},result.status);
     const account=result.item;
     if(internal) {
-      const expectedRole=String(data.role||'');
-      const expectedPhysical=String(data.physicalTable||'');
-      const expectedCode=String(data.code||'');
-      const roomAllowed=account.role==='master'
-        ? Boolean(masterRoomFor(account,expectedPhysical))
-        : roomId(account.tableCode)===expectedPhysical;
-      if(account.role!==expectedRole||!roomAllowed
-          ||(account.role==='player'&&account.code!==expectedCode))
-        return reply({error:'invalid_credentials'},401);
-      return reply({ok:true,role:account.role,code:account.code||'',
-        ownerHash:account.role==='player'?account.ownerHash:''});
+      const authorization=authorizeRoom(account,data);
+      return authorization?reply(authorization):reply({error:'invalid_credentials'},401);
     }
-    // Only a successful password check can reveal the internal routing fields.
-    return reply({ok:true,role:account.role,tableCode:account.tableCode,
-      code:account.role==='player'?account.code:'',
-      ...(account.role==='master'?{tables:masterTables(account)}:{})});
+    // Password verified once; the account cookie is opaque and server-side.
+    return reply(await publicAccount(ctx,account),200,await issueAccountSession(request,ctx,account));
   }
 
   return reply({error:'invalid_action'},400);
