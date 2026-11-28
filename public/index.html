@@ -176,6 +176,18 @@ footer strong{color:#b9bab5}
           <small>Entrar na ficha do personagem</small>
         </button>
       </div>
+      <div id="master-tables-panel" hidden style="text-align:left;margin-top:18px">
+        <label for="master-table-select">Minhas mesas</label>
+        <select id="master-table-select" style="width:100%;padding:12px;background:#121017;color:inherit;border:1px solid #6a5050;border-radius:6px"></select>
+        <p class="panel-hint">Selecione a mesa e abra o Escudo do Mestre. Para abrir outra mesa ou criar uma nova, confirme sua senha.</p>
+        <label for="master-table-password">Confirmar senha da conta</label>
+        <input id="master-table-password" type="password" autocomplete="current-password" maxlength="128">
+        <form id="master-create-table-form">
+          <label for="master-new-table-name">Nome da nova mesa</label>
+          <input id="master-new-table-name" maxlength="80" placeholder="Ex.: Vestígios — Grupo 2" required>
+          <button id="master-create-table" class="action" type="submit">+ CRIAR NOVA MESA</button>
+        </form>
+      </div>
       <p id="role-status" class="role-note" role="status" aria-live="polite"></p>
       <button id="role-other-account" class="subtle-link" type="button">Trocar conta</button>
     </div>
@@ -200,7 +212,7 @@ footer strong{color:#b9bab5}
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=open-master-signup-20261115"></script>
+<script src="/firebase-client.js?v=multiplas-mesas-20261127"></script>
 <script>
 (function () {
   'use strict';
@@ -251,6 +263,8 @@ footer strong{color:#b9bab5}
     if(error?.message==='too_many_signups')return 'Muitos cadastros neste momento. Tente novamente mais tarde.';
     if(error?.message==='invalid_server_response')return 'O servidor não respondeu corretamente. Tente novamente em instantes.';
     if(error?.message==='room_creation_failed')return 'Não foi possível criar sua mesa agora. Tente novamente.';
+    if(error?.message==='invalid_table_name')return 'Informe um nome de mesa de 1 a 80 caracteres.';
+    if(error?.message==='table_limit')return 'Sua conta atingiu o limite de 50 mesas.';
     if(error?.message==='master_required')return 'Somente o mestre pode alterar esta conta.';
     return String(error?.message||'Não foi possível entrar. Confira sua conexão.');
   }
@@ -301,27 +315,75 @@ footer strong{color:#b9bab5}
 
   function chooseAccess(account,username) {
     activeAccount={
-      role:account.role,table:normalize(account.tableCode),code:account.code||''
+      role:account.role,table:normalize(account.tableCode),code:account.code||'',username,
+      tables:account.role==='master'?(Array.isArray(account.tables)&&account.tables.length?account.tables:[{tableCode:account.tableCode,name:'Mesa principal'}]):[]
     };
     $('login-section').hidden=true;
     $('role-section').hidden=false;
     $('role-master').disabled=account.role!=='master';
     $('role-player').disabled=account.role!=='player';
+    $('master-tables-panel').hidden=account.role!=='master';
+    $('master-table-password').value='';
+    $('master-new-table-name').value='';
+    if(account.role==='master'){
+      const select=$('master-table-select');
+      select.replaceChildren();
+      for(const table of activeAccount.tables){
+        const option=document.createElement('option');
+        option.value=normalize(table.tableCode);option.textContent=table.name||'Mesa';
+        select.append(option);
+        try{localStorage.setItem('ol_master_table_name:'+option.value,option.textContent);}catch(_){}
+      }
+      select.value=activeAccount.table;
+    }
     $('role-description').textContent='Conta '+username+' autenticada. Escolha como deseja acessar a campanha.';
     $('role-status').textContent=account.role==='master'
       ? 'Mestre autorizado. O acesso de jogador requer um convite vinculado a um personagem.'
       : 'Jogador autorizado. O Escudo do Mestre é restrito à conta do mestre.';
   }
-  $('role-master').addEventListener('click',()=>{
-    if(activeAccount?.role==='master')
-      destination('master',activeAccount.table,'');
+  $('role-master').addEventListener('click',async()=>{
+    if(activeAccount?.role!=='master'||busy)return;
+    const selected=$('master-table-select').value||activeAccount.table;
+    if(!activeAccount.tables.some(table=>normalize(table.tableCode)===selected))return;
+    if(selected===activeAccount.table){destination('master',selected,'');return;}
+    const password=$('master-table-password').value;
+    if(!password){show('role-status','Confirme sua senha para abrir outra mesa.',true);$('master-table-password').focus();return;}
+    busy=true;$('role-master').disabled=true;$('master-create-table').disabled=true;
+    try{
+      await OLNative.signInAccount(physicalRoom(selected),'master','',activeAccount.username,password);
+      $('master-table-password').value='';
+      destination('master',selected,'');
+    }catch(error){show('role-status',loginError(error),true);}
+    finally{busy=false;$('role-master').disabled=false;$('master-create-table').disabled=false;}
+  });
+  $('master-create-table-form').addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(activeAccount?.role!=='master'||busy)return;
+    const name=$('master-new-table-name').value.trim(),password=$('master-table-password').value;
+    if(!name){show('role-status','Informe o nome da nova mesa.',true);return;}
+    if(!password){show('role-status','Confirme sua senha para criar a mesa.',true);$('master-table-password').focus();return;}
+    busy=true;$('role-master').disabled=true;$('master-create-table').disabled=true;
+    try{
+      const table=await OLNative.createMasterTable(activeAccount.username,password,name);
+      const code=normalize(table.tableCode);
+      activeAccount.tables.push(table);
+      const option=document.createElement('option');option.value=code;option.textContent=table.name;
+      $('master-table-select').append(option);$('master-table-select').value=code;
+      try{localStorage.setItem('ol_master_table_name:'+code,table.name);}catch(_){}
+      $('master-new-table-name').value='';
+      await OLNative.signInAccount(physicalRoom(code),'master','',activeAccount.username,password);
+      $('master-table-password').value='';
+      destination('master',code,'');
+    }catch(error){show('role-status',loginError(error),true);}
+    finally{busy=false;$('role-master').disabled=false;$('master-create-table').disabled=false;}
   });
   $('role-player').addEventListener('click',()=>{
     if(activeAccount?.role==='player'&&activeAccount.code)
       destination('player',activeAccount.table,activeAccount.code);
   });
   $('role-other-account').addEventListener('click',async()=>{
-    if(!activeAccount)return;
+    if(!activeAccount||busy)return;
+    $('master-table-password').value='';
     const old=activeAccount;
     activeAccount=null;
     $('role-section').hidden=true;
@@ -340,6 +402,7 @@ footer strong{color:#b9bab5}
     await OLNative.signInAccount(physicalRoom(table),account.role,code,username,password);
     localStorage.setItem('ol_last_username',username);
     chooseAccess(account,username);
+    $('login-password').value='';
   }
   $('login-form').addEventListener('submit',async event=>{
     event.preventDefault();

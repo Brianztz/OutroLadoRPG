@@ -73,3 +73,7 @@ Mais informações: [documentação de Vestígios](docs/vestigios.md). [Document
 No portal, escolha **Criar / abrir ficha sem mesa**. A ficha avulsa funciona sem sessão de mesa e fica isolada no armazenamento local do navegador. Ela não envia rolagens, pistas ou itens ao mestre. Exporte um backup JSON para transportar a ficha entre dispositivos ou evitar perda caso os dados do navegador sejam apagados.
 
 No escudo, abra **Convidar jogador**, informe um nome opcional, clique em **Gerar link** e copie o convite individual. O jogador cria o login vinculado ao convite. Na ficha da mesa, em **Ajustes**, escolha **Usar ficha avulsa** (quando houver uma no mesmo navegador) e confirme a substituição da ficha atual. A original permanece local. Em outro dispositivo, use **Importar ficha** com o backup JSON. Recuperação de convites existentes continua em Gerenciar acessos.
+
+## Múltiplas mesas do mestre
+
+A conta de mestre conserva a mesa principal existente. Após o login, o portal mostra **Minhas mesas**: selecione uma delas e abra o Escudo do Mestre, ou informe o nome e confirme a senha para criar outra (até 50 por conta). Cada mesa possui código próprio, sessão, jogadores, convites, pistas e estado de combate separados. O botão de voltar ao menu do escudo permite escolher outra mesa após entrar na conta. Senhas não são persistidas para essa seleção. Os caches locais antigos são migrados apenas para a última mesa anteriormente usada, quando identificável. Nenhuma mesa existente é excluída.

@@ -26,12 +26,13 @@ function harness(role='master') {
       addEventListener(type,cb){this.events[type]=cb;},
       setAttribute(name,value){this.attributes[name]=String(value);},
       getAttribute(name){return this.attributes[name];},
+      children:[],replaceChildren(){this.children=[];},append(child){this.children.push(child);},
       focus(){},reset(){this.value='';}
     });
     return elements.get(id);
   }
   const accounts={
-    master:{role:'master',tableCode:'MTEST123',code:''},
+    master:{role:'master',tableCode:'MTEST123',code:'',tables:[{tableCode:'MTEST123',name:'Principal'},{tableCode:'MOUTRA',name:'Grupo B'}]},
     player:{role:'player',tableCode:'MTEST123',code:'JOGADOR01'}
   };
   const client={
@@ -41,6 +42,10 @@ function harness(role='master') {
     },
     async signInAccount(table,selectedRole,code,username,password) {
       calls.push(['signInAccount',table,selectedRole,code,username,password]);
+    },
+    async createMasterTable(username,password,name) {
+      calls.push(['createMasterTable',username,password,name]);
+      return {ok:true,tableCode:'MNOVA',name};
     },
     async signInPlayer(table,edition,code,key) {
       calls.push(['signInPlayer',table,edition,code,key]);
@@ -59,7 +64,7 @@ function harness(role='master') {
     location,URL,URLSearchParams,console,history:{replaceState(){}},
     localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},
     sessionStorage:{setItem:(key,value)=>storage.set(key,value)},
-    document:{getElementById:el},
+    document:{getElementById:el,createElement:()=>({value:'',textContent:''})},
     OLFirebase:{
       normalizeTableCode:v=>String(v||'').toUpperCase(),
       seasonScopedTable:v=>'T2_'+v
@@ -196,4 +201,33 @@ test('trocar conta encerra sessão antes de aceitar outro usuário',async()=>{
   assert.equal(h.el('role-section').hidden,true);
   assert.equal(h.el('login-section').hidden,false);
   assert.equal(h.el('login-password').value,'');
+});
+
+test('mestre lista mesas, confirma senha para outra e abre o escudo correto',async()=>{
+  const h=harness('master');
+  h.el('login-username').value='mestre';h.el('login-password').value='Senha-de-mestre-123';
+  await submit(h,'login-form');
+  assert.equal(h.el('master-tables-panel').hidden,false);
+  assert.deepEqual(h.el('master-table-select').children.map(x=>x.value),['MTEST123','MOUTRA']);
+  h.el('master-table-select').value='MOUTRA';
+  await h.el('role-master').events.click();
+  assert.equal(h.location.navigations.length,0);
+  h.el('master-table-password').value='Senha-de-mestre-123';
+  await h.el('role-master').events.click();
+  assert(h.calls.some(c=>c[0]==='signInAccount'&&c[1]==='T2_MOUTRA'));
+  assert.equal(new URL(h.location.navigations.at(-1)).searchParams.get('mesa'),'MOUTRA');
+  assert.equal(h.el('master-table-password').value,'');
+});
+test('mestre cria mesa no portal e jogador não tem acesso à criação',async()=>{
+  const h=harness('master');
+  h.el('login-username').value='mestre';h.el('login-password').value='Senha-de-mestre-123';
+  await submit(h,'login-form');
+  h.el('master-new-table-name').value='Grupo C';h.el('master-table-password').value='Senha-de-mestre-123';
+  await submit(h,'master-create-table-form');
+  assert(h.calls.some(c=>c[0]==='createMasterTable'&&c[3]==='Grupo C'));
+  assert.equal(new URL(h.location.navigations.at(-1)).searchParams.get('mesa'),'MNOVA');
+  const p=harness('player');p.el('login-username').value='clara';p.el('login-password').value='Senha-de-jogador-123';
+  await submit(p,'login-form');assert.equal(p.el('master-tables-panel').hidden,true);
+  await submit(p,'master-create-table-form');
+  assert(!p.calls.some(c=>c[0]==='createMasterTable'));
 });
