@@ -85,3 +85,7 @@ O login gera uma sessão opaca, HttpOnly e segura com duração de oito horas. C
 ## Jogadores sem login
 
 Jogadores abrem o convite individual e entram diretamente na ficha. O servidor guarda uma sessão de acesso por mesa em cookie seguro HttpOnly por 90 dias, invalidada quando o mestre renova ou revoga a chave. O menu de jogador lista as mesas lembradas neste navegador (somente código e nome, sem chaves). Em outro aparelho, use o convite original. Contas antigas permanecem válidas e podem migrar seus acessos ao entrar uma vez. Remover uma mesa do navegador encerra apenas o acesso local, não apaga a ficha. A autenticação de mestre continua obrigatória.
+
+## Convite único por mesa
+
+No escudo, escolha **Obter link da mesa** e envie o mesmo endereço a todos. O servidor gera uma ficha independente para cada novo navegador e mantém a identidade ao reabrir com a sessão válida. O convite nunca autoriza selecionar a ficha de outro jogador. **Renovar link** invalida o convite anterior sem remover personagens ou sessões existentes. Convites individuais continuam disponíveis em Gerenciar acessos para recuperar personagens. Em outro navegador, o link comum cria uma ficha nova; para recuperar uma ficha antiga, peça ao mestre seu acesso individual. Limites de segurança: 30 novas entradas por hora e 200 novas identidades por mesa via link comum.

@@ -6,7 +6,7 @@
     <title>Vestígios · Escudo do Mestre · Vestígios</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <script src="/season-space.js?v=3"></script>
-    <script src="firebase-client.js?v=jogador-sem-login-20261128"></script>
+    <script src="firebase-client.js?v=convite-unico-20261128"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => OLFirebase.guardPage('master'));
     </script>
@@ -550,21 +550,19 @@
     <dialog id="master-invite-dialog" class="master-invite-dialog" aria-labelledby="master-invite-title">
         <div class="master-invite-content">
             <h2 id="master-invite-title">✉ Convite para a mesa</h2>
-            <p>Gere um link privado para cada jogador. Ele poderá entrar na sua mesa e trazer uma ficha avulsa que já tenha criado.</p>
+            <p>Compartilhe o mesmo link com todos os jogadores. Cada navegador recebe sua própria ficha. Para recuperar uma ficha em outro aparelho, use Gerenciar acessos.</p>
             <label for="master-invite-table">CÓDIGO DA MESA
                 <input id="master-invite-table" type="text" maxlength="40" readonly autocomplete="off" spellcheck="false" placeholder="Ex.: AURORA">
             </label>
-            <label for="master-invite-name">NOME DO JOGADOR OU PERSONAGEM (OPCIONAL)
-                <input id="master-invite-name" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: Clara">
-            </label>
             <div class="master-invite-actions">
-                <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">GERAR LINK</button>
+                <button id="master-invite-generate" class="primary" type="button" onclick="generateMasterInvite()">OBTER LINK DA MESA</button>
+                <button id="master-invite-rotate" type="button" onclick="rotateMasterInvite()">RENOVAR LINK</button>
                 <button type="button" onclick="manageMasterInvites()">GERENCIAR ACESSOS</button>
                 <button type="button" onclick="copyMasterTableCode()">COPIAR CÓDIGO</button>
                 <button type="button" onclick="closeMasterInvite()">FECHAR</button>
             </div>
             <label for="master-invite-link">LINK DE CONVITE
-                <input id="master-invite-link" type="text" readonly autocomplete="off" placeholder="Gere um link acima">
+                <input id="master-invite-link" type="text" readonly autocomplete="off" placeholder="Obtenha o link acima">
             </label>
             <div class="master-invite-actions"><button id="master-invite-copy" type="button" onclick="copyMasterInvite()" disabled>COPIAR LINK</button></div>
             <div id="master-invite-status" class="master-invite-status" role="status" aria-live="polite"></div>
@@ -1209,7 +1207,7 @@
             const link = document.getElementById('master-invite-link');
             document.getElementById('master-invite-copy').disabled = !link.value;
             const status = document.getElementById('master-invite-status');
-            if(!masterInvitePending){status.textContent=link.value?'Link pronto. Compartilhe somente com o jogador.':'';status.classList.remove('error');}
+            if(!masterInvitePending){status.textContent=link.value?'Link pronto. Compartilhe com seus jogadores.':'';status.classList.remove('error');}
             dialog.showModal();
             document.getElementById('master-invite-table').focus();
         }
@@ -1219,28 +1217,31 @@
         }
 
         let masterInvitePending=false;
-        async function generateMasterInvite() {
+        async function generateMasterInvite(rotate=false) {
             if(masterInvitePending)return;
             const button=document.getElementById('master-invite-generate'),copy=document.getElementById('master-invite-copy');
             const link=document.getElementById('master-invite-link'),status=document.getElementById('master-invite-status');
-            const name=document.getElementById('master-invite-name').value.trim();
+            const rotateButton=document.getElementById('master-invite-rotate');
             const table=masterTableCode;
-            masterInvitePending=true;button.disabled=true;copy.disabled=true;
-            status.classList.remove('error');status.textContent='Gerando convite privado…';
+            masterInvitePending=true;button.disabled=true;rotateButton.disabled=true;copy.disabled=true;link.value='';
+            status.classList.remove('error');status.textContent='Obtendo o convite da mesa…';
             try{
                 const physical=OLFirebase.seasonScopedTable(table,'temporada');
-                const code='J'+Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
-                const data=await OLNative.provisionPlayer(physical,'temporada',code,'create',name);
-                if(!/^[a-f0-9]{96}$/i.test(String(data.playerKey||'')))throw Error('O servidor não retornou uma chave válida.');
+                const data=await OLNative.getTableInvite(physical,rotate);
+                if(!/^[a-f0-9]{64}$/i.test(String(data.invite||'')))throw Error('O servidor não retornou um convite válido.');
                 const url=new URL('./index.html',location.href);
                 url.search='';url.hash='';
                 url.searchParams.set('mesa',table);url.searchParams.set('convite','1');url.searchParams.set('temporada','2');
-                url.hash=new URLSearchParams({codigo:code,chave:data.playerKey}).toString();
+                url.searchParams.set('tipo','mesa');
+                url.hash=new URLSearchParams({chave:data.invite}).toString();
                 link.value=url.href;
-                status.textContent='Convite pronto! Copie e envie somente ao jogador.';
+                status.textContent='Convite pronto! Envie o mesmo link a todos os jogadores.';
             }catch(error){
                 status.classList.add('error');status.textContent='Não foi possível gerar o link: '+(error.message||'tente novamente.');
-            }finally{masterInvitePending=false;button.disabled=false;copy.disabled=!link.value;}
+            }finally{masterInvitePending=false;button.disabled=false;rotateButton.disabled=false;copy.disabled=!link.value;}
+        }
+        function rotateMasterInvite(){
+            if(window.confirm('Renovar o link da mesa? O anterior deixará de aceitar entradas, mas as fichas existentes serão preservadas.'))return generateMasterInvite(true);
         }
         function manageMasterInvites() {
             const url = new URL('./acessos.html', location.href);
@@ -1261,16 +1262,14 @@
                     if (!document.execCommand('copy')) throw new Error('Não foi possível copiar.');
                 }
                 status.classList.remove('error');
-                status.textContent = 'Link copiado! Compartilhe com seu jogador.';
+                status.textContent = 'Link copiado! Compartilhe com seus jogadores.';
             } catch (error) {
                 status.classList.add('error');
                 status.textContent = 'Selecione o link acima para copiar manualmente.';
             }
         }
 
-        document.getElementById('master-invite-name').addEventListener('keydown', event => {
-            if (event.key === 'Enter') { event.preventDefault(); generateMasterInvite(); }
-        });
+ 
 
         function openMasterOverlay() {
             const url = new URL('./overlay.html', window.location.href);

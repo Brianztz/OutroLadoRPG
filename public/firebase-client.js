@@ -45,6 +45,13 @@
       body: JSON.stringify({ role: 'master', key: secret })
     });
   }
+  async function getTableInvite(table,rotate=false){
+    return api(query(table,'table-invite','temporada')+(rotate?'&rotate=1':''),{method:'POST'});
+  }
+  async function joinTableInvite(table,invite,previouslyJoined=false){
+    return api(sessionUrl(table),{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'join-table',invite,previouslyJoined})});
+  }
   async function signInPlayer(table, edition, code, key) {
     return api(sessionUrl(table), {
       method: 'POST',
@@ -145,7 +152,7 @@
     grantCharacterContent,
     lookupAccount, registerMasterAccount, createMasterTable, changeMasterCredentials, signInAccount, registerPlayerAccount,
     getAccountSession, logoutAccount, joinPlayerAccount,
-    provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
+    getTableInvite, joinTableInvite, provisionPlayer, listPlayers, readCharacter, writeCharacter, readClues, writeClues
   });
 })(window);
 

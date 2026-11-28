@@ -216,7 +216,7 @@ footer strong{color:#b9bab5}
 </main>
 <footer><span><strong>OUTRO LADO</strong> · VESTÍGIOS</span><span>Exílio 3.0 · Portal da segunda temporada</span></footer>
 <script src="/season-space.js?v=3"></script>
-<script src="/firebase-client.js?v=jogador-sem-login-20261128"></script>
+<script src="/firebase-client.js?v=convite-unico-20261128"></script>
 <script>
 (function () {
   'use strict';
@@ -507,10 +507,11 @@ footer strong{color:#b9bab5}
     catch{throw Error('Cole o link completo enviado pelo mestre.');}
     const isPortal=url.pathname==='/' || /\/index\.html$/.test(url.pathname);
     const query=url.searchParams,fragment=new URLSearchParams(url.hash.slice(1));
+    const shared=query.get('tipo')==='mesa';
     if(url.origin!==location.origin || !isPortal || query.get('convite')!=='1'
-        || !query.get('mesa') || !fragment.get('codigo') || !fragment.get('chave'))
+        || !query.get('mesa') || (!shared&&!fragment.get('codigo')) || !fragment.get('chave'))
       throw Error('Convite inválido. Utilize o link original enviado pelo mestre.');
-    return {table:query.get('mesa'),code:fragment.get('codigo'),key:fragment.get('chave')};
+    return {table:query.get('mesa'),code:shared?'':fragment.get('codigo'),key:fragment.get('chave'),shared};
   }
   $('signup-invite-form').addEventListener('submit',event=>{
     event.preventDefault();
@@ -519,7 +520,7 @@ footer strong{color:#b9bab5}
       const selected=parseInviteLink($('signup-invite-link').value);
       // Do not store the private invitation key in browser persistent storage.
       $('signup-invite-link').value='';
-      void enterPlayer(selected.table,selected.code,selected.key,'signup-status');
+      void enterPlayer(selected.table,selected.code,selected.key,'signup-status',selected.shared);
     }catch(error){show('signup-status',loginError(error),true);}
   });
   $('player-join-form').addEventListener('submit',event=>{
@@ -528,24 +529,38 @@ footer strong{color:#b9bab5}
     try{
       const selected=parseInviteLink($('player-join-link').value);
       $('player-join-link').value='';
-      void enterPlayer(selected.table,selected.code,selected.key,'role-status');
+      void enterPlayer(selected.table,selected.code,selected.key,'role-status',selected.shared);
     }catch(error){show('role-status',loginError(error),true);}
   });
-  async function enterPlayer(table,code,key,statusNode) {
+  async function enterPlayer(table,code,key,statusNode,shared=false) {
     if(busy)return;
     busy=true;$('invite-retry').disabled=true;
     try{
       show(statusNode,'Conectando à sua ficha...');
       const normalizedTable=normalize(table);
-      const normalizedCode=String(code||'').trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,40);
-      if(!table||!normalizedCode||!key)throw Error('Convite incompleto. Peça um novo link ao mestre.');
+      let normalizedCode=String(code||'').trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,40);
+      if(!table||(!shared&&!normalizedCode)||!key)throw Error('Convite incompleto. Peça um novo link ao mestre.');
       const physical=physicalRoom(normalizedTable);
-      await OLNative.signInPlayer(physical,edition,normalizedCode,key);
-      rememberTable(normalizedTable,normalizedCode);
-      // A valid invitation is sufficient. No signup or password screen.
+      if(shared){
+        // Serialize first joins from multiple tabs on this browser. The room
+        // derives the identity from its authenticated cookie, not a submitted code.
+        const join=async()=>{
+          const previouslyJoined=deviceTables().some(t=>t.tableCode===normalizedTable);
+          const result=await OLNative.joinTableInvite(physical,key,previouslyJoined);
+          if(result?.role!=='player'||!/^[A-Z0-9_-]{1,40}$/.test(result.code||''))throw Error('invalid_server_response');
+          normalizedCode=result.code;
+          rememberTable(normalizedTable,normalizedCode);
+        };
+        if(typeof navigator!=='undefined'&&navigator.locks?.request)await navigator.locks.request('ol-join:'+physical,join);
+        else await join();
+      }else{
+        await OLNative.signInPlayer(physical,edition,normalizedCode,key);
+        rememberTable(normalizedTable,normalizedCode);
+      }
       destination('player',normalizedTable,normalizedCode);
     }catch(error){
-      show(statusNode,invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error),true);
+      const message=error?.message==='existing_access_required'?'Você já tinha uma ficha nesta mesa. Peça ao mestre um link individual de acesso para recuperar seu personagem.':error?.message==='master_session_active'?'Este navegador está conectado como mestre nesta mesa. Use outro perfil de navegador para entrar como jogador.':error?.message==='invite_limit'?'Limite de novos acessos atingido. Fale com o mestre.':invite?'Não foi possível usar o convite. Peça outro ao mestre.':loginError(error);
+      show(statusNode,message,true);
       if(invite)$('invite-retry').hidden=false;
     }finally{busy=false;$('invite-retry').disabled=false;}
   }
@@ -553,14 +568,14 @@ footer strong{color:#b9bab5}
     $('login-section').hidden=true;
     $('invite-section').hidden=false;
     const fragment=new URLSearchParams(location.hash.slice(1));
-    inviteCredentials={table:params.get('mesa')||'',code:fragment.get('codigo')||'',key:fragment.get('chave')||''};
+    inviteCredentials={table:params.get('mesa')||'',code:fragment.get('codigo')||'',key:fragment.get('chave')||'',shared:params.get('tipo')==='mesa'};
     if(location.hash)history.replaceState(null,'',location.pathname+location.search);
     $('invite-retry').addEventListener('click',()=>{
       $('invite-retry').hidden=true;
-      enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status');
+      enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status',inviteCredentials.shared);
     });
-    if(inviteCredentials.table&&inviteCredentials.code&&inviteCredentials.key){
-      enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status');
+    if(inviteCredentials.table&&(inviteCredentials.shared||inviteCredentials.code)&&inviteCredentials.key){
+      enterPlayer(inviteCredentials.table,inviteCredentials.code,inviteCredentials.key,'invite-status',inviteCredentials.shared);
     }else{
       show('invite-status','Convite incompleto. Peça outro link ao mestre.',true);
     }
